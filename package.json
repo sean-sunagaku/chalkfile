@@ -1,0 +1,24 @@
+{
+  "name": "study-videos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ナレーション付きの講座動画（Remotion・VOICEVOX）と、GitHub Pages の講座サイトを作る",
+  "scripts": {
+    "studio": "remotion studio",
+    "synth": "bun scripts/synth.ts",
+    "render": "bash scripts/render.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.440",
+    "@remotion/google-fonts": "4.0.440",
+    "lucide-react": "^0.511.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "remotion": "4.0.440"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "typescript": "6.0.2"
+  }
+}

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>__TITLE__</title>
+__HEAD_META__
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* 講座の一覧。色の決まりは講座のページ（template.html）と同じ */
+:root {
+  --ink: #0A0E22;
+  --panel: #10163A;
+  --raise: #171F4C;
+  --line: #262E5E;
+  --fg: #EEF0FF;
+  --fg-2: #B7BEE0;
+  --muted: #8790B8;
+  --violet: #9C8CFF;
+  --cyan: #45D3F4;
+  --grad: linear-gradient(100deg, #FF6FA3, #9C8CFF 52%, #45D3F4);
+  --shadow: 0 18px 48px rgba(2, 4, 18, 0.45);
+  --stage: #05070F;
+  --font-body: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ink: #F5F4FB;
+    --panel: #FFFFFF;
+    --raise: #F0EEF9;
+    --line: #E1DEF0;
+    --fg: #171A33;
+    --fg-2: #464B6C;
+    --muted: #6F7496;
+    --violet: #5B49E0;
+    --cyan: #0A84A8;
+    --grad: linear-gradient(100deg, #D63A73, #5B49E0 52%, #0A84A8);
+    --shadow: 0 14px 36px rgba(40, 36, 90, 0.12);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --ink: #F5F4FB;
+  --panel: #FFFFFF;
+  --raise: #F0EEF9;
+  --line: #E1DEF0;
+  --fg: #171A33;
+  --fg-2: #464B6C;
+  --muted: #6F7496;
+  --violet: #5B49E0;
+  --cyan: #0A84A8;
+  --grad: linear-gradient(100deg, #D63A73, #5B49E0 52%, #0A84A8);
+  --shadow: 0 14px 36px rgba(40, 36, 90, 0.12);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  word-break: auto-phrase;
+}
+a { color: var(--cyan); }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 8px; }
+svg { flex: none; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+}
+.topbar-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; font-weight: 900; font-size: 17px; letter-spacing: 0.02em; }
+.brand-mark { width: 14px; height: 14px; border-radius: 5px; background: var(--grad); }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--raise); color: var(--fg); font-size: 14px; font-weight: 700; text-decoration: none; }
+.pill:hover { border-color: var(--violet); }
+.pill svg { width: 16px; height: 16px; }
+.topbar .pill { margin-left: auto; }
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 52px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+}
+.eyebrow { font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: var(--muted); margin: 0 0 10px; }
+.hero h1 { margin: 0 0 14px; font-size: clamp(32px, 5.4vw, 54px); font-weight: 900; line-height: 1.22; text-wrap: balance; }
+.hero h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { margin: 0; max-width: 44em; color: var(--fg-2); font-size: 16px; }
+
+h2 { margin: 52px 0 18px; font-size: 21px; font-weight: 900; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 20px; }
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--violet); }
+.poster { aspect-ratio: 16 / 9; background: var(--stage); }
+.poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 18px 20px 20px; }
+.card h3 { margin: 0; font-size: 20px; font-weight: 900; line-height: 1.4; }
+.card .lead { margin: 0; color: var(--fg-2); }
+.card .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.card .meta span { padding: 2px 10px; border-radius: 999px; background: var(--raise); color: var(--fg-2); font-size: 13px; }
+.secs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.secs li { padding: 1px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 12.5px; }
+.go { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; color: var(--violet); font-weight: 700; }
+.go svg { width: 18px; height: 18px; }
+/* 講座が 1 つだけのうちは、横長のカードにして幅を使う */
+@media (min-width: 860px) {
+  .card:only-child { grid-column: 1 / -1; flex-direction: row; }
+  .card:only-child .poster { flex: 0 0 56%; align-self: center; }
+  .card:only-child .card-body { justify-content: center; gap: 12px; padding: 28px 32px; }
+  .card:only-child h3 { font-size: 26px; }
+  .card:only-child .go { margin-top: 8px; }
+}
+
+.howto { margin: 0 0 16px; max-width: 46em; color: var(--fg-2); }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.steps b { display: block; margin-bottom: 4px; font-size: 15px; }
+.steps b::before { counter-increment: step; content: counter(step, decimal-leading-zero); margin-right: 8px; font-family: var(--font-mono); color: var(--violet); }
+.steps span { color: var(--fg-2); font-size: 14px; }
+.howto-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+.foot { display: grid; gap: 4px; margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>__SERIES__</a>
+    <a class="pill" href="__REPO__" target="_blank" rel="noopener">GitHub<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">STUDY VIDEOS</p>
+    <h1>スナガクの<span class="grad">勉強動画</span></h1>
+    <p>__SERIES_SUB__</p>
+  </section>
+
+  <h2>講座</h2>
+  <div class="grid">
+__COURSES__
+  </div>
+
+  <h2>作り方</h2>
+  <p class="howto">動画は、台本のデータから毎回作り直せるようにしています。手順と、画面と話し方の決まり、調べ方は、Claude Code のスキルにまとめてあります。</p>
+  <ol class="steps">
+    <li><b>調べる</b><span>公式ドキュメントと一次情報を読み、確かめた日と版を残す</span></li>
+    <li><b>台本と図を書く</b><span>場面ごとの台詞と、台詞に合わせて出す図を TypeScript で書く</span></li>
+    <li><b>声を付ける</b><span>VOICEVOX で読み上げ、読みのカナを全部確かめる</span></li>
+    <li><b>動画にする</b><span>Remotion で映像を書き出し、BGM と効果音を合わせる</span></li>
+    <li><b>公開する</b><span>講座サイトを組み立てて GitHub Pages に出す</span></li>
+  </ol>
+  <div class="howto-links">
+    <a class="pill" href="__REPO__#readme" target="_blank" rel="noopener">README（作り直す手順）<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+    <a class="pill" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener">Claude Code のスキル<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+  </div>
+
+  <footer class="foot">
+    <div>__CREDITS__</div>
+    <div>講座は、確かめた日の公式情報をもとにした個人の勉強用のものです。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律や税の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
+  </footer>
+</main>
+
+</body>
+</html>

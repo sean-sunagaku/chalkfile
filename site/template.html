@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>__TITLE__</title>
+__HEAD_META__
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* レイアウト: 左に講義シアター（動画・操作・タブ）、右にカリキュラム。900px 未満では縦に積む */
+:root {
+  --ink: #0A0E22;
+  --panel: #10163A;
+  --raise: #171F4C;
+  --line: #262E5E;
+  --fg: #EEF0FF;
+  --fg-2: #B7BEE0;
+  --muted: #8790B8;
+  --pink: #FF6FA3;
+  --violet: #9C8CFF;
+  --cyan: #45D3F4;
+  --mint: #4CE2B2;
+  --amber: #FFC260;
+  --coral: #FF8A6A;
+  --pink-soft: rgba(255, 111, 163, 0.14);
+  --violet-soft: rgba(156, 140, 255, 0.16);
+  --cyan-soft: rgba(69, 211, 244, 0.13);
+  --mint-soft: rgba(76, 226, 178, 0.14);
+  --coral-soft: rgba(255, 138, 106, 0.15);
+  --grad: linear-gradient(100deg, #FF6FA3, #9C8CFF 52%, #45D3F4);
+  --shadow: 0 18px 48px rgba(2, 4, 18, 0.45);
+  --stage: #05070F;
+  --on-accent: #0A0E22;
+  --font-body: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ink: #F5F4FB;
+    --panel: #FFFFFF;
+    --raise: #F0EEF9;
+    --line: #E1DEF0;
+    --fg: #171A33;
+    --fg-2: #464B6C;
+    --muted: #6F7496;
+    --pink: #D63A73;
+    --violet: #5B49E0;
+    --cyan: #0A84A8;
+    --mint: #0D8C66;
+    --amber: #A06600;
+    --coral: #C44E2D;
+    --pink-soft: rgba(214, 58, 115, 0.10);
+    --violet-soft: rgba(91, 73, 224, 0.10);
+    --cyan-soft: rgba(10, 132, 168, 0.10);
+    --mint-soft: rgba(13, 140, 102, 0.10);
+    --coral-soft: rgba(196, 78, 45, 0.10);
+    --grad: linear-gradient(100deg, #D63A73, #5B49E0 52%, #0A84A8);
+    --shadow: 0 14px 36px rgba(40, 36, 90, 0.12);
+    --stage: #05070F;
+    --on-accent: #FFFFFF;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --ink: #F5F4FB;
+  --panel: #FFFFFF;
+  --raise: #F0EEF9;
+  --line: #E1DEF0;
+  --fg: #171A33;
+  --fg-2: #464B6C;
+  --muted: #6F7496;
+  --pink: #D63A73;
+  --violet: #5B49E0;
+  --cyan: #0A84A8;
+  --mint: #0D8C66;
+  --amber: #A06600;
+  --coral: #C44E2D;
+  --pink-soft: rgba(214, 58, 115, 0.10);
+  --violet-soft: rgba(91, 73, 224, 0.10);
+  --cyan-soft: rgba(10, 132, 168, 0.10);
+  --mint-soft: rgba(13, 140, 102, 0.10);
+  --coral-soft: rgba(196, 78, 45, 0.10);
+  --grad: linear-gradient(100deg, #D63A73, #5B49E0 52%, #0A84A8);
+  --shadow: 0 14px 36px rgba(40, 36, 90, 0.12);
+  --stage: #05070F;
+  --on-accent: #FFFFFF;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: auto-phrase;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--panel);
+}
+a { color: var(--cyan); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ── 上の帯 ── */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.topbar-inner { max-width: 1480px; margin: 0 auto; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 360px; }
+.brand-home { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; flex: none; }
+.brand-home:hover .brand-title { text-decoration: underline; text-underline-offset: 4px; }
+.brand-mark { width: 14px; height: 14px; border-radius: 5px; background: var(--grad); flex: none; }
+.brand-title { font-weight: 900; font-size: 17px; letter-spacing: 0.02em; white-space: nowrap; }
+.brand-sub { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-progress { display: flex; align-items: center; gap: 12px; flex: 0 1 340px; min-width: 220px; }
+.course-progress .bar { flex: 1; height: 6px; border-radius: 9px; background: var(--raise); overflow: hidden; }
+.course-progress .bar > i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 9px; transition: width 0.4s; }
+.course-progress .label { font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+
+/* ── 本体 ── */
+.wrap {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding-block: 22px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 26px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.intro { display: flex; gap: 14px 22px; align-items: baseline; flex-wrap: wrap; margin-bottom: 14px; }
+.intro h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; line-height: 1.3; text-wrap: balance; }
+.intro h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.intro .meta { color: var(--muted); font-size: 14px; }
+.intro .links { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.intro .links a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--raise); color: var(--fg); font-size: 14px; font-weight: 700; text-decoration: none; }
+.intro .links a:hover { border-color: var(--violet); }
+.intro .links svg { width: 16px; height: 16px; flex: none; }
+
+/* プレーヤー（字幕は動画の下の帯に出し、図を隠さない） */
+.theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+.player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); }
+.player video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--stage); }
+.ccbar {
+  min-height: 3.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  text-align: center;
+  color: #F1F3FF;
+  background: #0B0F1F;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: clamp(14px, 1.45vw, 19px);
+  font-weight: 700;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+.theater:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; background: #000; }
+.theater:fullscreen .player { flex: 1; aspect-ratio: auto; }
+.theater:fullscreen .ccbar { font-size: clamp(18px, 2vw, 30px); min-height: 3.2em; }
+.nextup {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 15, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.nextup-card { text-align: center; color: #F4F6FF; max-width: 520px; }
+.nextup-card .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.24em; color: #9AA3CF; }
+.nextup-card h3 { margin: 8px 0 18px; font-size: clamp(18px, 2.4vw, 26px); line-height: 1.4; text-wrap: balance; }
+.nextup-card .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--violet); }
+.btn.primary { background: var(--grad); border-color: transparent; color: var(--on-accent); }
+.btn.ghost-dark { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); color: #F4F6FF; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn[aria-pressed="true"] { border-color: var(--violet); background: var(--violet-soft); }
+
+/* 動画の下の操作 */
+.now { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-top: 16px; }
+.now-title { min-width: 0; flex: 1 1 320px; }
+.now-title .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em; color: var(--muted); }
+.now-title h2 { margin: 2px 0 0; font-size: clamp(19px, 2.2vw, 24px); font-weight: 900; line-height: 1.4; text-wrap: balance; }
+.now-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.speed { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.speed button { border: 0; background: transparent; padding: 7px 10px; font-family: var(--font-mono); font-size: 13px; cursor: pointer; color: var(--fg-2); }
+.speed button[aria-pressed="true"] { background: var(--violet-soft); color: var(--fg); font-weight: 700; }
+
+/* タブ */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 20px; overflow-x: auto; scrollbar-width: none; }
+.tabs button {
+  border: 0;
+  background: transparent;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--pink); }
+.panel { padding-top: 18px; }
+.panel[hidden] { display: none; }
+.panel h3 { font-size: 16px; margin: 0 0 10px; }
+.panel p { margin: 0 0 12px; color: var(--fg-2); max-width: 70ch; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 700px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.takeaways { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.takeaways li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; color: var(--fg-2); }
+.takeaways li::before { content: ""; width: 8px; height: 8px; border-radius: 9px; background: var(--mint); margin-top: 9px; justify-self: center; }
+.chapters { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.chapters button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.chapters button:hover { background: var(--raise); }
+.chapters button.on { background: var(--violet-soft); color: var(--fg); }
+.chapters .t { font-family: var(--font-mono); font-size: 13px; color: var(--muted); padding-top: 2px; }
+
+/* 台本 */
+.tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.search { flex: 1 1 260px; min-width: 0; position: relative; }
+.search input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 9px 12px 9px 36px;
+  font: inherit;
+}
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg-2); cursor: pointer; }
+.transcript { max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 8px; scroll-behavior: smooth; }
+.transcript h4 { margin: 14px 10px 4px; font-size: 13px; letter-spacing: 0.06em; color: var(--muted); }
+.transcript h4:first-child { margin-top: 6px; }
+.cue {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--fg-2);
+  line-height: 1.75;
+}
+.cue:hover { background: var(--raise); }
+.cue .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 3px; }
+.cue.on { background: var(--pink-soft); color: var(--fg); }
+.cue.on .t { color: var(--pink); }
+.cue mark { background: var(--amber); color: var(--on-accent); border-radius: 3px; padding: 0 2px; }
+.hit-lec { font-family: var(--font-mono); font-size: 12px; color: var(--violet); }
+
+/* ノート */
+.note-new { display: grid; gap: 10px; }
+.note-new textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  line-height: 1.7;
+}
+.notes { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.notes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.notes .stamp { font-family: var(--font-mono); font-size: 13px; border: 1px solid var(--line); background: var(--raise); border-radius: 8px; padding: 2px 8px; cursor: pointer; color: var(--cyan); }
+.notes .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
+.notes .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.notes .del:hover { color: var(--coral); }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* ドキュメント */
+.docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.docs a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.docs a:hover { border-color: var(--cyan); }
+.docs .host { font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: block; overflow-wrap: anywhere; }
+.docs svg { width: 16px; height: 16px; color: var(--muted); }
+
+/* クイズ */
+.quiz { display: grid; gap: 16px; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.q .qt { font-weight: 700; margin-bottom: 10px; }
+.q .qt .n { font-family: var(--font-mono); color: var(--pink); margin-right: 8px; }
+.choices { display: grid; gap: 8px; }
+.choice {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--fg);
+  line-height: 1.6;
+}
+.choice:hover:not(:disabled) { border-color: var(--violet); }
+.choice:disabled { cursor: default; }
+.choice.right { border-color: var(--mint); background: var(--mint-soft); }
+.choice.wrong { border-color: var(--coral); background: var(--coral-soft); }
+.explain { margin-top: 10px; font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--mint); padding-left: 10px; }
+.explain.bad { border-left-color: var(--coral); }
+.score { font-size: 14px; color: var(--fg-2); }
+
+/* カリキュラム */
+.curriculum { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); max-height: calc(100vh - 92px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+@media (max-width: 900px) { .curriculum { position: static; max-height: none; } }
+.cur-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cur-head h2 { margin: 0; font-size: 15px; font-weight: 900; }
+.cur-head .sum { font-size: 12.5px; color: var(--muted); }
+.sec { border-bottom: 1px solid var(--line); }
+.sec:last-child { border-bottom: 0; }
+.sec-head { padding: 12px 16px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.sec-head .name { font-weight: 700; font-size: 13.5px; }
+.sec-head .name .no { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; color: var(--muted); display: block; }
+.sec-head .cnt { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lec {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 9px 16px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.lec:hover { background: var(--raise); }
+.lec[aria-current="true"] { background: var(--violet-soft); color: var(--fg); }
+.lec .ttl { font-size: 14px; line-height: 1.5; font-weight: 500; }
+.lec[aria-current="true"] .ttl { font-weight: 700; }
+.lec .dur { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ring { width: 24px; height: 24px; display: block; }
+.ring .bg { stroke: var(--line); }
+.ring .fg { stroke: var(--violet); }
+.ring.done .disc { fill: var(--mint); }
+.ring .tick { stroke: var(--on-accent); }
+.ring .num { fill: var(--muted); font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
+
+.foot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+.kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; background: var(--panel); color: var(--fg-2); }
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 40;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <a class="brand-home" href="../" title="講座の一覧へ">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-title">__SERIES__</span>
+      </a>
+      <span class="brand-sub">__BRAND_SUB__</span>
+    </div>
+    <div class="course-progress" title="完了したレクチャーの数">
+      <div class="bar" aria-hidden="true"><i id="cpBar"></i></div>
+      <span class="label" id="cpLabel"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>__HEADLINE__</h1>
+    <span class="meta" id="courseMeta"></span>
+    <span class="links" id="links" hidden></span>
+  </div>
+
+  <div class="layout">
+    <section aria-label="講義">
+      <div class="theater" id="theater">
+      <div class="player" id="player">
+        <video id="video" playsinline preload="metadata" controls></video>
+        <div class="nextup" id="nextup" hidden>
+          <div class="nextup-card">
+            <div class="eyebrow">NEXT LECTURE</div>
+            <h3 id="nextTitle"></h3>
+            <div class="row">
+              <button class="btn primary" id="nextGo" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span id="nextGoLabel">次へ</span>
+              </button>
+              <button class="btn ghost-dark" id="nextStay" type="button">ここで止める</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ccbar" id="cc" aria-live="off"></div>
+      </div>
+
+      <div class="now">
+        <div class="now-title">
+          <div class="eyebrow" id="nowEyebrow">LECTURE 01</div>
+          <h2 id="nowTitle">このコースで作るもの</h2>
+        </div>
+        <div class="now-actions">
+          <div class="speed" role="group" aria-label="再生速度" id="speed">
+            <button type="button" data-rate="1">1.0×</button>
+            <button type="button" data-rate="1.25">1.25×</button>
+            <button type="button" data-rate="1.5">1.5×</button>
+            <button type="button" data-rate="1.75">1.75×</button>
+          </div>
+          <button class="btn" id="ccToggle" type="button" aria-pressed="true" title="字幕（C）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 10.5a2 2 0 1 0 0 3M16 10.5a2 2 0 1 0 0 3"/></svg>
+            字幕
+          </button>
+          <button class="btn" id="doneToggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <span>完了にする</span>
+          </button>
+          <button class="btn" id="prevBtn" type="button" aria-label="前のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button class="btn" id="nextBtn" type="button" aria-label="次のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="レクチャーの資料">
+        <button role="tab" type="button" id="tab-overview" aria-controls="p-overview" aria-selected="true">概要</button>
+        <button role="tab" type="button" id="tab-transcript" aria-controls="p-transcript" aria-selected="false">台本</button>
+        <button role="tab" type="button" id="tab-notes" aria-controls="p-notes" aria-selected="false">ノート</button>
+        <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">公式ドキュメント</button>
+        <button role="tab" type="button" id="tab-quiz" aria-controls="p-quiz" aria-selected="false">確認クイズ</button>
+      </div>
+
+      <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <p id="summary"></p>
+        <div class="two">
+          <div class="box">
+            <h3>実装に効くメモ</h3>
+            <ul class="takeaways" id="takeaways"></ul>
+          </div>
+          <div class="box">
+            <h3>チャプター</h3>
+            <ol class="chapters" id="chapters"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="p-transcript" role="tabpanel" aria-labelledby="tab-transcript" hidden>
+        <div class="tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input id="q" type="search" placeholder="全レクチャーの台本から探す（例: past_due、署名）" autocomplete="off">
+          </label>
+          <label class="check"><input id="follow" type="checkbox" checked> 再生に合わせてスクロール</label>
+        </div>
+        <div class="transcript" id="transcript"></div>
+      </div>
+
+      <div class="panel" id="p-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+        <div class="note-new">
+          <textarea id="noteText" placeholder="気づいたこと、実装のときに確かめたいことを書く"></textarea>
+          <div class="tools" style="margin:0">
+            <button class="btn primary" id="noteAdd" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span id="noteAddLabel">00:00 にメモ</span>
+            </button>
+            <button class="btn" id="noteCopy" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+              全ノートをコピー
+            </button>
+            <span class="hint">ノートはこの端末のブラウザに保存されます。</span>
+          </div>
+        </div>
+        <ul class="notes" id="notes"></ul>
+      </div>
+
+      <div class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+        <p>__DOCS_NOTE__</p>
+        <ul class="docs" id="docs"></ul>
+      </div>
+
+      <div class="panel" id="p-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+        <div class="quiz" id="quiz"></div>
+      </div>
+    </section>
+
+    <aside class="curriculum" aria-label="カリキュラム">
+      <div class="cur-head">
+        <h2>カリキュラム</h2>
+        <span class="sum" id="curSum"></span>
+      </div>
+      <div id="sections"></div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div>ショートカット: <span class="kbd">Space</span> 再生と停止 ・ <span class="kbd">←</span><span class="kbd">→</span> 5 秒 ・ <span class="kbd">J</span><span class="kbd">L</span> 10 秒 ・ <span class="kbd">C</span> 字幕 ・ <span class="kbd">F</span> 全画面 ・ <span class="kbd">N</span> 次のレクチャー</div>
+    <div id="credits"></div>
+  </div>
+</div>
+
+<script id="course-data" type="application/json">__COURSE_JSON__</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("course-data").textContent);
+  var L = DATA.lectures;
+  var $ = function (id) { return document.getElementById(id); };
+  var video = $("video");
+  var player = $("player");
+  var theater = $("theater");
+
+  // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
+  var KEY = "study-videos:" + DATA.course.id + ":";
+  var store = {
+    get: function (k, d) {
+      try { var v = localStorage.getItem(KEY + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) { /* 保存できなくても続ける */ }
+    }
+  };
+  var progress = store.get("progress", {}); // { L01: { t: 秒, max: 0..1, done: bool } }
+  var notes = store.get("notes", {});       // { L01: [{ t, text, at }] }
+  var quizState = store.get("quiz", {});    // { L01: { 0: 選んだ番号 } }
+  var prefs = store.get("prefs", { rate: 1, cc: true, follow: true });
+
+  var fmt = function (s) {
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60);
+    return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+  };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  };
+  var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
+
+  var current = 0;
+  var cueIdx = -1;
+  var nextTimer = null;
+  var dirtyProgress = false;
+
+  // ── 全体の進み具合 ──
+  function renderCourseProgress() {
+    var done = L.filter(function (l) { return progress[l.id] && progress[l.id].done; }).length;
+    $("cpBar").style.width = (done / L.length * 100) + "%";
+    $("cpLabel").textContent = done + " / " + L.length + " 完了";
+    var total = L.reduce(function (a, l) { return a + l.duration; }, 0);
+    $("curSum").textContent = L.length + " レクチャー・" + Math.round(total / 60) + " 分";
+    $("courseMeta").textContent = DATA.course.sections.length + " セクション・" + L.length + " レクチャー・約 " + Math.round(total / 60) + " 分";
+  }
+
+  // ── カリキュラム ──
+  function ring(id, i) {
+    var p = progress[id] || {};
+    if (p.done) {
+      return '<svg class="ring done" viewBox="0 0 24 24" aria-label="完了"><circle class="disc" cx="12" cy="12" r="11"/><path class="tick" d="M7 12.4l3.3 3.3L17 9" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    var max = Math.min(1, p.max || 0);
+    var c = 2 * Math.PI * 10;
+    return '<svg class="ring" viewBox="0 0 24 24" aria-label="' + Math.round(max * 100) + '% 視聴"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5"/>' +
+      (max > 0 ? '<circle class="fg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="' + (c * max).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 12 12)"/>' : "") +
+      '<text class="num" x="12" y="15.2" text-anchor="middle">' + (i + 1) + "</text></svg>";
+  }
+  function renderCurriculum() {
+    var html = "";
+    DATA.course.sections.forEach(function (sec) {
+      var lecs = L.map(function (l, i) { return { l: l, i: i }; }).filter(function (x) { return x.l.section.no === sec.no; });
+      var done = lecs.filter(function (x) { return progress[x.l.id] && progress[x.l.id].done; }).length;
+      html += '<div class="sec"><div class="sec-head"><div class="name"><span class="no">SECTION ' + sec.no + "</span>" + esc(sec.title) + '</div><span class="cnt">' + done + " / " + lecs.length + "</span></div>";
+      lecs.forEach(function (x) {
+        html += '<button type="button" class="lec" data-i="' + x.i + '"' + (x.i === current ? ' aria-current="true"' : "") + ">" + ring(x.l.id, x.i) +
+          '<span class="ttl">' + esc(x.l.title) + '</span><span class="dur">' + fmt(x.l.duration) + "</span></button>";
+      });
+      html += "</div>";
+    });
+    $("sections").innerHTML = html;
+  }
+  $("sections").addEventListener("click", function (e) {
+    var b = e.target.closest(".lec");
+    if (b) load(Number(b.dataset.i), true);
+  });
+
+  // ── レクチャーを開く ──
+  function load(i, play) {
+    if (i < 0 || i >= L.length) return;
+    saveProgress();
+    current = i;
+    var lec = L[i];
+    clearNext();
+    cueIdx = -1;
+    video.pause();
+    video.innerHTML = "";
+    video.removeAttribute("src");
+    video.poster = "media/" + lec.id + ".jpg";
+    var src = document.createElement("source");
+    src.src = "media/" + lec.id + ".mp4";
+    src.type = "video/mp4";
+    // 全画面（iPhone など）用の字幕は、埋め込んだ台本からその場で WebVTT を作る
+    var tr = document.createElement("track");
+    tr.kind = "subtitles";
+    tr.srclang = "ja";
+    tr.label = "日本語";
+    tr.src = vttUrl(lec);
+    video.appendChild(src);
+    video.appendChild(tr);
+    video.load();
+    var resume = progress[lec.id] && !progress[lec.id].done ? progress[lec.id].t || 0 : 0;
+    video.addEventListener("loadedmetadata", function onMeta() {
+      video.removeEventListener("loadedmetadata", onMeta);
+      if (resume > 3 && resume < lec.duration - 5) video.currentTime = resume;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    });
+    if (play) video.play().catch(function () {});
+    $("nowEyebrow").textContent = "LECTURE " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
+    $("nowTitle").textContent = lec.title;
+    $("summary").textContent = lec.summary;
+    $("takeaways").innerHTML = lec.takeaways.map(function (t) { return "<li><span>" + esc(t) + "</span></li>"; }).join("");
+    $("chapters").innerHTML = lec.chapters.map(function (c, k) {
+      return '<li><button type="button" data-t="' + c.start + '" data-k="' + k + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.heading) + "</span></button></li>";
+    }).join("");
+    $("docs").innerHTML = lec.docs.map(function (d) {
+      var host = "";
+      try { host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, ""); } catch (e) { host = d.url; }
+      return '<li><a href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer"><span><span>' + esc(d.title) + '</span><span class="host">' + esc(host) + '</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></li>';
+    }).join("");
+    renderTranscript();
+    renderNotes();
+    renderQuiz();
+    renderDone();
+    renderCurriculum();
+    $("prevBtn").disabled = i === 0;
+    $("nextBtn").disabled = i === L.length - 1;
+    $("cc").textContent = "";
+    try { history.replaceState(null, "", "#" + lec.id); } catch (e) {}
+    store.set("last", lec.id);
+  }
+
+  var vttCache = {};
+  function vttUrl(lec) {
+    if (vttCache[lec.id]) return vttCache[lec.id];
+    var ts = function (x) {
+      var h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), sec = (x % 60).toFixed(3);
+      return pad2(h) + ":" + pad2(m) + ":" + (sec.length < 6 ? "0" : "") + sec;
+    };
+    var body = "WEBVTT\n\n" + lec.cues.map(function (c, i) {
+      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + c.text + "\n";
+    }).join("\n");
+    try {
+      vttCache[lec.id] = URL.createObjectURL(new Blob([body], { type: "text/vtt" }));
+    } catch (e) {
+      vttCache[lec.id] = "";
+    }
+    return vttCache[lec.id];
+  }
+
+  // ネイティブ字幕は全画面（iPhone など）のときだけ使う。ふだんは自前の字幕を出す
+  function hideNativeTrack() {
+    for (var k = 0; k < video.textTracks.length; k++) video.textTracks[k].mode = "hidden";
+  }
+  video.addEventListener("webkitbeginfullscreen", function () {
+    if (prefs.cc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+  });
+  video.addEventListener("webkitendfullscreen", hideNativeTrack);
+
+  // ── 字幕・台本の追従 ──
+  function findCue(t) {
+    var cues = L[current].cues;
+    var lo = 0, hi = cues.length - 1, ans = -1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      if (cues[mid].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    return ans;
+  }
+  video.addEventListener("timeupdate", function () {
+    var lec = L[current];
+    var t = video.currentTime;
+    var k = findCue(t);
+    var c = k >= 0 ? lec.cues[k] : null;
+    var showing = c && t <= c.end + 0.7; // 短い間で字幕がちらつかないように残す
+    $("cc").textContent = showing ? c.text : "";
+    if (k !== cueIdx) {
+      cueIdx = k;
+      var prev = document.querySelector(".cue.on");
+      if (prev) prev.classList.remove("on");
+      var el = document.querySelector('.cue[data-k="' + k + '"]');
+      if (el) {
+        el.classList.add("on");
+        if (prefs.follow && !$("p-transcript").hidden && !$("q").value) {
+          var box = $("transcript");
+          box.scrollTop = el.offsetTop - box.offsetTop - box.clientHeight / 3;
+        }
+      }
+      var ch = lec.chapters.reduce(function (a, cc, idx) { return cc.start <= t + 0.2 ? idx : a; }, 0);
+      Array.prototype.forEach.call(document.querySelectorAll("#chapters button"), function (b) {
+        b.classList.toggle("on", Number(b.dataset.k) === ch);
+      });
+    }
+    var p = progress[lec.id] || (progress[lec.id] = { t: 0, max: 0, done: false });
+    p.t = t;
+    if (lec.duration) p.max = Math.max(p.max || 0, t / lec.duration);
+    if (!p.done && p.max > 0.94) { p.done = true; renderDone(); renderCurriculum(); renderCourseProgress(); }
+    dirtyProgress = true;
+    $("noteAddLabel").textContent = fmt(t) + " にメモ";
+  });
+  setInterval(saveProgress, 4000);
+  function saveProgress() {
+    if (!dirtyProgress) return;
+    dirtyProgress = false;
+    store.set("progress", progress);
+    renderCurriculum();
+  }
+  window.addEventListener("pagehide", saveProgress);
+
+  // ── 次のレクチャーへ ──
+  video.addEventListener("ended", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = {});
+    p.done = true;
+    p.t = 0;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+    if (current >= L.length - 1) return;
+    var nx = L[current + 1];
+    $("nextTitle").textContent = "L" + pad2(nx.no) + "　" + nx.title;
+    $("nextup").hidden = false;
+    var left = 6;
+    $("nextGoLabel").textContent = left + " 秒後に再生";
+    nextTimer = setInterval(function () {
+      left -= 1;
+      $("nextGoLabel").textContent = left > 0 ? left + " 秒後に再生" : "再生";
+      if (left <= 0) { clearNext(); load(current + 1, true); }
+    }, 1000);
+  });
+  function clearNext() {
+    if (nextTimer) clearInterval(nextTimer);
+    nextTimer = null;
+    $("nextup").hidden = true;
+  }
+  $("nextGo").addEventListener("click", function () { clearNext(); load(current + 1, true); });
+  $("nextStay").addEventListener("click", clearNext);
+  $("prevBtn").addEventListener("click", function () { load(current - 1, true); });
+  $("nextBtn").addEventListener("click", function () { load(current + 1, true); });
+
+  // ── 完了 ──
+  function renderDone() {
+    var p = progress[L[current].id] || {};
+    var b = $("doneToggle");
+    b.setAttribute("aria-pressed", p.done ? "true" : "false");
+    b.querySelector("span").textContent = p.done ? "完了済み" : "完了にする";
+  }
+  $("doneToggle").addEventListener("click", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = { t: 0, max: 0 });
+    p.done = !p.done;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+  });
+
+  // ── 速度・字幕 ──
+  function renderSpeed() {
+    Array.prototype.forEach.call(document.querySelectorAll("#speed button"), function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.rate) === prefs.rate ? "true" : "false");
+    });
+  }
+  $("speed").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    prefs.rate = Number(b.dataset.rate);
+    video.playbackRate = prefs.rate;
+    store.set("prefs", prefs);
+    renderSpeed();
+  });
+  function setCC(on) {
+    prefs.cc = on;
+    store.set("prefs", prefs);
+    $("ccToggle").setAttribute("aria-pressed", on ? "true" : "false");
+    $("cc").hidden = !on;
+  }
+  $("ccToggle").addEventListener("click", function () { setCC(!prefs.cc); });
+
+  // ── タブ ──
+  var tabs = ["overview", "transcript", "notes", "docs", "quiz"];
+  function showTab(name) {
+    tabs.forEach(function (t) {
+      $("tab-" + t).setAttribute("aria-selected", t === name ? "true" : "false");
+      $("p-" + t).hidden = t !== name;
+    });
+    store.set("tab", name);
+  }
+  tabs.forEach(function (t) { $("tab-" + t).addEventListener("click", function () { showTab(t); }); });
+
+  // ── チャプター ──
+  $("chapters").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    video.currentTime = Number(b.dataset.t);
+    video.play().catch(function () {});
+  });
+
+  // ── 台本と検索 ──
+  function renderTranscript() {
+    var lec = L[current];
+    var html = "";
+    var last = -1;
+    lec.cues.forEach(function (c, k) {
+      if (c.scene !== last) {
+        last = c.scene;
+        html += "<h4>" + esc(lec.chapters[c.scene] ? lec.chapters[c.scene].heading : "") + "</h4>";
+      }
+      html += '<button type="button" class="cue" data-k="' + k + '" data-t="' + c.start + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.text) + "</span></button>";
+    });
+    $("transcript").innerHTML = html;
+  }
+  function renderSearch(q) {
+    var words = q.trim().toLowerCase();
+    if (!words) { renderTranscript(); return; }
+    var html = "";
+    var hits = 0;
+    L.forEach(function (lec, li) {
+      lec.cues.forEach(function (c) {
+        if (c.text.toLowerCase().indexOf(words) === -1) return;
+        hits += 1;
+        if (hits > 200) return;
+        var i0 = c.text.toLowerCase().indexOf(words);
+        var shown = esc(c.text.slice(0, i0)) + "<mark>" + esc(c.text.slice(i0, i0 + words.length)) + "</mark>" + esc(c.text.slice(i0 + words.length));
+        html += '<button type="button" class="cue" data-li="' + li + '" data-t="' + c.start + '"><span class="t"><span class="hit-lec">L' + pad2(lec.no) + "</span><br>" + fmt(c.start) + "</span><span>" + shown + "</span></button>";
+      });
+    });
+    $("transcript").innerHTML = html || '<p class="hint" style="padding:10px">「' + esc(q) + "」を含む台詞は見つかりませんでした。</p>";
+  }
+  $("q").addEventListener("input", function () { renderSearch(this.value); });
+  $("transcript").addEventListener("click", function (e) {
+    var b = e.target.closest(".cue");
+    if (!b) return;
+    var t = Number(b.dataset.t);
+    if (b.dataset.li !== undefined && Number(b.dataset.li) !== current) {
+      load(Number(b.dataset.li), false);
+      video.addEventListener("loadedmetadata", function go() {
+        video.removeEventListener("loadedmetadata", go);
+        video.currentTime = t;
+        video.play().catch(function () {});
+      });
+      return;
+    }
+    video.currentTime = t + 0.01;
+    video.play().catch(function () {});
+  });
+  $("follow").addEventListener("change", function () { prefs.follow = this.checked; store.set("prefs", prefs); });
+
+  // ── ノート ──
+  function renderNotes() {
+    var list = notes[L[current].id] || [];
+    $("notes").innerHTML = list.map(function (n, k) {
+      return '<li><button type="button" class="stamp" data-t="' + n.t + '">' + fmt(n.t) + '</button><div class="body">' + esc(n.text) +
+        '</div><button type="button" class="del" data-k="' + k + '" aria-label="このメモを消す">消す</button></li>';
+    }).join("") || '<li style="display:block"><span class="hint">まだメモはありません。気になった場面で一時停止して書いてみてください。</span></li>';
+  }
+  $("noteAdd").addEventListener("click", function () {
+    var text = $("noteText").value.trim();
+    if (!text) { $("noteText").focus(); return; }
+    var id = L[current].id;
+    (notes[id] = notes[id] || []).push({ t: Math.floor(video.currentTime), text: text, at: Date.now() });
+    notes[id].sort(function (a, b) { return a.t - b.t; });
+    store.set("notes", notes);
+    $("noteText").value = "";
+    renderNotes();
+    toast("メモを残しました");
+  });
+  $("notes").addEventListener("click", function (e) {
+    var s = e.target.closest(".stamp");
+    if (s) { video.currentTime = Number(s.dataset.t); video.play().catch(function () {}); return; }
+    var d = e.target.closest(".del");
+    if (d) {
+      notes[L[current].id].splice(Number(d.dataset.k), 1);
+      store.set("notes", notes);
+      renderNotes();
+    }
+  });
+  $("noteCopy").addEventListener("click", function () {
+    var out = [];
+    L.forEach(function (lec) {
+      var list = notes[lec.id] || [];
+      if (!list.length) return;
+      out.push("## L" + pad2(lec.no) + " " + lec.title);
+      list.forEach(function (n) { out.push("- [" + fmt(n.t) + "] " + n.text.replace(/\n/g, " ")); });
+      out.push("");
+    });
+    var text = out.join("\n") || "（ノートはまだありません）";
+    var fallback = function () {
+      $("noteText").value = text;
+      $("noteText").select();
+      toast("下の欄に書き出しました。選択してコピーしてください");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("全ノートをコピーしました"); }, fallback);
+    } else fallback();
+  });
+
+  // ── クイズ ──
+  function renderQuiz() {
+    var lec = L[current];
+    var st = quizState[lec.id] || {};
+    var right = 0, answered = 0;
+    var html = lec.quiz.map(function (q, qi) {
+      var picked = st[qi];
+      var done = picked !== undefined;
+      if (done) { answered += 1; if (picked === q.answer) right += 1; }
+      return '<div class="q"><div class="qt"><span class="n">Q' + (qi + 1) + "</span>" + esc(q.q) + '</div><div class="choices">' +
+        q.choices.map(function (c, ci) {
+          var cls = done ? (ci === q.answer ? " right" : ci === picked ? " wrong" : "") : "";
+          return '<button type="button" class="choice' + cls + '" data-q="' + qi + '" data-c="' + ci + '"' + (done ? " disabled" : "") + ">" + esc(c) + "</button>";
+        }).join("") + "</div>" +
+        (done ? '<div class="explain' + (picked === q.answer ? "" : " bad") + '">' + (picked === q.answer ? "正解。" : "答えは「" + esc(q.choices[q.answer]) + "」。") + esc(q.explain) + "</div>" : "") +
+        "</div>";
+    }).join("");
+    html += '<div class="tools"><span class="score">' + (answered ? lec.quiz.length + " 問中 " + right + " 問正解" : "選ぶとすぐ答えと解説が出ます。") + "</span>" +
+      (answered ? '<button type="button" class="btn" id="quizReset">もう一度</button>' : "") + "</div>";
+    $("quiz").innerHTML = html;
+  }
+  $("quiz").addEventListener("click", function (e) {
+    var b = e.target.closest(".choice");
+    if (b && !b.disabled) {
+      var id = L[current].id;
+      (quizState[id] = quizState[id] || {})[b.dataset.q] = Number(b.dataset.c);
+      store.set("quiz", quizState);
+      renderQuiz();
+      return;
+    }
+    if (e.target.closest("#quizReset")) {
+      delete quizState[L[current].id];
+      store.set("quiz", quizState);
+      renderQuiz();
+    }
+  });
+
+  // ── 全画面（自前の字幕ごと） ──
+  function toggleFull() {
+    var doc = document;
+    if (doc.fullscreenElement) { doc.exitFullscreen().catch(function () {}); return; }
+    if (theater.requestFullscreen) theater.requestFullscreen().catch(function () {
+      if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    });
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  }
+  player.addEventListener("dblclick", function (e) { if (e.target === video) { e.preventDefault(); toggleFull(); } });
+
+  // ── キーボード ──
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === " " || k === "k") { e.preventDefault(); if (video.paused) video.play().catch(function () {}); else video.pause(); }
+    else if (k === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); }
+    else if (k === "ArrowRight") { video.currentTime = video.currentTime + 5; }
+    else if (k === "j") { video.currentTime = Math.max(0, video.currentTime - 10); }
+    else if (k === "l") { video.currentTime = video.currentTime + 10; }
+    else if (k === "c") { setCC(!prefs.cc); }
+    else if (k === "f") { toggleFull(); }
+    else if (k === "n") { load(current + 1, true); }
+  });
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.querySelector(".toast");
+    if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  // ── はじめに開く ──
+  $("credits").textContent = "ナレーション " + DATA.credits.join("・") + "　BGM・効果音はプログラムで合成したオリジナル　" + DATA.course.sourceNote;
+  if (DATA.course.links && DATA.course.links.length) {
+    var box = $("links");
+    box.innerHTML = DATA.course.links.map(function (ln) {
+      return '<a href="' + esc(ln.url) + '" target="_blank" rel="noopener">' + esc(ln.label) +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
+    }).join("");
+    box.hidden = false;
+  }
+  $("follow").checked = prefs.follow !== false;
+  renderSpeed();
+  setCC(prefs.cc !== false);
+  renderCourseProgress();
+  var fromHash = (location.hash || "").replace("#", "");
+  var startId = L.some(function (l) { return l.id === fromHash; }) ? fromHash : store.get("last", L[0].id);
+  var startIdx = Math.max(0, L.findIndex(function (l) { return l.id === startId; }));
+  load(startIdx, false);
+  showTab(store.get("tab", "overview"));
+})();
+</script>
+</body>
+</html>

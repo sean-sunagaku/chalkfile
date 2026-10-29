@@ -1,0 +1,15 @@
+# 生成物（台本から作り直せる。動画は gh-pages ブランチにだけ置く）
+node_modules/
+out/
+.work/
+public/audio/
+site/media/
+site/data/
+site/dist/
+
+.DS_Store
+
+# Claude Code: 共有するのはスキルと launch.json だけ
+.claude/*
+!.claude/skills/
+!.claude/launch.json
