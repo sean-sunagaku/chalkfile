@@ -589,7 +589,7 @@ button { font: inherit; color: inherit; }
   var theater = $("theater");
 
   // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
-  var KEY = "study-videos:" + DATA.course.id + ":";
+  var KEY = "chalkfile:" + DATA.course.id + ":";
   var store = {
     get: function (k, d) {
       try { var v = localStorage.getItem(KEY + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }

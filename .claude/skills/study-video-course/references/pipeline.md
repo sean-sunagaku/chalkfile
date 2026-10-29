@@ -54,7 +54,7 @@ curl -s http://127.0.0.1:50021/version
 
 - **`python3 -m http.server` では動画の途中に飛べない**: Range（部分取得）に答えないため。手元で見るときは `bun scripts/serve.ts`
 - **ブラウザが古い動画を覚えている**: サーバーを替えたり動画を作り直したりした後は、別のポートで開くか、キャッシュを消して確かめる
-- **GitHub Pages は同じ持ち主のほかのサイトと localStorage を共有する**: 講座サイトは保存のキーに `study-videos:<講座 ID>:` を付けている
+- **GitHub Pages は同じ持ち主のほかのサイトと localStorage を共有する**: 講座サイトは保存のキーに `chalkfile:<講座 ID>:` を付けている
 - **合成し直しの単位**: 声のキャッシュは「読み上げる文と声」で決まる。台詞の表示（`t`）だけ変えても、読み（`s` か `reading.ts` で開いた文）が同じなら作り直さない
 
 ## 公開（GitHub Pages）

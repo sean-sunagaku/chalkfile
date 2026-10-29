@@ -1,14 +1,18 @@
-# スナガクの勉強動画
+# Chalkfile
 
-Claude Code と作った、ナレーション付きの勉強動画と講座サイトです。動画は台本のデータ（TypeScript）から、コマンドで何度でも作り直せます。
+台本（コード）から、ナレーション付きの講座動画と講座サイトを作ります。
 
-**サイト: https://sean-sunagaku.github.io/study-videos/**
+講座を TypeScript の台本として書くと、VOICEVOX の声、Remotion の動画、静的な講座サイト（動画・台本・字幕・確認クイズ）までをコマンドで作れます。台本は何度でも直して作り直せます。調べ方と書き方は Claude Code のスキルにまとめてあるので、Claude Code と一緒に講座を作れます。
 
-## 講座
+**サイト: https://sean-sunagaku.github.io/chalkfile/**
+
+まだ初期の段階です。今は講座を作るためのリポジトリで、エンジン（動画とサイトを作る部分）をパッケージと CLI に分けるのが次の段階です。
+
+## Chalkfile で作った講座
 
 | 講座 | 中身 | 長さ |
 |---|---|---|
-| [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/study-videos/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
+| [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/chalkfile/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
 
 - Stripe 講座の事実は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog。API は 2026-09-30.endive、stripe-python は 16.0.1 の頃）と、消費者庁・Apple の公式ページがもとです。料金・API・法律は変わるので、実装の前に公式で確かめ直してください
 - Stripe 社とは関係のない、個人の勉強用の講座です。法律や税の判断は専門家に確かめてください

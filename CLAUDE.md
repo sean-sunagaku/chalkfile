@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-ナレーション付きの勉強動画（Remotion・VOICEVOX）と、GitHub Pages の講座サイトを作るリポジトリ。
+Chalkfile のリポジトリ。台本（コード）から、ナレーション付きの講座動画（Remotion・VOICEVOX）と GitHub Pages の講座サイトを作る。
 
 - 講座を作る・直す・公開するときは、スキル `study-video-course`（`.claude/skills/study-video-course/SKILL.md`）の手順に従う
 - 手順の全体とコマンドは `README.md`

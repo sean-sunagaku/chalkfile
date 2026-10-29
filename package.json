@@ -1,8 +1,8 @@
 {
-  "name": "study-videos",
+  "name": "chalkfile",
   "version": "1.0.0",
   "private": true,
-  "description": "ナレーション付きの講座動画（Remotion・VOICEVOX）と、GitHub Pages の講座サイトを作る",
+  "description": "台本（コード）から、ナレーション付きの講座動画と講座サイトを作る（Remotion・VOICEVOX・GitHub Pages）",
   "scripts": {
     "studio": "remotion studio",
     "synth": "bun scripts/synth.ts",

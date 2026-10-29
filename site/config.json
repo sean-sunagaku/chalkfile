@@ -1,6 +1,6 @@
 {
-  "series": "スナガクの勉強動画",
-  "seriesSub": "Claude Code と作った、ナレーション付きの勉強動画。動画・台本・確認クイズをブラウザで見られます。",
-  "baseUrl": "https://sean-sunagaku.github.io/study-videos/",
-  "repoUrl": "https://github.com/sean-sunagaku/study-videos"
+  "series": "Chalkfile",
+  "seriesSub": "台本（コード）から、ナレーション付きの講座動画と講座サイトを作る。動画・台本・確認クイズをブラウザで見られます。",
+  "baseUrl": "https://sean-sunagaku.github.io/chalkfile/",
+  "repoUrl": "https://github.com/sean-sunagaku/chalkfile"
 }
