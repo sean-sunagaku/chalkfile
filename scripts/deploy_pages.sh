@@ -21,10 +21,10 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 cp -R site/dist/. "$tmp/"
+size=$(du -sh "$tmp" | cut -f1)
 git -C "$tmp" init -q -b gh-pages
 git -C "$tmp" add -A
 git -C "$tmp" -c user.name="$name" -c user.email="$email" commit -q -m "Deploy $rev"
 git -C "$tmp" push -q -f "$remote" gh-pages
 
-size=$(du -sh "$tmp" | cut -f1)
-echo "gh-pages に出しました（main $rev・$size）。反映まで 1〜2 分かかります"
+echo "gh-pages に出しました（main $rev・サイト $size）。反映まで 1〜2 分かかります"
