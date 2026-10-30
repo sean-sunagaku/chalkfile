@@ -43,13 +43,13 @@ export const CHALKFILE: Theme = {
 };
 
 /**
- * Stripe の雰囲気のテーマ（Stripe 社とは関係ない）。白い地・紺の文字・紫の主役の色・斜めのグラデーションの帯。
- * ロゴや社名の書体は使わない。英字は Inter、日本語は Noto Sans JP。
+ * 白い地・紺の文字・紫の主役の色・斜めのグラデーションの帯。API のドキュメントのような端正な見た目。
+ * どの講座にも使える部品なので、名前は色から付ける（会社名を付けない）。英字は Inter、日本語は Noto Sans JP。
  */
-export const STRIPE: Theme = {
-  id: 'stripe',
-  label: 'Stripe 風',
-  summary: '白い地に紺の文字、紫の主役の色、角を斜めに切るグラデーションの帯。英字は Inter。ロゴや社名の書体は使わない。',
+export const INDIGO: Theme = {
+  id: 'indigo',
+  label: 'Indigo',
+  summary: '白い地に紺の文字、紫の主役の色、角を斜めに切るグラデーションの帯。英字は Inter。',
   scheme: 'light',
   fonts: ['inter', 'noto'],
   color: {
@@ -123,7 +123,7 @@ export const NIGHT: Theme = {
   radius: 26,
 };
 
-export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, stripe: STRIPE, night: NIGHT };
+export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT };
 
 export const DEFAULT_THEME = 'chalkfile';
 

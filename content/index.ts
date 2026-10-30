@@ -16,7 +16,7 @@ import type { Course, Lecture } from './types';
 /** Stripe のサブスク課金（概念・データ・サンプル実装・お金・法律・iOS） */
 export const STRIPE_BILLING: Course = {
   id: 'stripe-billing',
-  theme: 'stripe',
+  theme: 'indigo',
   disclaimer: 'Stripe 社とは関係のない、個人が作った非公式の講座です',
   title: 'Stripe サブスク課金 基礎講座',
   subtitle: '概念とデータ、サンプルで作る流れ',

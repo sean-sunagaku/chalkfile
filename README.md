@@ -17,6 +17,7 @@
 - Stripe 講座の事実は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog。API は 2026-09-30.endive、stripe-python は 16.0.1 の頃）と、消費者庁・Apple の公式ページがもとです。料金・API・法律は変わるので、実装の前に公式で確かめ直してください
 - Stripe 社とは関係のない、個人が作った非公式の講座です。法律や税の判断は専門家に確かめてください（[DISCLAIMER.md](DISCLAIMER.md)）
 - 講座とコードは AI（Claude Code）を使って作り、事実は人が出典を開いて確かめています
+- 説明は、公式ドキュメントで確かめた事実を自分の言葉で書いたものです。公式の文章・図・画面写真は写していません（台本と、出典にした公式ページ 43 本を `scripts/check_overlap.ts` で突き合わせています）
 
 講座サイトでは、動画のほかに台本（検索できる）・チャプター・字幕・確認クイズ・公式ドキュメントへのリンク・自分用のメモが使えます。進み具合とメモはブラウザに保存されます。
 
@@ -52,6 +53,7 @@ bun scripts/serve.ts                                            # 手元で見�
 - 場面だけ見たいとき: `npx remotion studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
 - 読みの確認: `synth.ts` が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
 - 見た目の確認: `node scripts/stills.mjs L04:3 --mid` で、場面の中ほどと終わりを静止画にする
+- 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`（台本と、レクチャーの `docs` に並べた公式ページで、言い回しが続けて同じところを探す。ネットにつなぐ）
 - ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
 
 ## 講座ごとのテーマ（トンマナ）
@@ -61,14 +63,14 @@ bun scripts/serve.ts                                            # 手元で見�
 | テーマ | 中身 |
 |---|---|
 | `chalkfile`（既定） | 明るい教室の黒板を裏返した配色。文字は黒板の深い緑、色はチョーク、コードだけ黒板の面。角の丸いゴシック（Zen Maru Gothic） |
-| `stripe` | Stripe の雰囲気。白い地・紺の文字・紫の主役の色・右上の角を斜めに切るグラデーションの帯。英字は Inter（Stripe 社とは関係ありません） |
+| `indigo` | 白い地・紺の文字・紫の主役の色・右上の角を斜めに切るグラデーションの帯。英字は Inter（Stripe 講座のテーマ） |
 | `night` | 最初の版の暗いテーマ。濃紺の地にピンクから水色のグラデーション |
 
 ```ts
 // content/index.ts
 export const STRIPE_BILLING: Course = {
   id: 'stripe-billing',
-  theme: 'stripe', // 書かなければ chalkfile
+  theme: 'indigo', // 書かなければ chalkfile
   …
 };
 ```
@@ -76,6 +78,7 @@ export const STRIPE_BILLING: Course = {
 - テーマを作る: `content/themes.ts` に足す（項目は `content/types.ts` の `Theme`）。地・文字・主役の色・図の 7 色・コードの色分け・背景の飾り（`chalk`・`band`・`stars`）・書体を決める
 - 書き出す前に試す: `node scripts/stills.mjs L02:3 L03:3 --theme=<id>`（講座のテーマを変えずに、そのテーマで静止画を描く）
 - 項目の意味と確かめ方は [スキルの theme.md](.claude/skills/study-video-course/references/theme.md)
+- 実在のブランドに寄せるときは、色の雰囲気までにする。テーマの名前に会社名を付けず、ロゴ・社名の書体は使わない
 
 ## 新しい講座を足す
 

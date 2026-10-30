@@ -5,10 +5,11 @@
 ## 講座の台本のきまり
 
 - 事実は公式ドキュメント・API リファレンス・changelog・法令などの一次情報で確かめる。確かめた日と出典をレクチャーの `docs` と講座の `docsNote`・`sourceNote` に残す（調べ方は [research.md](.claude/skills/study-video-course/references/research.md)）
+- 公式ドキュメントの文章・図・画面写真を写したり訳したりしない。確かめた事実を自分の言葉で書く（[rights.md](.claude/skills/study-video-course/references/rights.md)）
 - 例は架空のサービス（「サンプルアプリ」など）で作る。実在の会社やサービスの内部の情報（コード・テーブル・設計・数字）、個人の情報、秘密情報（API キー・トークン・パスワード）を入れない
 - 法律・税・会計の話は一般的な説明として書き、判断は専門家に、と添える
 - 実在の会社や製品を扱う講座は、講座の `disclaimer` に「非公式」と書く（動画のはじめと終わり、サイトに出る）
-- 実在のブランドに寄せたテーマは、色の雰囲気だけを借りる。ロゴ・社名の書体・アイコン・画面の写しは使わない（[theme.md](.claude/skills/study-video-course/references/theme.md)）
+- 実在のブランドに寄せたテーマは、色の雰囲気までにする。テーマの名前に会社名を付けない。ロゴ・社名の書体・アイコン・画面の写しは使わない（[theme.md](.claude/skills/study-video-course/references/theme.md)）
 - 画面の固定の文字に絵文字をアイコン代わりに使わない
 
 ## AI を使った貢献
@@ -30,6 +31,7 @@ bun scripts/check_content.ts
 
 - 動画の見た目を変えたら `node scripts/stills.mjs <ID>` で静止画を見る
 - 台詞を変えたら synth → mix → render の順に作り直し、`.work/kana/<id>.txt` の読みを見る
+- 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
 - 動画（`site/media/`）と生成物はコミットしない
 
 Pull Request のひな形の確認項目を埋めてください。

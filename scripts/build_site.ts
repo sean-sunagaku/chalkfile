@@ -270,6 +270,8 @@ const copyDir = (from: string, to: string) => {
     }
   }
 };
+// 名前を変えた画像が残らないように、写す前に消す
+rmSync(path.join(DIST, 'assets'), { recursive: true, force: true });
 if (existsSync(ASSETS)) copyDir(ASSETS, path.join(DIST, 'assets'));
 // GitHub Pages に Jekyll を通させない（そのまま配る）
 writeFileSync(path.join(DIST, '.nojekyll'), '');
