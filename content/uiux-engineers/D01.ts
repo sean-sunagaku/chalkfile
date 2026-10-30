@@ -137,7 +137,7 @@ export const D01: Lecture = {
           { type: 'field', placeholder: 'お名前', weak: true },
           { type: 'field', placeholder: '電話番号（ハイフンなし）', weak: true },
           { type: 'field', placeholder: 'メールアドレス', weak: true },
-          { type: 'field', placeholder: 'ご希望日時（例: 11/8 14:00）', weak: true },
+          { type: 'field', placeholder: 'ご希望日時（例: 11/7 14:00）', weak: true },
           { type: 'button', text: '送信', variant: 'primary', weak: true },
         ],
         notes: [
@@ -154,7 +154,7 @@ export const D01: Lecture = {
         blocks: [
           { type: 'steps', items: ['日時', '連絡先', '確認'], current: 0 },
           { type: 'title', text: 'ご希望の日時を選んでください' },
-          { type: 'field', label: '日付', value: '11 月 8 日（土）' },
+          { type: 'field', label: '日付', value: '11 月 7 日（土）' },
           { type: 'field', label: '時間', value: '14:00', hint: '空いている時間だけ表示しています' },
           { type: 'button', text: 'この日時で次へ（連絡先の入力）', variant: 'primary' },
         ],

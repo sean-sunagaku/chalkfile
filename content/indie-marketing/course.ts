@@ -1,5 +1,13 @@
+import { uniqueSources } from '../sources-util';
 import type { Course } from '../types';
 import { M01 } from './M01';
+import { M02, M02_SOURCES } from './M02';
+import { M03, M03_SOURCES } from './M03';
+import { M04, M04_SOURCES } from './M04';
+import { M05, M05_SOURCES } from './M05';
+import { M06, M06_SOURCES } from './M06';
+import { M07, M07_SOURCES } from './M07';
+import { M08, M08_SOURCES } from './M08';
 import { MARKETING_SOURCES } from './sources';
 import { MARKETING_SYLLABUS } from './syllabus';
 
@@ -18,12 +26,12 @@ export const INDIE_MARKETING: Course = {
     { no: 4, title: '届けて続けてもらう' },
     { no: 5, title: '測って決める' },
   ],
-  lectures: [M01],
+  lectures: [M01, M02, M03, M04, M05, M06, M07, M08],
   syllabus: MARKETING_SYLLABUS,
-  sources: MARKETING_SOURCES,
+  sources: uniqueSources(MARKETING_SOURCES, M02_SOURCES, M03_SOURCES, M04_SOURCES, M05_SOURCES, M06_SOURCES, M07_SOURCES, M08_SOURCES),
   ui: { takeaways: '要点メモ', docs: '出典・参考資料', searchHint: '利益、価値の仮説' },
   docsNote:
-    '動画と教材の主張は、2026 年 10 月 30 日に開いて確かめた団体の定義・官公庁の資料・研究と統計の解説、実務家の公式ページをもとにしています。札の「公式・法令・規格」は団体の定義や法令、「研究・学術」は研究や統計の方法、「実務の指針」は実務家の考え方、「説明用の仮の例」は架空のサンプル請求書の例です。有料の記事や開けなかったページ（日本マーケティング協会の公式ページなど）は、要旨・業界紙の取材記事などで確かめ、出典の一覧の「何を確かめたか」に書いています。計画だけの章の出典は候補です。売上や効果を約束するものではありません。',
+    '動画と教材の主張は、2026 年 10 月 30 日に開いて確かめた団体の定義・官公庁の資料・研究と統計の解説、実務家の公式ページをもとにしています。札の「公式・法令・規格」は団体の定義や法令、「研究・学術」は研究や統計の方法、「実務の指針」は実務家の考え方、「説明用の仮の例」は架空のサンプル請求書の例です。有料の記事や開けなかったページ（日本マーケティング協会の公式ページなど）は、要旨・業界紙の取材記事などで確かめ、出典の一覧の「何を確かめたか」に書いています。第 2 章以降の出典は、各章を書いたときに開いて確かめています（第 1 章のような、別の担当による事実確認はしていません）。売上や効果を約束するものではありません。',
   sourceNote:
     '台本と図は、米国マーケティング協会・日本マーケティング協会の定義、国税庁・消費者庁の資料、ジョブ理論などの研究、NIST の統計の解説などをもとに作成（2026 年 10 月確認）。サンプル請求書は架空のアプリで、数字は説明用の仮の例です。法律・税の判断は専門家に確かめてください',
 };

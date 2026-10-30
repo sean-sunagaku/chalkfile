@@ -388,7 +388,7 @@ flowchart LR
 - ISO（2019）「ISO 9241-210:2019 Ergonomics of human-system interaction — Part 210: Human-centred design for interactive systems」 https://www.iso.org/standard/77520.html （公式・法令・規格・2026-10-30 確認）
   - 3.15 user experience の定義（システム・製品・サービスの利用や利用の予想から生じる利用者の知覚と反応。使う前・間・後に生じる）と、5 章の人間中心設計の 6 つの原則（利用者・タスク・環境の理解、利用者を交えた評価、繰り返し など）
 - ISO（2018）「ISO 9241-11:2018 Ergonomics of human-system interaction — Part 11: Usability: Definitions and concepts」 https://www.iso.org/standard/63500.html （公式・法令・規格・2026-10-30 確認）
-  - 3.1.1 usability の定義（特定の利用者が特定の利用状況で、効果・効率・満足を伴って特定の目標を達成できる度合い）。日本の JIS Z 8521:2020 はこれを基にした規格（修正あり）で、訳語は「効果・効率・満足」
+  - 3.1.1 usability の定義（特定の利用者が特定の利用状況で、効果・効率・満足を伴って特定の目標を達成できる度合い）。3.1.10 目標（意図した結果）・3.1.11 タスク（目標は手段によらない）・3.1.15 利用状況も、各国の規格機関の公式プレビューで確認。日本の JIS Z 8521:2020 はこれを基にした規格（修正あり）で、訳語は「効果・効率・満足」
 - Don Norman, Jakob Nielsen（Nielsen Norman Group）（1998）「The Definition of User Experience (UX)」 https://www.nngroup.com/articles/definition-user-experience/ （実務の指針・2026-10-30 確認）
   - UX は会社・サービス・製品と利用者のやりとりのすべてで、UI は大事な一部だが UI が良くても良い UX になるとは限らない、という説明
 - Jakob Nielsen（Nielsen Norman Group）（1994（2020 年改訂・2024 年見直し））「10 Usability Heuristics for User Interface Design」 https://www.nngroup.com/articles/ten-usability-heuristics/ （実務の指針・2026-10-30 確認）

@@ -57,8 +57,8 @@ export const NUDGE_SYLLABUS: Syllabus = {
         { step: '振り返り', content: '初期値は「決めない」ことができない' },
       ],
       exercise: '初期値の一覧表と、1 つの変更案（理由・戻し方・悪影響の確かめ方）',
-      sources: ['johnson-goldstein-2003', 'madrian-shea-2001', 'eu-crd-art22'],
-      status: 'planned',
+      sources: ['johnson-goldstein-2003', 'chandrashekar-2023', 'madrian-shea-2001', 'jachimowicz-2019', 'carroll-2009', 'eu-crd-art22', 'ftc-2022-dark-patterns'],
+      status: 'produced',
     },
     {
       id: 'nudge-03',
@@ -83,8 +83,8 @@ export const NUDGE_SYLLABUS: Syllabus = {
         { step: '振り返り', content: '強調してよいのは、本人の判断を助ける事実だけ' },
       ],
       exercise: '料金かプランの画面の文言の書き換え案（3 通り）と、誤解の点検',
-      sources: ['tversky-kahneman-1981', 'ftc-2022-dark-patterns'],
-      status: 'planned',
+      sources: ['tversky-kahneman-1981', 'gigerenzer-2007', 'okeefe-jensen-2007', 'huber-1982', 'ftc-2022-dark-patterns', 'eu-ucpd-annex1', 'caa-double-price'],
+      status: 'produced',
     },
     {
       id: 'nudge-04',
@@ -109,8 +109,8 @@ export const NUDGE_SYLLABUS: Syllabus = {
         { step: '振り返り', content: '比べ方は、本人の行動につながるものを選ぶ' },
       ],
       exercise: '振り返りの画面のフィードバック案（比べる相手・言葉・悪影響の確かめ方）',
-      sources: ['schultz-2007', 'allcott-2011'],
-      status: 'planned',
+      sources: ['schultz-2007', 'allcott-2011', 'allcott-2015-site-selection', 'kluger-denisi-1996', 'tiefenbeck-2018'],
+      status: 'produced',
     },
     {
       id: 'nudge-05',
@@ -135,8 +135,8 @@ export const NUDGE_SYLLABUS: Syllabus = {
         { step: '振り返り', content: '足すより先に、逆向きの手間を減らす' },
       ],
       exercise: 'オンボーディングの手順の数え上げと、手間を減らす案・タイミングの案',
-      sources: ['bit-east-2014', 'thaler-2018-sludge', 'fogg-bmap'],
-      status: 'planned',
+      sources: ['bit-east-2014', 'thaler-2018-sludge', 'fogg-bmap', 'milkman-2011', 'bettinger-2012', 'dai-2014-fresh-start'],
+      status: 'produced',
     },
     {
       id: 'nudge-06',
@@ -162,7 +162,7 @@ export const NUDGE_SYLLABUS: Syllabus = {
       ],
       exercise: '解約・退会の流れの点検表と、直し案',
       sources: ['ftc-2022-dark-patterns', 'oecd-2022-dark-patterns', 'eu-dsa-art25', 'caa-tokushoho-2022', 'best-ethics-checklist'],
-      status: 'planned',
+      status: 'produced',
     },
     {
       id: 'nudge-07',
@@ -187,8 +187,8 @@ export const NUDGE_SYLLABUS: Syllabus = {
         { step: '振り返り', content: '講座全体の振り返りと次の一歩' },
       ],
       exercise: 'ナッジの設計シート（行動・障壁・施策・主な指標・悪影響の指標・判断のきまり）',
-      sources: ['oecd-basic-2019', 'dellavigna-linos-2022', 'maier-2022'],
-      status: 'planned',
+      sources: ['oecd-basic-2019', 'dellavigna-linos-2022', 'maier-2022', 'johari-2022', 'kohavi-2020'],
+      status: 'produced',
     },
   ],
 };
