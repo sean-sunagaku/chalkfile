@@ -14,7 +14,7 @@ export const Root: React.FC = () => (
         fps={30}
         width={1920}
         height={1080}
-        defaultProps={{ id: l.id, audio: false }}
+        defaultProps={{ id: l.id, audio: false, theme: '' }}
       />
     ))}
   </>

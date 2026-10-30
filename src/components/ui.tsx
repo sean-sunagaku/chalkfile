@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import type { IconName, Tone } from '../../content/types';
-import { C, GRAD, MONO, SANS, tone } from '../theme';
+import { alpha, C, GRAD, MONO, SANS, THEME, tone } from '../theme';
 
 const ICONS: Record<IconName, LucideIcon> = {
   user: User,
@@ -103,7 +103,12 @@ export const IconBadge: React.FC<{ name: IconName; t?: Tone; size?: number; glow
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        boxShadow: glow > 0 ? `0 0 ${36 * glow}px ${tt.main}${Math.round(90 * glow).toString(16).padStart(2, '0')}` : undefined,
+        boxShadow:
+          glow <= 0
+            ? undefined
+            : THEME.scheme === 'dark'
+              ? `0 0 ${36 * glow}px ${tt.main}${Math.round(90 * glow).toString(16).padStart(2, '0')}`
+              : `0 ${10 * glow}px ${24 * glow}px -${8 * glow}px ${alpha(tt.main, 0.55)}`,
       }}
     >
       <Icon name={name} size={size * 0.5} color={tt.main} />
@@ -118,14 +123,17 @@ export const Glass: React.FC<{
   active?: number;
 }> = ({ children, style, t, active = 0 }) => {
   const tt = tone(t);
+  const dark = THEME.scheme === 'dark';
   return (
     <div
       style={{
         position: 'relative',
-        background: `linear-gradient(160deg, rgba(255,255,255,${0.07 + active * 0.03}), rgba(255,255,255,0.025))`,
-        border: `1.5px solid ${active > 0 ? `${tt.main}${Math.round(60 + active * 120).toString(16).padStart(2, '0')}` : C.line}`,
-        borderRadius: 26,
-        boxShadow: `${C.shadow}${active > 0 ? `, 0 0 ${48 * active}px ${tt.main}38` : ''}`,
+        background: dark
+          ? `linear-gradient(160deg, rgba(255,255,255,${0.07 + active * 0.03}), rgba(255,255,255,0.025))`
+          : `linear-gradient(160deg, ${alpha(tt.main, 0.07 * active)}, ${alpha(tt.main, 0)} 70%), ${C.glass}`,
+        border: `${dark ? 1.5 : 2}px solid ${active > 0 ? `${tt.main}${Math.round(60 + active * 120).toString(16).padStart(2, '0')}` : C.line}`,
+        borderRadius: THEME.radius,
+        boxShadow: `${C.shadow}${active > 0 && dark ? `, 0 0 ${48 * active}px ${tt.main}38` : ''}`,
         ...style,
       }}
     >
@@ -160,23 +168,26 @@ export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolea
   );
 };
 
+/** **強調** の見た目。暗い地はグラデーションの文字、チョークのテーマは蛍光ペンの線、ほかは主役の色の文字 */
+const emphasis = (t?: Tone): React.CSSProperties => {
+  const tt = tone(t);
+  if (THEME.scheme === 'dark') {
+    return { background: t ? `linear-gradient(110deg, ${tt.main}, ${tt.text})` : GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
+  }
+  if (THEME.decor === 'chalk') {
+    return { background: `linear-gradient(180deg, transparent 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 92%, transparent 92%)`, color: C.ink };
+  }
+  return { color: t ? tt.main : C.accent };
+};
+
 /** **強調** を色つきで出す */
 export const Rich: React.FC<{ text: string; t?: Tone; style?: React.CSSProperties }> = ({ text, t, style }) => {
   const parts = text.split(/\*\*(.+?)\*\*/g);
-  const tt = tone(t);
   return (
     <span style={style}>
       {parts.map((p, i) =>
         i % 2 === 1 ? (
-          <span
-            key={i}
-            style={{
-              background: t ? `linear-gradient(110deg, ${tt.main}, ${tt.text})` : GRAD,
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
+          <span key={i} style={emphasis(t)}>
             {p}
           </span>
         ) : (

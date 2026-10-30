@@ -1,13 +1,14 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
-import { LECTURES } from '../content';
+import { courseOf, LECTURES } from '../content';
+import { themeOf } from '../content/themes';
 import type { Scene } from '../content/types';
 import { Background, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
 import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/basic';
 import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/data';
 import { Flow, Sequence as SequenceDiagram, States } from './scenes/diagram';
-import { SANS } from './theme';
+import { applyTheme, SANS } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
 
 export type LectureTimeline = { fps: number; durationInFrames: number; scenes: SceneTiming[] };
@@ -67,9 +68,12 @@ const SceneFrame: React.FC<{ s: Scene; duration: number }> = ({ s, duration }) =
   );
 };
 
-export const LectureVideo: React.FC<{ id: string; audio?: boolean }> = ({ id, audio = false }) => {
+/** theme を渡すと、講座のテーマの代わりにそのテーマで描く（stills.mjs --theme=… でテーマを試すとき） */
+export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string }> = ({ id, audio = false, theme }) => {
   const lecture = LECTURES.find((l) => l.id === id)!;
   const tl = TIMELINE[id];
+  // 子の部品より先に、この動画のテーマの色と書体に差し替える
+  applyTheme(themeOf(theme || courseOf(id).theme));
   return (
     // auto-phrase: 日本語を文節で折り返す（「飛べ／る」のような割れを防ぐ）
     <AbsoluteFill lang="ja" style={{ fontFamily: SANS, wordBreak: 'auto-phrase' as React.CSSProperties['wordBreak'] }}>

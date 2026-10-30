@@ -7,187 +7,202 @@
 __HEAD_META__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+__FONT_LINK__
 <style>
-/* 講座の一覧。色の決まりは講座のページ（template.html）と同じ */
-:root {
-  --ink: #0A0E22;
-  --panel: #10163A;
-  --raise: #171F4C;
-  --line: #262E5E;
-  --fg: #EEF0FF;
-  --fg-2: #B7BEE0;
-  --muted: #8790B8;
-  --violet: #9C8CFF;
-  --cyan: #45D3F4;
-  --grad: linear-gradient(100deg, #FF6FA3, #9C8CFF 52%, #45D3F4);
-  --shadow: 0 18px 48px rgba(2, 4, 18, 0.45);
-  --stage: #05070F;
-  --font-body: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  color-scheme: dark;
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --ink: #F5F4FB;
-    --panel: #FFFFFF;
-    --raise: #F0EEF9;
-    --line: #E1DEF0;
-    --fg: #171A33;
-    --fg-2: #464B6C;
-    --muted: #6F7496;
-    --violet: #5B49E0;
-    --cyan: #0A84A8;
-    --grad: linear-gradient(100deg, #D63A73, #5B49E0 52%, #0A84A8);
-    --shadow: 0 14px 36px rgba(40, 36, 90, 0.12);
-    color-scheme: light;
-  }
-}
-:root[data-theme="light"] {
-  --ink: #F5F4FB;
-  --panel: #FFFFFF;
-  --raise: #F0EEF9;
-  --line: #E1DEF0;
-  --fg: #171A33;
-  --fg-2: #464B6C;
-  --muted: #6F7496;
-  --violet: #5B49E0;
-  --cyan: #0A84A8;
-  --grad: linear-gradient(100deg, #D63A73, #5B49E0 52%, #0A84A8);
-  --shadow: 0 14px 36px rgba(40, 36, 90, 0.12);
-  color-scheme: light;
-}
+/* 一覧のページ。色・書体・背景は Chalkfile のテーマ（build_site.ts が下に差し込む） */
+__THEME_CSS__
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--ink);
   color: var(--fg);
   font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.75;
+  font-size: 16px;
+  line-height: 1.8;
   word-break: auto-phrase;
 }
 a { color: var(--cyan); }
-:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 8px; }
-svg { flex: none; }
+:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 8px; }
+img { max-width: 100%; }
 
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
-  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
-}
-.topbar-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
-.brand { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; font-weight: 900; font-size: 17px; letter-spacing: 0.02em; }
-.brand-mark { width: 14px; height: 14px; border-radius: 5px; background: var(--grad); }
-.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--raise); color: var(--fg); font-size: 14px; font-weight: 700; text-decoration: none; }
-.pill:hover { border-color: var(--violet); }
-.pill svg { width: 16px; height: 16px; }
-.topbar .pill { margin-left: auto; }
+.shell { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
 
-.wrap {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 52px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
-}
-.eyebrow { font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: var(--muted); margin: 0 0 10px; }
-.hero h1 { margin: 0 0 14px; font-size: clamp(32px, 5.4vw, 54px); font-weight: 900; line-height: 1.22; text-wrap: balance; }
-.hero h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero p { margin: 0; max-width: 44em; color: var(--fg-2); font-size: 16px; }
+/* ── 上の帯 ── */
+.top { display: flex; align-items: center; gap: 16px; padding-block: 18px; }
+.mark { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 900; font-size: 18px; }
+.mark i { width: 22px; height: 16px; border-radius: 4px; background: var(--stage); box-shadow: inset 0 -4px 0 var(--accent); }
+.top nav { margin-left: auto; display: flex; gap: 6px; }
+.top nav a { color: var(--fg-2); text-decoration: none; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 999px; }
+.top nav a:hover { background: var(--panel); color: var(--fg); }
 
-h2 { margin: 52px 0 18px; font-size: 21px; font-weight: 900; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 20px; }
-.card {
-  display: flex;
-  flex-direction: column;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  overflow: hidden;
-  color: inherit;
-  text-decoration: none;
-  box-shadow: var(--shadow);
-  transition: transform 0.2s, border-color 0.2s;
+/* ── 最初の画面：書いた台本と、できあがる動画 ── */
+.hero { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 56px; align-items: center; padding-block: 48px 72px; }
+.hero h1 { position: relative; display: inline-block; margin: 0 0 22px; font-size: clamp(60px, 9vw, 112px); line-height: 1; font-weight: 900; letter-spacing: -0.02em; isolation: isolate; }
+/* チョークで引いた線（このページで一番目立たせるのはここだけ） */
+.hero h1::after {
+  content: "";
+  position: absolute;
+  left: -0.12em;
+  right: -0.18em;
+  bottom: -0.06em;
+  height: 0.46em;
+  z-index: -1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-30%25' width='110%25' height='160%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='12'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M10 44 C 140 22 330 18 592 30 L 584 92 C 390 84 190 92 18 104 Z' fill='%23FFC93C' filter='url(%23c)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
-.card:hover { transform: translateY(-2px); border-color: var(--violet); }
-.poster { aspect-ratio: 16 / 9; background: var(--stage); }
-.poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.card-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 18px 20px 20px; }
-.card h3 { margin: 0; font-size: 20px; font-weight: 900; line-height: 1.4; }
-.card .lead { margin: 0; color: var(--fg-2); }
-.card .meta { display: flex; flex-wrap: wrap; gap: 8px; }
-.card .meta span { padding: 2px 10px; border-radius: 999px; background: var(--raise); color: var(--fg-2); font-size: 13px; }
-.secs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.secs li { padding: 1px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 12.5px; }
-.go { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; color: var(--violet); font-weight: 700; }
-.go svg { width: 18px; height: 18px; }
-/* 講座が 1 つだけのうちは、横長のカードにして幅を使う */
-@media (min-width: 860px) {
-  .card:only-child { grid-column: 1 / -1; flex-direction: row; }
-  .card:only-child .poster { flex: 0 0 56%; align-self: center; }
-  .card:only-child .card-body { justify-content: center; gap: 12px; padding: 28px 32px; }
-  .card:only-child h3 { font-size: 26px; }
-  .card:only-child .go { margin-top: 8px; }
+.hero .lead { margin: 0 0 14px; font-size: clamp(19px, 2.1vw, 24px); font-weight: 700; line-height: 1.6; max-width: 30em; }
+.hero .sub { margin: 0 0 30px; color: var(--fg-2); max-width: 34em; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 14px; font-weight: 900; font-size: 16px; text-decoration: none; border: 2px solid var(--fg); color: var(--fg); background: var(--panel); }
+.btn.primary { background: var(--fg); color: var(--ink); }
+.btn:hover { transform: translateY(-1px); }
+
+.pair { position: relative; min-height: 440px; }
+.slate { position: relative; width: 78%; border-radius: 18px; background: var(--stage); color: #EEF5F1; box-shadow: var(--shadow); overflow: hidden; }
+.slate .tab { display: flex; align-items: center; gap: 10px; padding: 12px 18px; font-family: var(--font-mono); font-size: 13px; color: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(255,255,255,0.1); }
+.slate .tab b { font-family: var(--font-body); font-weight: 700; color: var(--accent); }
+.slate pre { margin: 0; padding: 16px 18px 22px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.75; white-space: pre; overflow: hidden; }
+.frame { position: absolute; right: 0; bottom: 0; width: 66%; border-radius: 14px; background: var(--panel); padding: 8px; box-shadow: var(--shadow); border: 2px solid var(--fg); }
+.frame img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; }
+.frame figcaption { padding: 8px 6px 2px; font-size: 14px; font-weight: 700; color: var(--fg-2); }
+
+/* ── 見出し ── */
+h2 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 32px); font-weight: 900; line-height: 1.35; }
+.lede { margin: 0 0 26px; color: var(--fg-2); max-width: 44em; }
+section { padding-block: 40px; }
+
+/* ── 講座 ── */
+.courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 22px; }
+.course { display: flex; flex-direction: column; color: inherit; text-decoration: none; background: var(--panel); border-radius: 18px; overflow: hidden; border: 2px solid var(--line); }
+.course:hover { border-color: var(--fg); }
+.course .poster { position: relative; aspect-ratio: 16 / 9; background: var(--stage); }
+.course .poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.course .poster::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--card-grad); }
+.course .body { display: flex; flex-direction: column; gap: 10px; padding: 20px 22px 22px; flex: 1; }
+.course h3 { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 900; }
+.course p { margin: 0; color: var(--fg-2); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; padding: 0; list-style: none; font-size: 14px; color: var(--fg-2); }
+.facts li { padding: 2px 10px; border-radius: 999px; background: var(--raise); }
+.facts li.theme { background: var(--card-soft); color: var(--card-ink); font-weight: 700; }
+.course .go { margin-top: auto; padding-top: 6px; font-weight: 900; color: var(--fg); }
+@media (min-width: 900px) {
+  .course:only-child { grid-column: 1 / -1; flex-direction: row; }
+  .course:only-child .poster { flex: 0 0 56%; align-self: center; }
+  .course:only-child .body { justify-content: center; padding: 30px 34px; gap: 12px; }
+  .course:only-child h3 { font-size: 28px; }
 }
 
-.howto { margin: 0 0 16px; max-width: 46em; color: var(--fg-2); }
+/* ── テーマ ── */
+.themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+.theme { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; overflow: hidden; }
+.theme img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-bottom: 2px solid var(--line); }
+.theme .body { padding: 16px 18px 18px; display: grid; gap: 8px; }
+.theme h3 { margin: 0; font-size: 19px; font-weight: 900; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.theme h3 code { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--fg-2); }
+.theme p { margin: 0; font-size: 14.5px; color: var(--fg-2); line-height: 1.7; }
+.swatches { display: flex; gap: 6px; }
+.swatches span { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--line); }
+.howto-code { margin-top: 18px; display: inline-block; padding: 12px 16px; border-radius: 12px; background: var(--stage); color: #EEF5F1; font-family: var(--font-mono); font-size: 14px; white-space: pre; max-width: 100%; overflow-x: auto; }
+
+/* ── 作り方（順番がある手順） ── */
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
-.steps li { padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
-.steps b { display: block; margin-bottom: 4px; font-size: 15px; }
-.steps b::before { counter-increment: step; content: counter(step, decimal-leading-zero); margin-right: 8px; font-family: var(--font-mono); color: var(--violet); }
-.steps span { color: var(--fg-2); font-size: 14px; }
-.howto-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.steps li { padding: 18px 18px 20px; border-radius: 16px; background: var(--panel); border: 2px solid var(--line); }
+.steps b { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 16px; }
+.steps b::before { counter-increment: step; content: counter(step); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--stage); color: var(--accent); font-family: var(--font-mono); font-size: 14px; }
+.steps span { color: var(--fg-2); font-size: 14.5px; }
+.more { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; }
 
-.foot { display: grid; gap: 4px; margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(--line); color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-top: 24px; }
+  .pair { min-height: 0; display: grid; gap: 14px; }
+  .slate { width: 100%; }
+  .frame { position: static; width: 100%; }
+}
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  .btn:hover { transform: none; }
 }
 </style>
 </head>
 <body>
+<div class="decor" aria-hidden="true"></div>
+<div class="shell">
+  <header class="top">
+    <a class="mark" href="./"><i aria-hidden="true"></i>__SERIES__</a>
+    <nav aria-label="ページ内とリンク">
+      <a href="#courses">講座</a>
+      <a href="#themes">テーマ</a>
+      <a href="__REPO__" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
 
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>__SERIES__</a>
-    <a class="pill" href="__REPO__" target="_blank" rel="noopener">GitHub<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
-  </div>
-</header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <h1 id="hero-title">__SERIES__</h1>
+        <p class="lead">台本をコードで書くと、ナレーション付きの講座動画と講座サイトができあがります。</p>
+        <p class="sub">TypeScript の台本から、VOICEVOX の声と Remotion の動画、動画・台本・字幕・確認クイズの講座サイトまでをコマンドで作ります。台本を直せば、何度でも作り直せます。</p>
+        <div class="actions">
+          <a class="btn primary" href="__FIRST_COURSE__">作例の講座を見る</a>
+          <a class="btn" href="__REPO__" target="_blank" rel="noopener">GitHub で見る</a>
+        </div>
+      </div>
+      <div class="pair" aria-label="台本と、そこから作られた動画の 1 場面">
+        <div class="slate">
+          <div class="tab"><b>台本</b>__HERO_FILE__</div>
+          <pre>__HERO_CODE__</pre>
+        </div>
+        <figure class="frame">
+          <img src="__HERO_IMAGE__" alt="台本から作られた動画の 1 場面。7 つのオブジェクトのカードが並ぶ" width="960" height="540">
+          <figcaption>できあがる動画の 1 場面</figcaption>
+        </figure>
+      </div>
+    </section>
 
-<main class="wrap">
-  <section class="hero">
-    <p class="eyebrow">COURSES AS CODE</p>
-    <h1><span class="grad">Chalkfile</span></h1>
-    <p>__SERIES_SUB__</p>
-  </section>
-
-  <h2>Chalkfile で作った講座</h2>
-  <div class="grid">
+    <section id="courses" aria-labelledby="courses-title">
+      <h2 id="courses-title">Chalkfile で作った講座</h2>
+      <p class="lede">講座ごとに、動画と講座サイトがひとそろいでできます。</p>
+      <div class="courses">
 __COURSES__
-  </div>
+      </div>
+    </section>
 
-  <h2>作り方</h2>
-  <p class="howto">動画は、台本のデータから毎回作り直せるようにしています。手順と、画面と話し方の決まり、調べ方は、Claude Code のスキルにまとめてあります。</p>
-  <ol class="steps">
-    <li><b>調べる</b><span>公式ドキュメントと一次情報を読み、確かめた日と版を残す</span></li>
-    <li><b>台本と図を書く</b><span>場面ごとの台詞と、台詞に合わせて出す図を TypeScript で書く</span></li>
-    <li><b>声を付ける</b><span>VOICEVOX で読み上げ、読みのカナを全部確かめる</span></li>
-    <li><b>動画にする</b><span>Remotion で映像を書き出し、BGM と効果音を合わせる</span></li>
-    <li><b>公開する</b><span>講座サイトを組み立てて GitHub Pages に出す</span></li>
-  </ol>
-  <div class="howto-links">
-    <a class="pill" href="__REPO__#readme" target="_blank" rel="noopener">README（作り直す手順）<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
-    <a class="pill" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener">Claude Code のスキル<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
-  </div>
+    <section id="themes" aria-labelledby="themes-title">
+      <h2 id="themes-title">講座ごとにトンマナを選べる</h2>
+      <p class="lede">色・書体・背景の飾りをテーマとしてまとめてあります。講座にテーマを 1 行書くと、動画もサイトもそのテーマで作られます。下は同じ場面を 3 つのテーマで描いたものです。</p>
+      <div class="themes">
+__THEMES__
+      </div>
+      <div class="howto-code">// content/index.ts
+export const STRIPE_BILLING: Course = {
+  id: 'stripe-billing',
+  theme: 'stripe',
+  …
+};</div>
+    </section>
 
-  <footer class="foot">
+    <section aria-labelledby="steps-title">
+      <h2 id="steps-title">作り方</h2>
+      <p class="lede">調べ方、画面と話し方の決まり、テーマの作り方は Claude Code のスキルにまとめてあります。</p>
+      <ol class="steps">
+        <li><b>調べる</b><span>公式ドキュメントと一次情報を読み、確かめた日と版を残す</span></li>
+        <li><b>台本と図を書く</b><span>場面ごとの台詞と、台詞に合わせて出す図を TypeScript で書く</span></li>
+        <li><b>声を付ける</b><span>VOICEVOX で読み上げ、読みのカナを全部確かめる</span></li>
+        <li><b>動画にする</b><span>Remotion で書き出し、BGM と効果音を合わせる</span></li>
+        <li><b>公開する</b><span>講座サイトを組み立てて GitHub Pages に出す</span></li>
+      </ol>
+      <div class="more">
+        <a class="btn" href="__REPO__#readme" target="_blank" rel="noopener">README を読む</a>
+        <a class="btn" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener">Claude Code のスキルを見る</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
     <div>__CREDITS__</div>
     <div>講座は、確かめた日の公式情報をもとにした個人の勉強用のものです。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律や税の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
   </footer>
-</main>
-
+</div>
 </body>
 </html>

@@ -2,20 +2,11 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { CodeScene, CompareScene, CompareSide, NumbersScene, PhoneScene, PhoneScreen, QuizScene, TableScene, TerminalScene, TimelineScene } from '../../content/types';
 import { Glass, Icon, IconBadge, Pill, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, GRAD, MONO, PAD, SANS, TONES, tone } from '../theme';
+import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, mix, MONO, PAD, SANS, SYNTAX, TONES, tone } from '../theme';
 import { dropY, lineEnd, lineStart, useActiveLine, useAppear, useFocus, useScene } from '../timing';
 
 /* ───────────── コード ───────────── */
 
-const HL = {
-  comment: '#7F89B0',
-  string: '#8EF0C6',
-  keyword: '#FF8FB8',
-  deco: '#FFB38A',
-  number: '#FFC260',
-  fn: '#7FDBFF',
-  plain: '#E6E9FA',
-};
 const RX = /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b(?:def|return|if|not|in|for|and|or|try|except|class|async|await|None|True|False|import|from|with|as|elif|else|while|is)\b)|(@[\w.]+)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*(?=\())/gm;
 
 // JSON はキー（: が続く文字列）・値の文字列・true/false/null・数値を塗り分ける
@@ -29,8 +20,8 @@ const highlight = (line: string, lang: CodeScene['lang']): React.ReactNode[] => 
     const i = m.index ?? 0;
     if (i > last) out.push(line.slice(last, i));
     const color = json
-      ? m[1] ? HL.fn : m[2] ? HL.string : m[3] ? HL.keyword : HL.number
-      : m[1] ? HL.comment : m[2] ? HL.string : m[3] ? HL.keyword : m[4] ? HL.deco : m[5] ? HL.number : HL.fn;
+      ? m[1] ? SYNTAX.fn : m[2] ? SYNTAX.string : m[3] ? SYNTAX.keyword : SYNTAX.number
+      : m[1] ? SYNTAX.comment : m[2] ? SYNTAX.string : m[3] ? SYNTAX.keyword : m[4] ? SYNTAX.deco : m[5] ? SYNTAX.number : SYNTAX.fn;
     out.push(
       <span key={i} style={{ color, fontStyle: !json && m[1] ? 'italic' : undefined }}>
         {m[0]}
@@ -79,18 +70,18 @@ export const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
             width: '100%',
             height: '100%',
             borderRadius: 22,
-            background: 'linear-gradient(180deg, #0E1330, #0A0E24)',
+            background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`,
             border: `1.5px solid ${C.line2}`,
             boxShadow: C.shadow,
             overflow: 'hidden',
             position: 'relative',
           }}
         >
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', borderBottom: `1.5px solid ${C.line}`, background: 'rgba(255,255,255,0.03)' }}>
+          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', borderBottom: `1.5px solid ${C.codeLine}`, background: C.codeBar }}>
             {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
-            <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.file}</div>
+            <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.codeMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.file}</div>
           </div>
           <div style={{ position: 'absolute', left: 0, right: 0, top: codeTop - 16 + pad }}>
             {s.marks.map((m, i) => {
@@ -108,7 +99,7 @@ export const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                     top: (m.from - 1) * lh - 4,
                     height: (m.to - m.from + 1) * lh + 8,
                     borderRadius: 12,
-                    background: tt.soft,
+                    background: alpha(tt.main, 0.22),
                     borderLeft: `5px solid ${tt.main}`,
                     boxShadow: `0 0 30px ${tt.main}30`,
                     opacity: p,
@@ -121,8 +112,8 @@ export const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               const inMark = activeMark >= 0 && i + 1 >= s.marks[activeMark].from && i + 1 <= s.marks[activeMark].to;
               return (
                 <div key={i} style={{ height: lh, display: 'flex', alignItems: 'center', fontFamily: MONO, fontSize, whiteSpace: 'pre', opacity: o * (activeMark >= 0 && !inMark ? 0.55 : 1), position: 'relative', overflow: 'hidden' }}>
-                  <span style={{ width: 64, flexShrink: 0, textAlign: 'right', paddingRight: 22, color: 'rgba(170,180,220,0.4)', fontSize: fontSize * 0.8 }}>{i + 1}</span>
-                  <span style={{ color: HL.plain }}>{highlight(ln, s.lang)}</span>
+                  <span style={{ width: 64, flexShrink: 0, textAlign: 'right', paddingRight: 22, color: C.codeMuted, fontSize: fontSize * 0.8 }}>{i + 1}</span>
+                  <span style={{ color: SYNTAX.plain }}>{highlight(ln, s.lang)}</span>
                 </div>
               );
             })}
@@ -218,7 +209,7 @@ export const Table: React.FC<{ s: TableScene }> = ({ s }) => {
   return (
     <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: 1080 - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <Glass style={{ overflow: 'hidden', opacity: head }}>
-        <div style={{ display: 'flex', background: 'rgba(156,140,255,0.12)' }}>
+        <div style={{ display: 'flex', background: TONES.violet.soft }}>
           {s.columns.map((c, i) => (
             <div key={i} style={{ width: `${widths[i] * 100}%`, padding: '18px 28px', fontFamily: SANS, fontWeight: 700, fontSize: 24, color: TONES.violet.text, letterSpacing: 2, boxSizing: 'border-box' }}>
               {c}
@@ -293,7 +284,7 @@ export const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
               boxShadow: `0 0 40px ${vt.main}40`,
             }}
           >
-            <div style={{ borderRadius: 22, background: 'rgba(12,16,40,0.94)', padding: '26px 38px', display: 'flex', alignItems: 'center', gap: 24 }}>
+            <div style={{ borderRadius: 22, background: C.overlay, padding: '26px 38px', display: 'flex', alignItems: 'center', gap: 24 }}>
               <Icon name="check" size={44} color={vt.main} stroke={3} />
               <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 36, color: C.ink, lineHeight: 1.4 }}>
                 <Smart text={s.verdict.text} t={s.verdict.tone} />
@@ -377,7 +368,7 @@ const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: num
           width: 44,
           height: 44,
           borderRadius: 99,
-          background: focus > 0 ? tt.main : '#0E1330',
+          background: focus > 0 ? tt.main : C.surface,
           border: `4px solid ${tt.main}`,
           boxShadow: focus > 0 ? `0 0 34px ${tt.main}` : undefined,
           opacity: p,
@@ -417,8 +408,8 @@ export const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
   const fill = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: 'clamp' });
   return (
     <>
-      <div style={{ position: 'absolute', left: xs[0], width: xs[n - 1] - xs[0], top: 436, height: 8, borderRadius: 9, background: 'rgba(255,255,255,0.10)', opacity: fill }} />
-      <div style={{ position: 'absolute', left: xs[0], width: Math.max(0, target - xs[0]), top: 436, height: 8, borderRadius: 9, background: GRAD, boxShadow: '0 0 18px rgba(156,140,255,0.6)' }} />
+      <div style={{ position: 'absolute', left: xs[0], width: xs[n - 1] - xs[0], top: 436, height: 8, borderRadius: 9, background: C.track, opacity: fill }} />
+      <div style={{ position: 'absolute', left: xs[0], width: Math.max(0, target - xs[0]), top: 436, height: 8, borderRadius: 9, background: GRAD, boxShadow: C.glow }} />
       {s.items.map((it, i) => (
         <TimeCard key={it.key} it={it} x={xs[i]} w={colW - 28} focus={!f ? 0 : i === fi ? 1 : -1} />
       ))}
@@ -445,7 +436,7 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
   return (
     <>
       <div style={{ position: 'absolute', left: PAD, top: CONTENT_TOP + 10, display: 'flex', alignItems: 'center', gap: 34, opacity: q }}>
-        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 150, lineHeight: 1, background: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Q{s.no}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 150, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Q{s.no}</div>
         <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / 7</div>
       </div>
       <div style={{ position: 'absolute', left: PAD, right: PAD, top: 420, opacity: q, transform: `translateY(${dropY(q)}px)` }}>
@@ -456,7 +447,7 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
           <div style={{ position: 'relative', width: 150, height: 150, flexShrink: 0 }}>
             <div style={{ position: 'absolute', inset: 0, opacity: thinkO }}>
               <svg width={150} height={150} viewBox="0 0 150 150">
-                <circle cx={75} cy={75} r={62} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={10} />
+                <circle cx={75} cy={75} r={62} fill="none" stroke={C.track} strokeWidth={10} />
                 <circle cx={75} cy={75} r={62} fill="none" stroke={TONES.amber.main} strokeWidth={10} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={think} transform="rotate(-90 75 75)" />
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SANS, fontWeight: 900, fontSize: 64, color: TONES.amber.main }}>{remain}</div>
@@ -485,7 +476,7 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   fontWeight: 900,
                   fontSize: 150,
                   color: tt.main,
-                  background: 'rgba(12,16,40,0.85)',
+                  background: C.overlay,
                   boxShadow: `0 0 60px ${tt.main}88`,
                   lineHeight: 1,
                 }}
@@ -626,7 +617,7 @@ export const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
                   height: 58,
                   borderRadius: 99,
                   flexShrink: 0,
-                  background: on ? tt.main : 'rgba(255,255,255,0.06)',
+                  background: on ? tt.main : C.faint,
                   border: `2.5px solid ${tt.main}`,
                   display: 'flex',
                   alignItems: 'center',
@@ -634,7 +625,7 @@ export const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
                   fontFamily: MONO,
                   fontWeight: 700,
                   fontSize: 26,
-                  color: on ? '#0B0F24' : tt.main,
+                  color: on ? C.onTone : tt.main,
                   boxShadow: on ? `0 0 26px ${tt.main}` : undefined,
                 }}
               >
@@ -676,12 +667,12 @@ export const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
   return (
     <>
       <div style={{ position: 'absolute', left: PAD, top, width: tw, height, opacity: box, transform: `translateY(${dropY(box)}px)` }}>
-        <div style={{ position: 'absolute', inset: 0, borderRadius: 22, background: '#060914', border: `1.5px solid ${C.line2}`, boxShadow: C.shadow, overflow: 'hidden' }}>
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', borderBottom: `1.5px solid ${C.line}` }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 22, background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`, border: `1.5px solid ${C.line2}`, boxShadow: C.shadow, overflow: 'hidden' }}>
+          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', borderBottom: `1.5px solid ${C.codeLine}`, background: C.codeBar }}>
             {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
-            <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.muted }}>{s.title}</div>
+            <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.codeMuted }}>{s.title}</div>
           </div>
           {s.entries.map((e, i) => {
             const st = lineStart(lines, e.at) - 4;
@@ -692,14 +683,14 @@ export const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
             return (
               <div key={i} style={{ position: 'absolute', left: 30, right: 30, top: pos[i], fontFamily: MONO, fontSize: fs, lineHeight: `${lh}px` }}>
                 {e.cmd ? (
-                  <div style={{ whiteSpace: 'pre', color: '#E6E9FA' }}>
-                    <span style={{ color: TONES.mint.main }}>$ </span>
+                  <div style={{ whiteSpace: 'pre', color: SYNTAX.plain }}>
+                    <span style={{ color: SYNTAX.string }}>$ </span>
                     {e.cmd.slice(0, typed)}
-                    {typed < len || Math.floor(frame / 15) % 2 === 0 ? <span style={{ background: '#E6E9FA', color: '#060914' }}> </span> : null}
+                    {typed < len || Math.floor(frame / 15) % 2 === 0 ? <span style={{ background: SYNTAX.plain, color: C.code }}> </span> : null}
                   </div>
                 ) : null}
                 {(e.out ?? []).map((o, k) => (
-                  <div key={k} style={{ whiteSpace: 'pre', color: o.includes('[200]') ? TONES.mint.main : o.startsWith('-->') ? TONES.cyan.main : '#9AA3C8', opacity: outO, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div key={k} style={{ whiteSpace: 'pre', color: o.includes('[200]') ? SYNTAX.string : o.startsWith('-->') ? SYNTAX.fn : SYNTAX.comment, opacity: outO, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {o}
                   </div>
                 ))}

@@ -1,6 +1,6 @@
 ---
 name: study-video-course
-description: ナレーション付きの勉強動画（講座）を、調べる → 講座の設計 → 台本 → 声 → 動画 → 講座サイト → GitHub Pages の順に作る・直す・公開する。このリポジトリ（Chalkfile）の Remotion と VOICEVOX の仕組みを使う。Use when 新しい講座や勉強動画を作りたい、レクチャーを足したい、台本・台詞・図を直したい、読み間違いを直したい、動画を作り直したい、講座サイトを公開したい、調べ方や画面・話し方のスタイルを確かめたい。Triggers "勉強動画", "講座を作る", "講座動画", "レクチャーを足す", "台本を直す", "読み間違い", "GitHub Pages に出す", "study video"
+description: ナレーション付きの勉強動画（講座）を、調べる → 講座の設計 → テーマ（トンマナ）→ 台本 → 声 → 動画 → 講座サイト → GitHub Pages の順に作る・直す・公開する。このリポジトリ（Chalkfile）の Remotion と VOICEVOX の仕組みを使う。Use when 新しい講座や勉強動画を作りたい、レクチャーを足したい、台本・台詞・図を直したい、読み間違いを直したい、動画を作り直したい、講座サイトを公開したい、講座のトンマナ（色・書体・背景）を変えたい・新しいテーマを作りたい、調べ方や画面・話し方のスタイルを確かめたい。Triggers "勉強動画", "トンマナ", "テーマを作る", "配色を変える", "講座を作る", "講座動画", "レクチャーを足す", "台本を直す", "読み間違い", "GitHub Pages に出す", "study video"
 ---
 
 # 勉強動画の講座を作る
@@ -22,6 +22,8 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 ### 2. 講座を設計する
 
 受講者・ゴール・セクション・レクチャーの並びを決めて、ユーザーに見せる。1 本のレクチャーの型（opening → goals → 本題 → recap → ending）と、講座の分け方（基礎編と実践編）は [references/course-design.md](references/course-design.md)。
+
+トンマナ（テーマ）も決める。既定は `chalkfile`（明るい黒板）。題材に合わせたいときは `content/themes.ts` のテーマを選ぶか作り、講座に `theme: '<id>'` と書く。テーマは動画と講座サイトの両方に効く。項目の意味と作り方は [references/theme.md](references/theme.md)。
 
 ### 3. 台本を書く
 
@@ -62,7 +64,8 @@ bash scripts/deploy_pages.sh
 |---|---|
 | 台詞を直す | 台本を直す → synth → kana を見る → mix → render → stills → build_site → コミット → deploy |
 | 読み間違いを直す | `reading.ts` の `PHRASES`（語句）か `WORDS`（英単語）に足す → synth（読みが変わった台詞だけ作り直される）→ mix → render |
-| 図や画面の文字だけ直す | 台本を直す → render → stills（声は変わらないので synth と mix は要らない） |
+| 図や画面の文字だけ直す | 台本を直す → stills → render（声は変わらないので synth と mix は要らない） |
+| トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.mjs --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 

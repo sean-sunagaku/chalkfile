@@ -4,6 +4,7 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 
 - 講座を作る・直す・公開するときは、スキル `study-video-course`（`.claude/skills/study-video-course/SKILL.md`）の手順に従う
 - 手順の全体とコマンドは `README.md`
+- 講座のトンマナ（色・書体・背景）はテーマで決める（`content/themes.ts`、仕様は `.claude/skills/study-video-course/references/theme.md`）。部品に色を直接書かない
 - 日本語で応答する。台本・画面の文字・コメントも日本語
 
 ## 守ること

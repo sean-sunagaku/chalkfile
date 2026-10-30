@@ -2,10 +2,10 @@
 
 ## 画面
 
-- 1920×1080・30fps。背景は濃い紺（`#090D22`〜`#11173A`）、強調はピンク → 紫 → 水色のグラデーション（`src/theme.ts`）
-- 文字は Noto Sans JP、コード・ID・数字は JetBrains Mono
+- 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う
+- コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
-- 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`
+- 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）
 - アイコンは `content/types.ts` の `IconName`（lucide-react）から選ぶ。絵文字は使わない
 
 ### 台詞に合わせて出す

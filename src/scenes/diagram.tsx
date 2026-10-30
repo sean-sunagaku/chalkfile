@@ -57,7 +57,7 @@ const Edge: React.FC<{
   const mid: Pt = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
   const c: Pt = [mid[0] + n[0] * bend * 2, mid[1] + n[1] * bend * 2];
   const tt = tone(t ?? 'slate');
-  const col = t ? tt.main : 'rgba(210,216,240,0.75)';
+  const col = t ? tt.main : C.edge;
   // 矢じりの向き（終点の接線）
   const tail = quad(p0, c, p1, 0.94);
   const ang = Math.atan2(p1[1] - tail[1], p1[0] - tail[0]);
@@ -102,7 +102,7 @@ const Edge: React.FC<{
               display: 'inline-block',
               padding: '7px 16px',
               borderRadius: 12,
-              background: 'rgba(12,16,40,0.92)',
+              background: C.overlay,
               border: `1.5px solid ${t ? `${tt.main}88` : C.line2}`,
               fontFamily: SANS,
               fontWeight: 700,
@@ -252,7 +252,7 @@ const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: nu
           height: '100%',
           boxSizing: 'border-box',
           borderRadius: 999,
-          background: start ? 'rgba(255,255,255,0.04)' : `linear-gradient(160deg, ${tt.deep}, rgba(255,255,255,0.03))`,
+          background: start ? C.faint : `linear-gradient(160deg, ${tt.deep}, ${C.glass2})`,
           border: `2px ${start ? 'dashed' : 'solid'} ${focus > 0 ? tt.main : `${tt.main}88`}`,
           boxShadow: focus > 0 ? `0 0 44px ${tt.main}66` : C.shadow,
           display: 'flex',
@@ -296,7 +296,7 @@ export const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
       ))}
       <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0 }}>
         {s.actors.map((a, i) => (
-          <line key={a.key} x1={PAD + (i + 0.5) * colW} x2={PAD + (i + 0.5) * colW} y1={top + 128} y2={1004} stroke="rgba(255,255,255,0.16)" strokeWidth={2} strokeDasharray="6 10" />
+          <line key={a.key} x1={PAD + (i + 0.5) * colW} x2={PAD + (i + 0.5) * colW} y1={top + 128} y2={1004} stroke={C.lane} strokeWidth={2} strokeDasharray="6 10" />
         ))}
       </svg>
       {s.steps.map((st, i) => {
@@ -338,7 +338,7 @@ export const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
                   display: 'inline-block',
                   padding: '6px 18px',
                   borderRadius: 12,
-                  background: isLatest ? `${tt.main}26` : 'rgba(12,16,40,0.9)',
+                  background: isLatest ? `${tt.main}26` : C.overlay,
                   border: `1.5px solid ${tt.main}${isLatest ? 'cc' : '55'}`,
                   fontFamily: SANS,
                   fontWeight: 700,

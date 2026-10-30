@@ -5,7 +5,7 @@ import { courseOf } from '../../content';
 import { CourseMark } from '../components/chrome';
 import { Glass, Icon, IconBadge, Pill, Rich, Smart } from '../components/ui';
 import credits from '../generated/credits.json';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, GRAD, MONO, PAD, SANS, TONES, tone } from '../theme';
+import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME, TONES, tone } from '../theme';
 import { dropY, useActiveLine, useAppear, useScene } from '../timing';
 
 /** ジングルの「ドン」が鳴るフレーム（sting_intro の 2.0 秒。synth.ts の OPENING_LEAD_IN と合わせる） */
@@ -62,7 +62,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
           width: 220,
           left: `${sweep * 100}%`,
           transform: 'rotate(18deg)',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent)',
+          background: `linear-gradient(90deg, transparent, ${C.sheen}, transparent)`,
           filter: 'blur(8px)',
         }}
       />
@@ -77,7 +77,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
                 width: 420,
                 height: 420,
                 borderRadius: 999,
-                border: `3px solid ${['#FF6FA3', '#9C8CFF', '#45D3F4'][k]}`,
+                border: `3px solid ${MESH[k % MESH.length]}`,
                 transform: `scale(${r.s})`,
                 opacity: r.o,
               }}
@@ -91,13 +91,13 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             fontSize: 330,
             lineHeight: 1,
             letterSpacing: -10,
-            background: GRAD,
+            background: DISPLAY,
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
             color: 'transparent',
             transform: `scale(${0.7 + 0.3 * hit})`,
             opacity: soft,
-            filter: `blur(${(1 - soft) * 14}px) drop-shadow(0 0 40px rgba(156,140,255,0.45))`,
+            filter: `blur(${(1 - soft) * 14}px)${THEME.scheme === 'dark' ? ` drop-shadow(0 0 40px ${alpha(C.accent, 0.45)})` : ''}`,
           }}
         >
           {no}
@@ -121,7 +121,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
                 color: C.ink,
                 whiteSpace: 'nowrap',
                 ...(i === 0 && titleLines.length > 1
-                  ? { background: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
+                  ? { background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
                   : {}),
               }}
             >
@@ -144,7 +144,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
               width: i + 1 === lecture.no ? 46 : 14,
               height: 14,
               borderRadius: 99,
-              background: i + 1 === lecture.no ? GRAD : i + 1 < lecture.no ? 'rgba(156,140,255,0.55)' : 'rgba(255,255,255,0.14)',
+              background: i + 1 === lecture.no ? GRAD : i + 1 < lecture.no ? C.trackDone : C.track,
             }}
           />
         ))}
@@ -338,9 +338,9 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
             fontFamily: MONO,
             fontWeight: 700,
             fontSize: 34,
-            color: '#0B0F24',
+            color: C.onAccent,
             flexShrink: 0,
-            boxShadow: active ? '0 0 30px rgba(156,140,255,0.7)' : undefined,
+            boxShadow: active ? (THEME.scheme === 'dark' ? `0 0 30px ${alpha(C.accent, 0.7)}` : `0 10px 22px -8px ${alpha(C.accent, 0.7)}`) : undefined,
           }}
         >
           {i + 1}
@@ -402,7 +402,7 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
           <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}>NEXT LECTURE</div>
           <div style={{ opacity: q, transform: `translateY(${dropY(q)}px)` }}>
             <Glass t="violet" active={1} style={{ padding: '44px 64px', display: 'flex', alignItems: 'center', gap: 44 }}>
-              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 120, lineHeight: 1, background: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 120, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
                 {String(s.next.no).padStart(2, '0')}
               </div>
               <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: fitSize(s.next.title, 64, 1180), color: C.ink, whiteSpace: 'nowrap' }}>{s.next.title}</div>
@@ -412,7 +412,7 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
         </>
       ) : (
         <>
-          <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 110, opacity: p, background: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+          <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 110, opacity: p, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
             おつかれさまでした
           </div>
           {s.closing ? <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 42, color: C.sub, opacity: q }}>{s.closing}</div> : null}
@@ -426,7 +426,7 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
               width: i + 1 === lecture.no ? 46 : 16,
               height: 16,
               borderRadius: 99,
-              background: i + 1 <= lecture.no ? GRAD : 'rgba(255,255,255,0.14)',
+              background: i + 1 <= lecture.no ? GRAD : C.track,
               opacity: i + 1 < lecture.no ? 0.6 : 1,
             }}
           />

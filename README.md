@@ -29,7 +29,7 @@
 4. **動画にする**: `scripts/render.sh` が Remotion で映像を書き出し、`scripts/mix.py` の音（ナレーション・BGM・効果音）と合わせる
 5. **公開する**: `scripts/build_site.ts` が講座サイトを組み立て、`scripts/deploy_pages.sh` が GitHub Pages に出す
 
-詳しい手順と、画面と話し方の決まり、調べ方は、Claude Code のスキル [`.claude/skills/study-video-course`](.claude/skills/study-video-course/SKILL.md) にまとめています。このリポジトリを Claude Code で開くと、「新しい講座を作りたい」「L05 の台詞を直したい」のように頼めます。
+詳しい手順と、画面と話し方の決まり、調べ方、テーマの作り方は、Claude Code のスキル [`.claude/skills/study-video-course`](.claude/skills/study-video-course/SKILL.md) にまとめています。このリポジトリを Claude Code で開くと、「新しい講座を作りたい」「L05 の台詞を直したい」のように頼めます。
 
 ## 作り直す
 
@@ -52,10 +52,33 @@ bun scripts/serve.ts                                            # 手元で見�
 - 見た目の確認: `node scripts/stills.mjs L04:3 --mid` で、場面の中ほどと終わりを静止画にする
 - ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
 
+## 講座ごとのテーマ（トンマナ）
+
+色・書体・背景の飾りをテーマとしてまとめてあり、講座ごとに選べます。テーマは動画と講座サイトの両方に効きます。
+
+| テーマ | 中身 |
+|---|---|
+| `chalkfile`（既定） | 明るい教室の黒板を裏返した配色。文字は黒板の深い緑、色はチョーク、コードだけ黒板の面。角の丸いゴシック（Zen Maru Gothic） |
+| `stripe` | Stripe の雰囲気。白い地・紺の文字・紫の主役の色・右上の角を斜めに切るグラデーションの帯。英字は Inter（Stripe 社とは関係ありません） |
+| `night` | 最初の版の暗いテーマ。濃紺の地にピンクから水色のグラデーション |
+
+```ts
+// content/index.ts
+export const STRIPE_BILLING: Course = {
+  id: 'stripe-billing',
+  theme: 'stripe', // 書かなければ chalkfile
+  …
+};
+```
+
+- テーマを作る: `content/themes.ts` に足す（項目は `content/types.ts` の `Theme`）。地・文字・主役の色・図の 7 色・コードの色分け・背景の飾り（`chalk`・`band`・`stars`）・書体を決める
+- 書き出す前に試す: `node scripts/stills.mjs L02:3 L03:3 --theme=<id>`（講座のテーマを変えずに、そのテーマで静止画を描く）
+- 項目の意味と確かめ方は [スキルの theme.md](.claude/skills/study-video-course/references/theme.md)
+
 ## 新しい講座を足す
 
 1. `content/<講座 ID>/` に台本を置く。レクチャー ID は講座をまたいで重ならない頭文字にする（Stripe 講座は `L01`〜）
-2. `content/index.ts` の `COURSES` に講座を足す
+2. `content/index.ts` の `COURSES` に講座を足す。テーマを変えるなら `theme` も書く
 3. 「作り直す」を、その講座のレクチャー ID で流す
 4. 一覧ページ（`site/dist/index.html`）にカードが増え、講座のページは `site/dist/<講座 ID>/` にできる
 
@@ -74,14 +97,15 @@ bash scripts/deploy_pages.sh
 
 | パス | 中身 |
 |---|---|
-| `content/index.ts` | 講座の一覧（名前・セクション・レクチャーの並び） |
+| `content/index.ts` | 講座の一覧（名前・テーマ・セクション・レクチャーの並び） |
+| `content/themes.ts` | テーマ（トンマナ）の定義 |
 | `content/stripe-billing/L01.ts`〜`L13.ts` | Stripe 講座の台本と画面構成 |
 | `content/types.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素） |
 | `content/reading.ts` | 読み上げ用の読み（英字をカナに開く・誤読しやすい語） |
-| `src/` | Remotion の動画（`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描く） |
+| `src/` | Remotion の動画（`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描く。`theme.ts` がテーマの色と書体を差し込む） |
 | `scripts/` | 音楽・合成・ミックス・書き出し・サイト・公開のスクリプト |
-| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）と設定（`config.json`） |
-| `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方をまとめた Claude Code のスキル |
+| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、設定（`config.json`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
+| `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方・テーマの作り方をまとめた Claude Code のスキル |
 
 生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は Git に入れません。
 
@@ -91,5 +115,5 @@ bash scripts/deploy_pages.sh
 - ナレーション: VOICEVOX:No.7、VOICEVOX:青山龍星。音声を使うときは、各キャラクターの利用規約に従ってクレジットを書く
 - 動画: [Remotion](https://www.remotion.dev/)。Remotion のライセンスは別で、個人と小さな会社は無料、大きな会社で使うときは[ライセンス](https://www.remotion.dev/license)が要る
 - BGM・効果音: `scripts/build_music.py` が numpy で合成したオリジナル
-- フォント: Noto Sans JP、JetBrains Mono（SIL Open Font License）
+- フォント: Zen Maru Gothic、Noto Sans JP、Inter、JetBrains Mono（SIL Open Font License）
 - サービス名は各社の商標です

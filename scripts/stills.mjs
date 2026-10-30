@@ -2,6 +2,7 @@
 //   node scripts/stills.mjs L01            # 各場面の終わり（要素が出そろった状態）
 //   node scripts/stills.mjs L01 --mid      # 各場面の中ほども
 //   node scripts/stills.mjs L01@120 L03@900 --scale=1
+//   node scripts/stills.mjs L02:3 --theme=chalkfile   # 講座のテーマの代わりに別のテーマで描く（テーマを作るとき）
 import { bundle } from '@remotion/bundler';
 import { renderStill, selectComposition } from '@remotion/renderer';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
@@ -13,6 +14,8 @@ const args = process.argv.slice(2);
 const mid = args.includes('--mid');
 const scaleArg = args.find((a) => a.startsWith('--scale='));
 const scale = scaleArg ? Number(scaleArg.split('=')[1]) : 0.5;
+const themeArg = args.find((a) => a.startsWith('--theme='));
+const theme = themeArg ? themeArg.split('=')[1] : '';
 const targets = args.filter((a) => !a.startsWith('--'));
 // L03:3,6 のように場面番号（1 始まり）で絞れる
 const parseTarget = (t) => {
@@ -30,7 +33,7 @@ const serveUrl = await bundle({ entryPoint: path.join(ROOT, 'src/index.ts'), pub
 for (const t of targets) {
   const { head, only } = parseTarget(t);
   const [id, at] = head.split('@');
-  const inputProps = { id, audio: false };
+  const inputProps = { id, audio: false, theme };
   const composition = await selectComposition({ serveUrl, id, inputProps });
   const tl = timeline[id];
   const frames = at
@@ -42,7 +45,7 @@ for (const t of targets) {
         return list;
       });
   for (const { f, name } of frames) {
-    const output = path.join(outDir, `${id}-${name}.jpg`);
+    const output = path.join(outDir, `${id}-${name}${theme ? `-${theme}` : ''}.jpg`);
     await renderStill({ composition, serveUrl, output, frame: f, inputProps, imageFormat: 'jpeg', jpegQuality: 82, scale });
     console.log(output);
   }
