@@ -211,7 +211,7 @@ const courseCards = COURSES.map((c) => {
     '  <div class="body">',
     `    <h3>${esc(c.title)}</h3>`,
     `    <p>${esc(plain(c.headline))}</p>`,
-    `    <ul class="facts"><li>${c.lectures.length} レクチャー</li><li>約 ${Math.round(minutes)} 分</li><li class="theme">テーマ: ${esc(t.label)}</li></ul>`,
+    `    <ul class="facts"><li>${c.lectures.length} レクチャー</li><li>約 ${Math.round(minutes)} 分</li><li class="is-theme">テーマ: ${esc(t.label)}</li></ul>`,
     `    <span class="go">講座を開く</span>`,
     '  </div>',
     '</a>',
