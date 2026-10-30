@@ -11,7 +11,7 @@ import { copyFileSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSyn
 import path from 'node:path';
 import { COURSES } from '../content';
 import { THEMES, themeOf } from '../content/themes';
-import type { Course } from '../content/types';
+import type { ChapterMaterial, Course, Source } from '../content/types';
 import { fontLink, themeCss } from './site_theme';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -67,6 +67,27 @@ const place = (from: string, to: string) => {
   }
 };
 
+/** 教材の出典の id を、サイトに出す形（発行元・年・URL）に開く */
+const materialForSite = (course: Course, m: ChapterMaterial) => {
+  const src = new Map((course.sources ?? []).map((x) => [x.id, x]));
+  const pick = (ids: string[] | undefined) =>
+    (ids ?? []).map((id) => {
+      const x = src.get(id);
+      if (!x) throw new Error(`${course.id} ${m.id}: 出典が sources に無い: ${id}`);
+      return { publisher: x.publisher, year: x.year, title: x.title, url: x.url, kind: x.kind, checked: x.checked } satisfies Omit<Source, 'id' | 'note'>;
+    });
+  return {
+    id: m.id,
+    goals: m.goals,
+    prerequisites: m.prerequisites,
+    sections: m.sections.map((x) => ({ id: x.id, title: x.title, body: x.body, evidence: x.evidence, sources: pick(x.sources) })),
+    figures: m.figures,
+    exercise: m.exercise,
+    summary: m.summary,
+    askExamples: m.askExamples,
+  };
+};
+
 const readData = (id: string): SiteData | null => {
   const f = path.join(SITE, 'data', `${id}.json`);
   return existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as SiteData) : null;
@@ -87,7 +108,11 @@ for (const c of COURSES) {
   for (const lec of c.lectures) {
     if (!ID.test(lec.id)) problems.push(`レクチャー ID が英数字でない: ${lec.id}`);
     for (const d of lec.docs) if (!HTTPS.test(d.url)) problems.push(`${lec.id} の公式ドキュメントのリンクが https:// でない: ${d.url}`);
+    // 節 ID・図 ID はページの中の id 属性とリンク先になるので英数字だけ
+    const m = lec.material;
+    if (m) for (const id of [m.id, ...m.sections.map((x) => x.id), ...m.figures.map((x) => x.id), m.exercise.id]) if (!ID.test(id)) problems.push(`${lec.id} の教材の ID が英数字でない: ${id}`);
   }
+  for (const x of c.sources ?? []) if (!HTTPS.test(x.url)) problems.push(`${c.id} の出典のリンクが https:// でない: ${x.url}`);
 }
 for (const t of Object.values(THEMES)) if (!ID.test(t.id)) problems.push(`テーマ ID が英数字でない: ${t.id}`);
 if (problems.length) {
@@ -132,6 +157,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
       quiz: lec.quiz,
       takeaways: lec.takeaways,
       caution: lec.caution ?? '',
+      material: lec.material ? materialForSite(course, lec.material) : null,
       duration: d.duration,
       chapters: d.chapters.map((c) => ({
         start: c.start,
@@ -142,7 +168,21 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
   });
   const minutes = minutesOf(course);
   const links = [...(course.links ?? []), { label: 'ソースと作り方（GitHub）', url: config.repoUrl }];
-  const meta = { id: course.id, title: course.title, subtitle: course.subtitle, sections: course.sections, sourceNote: course.sourceNote, disclaimer: course.disclaimer ?? '', links };
+  // 計画だけある章（まだ動画が無い）は、カリキュラムに「準備中」で出す
+  const made = new Set(course.lectures.map((l) => l.id));
+  const planned = (course.syllabus?.chapters ?? []).filter((ch) => !made.has(ch.lectureId)).map((ch) => ({ no: ch.no, section: ch.section, title: ch.title, minutes: ch.minutes }));
+  const meta = {
+    id: course.id,
+    title: course.title,
+    subtitle: course.subtitle,
+    sections: course.sections,
+    sourceNote: course.sourceNote,
+    disclaimer: course.disclaimer ?? '',
+    links,
+    unitLabel: course.unitLabel ?? 'LECTURE',
+    ui: course.ui ?? {},
+    planned,
+  };
   const json = JSON.stringify({ course: meta, credits, lectures }).replace(/</g, '\\u003c');
   const url = `${base}${course.id}/`;
   const html = template
@@ -150,7 +190,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
     .replace('__HEAD_META__', () =>
       headMeta({
         title: course.title,
-        description: `${plain(course.headline)}。${lectures.length} 本・約 ${Math.round(minutes)} 分の動画と、台本・確認クイズ。`,
+        description: `${plain(course.headline)}。${lectures.length} 本・約 ${Math.round(minutes)} 分の動画と、台本・確認クイズ${lectures.some((l) => l.material) ? '・読む教材・実践課題' : ''}。`,
         url,
         image: `${url}media/${course.lectures[0].id}.jpg`,
         icon: favicon(theme.color.ink, theme.color.accent),
@@ -211,7 +251,7 @@ const courseCards = COURSES.map((c) => {
     '  <div class="body">',
     `    <h3>${esc(c.title)}</h3>`,
     `    <p>${esc(plain(c.headline))}</p>`,
-    `    <ul class="facts"><li>${c.lectures.length} レクチャー</li><li>約 ${Math.round(minutes)} 分</li><li class="is-theme">テーマ: ${esc(t.label)}</li></ul>`,
+    `    <ul class="facts"><li>${c.unitLabel === 'CHAPTER' ? `${c.lectures.length} 章${c.syllabus ? ` ／ 計画 ${c.syllabus.chapters.length} 章` : ''}` : `${c.lectures.length} レクチャー`}</li><li>約 ${Math.round(minutes)} 分</li><li class="is-theme">テーマ: ${esc(t.label)}</li></ul>`,
     `    <span class="go">講座を開く</span>`,
     '  </div>',
     '</a>',

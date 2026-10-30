@@ -13,6 +13,11 @@
 | 講座 | 中身 | 長さ |
 |---|---|---|
 | [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/chalkfile/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
+| ナッジ理論をプロダクト改善に活かす（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 計画 7 章・第 1 章（約 7 分）を制作 |
+| エンジニアのための UI・UX デザイン（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 計画 8 章・第 1 章（約 6 分）を制作 |
+| 個人開発者のためのマーケティング（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 計画 8 章・第 1 章（約 7 分）を制作 |
+
+ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 
 - Stripe 講座の事実は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog。API は 2026-09-30.endive、stripe-python は 16.0.1 の頃）と、消費者庁・Apple の公式ページがもとです。料金・API・法律は変わるので、実装の前に公式で確かめ直してください
 - Stripe 社とは関係のない、個人が作った非公式の講座です。法律や税の判断は専門家に確かめてください（[DISCLAIMER.md](DISCLAIMER.md)）
@@ -44,9 +49,12 @@ bun scripts/synth.ts                                            # ナレーシ�
 uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス（1 本 10 秒ほど）
 bash scripts/render.sh                                          # 動画（1 本 2〜3 分）
 bun scripts/check_content.ts                                    # 台本とファイルの点検（公開の前に必ず）
+bun scripts/build_materials.ts                                  # 読む教材・絵コンテ・AI チャット用のチャンク（docs/courses）
 bun scripts/build_site.ts                                       # 講座サイト（site/dist）
 bun scripts/serve.ts                                            # 手元で見る（http://127.0.0.1:8765/）
 ```
+
+初めての書き出しで Remotion が Chrome Headless Shell をダウンロードしたまま止まるとき（Node.js 26 で、展開が終わらない）は、[pipeline.md のハマりどころ](.claude/skills/study-video-course/references/pipeline.md) の手順で手で展開します。
 
 一部だけ作り直すときは、`synth.ts`・`mix.py`・`render.sh` に `L03 L05` のようにレクチャー ID を渡します。台詞を直したら synth → mix → render → build_site の順に流します。
 

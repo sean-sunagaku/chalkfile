@@ -45,7 +45,47 @@ export type IconName =
   | 'calendar'
   | 'route'
   | 'search'
-  | 'layers';
+  | 'layers'
+  | 'eye'
+  | 'target'
+  | 'megaphone'
+  | 'users'
+  | 'trend'
+  | 'chart'
+  | 'palette'
+  | 'type'
+  | 'pointer'
+  | 'accessibility'
+  | 'message'
+  | 'idea'
+  | 'sliders'
+  | 'hand'
+  | 'compass'
+  | 'pen'
+  | 'clipboard'
+  | 'thumbsup'
+  | 'ban'
+  | 'coins'
+  | 'store'
+  | 'sparkles'
+  | 'help'
+  | 'mail'
+  | 'funnel'
+  | 'layout'
+  | 'puzzle'
+  | 'footprints'
+  | 'brain'
+  | 'gauge'
+  | 'smile'
+  | 'frown'
+  | 'sprout'
+  | 'wallet'
+  | 'rocket'
+  | 'handshake'
+  | 'hourglass'
+  | 'contrast'
+  | 'ruler'
+  | 'input';
 
 export type Line = {
   /** 画面の台本・字幕に出す文 */
@@ -64,6 +104,10 @@ type Base = {
   lines: Line[];
   /** 場面の最後に足す余白（秒）。クイズの考える時間など */
   hold?: number;
+  /** 見出しの横に出す、この場面の根拠の種類（研究結果・公式や法令・実務指針・説明用の仮の例） */
+  evidence?: Evidence;
+  /** 左下に出す出典の短い表記（例: Johnson & Goldstein, Science, 2003） */
+  cite?: string;
 };
 
 export type OpeningScene = Base & {
@@ -271,6 +315,47 @@ export type PhoneScene = Base & {
   screens: PhoneScreen[];
 };
 
+/**
+ * 架空のアプリの画面の部品（改善前・改善後の比べに使う）。色は画面のモックの色で、講座のテーマとは別。
+ * weak: わざと読みにくい（薄い文字・薄い線）。改善前の悪い例を描くとき
+ */
+export type MockBlock =
+  | { type: 'title'; text: string; weak?: boolean }
+  | { type: 'text'; text: string; weak?: boolean; small?: boolean }
+  | { type: 'field'; label?: string; placeholder?: string; value?: string; error?: string; hint?: string; required?: boolean; weak?: boolean }
+  | { type: 'button'; text: string; variant: 'primary' | 'secondary' | 'link' | 'danger'; weak?: boolean }
+  | { type: 'buttons'; items: { text: string; variant: 'primary' | 'secondary' | 'link' | 'danger'; weak?: boolean }[] }
+  | { type: 'alert'; text: string; tone: 'error' | 'info' | 'warn' | 'success' }
+  | { type: 'toggle'; label: string; on: boolean; sub?: string }
+  | { type: 'check'; label: string; checked: boolean; weak?: boolean }
+  | { type: 'steps'; items: string[]; current: number }
+  | { type: 'list'; items: string[]; weak?: boolean }
+  | { type: 'badge'; text: string }
+  | { type: 'divider' }
+  | { type: 'spacer'; h: number };
+
+export type MockScreen = {
+  /** 画面の上の札（例: 改善前） */
+  label: string;
+  tone: Tone;
+  /** 窓の題（ブラウザのタブ・アプリの見出し） */
+  title?: string;
+  blocks: MockBlock[];
+  /** 部品の右に出す番号つきの注。block は blocks の番号（0 始まり） */
+  notes?: { n: number; text: string; block: number; at: number; tone?: Tone }[];
+  at: number;
+};
+
+/** 同じ画面の改善前と改善後を並べる（right を省くと 1 枚と注の一覧） */
+export type ScreensScene = Base & {
+  kind: 'screens';
+  device?: 'browser' | 'phone';
+  /** 画面の中身の拡大率（部品が少ない画面は大きくして読みやすくする）。既定はスマホ 1.3・ブラウザ 1.1 */
+  zoom?: number;
+  left: MockScreen;
+  right?: MockScreen;
+};
+
 export type TerminalScene = Base & {
   kind: 'terminal';
   title: string;
@@ -302,10 +387,150 @@ export type Scene =
   | RecapScene
   | RefsScene
   | PhoneScene
+  | ScreensScene
   | TerminalScene
   | EndingScene;
 
 export type QuizItem = { q: string; choices: string[]; answer: number; explain: string };
+
+/* ───────────── 教材（読む教材・実践課題・AI チャットの参照先） ─────────────
+ * 動画の台本（scenes）とは別に、章ごとの「読んで学べる教材」を持つ。
+ * 章 ID・節 ID は公開後に変えない（あとで AI 質問チャットが、どの節を根拠に答えたかを指すのに使う）。
+ */
+
+/** 根拠の種類。研究結果・公式や法令や規格・一般的な実務指針・説明用の仮の例を分けて書く */
+export type Evidence = 'research' | 'official' | 'practice' | 'example';
+
+/** 出典。教材と台本の主張から id で引く */
+export type Source = {
+  /** 講座の中で重ならない ID（例: 'johnson-goldstein-2003'） */
+  id: string;
+  title: string;
+  url: string;
+  /** 著者・発行元 */
+  publisher: string;
+  /** 発行年（版） */
+  year: string;
+  /** research（研究）・official（公式・法令・規格）・practice（実務家の指針・解説） */
+  kind: Exclude<Evidence, 'example'>;
+  /** 確かめた日（YYYY-MM-DD） */
+  checked: string;
+  /** 何を確かめたか（自分の言葉で） */
+  note: string;
+};
+
+/** 教材本文の節 */
+export type MaterialSection = {
+  /** 節 ID（例: 'nudge-01-s02'）。公開後に変えない */
+  id: string;
+  title: string;
+  /** 段落。Markdown の **強調** と「- 」で始まる箇条書きを使ってよい（HTML は書かない） */
+  body: string[];
+  /** この節に出てくる根拠の種類 */
+  evidence: Evidence[];
+  /** この節で頼った出典（Source の id） */
+  sources?: string[];
+  /** 対応する動画の場面（1 始まり） */
+  scenes?: number[];
+};
+
+/** 図解・比較例（表・流れ・コードのどれか） */
+export type Figure = {
+  /** 図 ID（例: 'nudge-01-f01'） */
+  id: string;
+  title: string;
+  caption: string;
+  evidence: Evidence;
+  /** 表。1 行目が見出し */
+  table?: string[][];
+  /** 流れ（左から右へ進む手順）。Markdown では Mermaid の図にもする */
+  flow?: string[];
+  /** コードの例 */
+  code?: string;
+  lang?: string;
+};
+
+/** 自分のサービスで取り組む実践課題 */
+export type Exercise = {
+  /** 課題 ID（例: 'nudge-01-ex'） */
+  id: string;
+  title: string;
+  /** 何ができるようになるか */
+  goal: string;
+  /** 目安の時間 */
+  timebox: string;
+  /** 取り組む手順 */
+  steps: string[];
+  /** 出すもの（成果物） */
+  deliverable: string;
+  /** 回答例（架空のサンプルアプリで書く） */
+  example: { title: string; body: string[] };
+  /** 評価基準（観点ごとに、できている／もう一歩／やり直し） */
+  rubric: { criterion: string; good: string; fair: string; poor: string }[];
+};
+
+/** 章の教材（各章の成果物のうち、動画以外のもの） */
+export type ChapterMaterial = {
+  /** 章 ID（例: 'nudge-01'）。節 ID・図 ID・課題 ID の頭にする */
+  id: string;
+  /** 章の学習目標 */
+  goals: string[];
+  /** 前提知識 */
+  prerequisites: string[];
+  /** 教材本文 */
+  sections: MaterialSection[];
+  /** 図解・比較例 */
+  figures: Figure[];
+  /** 実践課題 */
+  exercise: Exercise;
+  /** 要点まとめ */
+  summary: string[];
+  /** 参考資料（Source の id）。並べた順に出す */
+  references: string[];
+  /** 学習画面の右側の AI チャットに聞ける質問例と、答えの根拠にする節 ID */
+  askExamples: { q: string; refs: string[] }[];
+};
+
+/** 講座の計画にある章（まだ動画を作っていない章も含む） */
+export type PlannedChapter = {
+  /** 章 ID（例: 'nudge-02'） */
+  id: string;
+  /** 動画（レクチャー）の ID（例: 'N02'） */
+  lectureId: string;
+  no: number;
+  /** sections の no */
+  section: number;
+  title: string;
+  /** この章で答える問い */
+  question: string;
+  goals: string[];
+  prerequisites: string[];
+  /** 動画の長さの目安（分） */
+  minutes: number;
+  /** 動画の構成（困りごと → 考え方 → 良い例・悪い例 → 実践手順 → 演習 → 振り返り） */
+  storyline: { step: '困りごと' | '考え方' | '良い例・悪い例' | '実践手順' | '演習' | '振り返り'; content: string }[];
+  /** 実践課題の案 */
+  exercise: string;
+  /** 主な出典（Source の id） */
+  sources: string[];
+  /** produced: 動画と教材を作った／planned: 計画だけ */
+  status: 'produced' | 'planned';
+};
+
+/** 講座の設計（全体の目次・到達目標・動画構成） */
+export type Syllabus = {
+  /** 受講者 */
+  audience: string;
+  /** 講座の前提知識 */
+  prerequisites: string[];
+  /** 講座を終えたらできること */
+  outcomes: string[];
+  /** 最後に自分のサービスで仕上げるもの */
+  finalProject: string;
+  /** 例に使う架空のサービス */
+  sample: string;
+  chapters: PlannedChapter[];
+};
 
 export type Lecture = {
   id: string; // 例: 'L01'。講座をまたいで重ならないように、講座ごとに頭の文字を変える
@@ -322,6 +547,8 @@ export type Lecture = {
   /** 動画の右下に出し続け、サイトにも出す注意書き（法律・税・規約など、判断を専門家や公式に委ねる話のとき） */
   caution?: string;
   scenes: Scene[];
+  /** 読む教材・実践課題・AI チャットの質問例（講座サイトのタブと docs/ の Markdown に出る） */
+  material?: ChapterMaterial;
 };
 
 /** 講座 1 つ分（講座サイト 1 枚と、動画の右上の講座名） */
@@ -344,6 +571,21 @@ export type Course = {
   theme?: string;
   /** 動画のはじめと終わり、サイトの見出しの下に出す注意書き（実在の会社や製品を扱う講座では「非公式」と書く） */
   disclaimer?: string;
+  /** 1 本の動画の呼び名（動画の見出しとサイトに出す）。既定は LECTURE。章立ての講座は CHAPTER */
+  unitLabel?: 'LECTURE' | 'CHAPTER';
+  /** 講座の設計（全体の目次・到達目標・動画構成）。まだ作っていない章もサイトのカリキュラムに「準備中」で出る */
+  syllabus?: Syllabus;
+  /** 出典の一覧（教材と台本から id で引く） */
+  sources?: Source[];
+  /** サイトの言葉を講座に合わせる */
+  ui?: {
+    /** 概要タブの要点の見出し（既定: 実装に効くメモ） */
+    takeaways?: string;
+    /** 出典タブの名前（既定: 公式ドキュメント） */
+    docs?: string;
+    /** 台本の検索欄の例 */
+    searchHint?: string;
+  };
 };
 
 /** 本文の書体。並べた順に使う（英字用の書体を先に置くと、英字だけその書体になる） */

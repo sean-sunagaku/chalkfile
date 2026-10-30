@@ -334,7 +334,8 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
 
 export const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
   const f = useAppear(s.footnote?.at ?? 99);
-  const box = useAppear(0);
+  // 枠は最初の数字と一緒に出す（数字の前の台詞の間、空の枠を見せない）
+  const box = useAppear(Math.min(...s.items.map((it) => it.at)));
   return (
     <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: 1080 - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
       <div style={{ width: 1260, opacity: box }}>
@@ -422,7 +423,9 @@ export const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
 export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { lines } = useScene();
+  const { lines, lecture } = useScene();
+  // 「1 / 3」の分母は、このレクチャーのクイズの場面の数（もとは 7 で固定だった）
+  const quizTotal = lecture.scenes.filter((x) => x.kind === 'quiz').length;
   const q = useAppear(0);
   const thinkStart = lineEnd(lines, 0) + 3;
   const revealF = lineStart(lines, s.revealAt) - 2;
@@ -437,7 +440,7 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
     <>
       <div style={{ position: 'absolute', left: PAD, top: CONTENT_TOP + 10, display: 'flex', alignItems: 'center', gap: 34, opacity: q }}>
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 150, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Q{s.no}</div>
-        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / 7</div>
+        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / {quizTotal}</div>
       </div>
       <div style={{ position: 'absolute', left: PAD, right: PAD, top: 420, opacity: q, transform: `translateY(${dropY(q)}px)` }}>
         <Glass t="violet" active={stamp > 0.05 ? 0.4 : 1} style={{ padding: '40px 52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 40 }}>

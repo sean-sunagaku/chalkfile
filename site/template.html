@@ -333,6 +333,45 @@ button { font: inherit; color: inherit; }
 .ring .tick { stroke: var(--on-accent); }
 .ring .num { fill: var(--muted); font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
 
+/* 教材・実践課題・AI に聞く（教材を持つ講座だけ） */
+.mat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-bottom: 16px; }
+@media (max-width: 700px) { .mat-grid { grid-template-columns: minmax(0, 1fr); } }
+.mat-list { margin: 0; padding-left: 1.2em; color: var(--fg-2); display: grid; gap: 6px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 18px; }
+.toc a { font-size: 13px; text-decoration: none; color: var(--fg-2); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 10px; }
+.toc a:hover { border-color: var(--violet); color: var(--fg); }
+.msec { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; scroll-margin-top: 90px; }
+.msec h3 { font-size: 17px; margin: 0 0 8px; line-height: 1.5; }
+.msec p, .msec li { color: var(--fg-2); line-height: 1.85; max-width: 72ch; }
+.msec ul { margin: 0 0 12px; padding-left: 1.3em; }
+.sid { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-weight: 500; letter-spacing: 0.02em; display: block; }
+.evs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.ev { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--line); }
+.ev.research { background: var(--cyan-soft); border-color: var(--cyan); }
+.ev.official { background: var(--violet-soft); border-color: var(--violet); }
+.ev.practice { background: var(--pink-soft); border-color: var(--amber); }
+.ev.example { background: var(--raise); border-color: var(--line); color: var(--muted); }
+.msrc { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.msrc a { color: var(--fg-2); }
+.fig { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; overflow-x: auto; }
+.fig h4 { margin: 0 0 4px; font-size: 15px; }
+.fig .cap { font-size: 13.5px; color: var(--fg-2); margin: 0 0 10px; }
+.mtable { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+.mtable th, .mtable td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; line-height: 1.6; }
+.mtable th { background: var(--raise); font-weight: 700; }
+.flowline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flowline .st { border: 1px solid var(--line); background: var(--raise); border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.flowline .ar { color: var(--muted); }
+.fig pre { margin: 0; background: var(--stage); color: #F1F4F8; border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; }
+.ask { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ask li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.ask .qq { font-weight: 700; line-height: 1.7; }
+.ask .refs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.ask .refs button { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); background: var(--raise); color: var(--fg-2); border-radius: 8px; padding: 1px 8px; cursor: pointer; }
+.lec.planned { cursor: default; opacity: 0.62; }
+.lec.planned:hover { background: transparent; }
+.lec .soon { font-size: 11.5px; color: var(--muted); border: 1px dashed var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+
 .foot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
 .kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; background: var(--panel); color: var(--fg-2); }
 .toast {
@@ -435,10 +474,13 @@ button { font: inherit; color: inherit; }
 
       <div class="tabs" role="tablist" aria-label="レクチャーの資料">
         <button role="tab" type="button" id="tab-overview" aria-controls="p-overview" aria-selected="true">概要</button>
+        <button role="tab" type="button" id="tab-material" aria-controls="p-material" aria-selected="false" hidden>教材</button>
         <button role="tab" type="button" id="tab-transcript" aria-controls="p-transcript" aria-selected="false">台本</button>
         <button role="tab" type="button" id="tab-notes" aria-controls="p-notes" aria-selected="false">ノート</button>
         <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">公式ドキュメント</button>
         <button role="tab" type="button" id="tab-quiz" aria-controls="p-quiz" aria-selected="false">確認クイズ</button>
+        <button role="tab" type="button" id="tab-exercise" aria-controls="p-exercise" aria-selected="false" hidden>実践課題</button>
+        <button role="tab" type="button" id="tab-ask" aria-controls="p-ask" aria-selected="false" hidden>AI に聞く</button>
       </div>
 
       <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
@@ -446,7 +488,7 @@ button { font: inherit; color: inherit; }
         <p class="caution" id="caution" hidden></p>
         <div class="two">
           <div class="box">
-            <h3>実装に効くメモ</h3>
+            <h3 id="takeawaysTitle">実装に効くメモ</h3>
             <ul class="takeaways" id="takeaways"></ul>
           </div>
           <div class="box">
@@ -454,6 +496,28 @@ button { font: inherit; color: inherit; }
             <ol class="chapters" id="chapters"></ol>
           </div>
         </div>
+      </div>
+
+      <div class="panel" id="p-material" role="tabpanel" aria-labelledby="tab-material" hidden>
+        <div class="mat-grid">
+          <div class="box"><h3>この章の学習目標</h3><ul class="mat-list" id="matGoals"></ul></div>
+          <div class="box"><h3>前提知識</h3><ul class="mat-list" id="matPre"></ul></div>
+        </div>
+        <p class="hint">根拠の札: <span class="ev research">研究・学術</span> <span class="ev official">公式・法令・規格</span> <span class="ev practice">実務の指針</span> <span class="ev example">説明用の仮の例</span>　節の上の小さな ID（例: <span class="mono">xx-01-s01</span>）は、あとで質問チャットが根拠の場所を示すための番号です。</p>
+        <nav class="toc" id="matToc" aria-label="教材の節"></nav>
+        <div id="matBody"></div>
+        <h3 style="margin-top:22px">図解・比較例</h3>
+        <div id="matFigs"></div>
+        <div class="box"><h3>要点まとめ</h3><ul class="mat-list" id="matSummary"></ul></div>
+      </div>
+
+      <div class="panel" id="p-exercise" role="tabpanel" aria-labelledby="tab-exercise" hidden>
+        <div id="exBody"></div>
+      </div>
+
+      <div class="panel" id="p-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+        <p>学習画面の右側に置く AI チャットに、こんな質問ができます（チャットはまだありません）。質問ごとに、答えの根拠にする教材の節を付けています。押すと教材のその節へ移ります。</p>
+        <ul class="ask" id="askList"></ul>
       </div>
 
       <div class="panel" id="p-transcript" role="tabpanel" aria-labelledby="tab-transcript" hidden>
@@ -551,6 +615,9 @@ button { font: inherit; color: inherit; }
   };
   var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
 
+  var UNIT = DATA.course.unitLabel || "LECTURE";
+  var UI = DATA.course.ui || {};
+  var PLANNED = DATA.course.planned || [];
   var current = 0;
   var cueIdx = -1;
   var nextTimer = null;
@@ -562,8 +629,10 @@ button { font: inherit; color: inherit; }
     $("cpBar").style.width = (done / L.length * 100) + "%";
     $("cpLabel").textContent = done + " / " + L.length + " 完了";
     var total = L.reduce(function (a, l) { return a + l.duration; }, 0);
-    $("curSum").textContent = L.length + " レクチャー・" + Math.round(total / 60) + " 分";
-    $("courseMeta").textContent = DATA.course.sections.length + " セクション・" + L.length + " レクチャー・約 " + Math.round(total / 60) + " 分";
+    var word = UNIT === "CHAPTER" ? " 章" : " レクチャー";
+    var plan = PLANNED.length ? "（計画 " + (L.length + PLANNED.length) + word + "）" : "";
+    $("curSum").textContent = L.length + word + "・" + Math.round(total / 60) + " 分" + plan;
+    $("courseMeta").textContent = DATA.course.sections.length + " セクション・" + L.length + word + "・約 " + Math.round(total / 60) + " 分" + plan;
   }
 
   // ── カリキュラム ──
@@ -587,6 +656,11 @@ button { font: inherit; color: inherit; }
       lecs.forEach(function (x) {
         html += '<button type="button" class="lec" data-i="' + x.i + '"' + (x.i === current ? ' aria-current="true"' : "") + ">" + ring(x.l.id, x.i) +
           '<span class="ttl">' + esc(x.l.title) + '</span><span class="dur">' + fmt(x.l.duration) + "</span></button>";
+      });
+      // まだ作っていない章（講座の計画だけあるもの）
+      PLANNED.filter(function (p) { return p.section === sec.no; }).forEach(function (p) {
+        html += '<div class="lec planned" aria-disabled="true"><svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-dasharray="3 3"/><text class="num" x="12" y="15.2" text-anchor="middle">' + p.no + "</text></svg>" +
+          '<span class="ttl">' + esc(p.title) + '</span><span class="soon">準備中・約 ' + p.minutes + " 分</span></div>";
       });
       html += "</div>";
     });
@@ -629,7 +703,7 @@ button { font: inherit; color: inherit; }
       hideNativeTrack();
     });
     if (play) video.play().catch(function () {});
-    $("nowEyebrow").textContent = "LECTURE " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
+    $("nowEyebrow").textContent = UNIT + " " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
     $("nowTitle").textContent = lec.title;
     $("summary").textContent = lec.summary;
     $("caution").textContent = lec.caution || "";
@@ -646,6 +720,7 @@ button { font: inherit; color: inherit; }
     renderTranscript();
     renderNotes();
     renderQuiz();
+    renderMaterial();
     renderDone();
     renderCurriculum();
     $("prevBtn").disabled = i === 0;
@@ -802,8 +877,9 @@ button { font: inherit; color: inherit; }
   $("ccToggle").addEventListener("click", function () { setCC(!prefs.cc); });
 
   // ── タブ ──
-  var tabs = ["overview", "transcript", "notes", "docs", "quiz"];
+  var tabs = ["overview", "material", "transcript", "notes", "docs", "quiz", "exercise", "ask"];
   function showTab(name) {
+    if ($("tab-" + name).hidden) name = "overview";
     tabs.forEach(function (t) {
       $("tab-" + t).setAttribute("aria-selected", t === name ? "true" : "false");
       $("p-" + t).hidden = t !== name;
@@ -919,6 +995,87 @@ button { font: inherit; color: inherit; }
     } else fallback();
   });
 
+  // ── 教材・実践課題・AI に聞く（教材を持つレクチャーだけ）──
+  var EV = { research: "研究・学術", official: "公式・法令・規格", practice: "実務の指針", example: "説明用の仮の例" };
+  // 教材の文字はエスケープしてから、**強調** と「- 」の箇条書きだけを HTML にする
+  function inline(s) { return esc(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+  function paras(list) {
+    var html = "", inList = false;
+    list.forEach(function (b) {
+      String(b).split("\n").forEach(function (line) {
+        if (/^- /.test(line)) {
+          if (!inList) { html += "<ul>"; inList = true; }
+          html += "<li>" + inline(line.slice(2)) + "</li>";
+        } else {
+          if (inList) { html += "</ul>"; inList = false; }
+          if (line.trim()) html += "<p>" + inline(line) + "</p>";
+        }
+      });
+    });
+    if (inList) html += "</ul>";
+    return html;
+  }
+  function evChips(list) { return '<div class="evs">' + list.map(function (e) { return '<span class="ev ' + esc(e) + '">' + esc(EV[e] || e) + "</span>"; }).join("") + "</div>"; }
+  function srcLinks(list) {
+    if (!list || !list.length) return "";
+    return '<p class="msrc">出典: ' + list.map(function (s) {
+      return '<a href="' + esc(safeUrl(s.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher + "（" + s.year + "）") + "</a>";
+    }).join("、") + "</p>";
+  }
+  function figHtml(f) {
+    var h = '<div class="fig" id="' + esc(f.id) + '"><span class="sid">' + esc(f.id) + "</span><h4>" + esc(f.title) + "</h4>" + evChips([f.evidence]) + '<p class="cap">' + inline(f.caption) + "</p>";
+    if (f.table) {
+      h += '<table class="mtable"><thead><tr>' + f.table[0].map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        f.table.slice(1).map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inline(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    }
+    if (f.flow) h += '<div class="flowline">' + f.flow.map(function (x, i) { return (i ? '<span class="ar" aria-hidden="true">→</span>' : "") + '<span class="st">' + inline(x) + "</span>"; }).join("") + "</div>";
+    if (f.code) h += "<pre><code>" + esc(f.code) + "</code></pre>";
+    return h + "</div>";
+  }
+  function renderMaterial() {
+    var m = L[current].material;
+    ["material", "exercise", "ask"].forEach(function (t) { $("tab-" + t).hidden = !m; });
+    if (!m) {
+      if (["material", "exercise", "ask"].indexOf(store.get("tab", "overview")) >= 0) showTab("overview");
+      return;
+    }
+    $("matGoals").innerHTML = m.goals.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matPre").innerHTML = m.prerequisites.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matToc").innerHTML = m.sections.map(function (s, i) { return '<a href="#' + esc(s.id) + '" data-sec="' + esc(s.id) + '">' + (i + 1) + ". " + esc(s.title) + "</a>"; }).join("");
+    $("matBody").innerHTML = m.sections.map(function (s) {
+      return '<section class="msec" id="' + esc(s.id) + '"><span class="sid">' + esc(s.id) + "</span><h3>" + esc(s.title) + "</h3>" + evChips(s.evidence) + paras(s.body) + srcLinks(s.sources) + "</section>";
+    }).join("");
+    $("matFigs").innerHTML = m.figures.map(figHtml).join("");
+    $("matSummary").innerHTML = m.summary.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    var ex = m.exercise;
+    $("exBody").innerHTML =
+      '<div class="msec" id="' + esc(ex.id) + '"><span class="sid">' + esc(ex.id) + "</span><h3>" + esc(ex.title) + "</h3>" +
+      "<p><strong>ねらい</strong>　" + inline(ex.goal) + "</p><p><strong>目安の時間</strong>　" + esc(ex.timebox) + "</p><p><strong>出すもの</strong>　" + inline(ex.deliverable) + "</p>" +
+      '<h3 style="margin-top:14px">手順</h3><ol class="mat-list">' + ex.steps.map(function (x) { return "<li>" + inline(x) + "</li>"; }).join("") + "</ol></div>" +
+      '<div class="msec"><h3>回答例: ' + esc(ex.example.title) + "</h3>" + evChips(["example"]) + paras(ex.example.body) + "</div>" +
+      '<div class="fig"><h4>評価基準</h4><table class="mtable"><thead><tr><th>観点</th><th>できている</th><th>もう一歩</th><th>やり直し</th></tr></thead><tbody>' +
+      ex.rubric.map(function (r) { return "<tr><td><strong>" + inline(r.criterion) + "</strong></td><td>" + inline(r.good) + "</td><td>" + inline(r.fair) + "</td><td>" + inline(r.poor) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+    $("askList").innerHTML = m.askExamples.map(function (a) {
+      return '<li><div class="qq">' + esc(a.q) + '</div><div class="refs">根拠にする節: ' + a.refs.map(function (r) { return '<button type="button" data-sec="' + esc(r) + '">' + esc(r) + "</button>"; }).join("") + "</div></li>";
+    }).join("");
+  }
+  // 節へ移る（目次と、質問例の参照）
+  function gotoSection(id) {
+    showTab("material");
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("matToc").addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-sec]");
+    if (!a) return;
+    e.preventDefault();
+    gotoSection(a.dataset.sec);
+  });
+  $("askList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sec]");
+    if (b) gotoSection(b.dataset.sec);
+  });
+
   // ── クイズ ──
   function renderQuiz() {
     var lec = L[current];
@@ -1003,6 +1160,9 @@ button { font: inherit; color: inherit; }
     }).join("");
     box.hidden = false;
   }
+  if (UI.takeaways) $("takeawaysTitle").textContent = UI.takeaways;
+  if (UI.docs) $("tab-docs").textContent = UI.docs;
+  if (UI.searchHint) $("q").placeholder = "全" + (UNIT === "CHAPTER" ? "章" : "レクチャー") + "の台本から探す（例: " + UI.searchHint + "）";
   $("follow").checked = prefs.follow !== false;
   renderSpeed();
   setCC(prefs.cc !== false);
