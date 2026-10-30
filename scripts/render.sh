@@ -4,6 +4,7 @@
 #   bash scripts/render.sh L03 L05    # 一部だけ
 # 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（15MB 以下）、site/media/<id>.jpg
 # CAPTIONS=1 を付けると、日本語の字幕を焼き込んだ版も作る: out/captioned/<id>.mp4（講座サイトの外で、音なしでも見られる版）
+# CONCURRENCY=12 のように渡すと、Remotion の並列数を変える（既定 8。CPU のコア数より少なくする）
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ids=("$@")
@@ -26,7 +27,7 @@ for id in "${ids[@]}"; do
     while [ "$s" -lt "$total" ]; do
       e=$((s + CHUNK - 1))
       if [ "$e" -ge "$total" ]; then e=$((total - 1)); fi
-      npx remotion render src/index.ts "$id" "out/master/$id.part$k.mp4" --frames="$s-$e" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=8 --log=error 2>&1 | grep -v "network requests" || true
+      npx remotion render src/index.ts "$id" "out/master/$id.part$k.mp4" --frames="$s-$e" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
       if [ ! -s "out/master/$id.part$k.mp4" ]; then echo "$id: 映像の書き出しに失敗しました（$s-$e）" >&2; exit 1; fi
       echo "file '$id.part$k.mp4'" >> "$list"
       s=$((e + 1))
@@ -35,7 +36,7 @@ for id in "${ids[@]}"; do
     ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i "$list" -c copy "out/master/$id.mp4"
     rm -f "out/master/$id".part*.mp4 "$list"
   else
-    npx remotion render src/index.ts "$id" "out/master/$id.mp4" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=8 --log=error 2>&1 | grep -v "network requests" || true
+    npx remotion render src/index.ts "$id" "out/master/$id.mp4" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
   fi
   if [ ! -s "out/master/$id.mp4" ]; then echo "$id: 映像の書き出しに失敗しました" >&2; exit 1; fi
   crf=21
@@ -52,7 +53,7 @@ for id in "${ids[@]}"; do
   echo "$id: $(( $(date +%s) - start )) 秒  crf=$crf  $(( size / 1024 / 1024 )) MB"
   if [ "${CAPTIONS:-0}" = "1" ]; then
     mkdir -p out/captioned
-    npx remotion render src/index.ts "$id" "out/master/$id.cc.mp4" --props='{"captions":true}' --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=8 --log=error 2>&1 | grep -v "network requests" || true
+    npx remotion render src/index.ts "$id" "out/master/$id.cc.mp4" --props='{"captions":true}' --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
     if [ ! -s "out/master/$id.cc.mp4" ]; then echo "$id: 字幕つきの映像の書き出しに失敗しました" >&2; exit 1; fi
     ffmpeg -y -hide_banner -loglevel error -i "out/master/$id.cc.mp4" -i "public/audio/mix/$id.wav" \
       -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -profile:v high -g 150 \

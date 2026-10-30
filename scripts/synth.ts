@@ -7,7 +7,7 @@
 //   .work/plan/<id>.json                 mix.py が読むミックスの設計図
 //   site/data/<id>.json, <id>.vtt        講座サイトの台本と字幕
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { LECTURES } from '../content';
 import { toSpeech } from '../content/reading';
@@ -187,5 +187,22 @@ for (const lec of targets) {
   console.log(`${lec.id} ${(duration / 60).toFixed(2)} 分  ${scenes.length} 場面  ${cues.length} 台詞  (${((Date.now() - t0) / 1000).toFixed(0)} 秒)`);
 }
 
-writeFileSync(timelinePath, JSON.stringify(timeline));
+// 複数の synth を同時に流しても互いの結果を消さないように、ロックを取ってから読み直し、自分のレクチャーだけ差し替える
+const lockDir = `${timelinePath}.lock`;
+for (let i = 0; ; i++) {
+  try {
+    mkdirSync(lockDir);
+    break;
+  } catch {
+    if (i > 600) throw new Error(`${lockDir} が 60 秒外れない（前の synth が落ちたなら消す）`);
+    Bun.sleepSync(100);
+  }
+}
+try {
+  const latest: Record<string, unknown> = existsSync(timelinePath) ? JSON.parse(readFileSync(timelinePath, 'utf8')) : {};
+  for (const lec of targets) latest[lec.id] = timeline[lec.id];
+  writeFileSync(timelinePath, JSON.stringify(latest));
+} finally {
+  rmSync(lockDir, { recursive: true, force: true });
+}
 writeFileSync(path.join(GEN_DIR, 'credits.json'), JSON.stringify(Object.values(VOICES).map((v) => v.credit)));

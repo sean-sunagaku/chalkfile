@@ -6,7 +6,8 @@ import { dropY, useAppear } from '../timing';
 
 /*
  * 架空のアプリの画面（改善前・改善後）。画面の中の色は「そのアプリの色」なので、講座のテーマではなくここの M で描く。
- * 改善後の文字と部品は、白い地に対して WCAG のコントラスト比 4.5:1 以上（M.muted のプレースホルダーだけ 3:1 前後）。
+ * 改善後の文字は、白い地に対して WCAG のコントラスト比 4.5:1 以上（M.muted のプレースホルダーだけ 3:1 前後）。
+ * 入力欄の枠（M.field）は 3:1 以上（1.4.11。枠が欄の手がかりになるため）。
  * weak を付けた部品は、改善前の悪い例としてわざと薄く描く（コントラスト比 2:1 前後）。
  */
 const M = {
@@ -17,6 +18,8 @@ const M = {
   muted: '#7C8594',
   weak: '#BCC2CC',
   line: '#C9D0DA',
+  /** 入力欄の枠（白と 3.31:1） */
+  field: '#858E9C',
   weakLine: '#E6E9EE',
   primary: '#2459D6',
   primaryWeak: '#C7D3F1',
@@ -60,7 +63,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
             style={{
               height: 48,
               borderRadius: 10,
-              border: `${b.error ? 2.5 : 1.5}px solid ${b.error ? M.danger : b.weak ? M.weakLine : M.line}`,
+              border: `${b.error ? 2.5 : 1.5}px solid ${b.error ? M.danger : b.weak ? M.weakLine : M.field}`,
               display: 'flex',
               alignItems: 'center',
               padding: '0 14px',

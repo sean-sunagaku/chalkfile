@@ -5,7 +5,8 @@ import { LectureVideo, TIMELINE } from './Lecture';
 
 export const Root: React.FC = () => (
   <>
-    {LECTURES.map((l) => (
+    {/* まだ合成していない（timeline に無い）レクチャーは飛ばす。章を並行して書いているときも書き出せるように */}
+    {LECTURES.filter((l) => TIMELINE[l.id]).map((l) => (
       <Composition
         key={l.id}
         id={l.id}
