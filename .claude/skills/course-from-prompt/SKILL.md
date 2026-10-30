@@ -49,10 +49,13 @@ node scripts/stills.mjs L01:1   # 初回は Chrome Headless Shell を落とす�
 ```bash
 npx tsc --noEmit && bun scripts/check_content.ts
 bun scripts/check_overlap.ts <講座 ID>             # 公式ページとの言い回しの一致
+grep -noE "[0-9]+ ?日 ?（[月火水木金土日]）" content/<講座 ID>/*.ts   # 例の曜日を、その年の暦で確かめる
 bun scripts/build_materials.ts                     # docs/courses/（教材 Markdown・絵コンテ・chunks.jsonl）
 bun scripts/build_site.ts <講座 ID> …             # 新しい clone では Stripe 講座の音と動画が無いので、講座 ID を渡す
 bun scripts/export_deliverables.ts <ID> …          # out/deliverables/（完成動画・字幕・音・教材）
 ```
+
+書き出した動画は、`ffprobe` の長さを `timeline.json` と比べ（サイト用と字幕つきの両方）、改善前・改善後の画面の場面から静止画を抜いて見る（モックの色・日付。担当の静止画の確認の後に直した共有の部品は、ここでしか確かめられない）。
 
 `syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。公開はマージ後に `bash scripts/deploy_pages.sh`。
 
