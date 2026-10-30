@@ -41,7 +41,8 @@ node scripts/stills.mjs L01:1   # 初回は Chrome Headless Shell を落とす�
 1. 残りの章を仮置きのファイル（`<ID>.ts` に `export const <ID>` と `export const <ID>_SOURCES`）で作り、`course.ts` の `lectures` と `sources: uniqueSources(...)` に先に登録する（担当が共有のファイルを触らずに済む）
 2. 章 2 本ずつを 1 つのサブエージェントに渡す。渡すのは [references/chapter-agent-brief.md](references/chapter-agent-brief.md) と、担当の章 ID・章ごとの中身の目安（使う出典の id・例の画面・最後の章なら `closing`）
 3. 担当は、自分の章のファイルだけを書き、`synth`（読みの確認）と `stills`（静止画の確認）までやって報告する。`synth.ts` は `timeline.json` をロックして書くので、同時に流してよい
-4. 親は報告を受けた順に、`sources.ts` の候補の note を直し、`mix` → `CAPTIONS=1 bash scripts/render.sh <ID>` を順番に流す（書き出しは 1 本ずつ。並べると CPU を取り合う）
+4. 親は報告を受けた順に、`sources.ts` の候補の note を直し、`mix` → `CAPTIONS=1 bash scripts/render.sh <ID>` を順番に流す（書き出しは 1 本ずつ。並べると CPU を取り合う。1 本 8〜13 分なので、20 章で 4〜5 時間。待ち行列のファイルに章 ID を足していく形にし、`CONCURRENCY=<コア数-3>` で並列数を合わせる）
+5. 全章がそろったら、担当どうしで二重に足した出典（同じ id）を出し、note をまとめて講座の `sources.ts` に移す。担当が報告した「ほかの章・共有の部品の誤り」（曜日・モックの色など）を直し、影響する章を書き出し直す
 
 ## 5. まとめて確かめ、出す
 
