@@ -270,7 +270,7 @@ export const D04: Lecture = {
         at: 1,
         blocks: [
           { type: 'text', text: 'ご予約内容の確認' },
-          { type: 'text', text: '11 月 8 日（土）14:00〜　カット（60 分）' },
+          { type: 'text', text: '11 月 7 日（土）14:00〜　カット（60 分）' },
           { type: 'text', text: '予約 花子 様' },
           { type: 'text', text: '確定すると、確認のメールが届きます。' },
           { type: 'button', text: '予約を確定する', variant: 'primary' },
@@ -291,7 +291,7 @@ export const D04: Lecture = {
         at: 4,
         blocks: [
           { type: 'title', text: 'ご予約内容の確認' },
-          { type: 'list', items: ['11 月 8 日（土）14:00〜', 'カット（60 分）', '予約 花子 様'] },
+          { type: 'list', items: ['11 月 7 日（土）14:00〜', 'カット（60 分）', '予約 花子 様'] },
           { type: 'text', text: '確定すると、確認のメールが届きます。', small: true },
           { type: 'spacer', h: 0 },
           { type: 'button', text: '予約を確定する', variant: 'primary' },

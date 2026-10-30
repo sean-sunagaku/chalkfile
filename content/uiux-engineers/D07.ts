@@ -390,8 +390,8 @@ export const D07: Lecture = {
         title: 'サンプル予約　日時を選ぶ',
         at: 1,
         blocks: [
-          { type: 'text', text: '‹　11 月 8 日（土）〜 14 日（金）　›' },
-          { type: 'text', text: '8　　9　　10　　11　　12　　13　　14', small: true },
+          { type: 'text', text: '‹　11 月 7 日（土）〜 13 日（金）　›' },
+          { type: 'text', text: '7　　8　　9　　10　　11　　12　　13', small: true },
           { type: 'field', label: '時間', value: '14:00' },
           { type: 'spacer', h: 0 },
           { type: 'button', text: '予約へ進む', variant: 'primary' },
@@ -418,9 +418,9 @@ export const D07: Lecture = {
           {
             type: 'buttons',
             items: [
-              { text: '8 日（土）', variant: 'primary' },
-              { text: '9 日（日）', variant: 'secondary' },
-              { text: '10 日（月）', variant: 'secondary' },
+              { text: '7 日（土）', variant: 'primary' },
+              { text: '8 日（日）', variant: 'secondary' },
+              { text: '9 日（月）', variant: 'secondary' },
             ],
           },
           { type: 'field', label: '時間', value: '14:00' },
