@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>__TITLE__</title>
+__CSP__
+<meta name="referrer" content="strict-origin-when-cross-origin">
 __HEAD_META__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,6 +77,8 @@ button { font: inherit; color: inherit; }
 
 .intro { display: flex; gap: 14px 22px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
 .intro-text { display: grid; gap: 2px; }
+.intro .note { font-size: 13px; color: var(--muted); }
+.caution { margin: -4px 0 14px; padding-left: 10px; border-left: 3px solid var(--line); font-size: 13.5px; color: var(--muted); }
 .intro h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; line-height: 1.3; text-wrap: balance; }
 .intro .meta { color: var(--muted); font-size: 14px; }
 .intro .links { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -373,6 +377,7 @@ button { font: inherit; color: inherit; }
     <div class="intro-text">
       <h1>__HEADLINE__</h1>
       <span class="meta" id="courseMeta"></span>
+      <span class="note" id="courseNote" hidden></span>
     </div>
     <span class="links" id="links" hidden></span>
   </div>
@@ -438,6 +443,7 @@ button { font: inherit; color: inherit; }
 
       <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
         <p id="summary"></p>
+        <p class="caution" id="caution" hidden></p>
         <div class="two">
           <div class="box">
             <h3>実装に効くメモ</h3>
@@ -501,6 +507,7 @@ button { font: inherit; color: inherit; }
   <div class="foot">
     <div>ショートカット: <span class="kbd">Space</span> 再生と停止 ・ <span class="kbd">←</span><span class="kbd">→</span> 5 秒 ・ <span class="kbd">J</span><span class="kbd">L</span> 10 秒 ・ <span class="kbd">C</span> 字幕 ・ <span class="kbd">F</span> 全画面 ・ <span class="kbd">N</span> 次のレクチャー</div>
     <div id="credits"></div>
+    <div>講座は一般的な説明です。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律・税・契約の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
   </div>
 </div>
 
@@ -537,6 +544,10 @@ button { font: inherit; color: inherit; }
   };
   var esc = function (s) {
     return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  };
+  // リンクは https:// と http:// だけ通す（javascript: や data: は # にする）
+  var safeUrl = function (u) {
+    try { var x = new URL(String(u), location.href); return x.protocol === "https:" || x.protocol === "http:" ? x.href : "#"; } catch (e) { return "#"; }
   };
   var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
 
@@ -621,6 +632,8 @@ button { font: inherit; color: inherit; }
     $("nowEyebrow").textContent = "LECTURE " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
     $("nowTitle").textContent = lec.title;
     $("summary").textContent = lec.summary;
+    $("caution").textContent = lec.caution || "";
+    $("caution").hidden = !lec.caution;
     $("takeaways").innerHTML = lec.takeaways.map(function (t) { return "<li><span>" + esc(t) + "</span></li>"; }).join("");
     $("chapters").innerHTML = lec.chapters.map(function (c, k) {
       return '<li><button type="button" data-t="' + c.start + '" data-k="' + k + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.heading) + "</span></button></li>";
@@ -628,7 +641,7 @@ button { font: inherit; color: inherit; }
     $("docs").innerHTML = lec.docs.map(function (d) {
       var host = "";
       try { host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, ""); } catch (e) { host = d.url; }
-      return '<li><a href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer"><span><span>' + esc(d.title) + '</span><span class="host">' + esc(host) + '</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></li>';
+      return '<li><a href="' + esc(safeUrl(d.url)) + '" target="_blank" rel="noopener noreferrer"><span><span>' + esc(d.title) + '</span><span class="host">' + esc(host) + '</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></li>';
     }).join("");
     renderTranscript();
     renderNotes();
@@ -650,7 +663,7 @@ button { font: inherit; color: inherit; }
       return pad2(h) + ":" + pad2(m) + ":" + (sec.length < 6 ? "0" : "") + sec;
     };
     var body = "WEBVTT\n\n" + lec.cues.map(function (c, i) {
-      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + c.text + "\n";
+      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + String(c.text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/-->/g, "→") + "\n";
     }).join("\n");
     try {
       vttCache[lec.id] = URL.createObjectURL(new Blob([body], { type: "text/vtt" }));
@@ -981,10 +994,11 @@ button { font: inherit; color: inherit; }
 
   // ── はじめに開く ──
   $("credits").textContent = "ナレーション " + DATA.credits.join("・") + "　BGM・効果音はプログラムで合成したオリジナル　" + DATA.course.sourceNote;
+  if (DATA.course.disclaimer) { $("courseNote").textContent = DATA.course.disclaimer; $("courseNote").hidden = false; }
   if (DATA.course.links && DATA.course.links.length) {
     var box = $("links");
     box.innerHTML = DATA.course.links.map(function (ln) {
-      return '<a href="' + esc(ln.url) + '" target="_blank" rel="noopener">' + esc(ln.label) +
+      return '<a href="' + esc(safeUrl(ln.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(ln.label) +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
     }).join("");
     box.hidden = false;

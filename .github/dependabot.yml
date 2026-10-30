@@ -1,0 +1,7 @@
+# GitHub Actions の版を月に 1 回見直す（SHA で固定しているので、更新は Pull Request で届く）
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

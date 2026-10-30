@@ -11,6 +11,8 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+# 台本とファイルの点検（AI への指示文・HTML・見えない文字・秘密情報・手元の禁止語）に通らなければ出さない
+bun scripts/check_content.ts
 bun scripts/build_site.ts --strict
 
 remote=$(git remote get-url origin)

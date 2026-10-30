@@ -3,7 +3,7 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remo
 import { courseOf, LECTURES } from '../content';
 import { themeOf } from '../content/themes';
 import type { Scene } from '../content/types';
-import { Background, Header, Progress } from './components/chrome';
+import { Background, Caution, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
 import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/basic';
 import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/data';
@@ -57,13 +57,14 @@ const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
   }
 };
 
-const SceneFrame: React.FC<{ s: Scene; duration: number }> = ({ s, duration }) => {
+const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = ({ s, duration, caution }) => {
   const frame = useCurrentFrame();
   const o = fadeInOut(frame, duration, s.kind === 'opening' ? 1 : 10, s.kind === 'ending' ? 20 : 9);
   return (
     <AbsoluteFill style={{ opacity: o }}>
       {s.heading && s.kind !== 'opening' && s.kind !== 'ending' ? <Header heading={s.heading} /> : null}
       <SceneBody s={s} />
+      {caution && s.kind !== 'opening' && s.kind !== 'ending' ? <Caution text={caution} /> : null}
     </AbsoluteFill>
   );
 };
@@ -83,7 +84,7 @@ export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: strin
         return (
           <Sequence key={i} from={st.start} durationInFrames={st.duration} name={`${i + 1} ${s.kind}`}>
             <SceneProvider value={{ ...st, scene: s, lecture, index: i }}>
-              <SceneFrame s={s} duration={st.duration} />
+              <SceneFrame s={s} duration={st.duration} caution={lecture.caution} />
             </SceneProvider>
           </Sequence>
         );

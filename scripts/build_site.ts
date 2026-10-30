@@ -6,6 +6,7 @@
 //       site/template.html（講座のページ）、site/home.html（一覧のページ）、site/assets/（一覧ページの画像）、site/config.json
 // 出力: site/dist/index.html、site/dist/<講座>/index.html、site/dist/<講座>/media/・site/dist/assets/（ハードリンク）
 // 色・書体・背景の飾りは講座のテーマ（content/themes.ts）から作る。一覧ページは既定のテーマ（Chalkfile）
+import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../content';
@@ -72,6 +73,46 @@ const readData = (id: string): SiteData | null => {
 };
 const minutesOf = (course: Course) => course.lectures.reduce((a, l) => a + (readData(l.id)?.duration ?? 0), 0) / 60;
 
+/* ───────────── 安全のための確かめ ─────────────
+ * ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（javascript: などを通さない）。
+ * 台本の中身の確かめ（注入・隠し文字・秘密情報）は scripts/check_content.ts が受け持つ。
+ */
+const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
+const problems: string[] = [];
+if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
+for (const c of COURSES) {
+  if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
+  for (const ln of c.links ?? []) if (!HTTPS.test(ln.url)) problems.push(`${c.id} のリンクが https:// でない: ${ln.url}`);
+  for (const lec of c.lectures) {
+    if (!ID.test(lec.id)) problems.push(`レクチャー ID が英数字でない: ${lec.id}`);
+    for (const d of lec.docs) if (!HTTPS.test(d.url)) problems.push(`${lec.id} の公式ドキュメントのリンクが https:// でない: ${d.url}`);
+  }
+}
+for (const t of Object.values(THEMES)) if (!ID.test(t.id)) problems.push(`テーマ ID が英数字でない: ${t.id}`);
+if (problems.length) {
+  console.error(problems.join('\n'));
+  process.exit(1);
+}
+
+/** ページの中のスクリプト（<script> だけのもの）のハッシュで CSP を作る。ほかのスクリプトは動かない */
+const csp = (html: string) => {
+  const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`);
+  const policy = [
+    "default-src 'self'",
+    `script-src ${hashes.length ? hashes.join(' ') : "'none'"}`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    'font-src https://fonts.gstatic.com',
+    "img-src 'self' data:",
+    "media-src 'self' blob:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+  ].join('; ');
+  return html.replace('__CSP__', () => `<meta http-equiv="Content-Security-Policy" content="${policy}">`);
+};
+
 const strict = process.argv.includes('--strict');
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const missing: string[] = [];
@@ -90,6 +131,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
       docs: lec.docs,
       quiz: lec.quiz,
       takeaways: lec.takeaways,
+      caution: lec.caution ?? '',
       duration: d.duration,
       chapters: d.chapters.map((c) => ({
         start: c.start,
@@ -100,7 +142,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
   });
   const minutes = minutesOf(course);
   const links = [...(course.links ?? []), { label: 'ソースと作り方（GitHub）', url: config.repoUrl }];
-  const meta = { id: course.id, title: course.title, subtitle: course.subtitle, sections: course.sections, sourceNote: course.sourceNote, links };
+  const meta = { id: course.id, title: course.title, subtitle: course.subtitle, sections: course.sections, sourceNote: course.sourceNote, disclaimer: course.disclaimer ?? '', links };
   const json = JSON.stringify({ course: meta, credits, lectures }).replace(/</g, '\\u003c');
   const url = `${base}${course.id}/`;
   const html = template
@@ -123,7 +165,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
     .replace('__COURSE_JSON__', () => json);
   const out = path.join(DIST, course.id);
   mkdirSync(out, { recursive: true });
-  writeFileSync(path.join(out, 'index.html'), html);
+  writeFileSync(path.join(out, 'index.html'), csp(html));
   rmSync(path.join(out, 'media'), { recursive: true, force: true });
   mkdirSync(path.join(out, 'media'));
   for (const lec of course.lectures) {
@@ -213,7 +255,7 @@ const homeHtml = home
   .replaceAll('__REPO__', () => esc(config.repoUrl))
   .replace('__CREDITS__', () => esc(`ナレーション ${credits.join('・')}　動画 Remotion　BGM・効果音はプログラムで合成したオリジナル`));
 mkdirSync(DIST, { recursive: true });
-writeFileSync(path.join(DIST, 'index.html'), homeHtml);
+writeFileSync(path.join(DIST, 'index.html'), csp(homeHtml));
 
 // 一覧ページの画像（site/assets）を写す
 const copyDir = (from: string, to: string) => {

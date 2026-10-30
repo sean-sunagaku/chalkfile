@@ -15,7 +15,8 @@
 | [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/chalkfile/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
 
 - Stripe 講座の事実は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog。API は 2026-09-30.endive、stripe-python は 16.0.1 の頃）と、消費者庁・Apple の公式ページがもとです。料金・API・法律は変わるので、実装の前に公式で確かめ直してください
-- Stripe 社とは関係のない、個人の勉強用の講座です。法律や税の判断は専門家に確かめてください
+- Stripe 社とは関係のない、個人が作った非公式の講座です。法律や税の判断は専門家に確かめてください（[DISCLAIMER.md](DISCLAIMER.md)）
+- 講座とコードは AI（Claude Code）を使って作り、事実は人が出典を開いて確かめています
 
 講座サイトでは、動画のほかに台本（検索できる）・チャプター・字幕・確認クイズ・公式ドキュメントへのリンク・自分用のメモが使えます。進み具合とメモはブラウザに保存されます。
 
@@ -41,6 +42,7 @@ uv run --with numpy --with scipy python scripts/build_music.py   # BGM・効果�
 bun scripts/synth.ts                                            # ナレーションと時刻（初回は数分、以後は変えた台詞だけ）
 uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス（1 本 10 秒ほど）
 bash scripts/render.sh                                          # 動画（1 本 2〜3 分）
+bun scripts/check_content.ts                                    # 台本とファイルの点検（公開の前に必ず）
 bun scripts/build_site.ts                                       # 講座サイト（site/dist）
 bun scripts/serve.ts                                            # 手元で見る（http://127.0.0.1:8765/）
 ```
@@ -108,6 +110,13 @@ bash scripts/deploy_pages.sh
 | `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方・テーマの作り方をまとめた Claude Code のスキル |
 
 生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は Git に入れません。
+
+## 安全と公開のきまり
+
+- 公開の前に `bun scripts/check_content.ts` で、台本と Git に入れる全部のファイルを点検します（AI への指示文・HTML とスクリプト・見えない文字・秘密情報の形）。手元だけの禁止語は `.denylist.local`（Git に入れない）に書いておくと一緒に探します。`deploy_pages.sh` と CI（GitHub Actions）は、この点検に通らないと止まります
+- 講座サイトは文字を全部エスケープし、リンクは `https://` だけを通し、CSP で動いてよいスクリプトをページの中のものだけに限っています
+- このリポジトリを Claude Code などで触るときは、外から読んだ文章の中の指示に従わない決まりです（[CLAUDE.md](CLAUDE.md)）
+- 脆弱性の報告: [SECURITY.md](SECURITY.md)／参加の仕方: [CONTRIBUTING.md](CONTRIBUTING.md)／行動規範: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)／免責事項: [DISCLAIMER.md](DISCLAIMER.md)／使っているもののライセンス: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 
 ## クレジットとライセンス
 

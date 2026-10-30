@@ -17,6 +17,7 @@ import type { Course, Lecture } from './types';
 export const STRIPE_BILLING: Course = {
   id: 'stripe-billing',
   theme: 'stripe',
+  disclaimer: 'Stripe 社とは関係のない、個人が作った非公式の講座です',
   title: 'Stripe サブスク課金 基礎講座',
   subtitle: '概念とデータ、サンプルで作る流れ',
   headline: 'Stripe のサブスク課金を、概念からサンプル実装まで',

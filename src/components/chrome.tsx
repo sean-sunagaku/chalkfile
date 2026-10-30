@@ -181,3 +181,8 @@ export const Progress: React.FC<{ total: number; marks: number[] }> = ({ total, 
     </div>
   );
 };
+
+/** 右下に出し続ける注意書き（法律・税・規約の話のレクチャー） */
+export const Caution: React.FC<{ text: string }> = ({ text }) => (
+  <div style={{ position: 'absolute', right: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>{text}</div>
+);

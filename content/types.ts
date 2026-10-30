@@ -319,6 +319,8 @@ export type Lecture = {
   quiz: QuizItem[];
   /** 講座サイトに出す、このレクチャーで実装に効くメモ */
   takeaways: string[];
+  /** 動画の右下に出し続け、サイトにも出す注意書き（法律・税・規約など、判断を専門家や公式に委ねる話のとき） */
+  caution?: string;
   scenes: Scene[];
 };
 
@@ -340,6 +342,8 @@ export type Course = {
   links?: { label: string; url: string }[];
   /** 動画と講座サイトのテーマ（content/themes.ts の id）。省略すると Chalkfile の既定のテーマ */
   theme?: string;
+  /** 動画のはじめと終わり、サイトの見出しの下に出す注意書き（実在の会社や製品を扱う講座では「非公式」と書く） */
+  disclaimer?: string;
 };
 
 /** 本文の書体。並べた順に使う（英字用の書体を先に置くと、英字だけその書体になる） */

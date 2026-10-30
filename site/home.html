@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>__TITLE__</title>
+__CSP__
+<meta name="referrer" content="strict-origin-when-cross-origin">
 __HEAD_META__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,7 +135,7 @@ footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(-
     <nav aria-label="ページ内とリンク">
       <a href="#courses">講座</a>
       <a href="#themes">テーマ</a>
-      <a href="__REPO__" target="_blank" rel="noopener">GitHub</a>
+      <a href="__REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
   </header>
 
@@ -145,7 +147,7 @@ footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(-
         <p class="sub">TypeScript の台本から、VOICEVOX の声と Remotion の動画、動画・台本・字幕・確認クイズの講座サイトまでをコマンドで作ります。台本を直せば、何度でも作り直せます。</p>
         <div class="actions">
           <a class="btn primary" href="__FIRST_COURSE__">作例の講座を見る</a>
-          <a class="btn" href="__REPO__" target="_blank" rel="noopener">GitHub で見る</a>
+          <a class="btn" href="__REPO__" target="_blank" rel="noopener noreferrer">GitHub で見る</a>
         </div>
       </div>
       <div class="pair" aria-label="台本と、そこから作られた動画の 1 場面">
@@ -193,8 +195,8 @@ export const STRIPE_BILLING: Course = {
         <li><b>公開する</b><span>講座サイトを組み立てて GitHub Pages に出す</span></li>
       </ol>
       <div class="more">
-        <a class="btn" href="__REPO__#readme" target="_blank" rel="noopener">README を読む</a>
-        <a class="btn" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener">Claude Code のスキルを見る</a>
+        <a class="btn" href="__REPO__#readme" target="_blank" rel="noopener noreferrer">README を読む</a>
+        <a class="btn" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener noreferrer">Claude Code のスキルを見る</a>
       </div>
     </section>
   </main>

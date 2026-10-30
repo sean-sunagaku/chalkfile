@@ -13,3 +13,6 @@ site/dist/
 .claude/*
 !.claude/skills/
 !.claude/launch.json
+
+# ローカルの禁止語（scripts/check_content.ts が読む）
+*.local

@@ -47,7 +47,8 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const titleLines = s.title.split('　');
   const sub2 = spring({ frame: frame - HIT_FRAME - 12, fps, config: { damping: 200 }, durationInFrames: 24 });
   const no = String(lecture.no).padStart(2, '0');
-  const total = courseOf(lecture.id).lectures.length;
+  const course = courseOf(lecture.id);
+  const total = course.lectures.length;
   return (
     <>
       <div style={{ position: 'absolute', left: PAD, top: 64, opacity: early }}>
@@ -148,6 +149,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             }}
           />
         ))}
+        {course.disclaimer ? <div style={{ marginLeft: 'auto', fontFamily: SANS, fontWeight: 500, fontSize: 21, color: C.muted }}>{course.disclaimer}</div> : null}
       </div>
     </>
   );
@@ -391,7 +393,8 @@ export const Refs: React.FC<{ s: RefsScene }> = ({ s }) => (
 
 export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
   const { lecture } = useScene();
-  const total = courseOf(lecture.id).lectures.length;
+  const course = courseOf(lecture.id);
+  const total = course.lectures.length;
   const p = useAppear(0);
   const q = useAppear(0, 14);
   const c = useAppear(0, 26);
@@ -434,7 +437,8 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
         <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>{lecture.no} / {total} 完了</div>
       </div>
       <div style={{ position: 'absolute', bottom: 0, fontFamily: SANS, fontSize: 22, color: C.muted, opacity: c, textAlign: 'center', lineHeight: 1.7 }}>
-        ナレーション　{(credits as string[]).join('　')}　／　BGM・効果音　オリジナル（プログラムで合成）
+        {course.disclaimer ? <div>{course.disclaimer}</div> : null}
+        <div>ナレーション　{(credits as string[]).join('　')}　／　BGM・効果音　オリジナル（プログラムで合成）</div>
       </div>
     </Content>
   );
