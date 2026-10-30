@@ -228,12 +228,22 @@ const syllabusMd = (c: Course): string => {
   L.push('## 到達目標', '', ...y.outcomes.map((x, i) => `${i + 1}. ${x}`), '', `最後の実践: ${y.finalProject}`, '');
   L.push('## 前提知識', '', ...y.prerequisites.map((x) => `- ${x}`), '');
   L.push('## 全体の目次と動画構成', '');
-  L.push('| 章 | 章 ID | 動画 | セクション | タイトル | この章で答える問い | 目安 | 状態 |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+  // 長さは、合成した章なら動画の実際の長さ、計画だけの章なら目安
+  L.push('| 章 | 章 ID | 動画 | セクション | タイトル | この章で答える問い | 長さ | 状態 |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+  let made = 0;
+  let madeSec = 0;
   for (const ch of y.chapters) {
     const sec = c.sections.find((s) => s.no === ch.section);
-    L.push(`| ${ch.no} | \`${ch.id}\` | \`${ch.lectureId}\` | ${sec ? cell(sec.title) : ch.section} | ${ch.status === 'produced' ? `[${cell(ch.title)}](${ch.id}.md)` : cell(ch.title)} | ${cell(ch.question)} | ${ch.minutes} 分 | ${ch.status === 'produced' ? '教材・動画あり' : '計画'} |`);
+    const data = ch.status === 'produced' ? readData(ch.lectureId) : null;
+    const t = data ? Math.round(data.duration) : 0;
+    if (data) {
+      made++;
+      madeSec += data.duration;
+    }
+    L.push(`| ${ch.no} | \`${ch.id}\` | \`${ch.lectureId}\` | ${sec ? cell(sec.title) : ch.section} | ${ch.status === 'produced' ? `[${cell(ch.title)}](${ch.id}.md)` : cell(ch.title)} | ${cell(ch.question)} | ${data ? `${Math.floor(t / 60)} 分 ${t % 60} 秒` : `目安 ${ch.minutes} 分`} | ${ch.status === 'produced' ? '教材・動画あり' : '計画'} |`);
   }
-  L.push('', `合計の目安: 約 ${y.chapters.reduce((a, ch) => a + ch.minutes, 0)} 分`, '');
+  const plan = y.chapters.reduce((a, ch) => a + ch.minutes, 0);
+  L.push('', made ? `動画の合計: 約 ${Math.round(madeSec / 60)} 分（${made} 章。計画の目安は全 ${y.chapters.length} 章で約 ${plan} 分）` : `合計の目安: 約 ${plan} 分`, '');
   L.push('各章は「具体的な困りごと → 考え方 → 良い例・悪い例 → 実践手順 → 演習 → 振り返り」の順に進みます。', '');
   for (const ch of y.chapters) {
     L.push(`### 第 ${ch.no} 章 ${ch.title}（\`${ch.id}\`）`, '', `問い: ${ch.question}`, '');
