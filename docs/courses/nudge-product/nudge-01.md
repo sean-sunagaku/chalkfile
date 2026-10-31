@@ -442,8 +442,8 @@ flowchart LR
   - スラッジを過剰な、または正当化できない手間と定義。時間・お金・尊厳を奪い、立場の弱い人ほど影響が大きい。組織による定期的な点検を提案（抄録で確認）
 - 米国連邦取引委員会（FTC）（2022）「Bringing Dark Patterns to Light（Staff Report）」 https://www.ftc.gov/system/files/ftc_gov/pdf/P214800%20Dark%20Patterns%20Report%209.14.2022%20-%20FINAL.pdf （公式・法令・規格・2026-10-30 確認）
   - スタッフ報告（2022 年 9 月、委員会が 5 対 0 で公表を承認）。ダークパターンを、利用者をだましたり操ったりして本来しなかった選択をさせ、害を与えうる設計の手法と説明（法律上の定義ではない）。広告の偽装・偽の期限、解約の妨害、条件や手数料の隠蔽、個人データの提供への誘導を代表的な手口に挙げる
-- OECD（2022）「Dark Commercial Patterns（OECD Digital Economy Papers No. 336）」 https://doi.org/10.1787/44f5e846-en （公式・法令・規格・2026-10-30 確認）
-  - Digital Economy Papers No. 336（2022-10-26）。ダークパターンの作業定義・7 つの分類・広がりと害の証拠・規制と執行の選択肢・自己監査。穏やかに見える手口でも同じくらい効くことがあり、決定版の分類は難しいとする。本体の PDF で確認
+- OECD（2022）「Dark Commercial Patterns（OECD Digital Economy Papers No. 336）」 https://doi.org/10.1787/44f5e846-en （公式・法令・規格・2026-10-31 確認）
+  - Digital Economy Papers No. 336（2022-10-26）。ダークパターンの作業定義・7 つの分類・広がりと害の証拠・規制と執行の選択肢・自己監査。穏やかに見える手口でも同じくらい効くことがあり、決定版の分類は難しいとする。本体の PDF で確認（DOI の先は 403。公式 PDF は https://www.oecd.org/content/dam/oecd/en/publications/reports/2022/10/dark-commercial-patterns_9f6169cd/44f5e846-en.pdf ）
 - 欧州連合（2022）「Regulation (EU) 2022/2065（Digital Services Act）Article 25」 https://eur-lex.europa.eu/eli/reg/2022/2065/oj （公式・法令・規格・2026-10-30 確認）
   - 第 25 条: オンラインプラットフォームの提供者は、利用者をだましたり操ったりして自由で情報に基づく判断をゆがめるインターフェースを作ってはならない。不公正取引慣行指令と GDPR の対象の行為は除く。欧州委員会が指針を出せる例は (a) 選択肢を目立たせる (b) 選んだことを繰り返し求める (c) 解約を申込みより難しくする。零細・小規模の事業者のプラットフォームは、超大規模のものを除いて対象外（第 19 条）。適用は 2024-02-17 から。EU 出版局の官報の正文で確認
 - 消費者庁（2022）「特定商取引法ガイド 通信販売（特定申込みを受ける際の表示）」 https://www.no-trouble.caa.go.jp/what/mailorder/ （公式・法令・規格・2026-10-30 確認）
@@ -454,18 +454,18 @@ flowchart LR
   - 施策や製品・サービスとして実際に使う段階のためのチェックリスト（効果の事前確認などの項目）。少額のポイントのように経済的インセンティブを小さく変えるものも除外されておらず、大小だけでは一様に言えないとする。満たせば十分というものではないと明記
 - Eric J. Johnson, Daniel Goldstein（Science 302）（2003）「Do Defaults Save Lives?」 https://doi.org/10.1126/science.1091721 （研究・学術・2026-10-30 確認）
   - 臓器提供の意思表示がデフォルトで大きく変わることを示した短い論文。オンライン実験で、同意が初期設定だと 82%、不同意が初期設定だと 42% が同意（再現研究の原典の説明で確認。本文は未開封）
-- Subramanya Prasad Chandrashekar ほか（Meta-Psychology 7）（2023）「Defaults versus framing: Revisiting Default Effect and Framing Effect with replications and extensions of Johnson and Goldstein (2003) and Johnson, Bellman, and Lohse (2002)」 https://doi.org/10.15626/MP.2022.3108 （研究・学術・2026-10-30 確認）
-  - 事前登録した米国の 1,920 人の再現実験。オプトアウト 73.5%・オプトイン 62.5%（初期設定なし 69.7%）で効果は再現されたが、差は約 11 ポイントで原典より小さい
-- Adam Arshad, Benjamin Anderson, Adnan Sharif（Kidney International 95）（2019）「Comparison of organ donation and transplantation rates between opt-out and opt-in systems」 https://doi.org/10.1016/j.kint.2019.01.036 （研究・学術・2026-10-30 確認）
-  - OECD 35 か国（2016 年）の比較で、オプトアウトとオプトインの国の間に、亡くなった人からの提供数の有意な差は無かった（観察研究。国ごとの医療体制などの違いが混ざる）
+- Subramanya Prasad Chandrashekar ほか（Meta-Psychology 7）（2023）「Defaults versus framing: Revisiting Default Effect and Framing Effect with replications and extensions of Johnson and Goldstein (2003) and Johnson, Bellman, and Lohse (2002)」 https://doi.org/10.15626/MP.2022.3108 （研究・学術・2026-10-31 確認）
+  - 事前登録した米国の 1,920 人の再現実験。オプトアウト 73.5%・オプトイン 62.5%（初期設定なし 69.7%）で効果は再現されたが、差は約 11 ポイントで原典より小さい（この 3 つの割合は、1,920 人のうちこの課題に答えた 1,446 人の値）。同じ研究で Johnson・Bellman・Lohse（2002）の再現も試し、健康の調査の案内ではデフォルトの効果は出なかった（オプトアウト 60.5%・オプトイン 61.1%。肯定と否定の言い方では 91.7%・28.9%）。臓器提供の案内で試した概念的な再現では向きが逆（24.9%・64.6%）
+- Adam Arshad, Benjamin Anderson, Adnan Sharif（Kidney International 95）（2019）「Comparison of organ donation and transplantation rates between opt-out and opt-in systems」 https://doi.org/10.1016/j.kint.2019.01.036 （研究・学術・2026-10-31 確認）
+  - OECD 35 か国（2016 年）の比較で、オプトアウトとオプトインの国の間に、亡くなった人からの提供数の有意な差は無かった（観察研究。国ごとの医療体制などの違いが混ざる）。2023 年に訂正（Kidney Int 103(5):998、doi:10.1016/j.kint.2023.03.010）が出ている。訂正の本文は出版社のページが開けず（403）確かめていない。講座で使う主張は原論文の要旨（Europe PMC）で確認
 - Brigitte C. Madrian, Dennis F. Shea（Quarterly Journal of Economics 116）（2001）「The Power of Suggestion: Inertia in 401(k) Participation and Savings Behavior」 https://doi.org/10.1162/003355301753265543 （研究・学術・2026-10-30 確認）
   - 米国の大企業 1 社が 401(k)（確定拠出型の退職貯蓄制度）を自動加入に変えると、加入率が有意に大きく上がり、既定の拠出率と運用先のまま残る人が多かった（慣性と、既定を会社の助言と受け止めることが原因とされる）。NBER 版の要旨で確認
 - Stephanie Mertens ほか（PNAS 119）（2022）「The effectiveness of nudging: A meta-analysis of choice architecture interventions across behavioral domains」 https://doi.org/10.1073/pnas.2107346118 （研究・学術・2026-10-30 確認）
   - 選択アーキテクチャの介入のメタ分析。2022 年 5 月の訂正（PNAS 119(19) e2204059119）後の値で、212 本・447 の効果量・約 215 万人、全体の効果量 d=0.43［0.38, 0.48］（訂正前は 0.45）。決定の構造（デフォルトなど）が最も大きい（0.54）。著者も出版バイアスを認めている
 - Maximilian Maier ほか（PNAS 119）（2022）「No evidence for nudging after adjusting for publication bias」 https://doi.org/10.1073/pnas.2200300119 （研究・学術・2026-10-30 確認）
   - Mertens ほかのデータを出版バイアスで補正すると、平均効果は d≈0.04 で証拠は弱い（効果なしの証明ではなく、どちらとも決まらない水準）。情報を出すだけの介入と金融の分野は効果がないことを支持し、決定の構造の介入ははっきりしない
-- Stefano DellaVigna, Elizabeth Linos（Econometrica 90）（2022）「RCTs to Scale: Comprehensive Evidence From Two Nudge Units」 https://doi.org/10.3982/ECTA18709 （研究・学術・2026-10-30 確認）
-  - 米国の 2 つのナッジ・ユニットの 126 の RCT（約 2,300 万人）の平均効果は +1.4 ポイント（対照群比 +8.0%、統計的に有意）。学術誌の研究は +8.7 ポイント（+33.4%）。差の約 7 割は出版バイアスで説明できる
+- Stefano DellaVigna, Elizabeth Linos（Econometrica 90）（2022）「RCTs to Scale: Comprehensive Evidence From Two Nudge Units」 https://doi.org/10.3982/ECTA18709 （研究・学術・2026-10-31 確認）
+  - 米国の 2 つのナッジ・ユニットの 126 の RCT（約 2,300 万人）の平均効果は +1.4 ポイント（対照群比 +8.0%、統計的に有意）。学術誌の研究は +8.7 ポイント（+33.4%）。差の約 7 割は、検出力の低さで強まった選択的な出版で説明できる（2026-10-31 に要旨で確かめ直し）
 
 ## 8. 学習画面の右側の AI チャットに聞ける質問例
 

@@ -112,7 +112,7 @@ export const UIUX_SYLLABUS: Syllabus = {
       minutes: 8,
       storyline: [
         { step: '困りごと', content: '薄いグレーの文字が読めない、エラーが赤い色だけで伝わらない' },
-        { step: '考え方', content: '色の役割、コントラスト比、色の使用（色だけで伝えない）' },
+        { step: '考え方', content: '色の役割、コントラスト比、色の用途（色だけで伝えない）' },
         { step: '良い例・悪い例', content: '赤い枠だけのエラー／アイコンと文言を添えたエラー' },
         { step: '実践手順', content: '画面の色を一覧にし、コントラスト比を測って直す' },
         { step: '演習', content: '自分の画面の文字と部品のコントラスト比を測る' },

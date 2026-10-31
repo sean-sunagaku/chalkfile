@@ -68,7 +68,7 @@
 
 ほかの人の行動を見せる設計は、うそが入るとダークパターンになります。米国の連邦取引委員会（FTC）のスタッフ報告（2022 年 9 月）は、「社会的証明（social proof）」の手口として、サイトの上でのほかの人の行動や関心について偽の主張をする「偽の行動の通知」（報告書の例の訳: 「ほかに 24 人がこの物件を見ています」）や、偽の利用者の声などを挙げています。
 
-OECD の報告書（2022 年）も、ほかの消費者の購入の通知や利用者の声を使うダークパターンを「社会的証明」に分け、通知が本当でないこと（昔の購入を最近のように見せるなど）があると指摘しています。報告書が紹介する調査（Mathur ほか, 2019）では、約 1 万 1,000 のショッピングサイトの中に、こうした通知を組み込む外部のサービスが使われていて、偽の通知を作れることを宣伝する事業者もありました。一方で、本当のことを伝える社会的証明は、だましには当たらず、役に立つこともあるとしています。
+OECD の報告書（2022 年）も、ほかの消費者の購入の通知や利用者の声を使うダークパターンを「社会的証明」に分け、通知が本当でないこと（昔の購入を最近のように見せるなど）があると指摘しています。報告書が紹介する調査（Mathur ほか, 2019）では、約 1 万 1,000 のショッピングサイトの中に、こうした通知を組み込む外部のサービスが使われていて、偽の通知を作れることを宣伝する事業者もありました。一方で、本当のことを伝える社会的証明は、だましとは言えないことがあり、役に立つこともあるとしています。
 
 サンプル家計簿では、次の 3 つを守ります。
 
@@ -423,14 +423,14 @@ OECD の報告書（2022 年）も、ほかの消費者の購入の通知や利�
   - Opower の 111 のランダム化比較試験（約 860 万世帯）で、最初の 10 か所のデータからの予測は、あとの 101 か所の効果を大きく見積もりすぎた。環境への関心が高い地域の電力会社ほど先に取り入れ、客の反応も大きかったこと、初めは使用量の多い家庭に絞って送り、あとで広げたことなどが理由。NBER Working Paper 18373 の要旨と、Crossref の書誌（130 巻 3 号 1117〜1165 ページ）で確認
 - 米国連邦取引委員会（FTC）（2022）「Bringing Dark Patterns to Light（Staff Report）」 https://www.ftc.gov/system/files/ftc_gov/pdf/P214800%20Dark%20Patterns%20Report%209.14.2022%20-%20FINAL.pdf （公式・法令・規格・2026-10-30 確認）
   - スタッフ報告（2022 年 9 月、委員会が 5 対 0 で公表を承認）。ダークパターンを、利用者をだましたり操ったりして本来しなかった選択をさせ、害を与えうる設計の手法と説明（法律上の定義ではない）。広告の偽装・偽の期限、解約の妨害、条件や手数料の隠蔽、個人データの提供への誘導を代表的な手口に挙げる
-- OECD（2022）「Dark Commercial Patterns（OECD Digital Economy Papers No. 336）」 https://doi.org/10.1787/44f5e846-en （公式・法令・規格・2026-10-30 確認）
-  - Digital Economy Papers No. 336（2022-10-26）。ダークパターンの作業定義・7 つの分類・広がりと害の証拠・規制と執行の選択肢・自己監査。穏やかに見える手口でも同じくらい効くことがあり、決定版の分類は難しいとする。本体の PDF で確認
-- Verena Tiefenbeck ほか（Management Science 64）（2018）「Overcoming Salience Bias: How Real-Time Feedback Fosters Resource Conservation」 https://doi.org/10.1287/mnsc.2016.2646 （研究・学術・2026-10-30 確認）
-  - シャワーの最中に、使っているエネルギーと水をその場で表示した大規模なフィールド実験で、シャワーの資源の消費が 22% 減った。もともと多い人ほど減り、家全体の使用量をまとめて返す従来の方法より、絶対量で大きな節約になった。要旨（Crossref）で確認。スイスの約 700 の 1〜2 人世帯・約 2 か月という条件は、ボン大学の発表（2017 年 2 月 7 日）で確認
+- OECD（2022）「Dark Commercial Patterns（OECD Digital Economy Papers No. 336）」 https://doi.org/10.1787/44f5e846-en （公式・法令・規格・2026-10-31 確認）
+  - Digital Economy Papers No. 336（2022-10-26）。ダークパターンの作業定義・7 つの分類・広がりと害の証拠・規制と執行の選択肢・自己監査。穏やかに見える手口でも同じくらい効くことがあり、決定版の分類は難しいとする。本体の PDF で確認（DOI の先は 403。公式 PDF は https://www.oecd.org/content/dam/oecd/en/publications/reports/2022/10/dark-commercial-patterns_9f6169cd/44f5e846-en.pdf ）
+- Verena Tiefenbeck ほか（Management Science 64）（2018）「Overcoming Salience Bias: How Real-Time Feedback Fosters Resource Conservation」 https://doi.org/10.1287/mnsc.2016.2646 （研究・学術・2026-10-31 確認）
+  - シャワーの最中に、使っているエネルギーと水をその場で表示した大規模なフィールド実験で、シャワーの資源の消費が 22% 減った。もともと多い人ほど減り、家全体の使用量をまとめて返す従来の方法より、絶対量で大きな節約になった。要旨（Crossref・OpenAlex）で確認。スイスの約 700 の 1〜2 人世帯・約 2 か月という条件は、ボン大学の発表（2017 年 2 月）を転載した ScienceDaily の記事（2017 年 2 月 9 日）で確認（大学のページそのものは開けていない）
 - Avraham N. Kluger, Angelo DeNisi（Psychological Bulletin 119）（1996）「The effects of feedback interventions on performance: A historical review, a meta-analysis, and a preliminary feedback intervention theory」 https://doi.org/10.1037/0033-2909.119.2.254 （研究・学術・2026-10-30 確認）
   - フィードバックの介入のメタ分析（607 の効果量・2 万 3,663 の観察）。平均では成績を上げた（d=0.41）が、3 分の 1 以上は成績を下げた。注意が課題から離れて自分自身に向くほど、効果が小さくなるとする。有料のため、要旨（OpenAlex に載る冒頭の文）と Crossref の書誌で確認
-- The Behavioural Insights Team（2014（配布中の PDF は 2024 年 12 月の改訂版））「EAST: Four simple ways to apply behavioural insights」 https://www.bi.team/publications/east-four-simple-ways-to-apply-behavioural-insights/ （実務の指針・2026-10-30 確認）
-  - Easy（デフォルト・手間を減らす・簡単に伝える）・Attractive（注意を引く・インセンティブの工夫）・Social（多くの人がしていると示す・つながり・互恵）・Timely（よい時機・目の前の損得・前もって計画）。改訂版は、規範の伝え方が逆効果になる条件や、本人のためになる手間にも触れる。PDF で確認
+- The Behavioural Insights Team（2014（配布中の PDF は 2024 年 12 月の改訂版））「EAST: Four simple ways to apply behavioural insights」 https://www.bi.team/publications/east-four-simple-ways-to-apply-behavioural-insights/ （実務の指針・2026-10-31 確認）
+  - Easy（デフォルト・手間を減らす・簡単に伝える）・Attractive（注意を引く・インセンティブの工夫）・Social（多くの人がしていると示す・つながり・互恵）・Timely（よい時機・目の前の損得・前もって計画）。改訂版は、規範の伝え方が逆効果になる条件や、本人のためになる手間にも触れる。PDF で確認（改訂版の公開は 2024-12-16。配布中の PDF ファイルは 2025 年 4 月に作られたもの）
 
 ## 8. 学習画面の右側の AI チャットに聞ける質問例
 

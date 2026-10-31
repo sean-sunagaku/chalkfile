@@ -76,7 +76,7 @@
 
 ### [mkt-01-s05] 講座の約束 1: 売上と利益を分けて見る
 
-根拠: 説明用の仮の例・公式・法令・規格　動画の場面: 10　出典: [国税庁 令和 8 年 4 月 1 日現在法令等](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1350.htm)、[国税庁 —](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm)
+根拠: 説明用の仮の例・公式・法令・規格　動画の場面: 10　出典: [国税庁 令和 8 年 4 月 1 日現在法令等](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1350.htm)、[国税庁 令和 8 年 4 月 1 日現在法令等](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm)
 
 **売上**は、売った分の金額の合計です（年払い・未入金・返金があると、口座に入るお金の時期とはずれます）。**利益**は、売上から費用を引いた残りです。個人の事業の所得も、国税庁の説明では「総収入金額 − 必要経費」で計算します（副業の場合は、事業所得ではなく雑所得になることもありますが、計算の形は同じです）。
 
@@ -439,15 +439,15 @@ Wilson の方法で 95% 信頼区間を計算すると、およそ 11%〜60%。�
   - 業界紙の記事（二次資料）。新しい定義と 3 つの注、委員会で約半年かけて作った経緯。公式ページが開けなかったので中身の確認に使った
 - Clayton M. Christensen, Taddy Hall, Karen Dillon, David S. Duncan（Harvard Business Review）（2016（9 月号））「Know Your Customers’ ‘Jobs to Be Done’」 https://hbr.org/2016/09/know-your-customers-jobs-to-be-done （実務の指針・2026-10-30 確認）
   - 製品を買うことは、ある状況で片付けたい用事（ジョブ）のために製品を雇うこと、という考え方。用事には社会的・感情的な面もあり、顧客の属性より状況が大事（研究にもとづく実務誌の記事。本文は有料で、要旨で確認）
-- Steve Blank（2010）「Teaching Entrepreneurship – By Getting Out of the Building」 https://steveblank.com/2010/03/11/teaching-entrepreneurship-%E2%80%93-by-getting-out-of-the-building/ （実務の指針・2026-10-30 確認）
-  - 顧客と課題の仮説は社内では確かめられないので、オフィスの外に出て実際の顧客で確かめる（顧客開発。著書『The Four Steps to the Epiphany』で示したモデル）
+- Steve Blank（2010）「Teaching Entrepreneurship – By Getting Out of the Building」 https://steveblank.com/2010/03/11/teaching-entrepreneurship-%E2%80%93-by-getting-out-of-the-building/ （実務の指針・2026-10-31 確認）
+  - 顧客と課題の仮説は社内では確かめられないので、オフィスの外に出て実際の顧客で確かめる（顧客開発。著書『The Four Steps to the Epiphany』で示したモデル）。記事の言い方は「どんなビジネスモデルも（事業の計画ではない）、顧客との最初の出会いを生き延びない」
 - 消費者庁（—）「優良誤認とは」 https://www.caa.go.jp/policies/policy/representation/fair_labeling/representation_regulation/misleading_representation/ （公式・法令・規格・2026-10-30 確認）
   - 品質・規格などを実際より（または競合より）著しく優良と示す表示は優良誤認表示（第 5 条第 1 号）。わざとでなくても対象。根拠資料を出せなければ不当表示とみなされる（不実証広告規制、第 7 条第 2 項）
 - 消費者庁（—）「不実証広告規制」 https://www.caa.go.jp/policies/policy/representation/fair_labeling/representation_regulation/misleading_representation/not_demonstrated_ad （公式・法令・規格・2026-10-30 確認）
   - 消費者庁は期間を決めて合理的な根拠の資料を求められ、出せないと措置命令では不当表示とみなされる（課徴金では推定）。根拠は客観的に実証され、表示の中身と対応していること。アンケートなら無作為に選んだ十分な人数が要る
 - 国税庁（令和 8 年 4 月 1 日現在法令等）「No.1350 事業所得の課税のしくみ（事業所得）」 https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1350.htm （公式・法令・規格・2026-10-30 確認）
   - 事業所得の金額は「総収入金額 − 必要経費」で計算する
-- 国税庁（—）「No.1500 雑所得」 https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm （公式・法令・規格・2026-10-30 確認）
+- 国税庁（令和 8 年 4 月 1 日現在法令等）「No.1500 雑所得」 https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm （公式・法令・規格・2026-10-31 確認）
   - 副業などの「業務に係る雑所得」も、総収入金額 − 必要経費で計算する
 - NIST（—）「NIST/SEMATECH e-Handbook of Statistical Methods 7.2.4.1 Confidence intervals（割合の信頼区間）」 https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm （研究・学術・2026-10-30 確認）
   - 割合の信頼区間の求め方。正規近似は下限が負になりうるので劣るとし、Wilson のスコア区間を勧める（小見出しは Agresti and Coull で、今は Wilson 法と呼ぶと注記）

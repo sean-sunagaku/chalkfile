@@ -31,7 +31,7 @@
 
 理由は、1 人あたりに残る額が減ったからです。手数料を引くと、980 円の 1 人からは約 938 円、500 円の 1 人からは約 478 円が残ります。決まった費用（月 3,000 円）を引いたうえで前と同じ利益を残すには、500 円では 40 人、つまり値下げの前の 2 倍の人数が要ります（図 mkt-05-f02）。
 
-しかも、この計算には、人数に比例して増える費用（問い合わせに答える時間・メールの送信・保存の容量など）が入っていません。それがあれば、値下げで必要になる人数はもっと増えます。値下げは、人数がどれだけ増えるかを確かめる前に決めると、利益だけが確実に減る打ち手になりがちです。
+しかも、この計算には、人数に比例して増える費用（問い合わせに答える時間・メールの送信・保存の容量など）が入っていません。それがあれば、値下げで必要になる人数はもっと増えます。値下げで確実に減るのは 1 人あたりに残る額で、人数がどれだけ増えるかは分かりません。確かめる前に決めると、利益が減るだけの打ち手になりがちです。
 
 ### [mkt-05-s02] 価格の幅を 3 つで考える（費用からではなく）
 
@@ -61,7 +61,7 @@
 答えを人数分集めて、値段ごとの割合の線を重ねると、線が交わるところから「受け入れられやすい値段の幅」の目安が見えます。ただし、限界がはっきりしています。
 
 - **何人が買うかは分からない**: 値段の感じ方の幅を見る方法で、その値段での申し込みの数（需要）は出ません（買う気持ちを足して聞く拡張もありますが、仮定が増えます）
-- **仮の質問への答え**: 「いくらなら払うか」という仮の質問への答えと、実際の行動のずれ（仮想バイアス）は、環境・マーケティング・交通・健康などの分野で研究が続いていて、131 の研究を集めたメタ分析もあります（Penn & Hu 2018）。第 2 章の「月 500 円なら払うと思う」が、数に入れない未来の意見だったのと同じです
+- **仮の質問への答え**: 「いくらなら払うか」という仮の質問への答えと、実際の行動のずれ（仮想バイアス）は、環境・マーケティング・交通・医療などの分野で研究が続いていて、131 の研究を集めたメタ分析もあります（Penn & Hu 2018）。第 2 章の「月 500 円なら払うと思う」が、数に入れない未来の意見だったのと同じです
 - **人数が少ない**: 5 人や 10 人の答えでは線がでこぼこで、幅も大きく揺れます（第 1 章）
 
 なので、4 つの質問は「値段の候補の幅を絞る材料」に使い、決めるのは実際の申し込み（事前の申し込み・有料の試用・案内した人のうち何人が払ったか）で確かめます。聞くなら、サービスを実際に使ってもらったあとに、今の代わりの手段にいくら・何分かけているか（過去の事実）と一緒に聞きます。
@@ -87,7 +87,7 @@
 
 ### [mkt-05-s05] 税と、自分の作業時間
 
-根拠: 公式・法令・規格・実務の指針　動画の場面: 9　出典: [国税庁 令和 8 年 4 月 1 日現在法令等](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1350.htm)、[国税庁 —](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm)
+根拠: 公式・法令・規格・実務の指針　動画の場面: 9　出典: [国税庁 令和 8 年 4 月 1 日現在法令等](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1350.htm)、[国税庁 令和 8 年 4 月 1 日現在法令等](https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm)
 
 計算表の利益は、税の前の額です。ここでは、国税庁の説明（令和 8 年 4 月 1 日現在の法令等）の範囲で、計算の形だけを押さえます。
 
@@ -425,10 +425,10 @@ flowchart LR
 
 - Clayton M. Christensen, Taddy Hall, Karen Dillon, David S. Duncan（Harvard Business Review）（2016（9 月号））「Know Your Customers’ ‘Jobs to Be Done’」 https://hbr.org/2016/09/know-your-customers-jobs-to-be-done （実務の指針・2026-10-30 確認）
   - 製品を買うことは、ある状況で片付けたい用事（ジョブ）のために製品を雇うこと、という考え方。用事には社会的・感情的な面もあり、顧客の属性より状況が大事（研究にもとづく実務誌の記事。本文は有料で、要旨で確認）
-- Peter van Westendorp（Proceedings of the 29th ESOMAR Congress）（1976）「NSS Price Sensitivity Meter (PSM): A new approach to study consumer perception of prices」 https://cran.r-project.org/web/packages/pricesensitivitymeter/refman/pricesensitivitymeter.html （実務の指針・2026-10-30 確認）
+- Peter van Westendorp（Proceedings of the 29th ESOMAR Congress）（1976）「NSS-Price Sensitivity Meter (PSM) – A new approach to study consumer perception of price」 https://cran.r-project.org/web/packages/pricesensitivitymeter/refman/pricesensitivitymeter.html （実務の指針・2026-10-31 確認）
   - 「高すぎる・安すぎて不安・高いと感じ始める・お得」の 4 つの価格を聞き、受け入れられる価格帯を探る方法。原典は開けず、書誌は実装パッケージの説明で確認。需要量は推定できない
-- Jerrod M. Penn, Wuyang Hu（American Journal of Agricultural Economics）（2018）「Understanding hypothetical bias: An enhanced meta-analysis」 https://repository.lsu.edu/ag_econ_pubs/150 （研究・学術・2026-10-30 確認）
-  - 仮の質問で聞いた評価（表明選好）に生じる仮想バイアスについて、500 本以上の文献から 131 の研究を集めたメタ分析。分野は環境・マーケティング・交通・健康など。選択実験・事前の注意喚起（cheap talk）・結果に影響すると伝えること・確信度の確認が、バイアスの大きさを説明し小さくする要因だった。要旨で確認（バイアスの大きさの数字と本文は未確認）。DOI 10.1093/ajae/aay021
+- Jerrod M. Penn, Wuyang Hu（American Journal of Agricultural Economics）（2018）「Understanding hypothetical bias: An enhanced meta-analysis」 https://repository.lsu.edu/ag_econ_pubs/150 （研究・学術・2026-10-31 確認）
+  - 仮の質問で聞いた評価（表明選好）に生じる仮想バイアスについて、500 本以上の文献から 131 の研究を集めたメタ分析。仮想バイアスがよく見られる分野として、環境・マーケティング・交通・医療などを挙げる。選択実験・事前の注意喚起（cheap talk）・結果に影響すると伝えること・確信度の確認が、バイアスの大きさを説明し小さくする要因だった。要旨で確認（バイアスの大きさの数字と本文は未確認）。DOI 10.1093/ajae/aay021
 - Stripe（2026（10 月 30 日に確認））「料金体系（日本）」 https://stripe.com/jp/pricing （公式・法令・規格・2026-10-30 確認）
   - カード決済は決済成功ごとに 3.6%（通貨換算が要る場合は +2%）。定期の請求（Stripe Billing）は Billing の取引額の 0.7%（単発の請求書は対象外）。標準の料金体系に初期費用・月額料金はない。返金しても元の決済手数料は戻らない。コンビニ決済は 3.6%（最低 120 円）など、支払い方法ごとに率が違う（料金ページと Billing の料金ページで確認。ページに更新日の記載はない）
 - Apple（2025（12 月 17 日発表））「Changes to iOS in Japan（日本でのアプリ配信）」 https://developer.apple.com/support/app-distribution-in-japan/ （公式・法令・規格・2026-10-30 確認）
@@ -441,7 +441,7 @@ flowchart LR
   - 正式名称は「スマートフォンにおいて利用される特定ソフトウェアに係る競争の促進に関する法律」。2024 年 6 月 19 日公布、2025 年 12 月 18 日全面施行（指定の手続きの部分は 2024 年 12 月 19 日に先に施行）。指定事業者は Apple Inc.・iTunes 株式会社・Google LLC（2025 年 3 月 26 日指定）
 - 国税庁（令和 8 年 4 月 1 日現在法令等）「No.1350 事業所得の課税のしくみ（事業所得）」 https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1350.htm （公式・法令・規格・2026-10-30 確認）
   - 事業所得の金額は「総収入金額 − 必要経費」で計算する
-- 国税庁（—）「No.1500 雑所得」 https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm （公式・法令・規格・2026-10-30 確認）
+- 国税庁（令和 8 年 4 月 1 日現在法令等）「No.1500 雑所得」 https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1500.htm （公式・法令・規格・2026-10-31 確認）
   - 副業などの「業務に係る雑所得」も、総収入金額 − 必要経費で計算する
 - 消費者庁（—）「有利誤認とは」 https://www.caa.go.jp/policies/policy/representation/fair_labeling/representation_regulation/advantageous_misidentification （公式・法令・規格・2026-10-30 確認）
   - 価格その他の取引条件を、実際より、または競争事業者より著しく有利だと誤認させる表示（景品表示法第 5 条第 2 号）。わざとでなくても対象で、措置命令などの対象になる。例として、基本の価格を示さずに「今なら半額」と表示したが、実際は半額に当たらない料金だった事例などを挙げる（ページで確認。二重価格の考え方は本文には無く、関連ページの名前だけ）
