@@ -4,15 +4,20 @@
 // python3 -m http.server は Range に答えないので、動画の途中へ飛べない
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { byteRange } from '../site/offline-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..', 'site', 'dist');
 const PORT = Number(process.env.PORT ?? 8765);
+const BASE_PATH = process.env.BASE_PATH ?? '/';
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.mp4': 'video/mp4',
   '.jpg': 'image/jpeg',
   '.json': 'application/json',
   '.vtt': 'text/vtt',
+  '.js': 'text/javascript; charset=utf-8',
+  '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png',
 };
 
 Bun.serve({
@@ -20,7 +25,10 @@ Bun.serve({
   port: PORT,
   fetch(req) {
     const { pathname } = new URL(req.url);
-    let file = path.join(ROOT, decodeURIComponent(pathname));
+    if (!pathname.startsWith(BASE_PATH)) return new Response('not found', { status: 404 });
+    let decoded: string;
+    try { decoded = decodeURIComponent(pathname.slice(BASE_PATH.length)); } catch { return new Response('bad request', { status: 400 }); }
+    let file = path.join(ROOT, decoded);
     if (file !== ROOT && !file.startsWith(ROOT + path.sep)) return new Response('forbidden', { status: 403 });
     if (existsSync(file) && statSync(file).isDirectory()) {
       // 末尾の / が無いと、ページの中の相対パス（media/…）がずれる
@@ -30,18 +38,17 @@ Bun.serve({
     if (!existsSync(file)) return new Response('not found', { status: 404 });
     const body = Bun.file(file);
     const type = TYPES[path.extname(file)] ?? 'application/octet-stream';
-    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get('range') ?? '');
-    if (m && (m[1] || m[2])) {
-      const size = body.size;
-      const start = m[1] ? Number(m[1]) : Math.max(0, size - Number(m[2]));
-      const end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
-      if (start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+    const size = body.size;
+    const range = byteRange(req.method === 'HEAD' ? null : req.headers.get('range'), size);
+    if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+    if (range.kind === 'partial') {
+      const { start, end } = range;
       return new Response(body.slice(start, end + 1), {
         status: 206,
         headers: { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${size}`, 'Content-Length': String(end - start + 1) },
       });
     }
-    return new Response(body, { headers: { 'Content-Type': type, 'Accept-Ranges': 'bytes' } });
+    return new Response(req.method === 'HEAD' ? null : body, { headers: { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': String(size) } });
   },
 });
 console.log(`http://127.0.0.1:${PORT}/`);

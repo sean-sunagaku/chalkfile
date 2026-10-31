@@ -24,7 +24,8 @@
 
 ```bash
 npm ci --ignore-scripts
-npx tsc --noEmit
+npm run typecheck
+npm test
 bun scripts/check_content.ts --self-test
 bun scripts/check_content.ts
 ```
@@ -33,6 +34,7 @@ bun scripts/check_content.ts
 - 台詞を変えたら synth → mix → render の順に作り直し、`.work/kana/<id>.txt` の読みを見る
 - 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
 - 動画（`site/media/`）と生成物はコミットしない
+- 講座サイト・PWAを変えたら、生成した動画と教材で `bun scripts/build_site.ts --strict` → `npm run test:browser`。保存の失敗・更新・オフライン再起動も確認する。専用lintスクリプトはない
 
 Pull Request のひな形の確認項目を埋めてください。
 

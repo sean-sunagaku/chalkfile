@@ -7,12 +7,14 @@
 __CSP__
 <meta name="referrer" content="strict-origin-when-cross-origin">
 __HEAD_META__
+__PWA_HEAD__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 __FONT_LINK__
 <style>
 /* 一覧のページ。色・書体・背景は Chalkfile のテーマ（build_site.ts が下に差し込む） */
 __THEME_CSS__
+__OFFLINE_CSS__
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -31,10 +33,10 @@ img { max-width: 100%; }
 .shell { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
 
 /* ── 上の帯 ── */
-.top { display: flex; align-items: center; gap: 16px; padding-block: 18px; }
+.top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-block: 18px; }
 .mark { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 900; font-size: 18px; }
 .mark i { width: 22px; height: 16px; border-radius: 4px; background: var(--stage); box-shadow: inset 0 -4px 0 var(--accent); }
-.top nav { margin-left: auto; display: flex; gap: 6px; }
+.top nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
 .top nav a { color: var(--fg-2); text-decoration: none; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 999px; }
 .top nav a:hover { background: var(--panel); color: var(--fg); }
 
@@ -134,6 +136,7 @@ footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(-
     <a class="mark" href="./"><i aria-hidden="true"></i>__SERIES__</a>
     <nav aria-label="ページ内とリンク">
       <a href="#courses">講座</a>
+      <a href="#offlineHeading">保存・アプリ</a>
       <a href="#themes">テーマ</a>
       <a href="__REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
@@ -206,5 +209,7 @@ export const STRIPE_BILLING: Course = {
     <div>講座は、確かめた日の公式情報をもとにした個人の勉強用のものです。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律や税の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
   </footer>
 </div>
+<div class="shell">__OFFLINE_PANEL__</div>
+__PWA_SCRIPT__
 </body>
 </html>
