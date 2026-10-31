@@ -8,7 +8,7 @@
 //   <章 ID>.md           教材一式（build_materials.ts の出力。台本・絵コンテ・課題を含む）
 //   README.md            中身と、作り直し方（編集の正本は content/ の台本）
 // 動画は Git に入れない（out/ は .gitignore）。
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { courseOf, LECTURES } from '../content';
 
@@ -39,7 +39,8 @@ for (const id of ids) {
   const copy = (from: string, to: string) => {
     const f = path.join(ROOT, from);
     if (!existsSync(f)) return console.warn(`  まだ無い: ${from}`);
-    copyFileSync(f, path.join(dir, to));
+    // APFS などでは複製せずに同じ中身を指す（ディスクを食わない）。できないファイルシステムでは普通にコピーする
+    copyFileSync(f, path.join(dir, to), constants.COPYFILE_FICLONE);
     got.push(to);
   };
   copy(`out/captioned/${id}.mp4`, `${id}.captioned.mp4`);
@@ -57,7 +58,7 @@ for (const id of ids) {
   writeFileSync(
     path.join(dir, 'README.md'),
     [
-      `# ${course.title}　第 ${lec.no} 章 ${lec.title}`,
+      `# ${course.title}　${course.unitLabel === 'CHAPTER' ? `第 ${lec.no} 章` : `レクチャー ${lec.no}`} ${lec.title}`,
       '',
       lec.summary,
       '',
@@ -69,6 +70,7 @@ for (const id of ids) {
       '',
       `- 正本は台本 \`content/${course.id}/${id}.ts\`（台詞・画面・教材・課題）と、出典 \`content/${course.id}/sources.ts\``,
       `- 台詞を直したら: \`bun scripts/synth.ts ${id}\` → \`uv run --with numpy --with scipy python scripts/mix.py ${id}\` → \`CAPTIONS=1 bash scripts/render.sh ${id}\` → \`bun scripts/build_materials.ts\` → \`bun scripts/export_deliverables.ts ${id}\``,
+      '- 台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出す: `bun scripts/materials.ts pull`（README の「素材から作り直す」）',
       '- 場面だけ見る: `npx remotion studio`（props の captions を true にすると字幕つき）',
       '- ナレーション: VOICEVOX:No.7（講師）、VOICEVOX:青山龍星（呼び込み）。BGM・効果音はプログラムで合成したオリジナル',
       '',

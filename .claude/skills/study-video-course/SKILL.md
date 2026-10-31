@@ -62,6 +62,8 @@ bash scripts/deploy_pages.sh
 
 コミットしてから流す。`site/dist` を gh-pages ブランチに 1 コミットで強制 push する（動画を main の履歴に積まない）。1〜2 分で `site/config.json` の `baseUrl` に出る。初回の Pages の設定は pipeline.md。
 
+台詞の声を作り直したら、素材のブランチも置き換える: `bun scripts/materials.ts push`（台詞の声と BGM・効果音を `materials` ブランチに 1 コミットで置く。pipeline.md の「素材」）。
+
 ## よくある直し
 
 | 頼まれたこと | やること |
@@ -72,6 +74,7 @@ bash scripts/deploy_pages.sh
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.mjs --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
+| VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
 
 ## やらないこと
 

@@ -4,25 +4,17 @@
 // 出力:
 //   .work/tts/<hash>.wav                 台詞の音声（同じ文・同じ声なら再利用）
 //   src/generated/timeline.json          Remotion が読む場面・台詞の開始フレーム
-//   .work/plan/<id>.json                 mix.py が読むミックスの設計図
+//   .work/plan/<id>.json                 mix.py が読むミックスの設計図（音声はこのフォルダからの相対パス）
 //   site/data/<id>.json, <id>.vtt        講座サイトの台本と字幕
-import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { LECTURES } from '../content';
-import { toSpeech } from '../content/reading';
-import type { Lecture, Line, Scene, VoiceId } from '../content/types';
+import type { Lecture, Scene, VoiceId } from '../content/types';
+import { speechOf, ttsKey, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const ENGINE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
 const FPS = 30;
-
-const VOICES: Record<VoiceId, { speaker: number; speed: number; intonation: number; pitch: number; credit: string }> = {
-  // No.7（ノーマル）: 講師。Whisper での聞き取りが候補の中で一番正確だった
-  narrator: { speaker: 29, speed: 1.06, intonation: 1.12, pitch: 0, credit: 'VOICEVOX:No.7' },
-  // 青山龍星（ノーマル）: レクチャー名の呼び込み
-  announcer: { speaker: 13, speed: 1.0, intonation: 1.25, pitch: 0, credit: 'VOICEVOX:青山龍星' },
-};
 
 // 間の取り方（秒）
 const LEAD_IN = 0.45;
@@ -40,12 +32,6 @@ const PLAN_DIR = dir(path.join(ROOT, '.work/plan'));
 const KANA_DIR = dir(path.join(ROOT, '.work/kana'));
 const GEN_DIR = dir(path.join(ROOT, 'src/generated'));
 const SITE_DATA = dir(path.join(ROOT, 'site/data'));
-
-const speechOf = (line: Line): string => {
-  const s = toSpeech(line.s ?? line.t);
-  if (/[A-Za-z]/.test(s)) throw new Error(`英字が残っている: ${s}`);
-  return s;
-};
 
 const wavSeconds = (buf: Buffer): number => {
   // RIFF の fmt と data チャンクから長さを出す
@@ -67,13 +53,15 @@ const wavSeconds = (buf: Buffer): number => {
 
 const synth = async (text: string, voice: VoiceId): Promise<{ file: string; sec: number; kana: string }> => {
   const v = VOICES[voice];
-  const key = createHash('sha1').update(JSON.stringify([text, v])).digest('hex').slice(0, 16);
+  const key = ttsKey(text, voice);
   const file = path.join(TTS_DIR, `${key}.wav`);
   const kanaFile = path.join(TTS_DIR, `${key}.kana`);
   if (existsSync(file) && existsSync(kanaFile)) {
     return { file, sec: wavSeconds(readFileSync(file)), kana: readFileSync(kanaFile, 'utf8') };
   }
-  const q = await fetch(`${ENGINE}/audio_query?speaker=${v.speaker}&text=${encodeURIComponent(text)}`, { method: 'POST' });
+  const q = await fetch(`${ENGINE}/audio_query?speaker=${v.speaker}&text=${encodeURIComponent(text)}`, { method: 'POST' }).catch((e) => {
+    throw new Error(`VOICEVOX（${ENGINE}）に届かない。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）: ${text}`, { cause: e });
+  });
   if (!q.ok) throw new Error(`audio_query ${q.status}: ${text}`);
   const query = await q.json();
   query.speedScale = v.speed;
@@ -163,7 +151,8 @@ for (const lec of targets) {
           kind: s.kind,
           start: s.start,
           end: s.end,
-          lines: s.lines.map((l) => ({ file: l.file, start: l.start, end: l.end, sfx: l.sfx, pauseAfter: l.pauseAfter })),
+          // 手元の場所に縛られないよう、このフォルダからの相対パスで書く
+          lines: s.lines.map((l) => ({ file: path.relative(ROOT, l.file), start: l.start, end: l.end, sfx: l.sfx, pauseAfter: l.pauseAfter })),
         })),
       },
       null,

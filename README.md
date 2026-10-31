@@ -64,6 +64,27 @@ bun scripts/serve.ts                                            # 手元で見�
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`（台本と、レクチャーの `docs` に並べた公式ページで、言い回しが続けて同じところを探す。ネットにつなぐ）
 - ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
 
+## 素材から作り直す（VOICEVOX なし）
+
+台詞の音声（VOICEVOX の出力）と、BGM・ジングル・効果音は、素材だけを置くブランチ [`materials`](https://github.com/sean-sunagaku/chalkfile/tree/materials) にあります（音声は FLAC で約 390MB。main の履歴には入れません）。取り出せば、台詞を変えていない章は VOICEVOX なしで、動画と講座サイトまで作り直せます。
+
+前提: Node.js、bun、ffmpeg、uv（VOICEVOX は要りません）
+
+```bash
+npm install
+bun scripts/materials.ts pull                                   # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
+bun scripts/synth.ts                                            # 時刻・字幕・ミックスの設計図（取り出した音声を使う）
+uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス
+bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る）
+bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材と講座サイト
+```
+
+- `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめます。1 つの講座だけなら `bun scripts/materials.ts pull nudge-product`
+- 動画を書き出さずに講座サイトだけ組むとき: `bun scripts/materials.ts pull --videos`（公開中のサイト（`gh-pages`）の動画とポスターも `site/media/` に取り出す）→ `bun scripts/synth.ts` → `bun scripts/build_site.ts`
+- 手元の音声が台本に足りているか: `bun scripts/materials.ts check`（足りない台詞は、VOICEVOX を動かして `synth.ts` が作る）
+- 素材を新しくする（台詞を直した後）: 台本をコミットして synth まで流し、`bun scripts/materials.ts push`。`materials` ブランチを親の無い 1 コミットで置き換えます（前の版は残しません）
+- 素材と動画のブランチを持ってこないで clone するとき: `git clone --single-branch https://github.com/sean-sunagaku/chalkfile.git`
+
 ## 講座ごとのテーマ（トンマナ）
 
 色・書体・背景の飾りをテーマとしてまとめてあり、講座ごとに選べます。テーマは動画と講座サイトの両方に効きます。
@@ -120,7 +141,7 @@ bash scripts/deploy_pages.sh
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、設定（`config.json`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方・テーマの作り方をまとめた Claude Code のスキル |
 
-生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は Git に入れません。
+生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は main に入れません。台詞の音声と BGM・効果音は `materials` ブランチ（`bun scripts/materials.ts pull`）、公開中の講座サイトと動画は `gh-pages` ブランチにあります。
 
 ## 安全と公開のきまり
 
