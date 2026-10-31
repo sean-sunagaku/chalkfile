@@ -45,6 +45,26 @@ async function playAndPause(page: Page, at = 0) {
 
 test.beforeEach(async ({ request }) => { await control(request); });
 
+test('一覧ページの375px表示から保存状態とインストール案内へ進める', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/chalkfile/');
+  await expect(page.locator('#savedCourses a')).toHaveCount(1);
+  await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
+  await expect(page.locator('h1')).toHaveText('Chalkfile');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  await page.getByRole('link', { name: '保存・アプリ', exact: true }).click();
+  await expect(page.locator('#offlineHeading')).toBeInViewport();
+  await expect(page.locator('#savedCourses')).toContainText('未保存・オンラインで開く');
+  await page.locator('#installHelp summary').click();
+  await expect(page.locator('#installHelp')).toContainText('ホーム画面に追加');
+  await page.screenshot({ path: path.join(evidence, 'home-mobile-375.png'), fullPage: false });
+  await page.locator('#savedCourses a').click();
+  await expect(page.locator('#offlineSave')).toBeEnabled();
+  expect(errors).toEqual([]);
+});
+
 test('オンライン再生、単体ファイル保存、学習UI、PWA情報と375pxの導線', async ({ page, context, request }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -139,6 +159,13 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
     return { status: r.status, length: r.headers.get('Content-Length'), bytes: (await r.arrayBuffer()).byteLength };
   }, mp4.url);
   expect(head).toEqual({ status: 200, length: String(source.length), bytes: 0 });
+  for (const [etag, code, bytes] of [[`"${mp4.sha256}"`, 206, 128], ['"older-version"', 200, source.length]] as const) {
+    const conditional = await page.evaluate(async ({ url, etag }) => {
+      const r = await fetch(new URL(url, location.origin + '/chalkfile/'), { headers: { Range: 'bytes=0-127', 'If-Range': etag } });
+      return { status: r.status, bytes: (await r.arrayBuffer()).byteLength };
+    }, { url: mp4.url, etag });
+    expect(conditional).toEqual({ status: code, bytes });
+  }
   await playAndPause(page, 90);
   await page.getByRole('button', { name: 'この動画を繰り返す', exact: true }).click();
   await page.locator('video').evaluate(async (v: HTMLVideoElement) => { v.currentTime = v.duration - 0.3; await v.play(); });
@@ -146,8 +173,11 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   await page.locator('video').evaluate((v: HTMLVideoElement) => v.pause());
   await expect(page.locator('#nextup')).toBeHidden();
   // 別レクチャー・チャプター・字幕も保存ページから動作する。
+  await page.locator('.lec[data-i="2"]').click();
+  await page.locator('.lec[data-i="0"]').click();
   await page.locator('.lec[data-i="1"]').click();
   await playAndPause(page, 20);
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => v.currentSrc)).toContain('L02.mp4?v=');
   await page.getByRole('tab', { name: '概要', exact: true }).click();
   await page.locator('#chapters button').nth(1).click();
   await expect(page.locator('#cc')).not.toBeEmpty();
@@ -214,6 +244,8 @@ test('キャンセル・別タブからの重複保存を処理し、再試行�
   await other.locator('#offlineCancel').click();
   await expect(page.locator('#offlineMessage')).toContainText('キャンセルしました');
   await expect(page.locator('#offlineProgress')).toBeHidden();
+  await expect(other.locator('#offlineProgress')).toBeHidden();
+  await expect(other.locator('#offlineMessage')).not.toContainText('保存中');
   expect((await status(page)).saved).toBeNull();
   await other.close();
   await control(request);

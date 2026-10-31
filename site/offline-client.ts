@@ -19,6 +19,7 @@ let workingId: string | undefined;
 let refreshInProgress = false;
 let installPrompt: InstallEvent | null = null;
 let locallyDownloading = false;
+let localSaveRequest = false;
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -83,6 +84,7 @@ function render() {
   network();
   const status = states.find((s) => s.id === app.course?.id);
   const anyProgress = states.find((s) => s.progress)?.progress;
+  const wasWorking = !!workingId;
   workingId = anyProgress?.id;
   const processing = busy || !!anyProgress;
   if (app.course) {
@@ -119,7 +121,10 @@ function render() {
     li.append(a, label);
     list.append(li);
   }
-  if (anyProgress && !locallyDownloading) drawProgress(anyProgress);
+  if (!locallyDownloading) {
+    drawProgress(anyProgress);
+    if (wasWorking && !anyProgress && !localSaveRequest) message('別のタブでの保存処理が終了しました。現在の保存状態を確認してください。');
+  }
 }
 
 async function capacity() {
@@ -131,10 +136,15 @@ async function capacity() {
   } catch { $('storageState').textContent = '保存容量を取得できません。空き容量は保証されません。'; }
 }
 async function refresh() {
-  if (!registration || refreshInProgress) return;
+  if (!registration || refreshInProgress) return false;
   refreshInProgress = true;
-  try { states = (await request('STATUS')).courses ?? []; render(); await capacity(); }
-  catch (error) { message((error as Error).message); }
+  try {
+    states = (await request('STATUS')).courses ?? [];
+    render(); await capacity();
+    if (!app.course && !states.some((s) => s.progress)) message('保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。');
+    return true;
+  }
+  catch (error) { message((error as Error).message); return false; }
   finally { refreshInProgress = false; }
 }
 async function check() {
@@ -152,13 +162,14 @@ $('offlineSave').addEventListener('click', async () => {
   if (!app.course || busy) return;
   busy = true;
   locallyDownloading = true;
+  localSaveRequest = true;
   render();
   drawProgress({ id: app.course.id, loaded: 0, total: 0, file: 0, count: 0 });
   try {
     await request('SAVE', app.course.id, drawProgress);
     message('教材と全動画の保存が完了しました。通信を切って再生を確認してください。');
   } catch (error) { message(`${(error as Error).message} 以前の完全な保存があれば維持します。再試行は保存ボタンから行えます。`); }
-  finally { busy = false; locallyDownloading = false; drawProgress(); await refresh(); }
+  finally { busy = false; locallyDownloading = false; drawProgress(); await refresh(); localSaveRequest = false; }
 });
 $('offlineCancel').addEventListener('click', async () => {
   try {
