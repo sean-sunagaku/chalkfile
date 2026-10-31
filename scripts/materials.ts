@@ -107,7 +107,7 @@ const readmeOf = (source: string, perCourse: { course: Course; clips: number; by
 
 | パス | 中身 | 数 | 大きさ |
 |---|---|---|---|
-${perCourse.map((p) => `| \`tts/${p.course.id}/\` | ${p.course.title}（${p.course.lectures.length} 本）の台詞の音声（VOICEVOX・48kHz・モノラル）と読み（カナ） | ${p.clips} 本 | ${mb(p.bytes)} |`).join('\n')}
+${perCourse.map((p) => `| \`tts/${p.course.id}/\` | ${p.course.title}（${p.course.lectures.length} ${p.course.unitLabel === 'CHAPTER' ? '章' : 'レクチャー'}）の台詞の音声（VOICEVOX・48kHz・モノラル）と読み（カナ） | ${p.clips} 本 | ${mb(p.bytes)} |`).join('\n')}
 | \`audio/music/\`・\`audio/sfx/\` | BGM・ジングル・効果音（\`scripts/build_music.py\` の合成） | ${audioCount} 個 | ${mb(audioBytes)} |
 | \`SHA256SUMS\` | 取り出して WAV に戻した後のファイルの sha256（パスはリポジトリの最上位から） | | |
 
