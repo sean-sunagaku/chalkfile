@@ -20,6 +20,7 @@ let refreshInProgress = false;
 let installPrompt: InstallEvent | null = null;
 let locallyDownloading = false;
 let localSaveRequest = false;
+let messageRevision = 0;
 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
@@ -70,7 +71,17 @@ function request(type: string, id?: string, progress?: (p: DownloadProgress) => 
 function network() {
   $('networkState').textContent = navigator.onLine ? 'オンライン（通信状態は取得時に確認）' : 'オフライン：保存済みの講座で学べます';
 }
-function message(text: string) { $('offlineMessage').textContent = text; }
+function message(text: string) { messageRevision++; $('offlineMessage').textContent = text; }
+function storageMessage() {
+  if (!app.course) return '保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。';
+  const status = states.find((s) => s.id === app.course!.id);
+  if (status?.incomplete) return status.saved
+    ? '一部の保存が不完全です。前の完全な保存版を利用できます。オンラインで保存し直してください。'
+    : '保存が不完全です。オンラインで保存し直してください。';
+  return status?.saved ? '保存済みの教材と全動画を利用できます。通信なしで起動・再生できます。'
+    : 'この講座は未保存です。動画の再生とアプリ内保存には通信が必要です。オンラインで保存してください。';
+}
+function canShowStatus() { return !busy && !locallyDownloading && !states.some((s) => s.progress); }
 function drawProgress(p?: DownloadProgress | null) {
   const bar = $<HTMLProgressElement>('offlineProgress');
   bar.hidden = !p;
@@ -121,10 +132,12 @@ function render() {
     li.append(a, label);
     list.append(li);
   }
-  if (!locallyDownloading) {
+  // 自分の保存の最終状態を確認するまでは、古い STATUS で完了・エラーを描き直さない。
+  if (!locallyDownloading && !localSaveRequest) {
     drawProgress(anyProgress);
     if (wasWorking && !anyProgress && !localSaveRequest) message('別のタブでの保存処理が終了しました。現在の保存状態を確認してください。');
   }
+  if (localSaveRequest && !busy && !locallyDownloading && !anyProgress) localSaveRequest = false;
 }
 
 async function capacity() {
@@ -141,7 +154,8 @@ async function refresh() {
   try {
     states = (await request('STATUS')).courses ?? [];
     render(); await capacity();
-    if (!app.course && !states.some((s) => s.progress)) message('保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。');
+    // 初期案内だけを確定する。進捗・操作結果・通信エラーは状態確認で上書きしない。
+    if (messageRevision === 0 && canShowStatus()) message(storageMessage());
     return true;
   }
   catch (error) { message((error as Error).message); return false; }
@@ -150,11 +164,19 @@ async function refresh() {
 async function check() {
   if (!app.course || !navigator.onLine) return;
   $<HTMLButtonElement>('offlineCheck').disabled = true;
+  const before = messageRevision;
   try {
     latest = (await request('CHECK', app.course.id)).manifest;
-    const saved = states.find((s) => s.id === app.course!.id)?.saved;
-    message(saved && saved.manifest.revision !== latest?.revision ? '新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。' : saved ? '公開中の版と保存版は同じです。' : 'この講座を選んで保存すると、通信なしで教材と全動画を使えます。');
-  } catch (error) { latest = undefined; message(`${(error as Error).message} 保存済みの版は引き続き利用できます。`); }
+    const status = states.find((s) => s.id === app.course!.id);
+    const saved = status?.saved;
+    if (status && before === messageRevision && canShowStatus()) message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? '新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。' : saved ? '公開中の版と保存版は同じです。' : storageMessage());
+  } catch (error) {
+    // 確認を待つ間に始まった保存や、別操作の結果を遅い応答で置き換えない。
+    if (before === messageRevision && canShowStatus()) {
+      latest = undefined;
+      message(`${(error as Error).message} 保存済みの版は引き続き利用できます。`);
+    }
+  }
   render();
 }
 
@@ -169,7 +191,7 @@ $('offlineSave').addEventListener('click', async () => {
     await request('SAVE', app.course.id, drawProgress);
     message('教材と全動画の保存が完了しました。通信を切って再生を確認してください。');
   } catch (error) { message(`${(error as Error).message} 以前の完全な保存があれば維持します。再試行は保存ボタンから行えます。`); }
-  finally { busy = false; locallyDownloading = false; drawProgress(); await refresh(); localSaveRequest = false; }
+  finally { busy = false; locallyDownloading = false; drawProgress(); await refresh(); }
 });
 $('offlineCancel').addEventListener('click', async () => {
   try {
