@@ -123,7 +123,49 @@ export const NIGHT: Theme = {
   radius: 26,
 };
 
-export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT };
+/**
+ * 生成りの紙のような地に、黒に近い文字と朱色の主役の色。方眼の点。英字は Inter、日本語は Noto Sans JP。
+ * 画面やフォームの図（改善前・改善後）を多く見せる講座向けに、地と図の色を落ち着かせる。
+ */
+export const PAPER: Theme = {
+  id: 'paper',
+  label: 'Paper',
+  summary: '生成りの紙のような地に、黒に近い文字と朱色の主役の色。方眼の点。英字は Inter。',
+  scheme: 'light',
+  fonts: ['inter', 'noto'],
+  color: {
+    bg: '#FAF7F2',
+    bg2: '#F2ECE3',
+    surface: '#FFFFFF',
+    surface2: '#F7F3ED',
+    ink: '#1E1B18',
+    sub: '#47413A',
+    muted: '#7D746A',
+    line: '#E4DCD0',
+    line2: '#CBBFAF',
+    accent: '#D9481F',
+    onAccent: '#FFFFFF',
+    code: '#262320',
+  },
+  shadow: '0 2px 0 rgba(30,27,24,0.05), 0 20px 40px -22px rgba(30,27,24,0.35)',
+  gradient: ['#D9481F', '#F0A030'],
+  display: ['#1E1B18', '#A8391A'],
+  mesh: ['#F0A030', '#E66A45', '#5B8FD9', '#4FAE87'],
+  tones: {
+    pink: '#C93A6E',
+    violet: '#6A4FD0',
+    cyan: '#1679B8',
+    mint: '#1A8A5F',
+    amber: '#B87500',
+    coral: '#D2451F',
+    slate: '#6E675E',
+  },
+  syntax: { plain: '#F3EFE9', comment: '#9C9389', string: '#BFE3A0', keyword: '#FFB09C', deco: '#FFCF8A', number: '#FFDD85', fn: '#A6D2F4' },
+  decor: 'chalk',
+  radius: 14,
+};
+
+export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: PAPER };
 
 export const DEFAULT_THEME = 'chalkfile';
 

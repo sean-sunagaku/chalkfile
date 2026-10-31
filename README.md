@@ -13,6 +13,11 @@
 | 講座 | 中身 | 長さ |
 |---|---|---|
 | [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/chalkfile/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
+| [ナッジ理論をプロダクト改善に活かす](https://sean-sunagaku.github.io/chalkfile/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
+| [エンジニアのための UI・UX デザイン](https://sean-sunagaku.github.io/chalkfile/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
+| [個人開発者のためのマーケティング](https://sean-sunagaku.github.io/chalkfile/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
+
+ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 
 - Stripe 講座の事実は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog。API は 2026-09-30.endive、stripe-python は 16.0.1 の頃）と、消費者庁・Apple の公式ページがもとです。料金・API・法律は変わるので、実装の前に公式で確かめ直してください
 - Stripe 社とは関係のない、個人が作った非公式の講座です。法律や税の判断は専門家に確かめてください（[DISCLAIMER.md](DISCLAIMER.md)）
@@ -57,7 +62,7 @@ iOS もブラウザの保存領域を使い、「ファイル」アプリの動�
 4. **動画にする**: `scripts/render.sh` が Remotion で映像を書き出し、`scripts/mix.py` の音（ナレーション・BGM・効果音）と合わせる
 5. **公開する**: `scripts/build_site.ts` が講座サイトを組み立て、`scripts/deploy_pages.sh` が GitHub Pages に出す
 
-詳しい手順と、画面と話し方の決まり、調べ方、テーマの作り方は、Claude Code のスキル [`.claude/skills/study-video-course`](.claude/skills/study-video-course/SKILL.md) にまとめています。このリポジトリを Claude Code で開くと、「新しい講座を作りたい」「L05 の台詞を直したい」のように頼めます。
+詳しい手順と、画面と話し方の決まり、調べ方、テーマの作り方は、Claude Code のスキル [`.claude/skills/study-video-course`](.claude/skills/study-video-course/SKILL.md) にまとめています。共通プロンプトにテーマ別の指示を付けて講座を丸ごと作る手順（章ごとのサブエージェントで並行して作る方法を含む）は [`.claude/skills/course-from-prompt`](.claude/skills/course-from-prompt/SKILL.md) です。このリポジトリを Claude Code で開くと、「新しい講座を作りたい」「L05 の台詞を直したい」のように頼めます。
 
 ## 作り直す
 
@@ -70,9 +75,12 @@ bun scripts/synth.ts                                            # ナレーシ�
 uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス（1 本 10 秒ほど）
 bash scripts/render.sh                                          # 動画（1 本 2〜3 分）
 bun scripts/check_content.ts                                    # 台本とファイルの点検（公開の前に必ず）
+bun scripts/build_materials.ts                                  # 読む教材・絵コンテ・AI チャット用のチャンク（docs/courses）
 bun scripts/build_site.ts                                       # 講座サイト（site/dist）
 bun scripts/serve.ts                                            # 手元で見る（http://127.0.0.1:8765/）
 ```
+
+初めての書き出しで Remotion が Chrome Headless Shell をダウンロードしたまま止まるとき（Node.js 26 で、展開が終わらない）は、[pipeline.md のハマりどころ](.claude/skills/study-video-course/references/pipeline.md) の手順で手で展開します。
 
 一部だけ作り直すときは、`synth.ts`・`mix.py`・`render.sh` に `L03 L05` のようにレクチャー ID を渡します。台詞を直したら synth → mix → render → build_site の順に流します。
 
@@ -81,6 +89,27 @@ bun scripts/serve.ts                                            # 手元で見�
 - 見た目の確認: `node scripts/stills.mjs L04:3 --mid` で、場面の中ほどと終わりを静止画にする
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`（台本と、レクチャーの `docs` に並べた公式ページで、言い回しが続けて同じところを探す。ネットにつなぐ）
 - ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
+
+## 素材から作り直す（VOICEVOX なし）
+
+台詞の音声（VOICEVOX の出力）と、BGM・ジングル・効果音は、素材だけを置くブランチ [`materials`](https://github.com/sean-sunagaku/chalkfile/tree/materials) にあります（音声は FLAC で約 390MB。main の履歴には入れません）。取り出せば、台詞を変えていない章は VOICEVOX なしで、動画と講座サイトまで作り直せます。
+
+前提: Node.js、bun、ffmpeg、uv（VOICEVOX は要りません）
+
+```bash
+npm install
+bun scripts/materials.ts pull                                   # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
+bun scripts/synth.ts                                            # 時刻・字幕・ミックスの設計図（取り出した音声を使う）
+uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス
+bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る）
+bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材と講座サイト
+```
+
+- `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめます。1 つの講座だけなら `bun scripts/materials.ts pull nudge-product`
+- 動画を書き出さずに講座サイトだけ組むとき: `bun scripts/materials.ts pull --videos`（公開中のサイト（`gh-pages`）の動画とポスターも `site/media/` に取り出す）→ `bun scripts/synth.ts` → `bun scripts/build_site.ts`
+- 手元の音声が台本に足りているか: `bun scripts/materials.ts check`（足りない台詞は、VOICEVOX を動かして `synth.ts` が作る）
+- 素材を新しくする（台詞を直した後）: 台本をコミットして synth まで流し、`bun scripts/materials.ts push`。`materials` ブランチを親の無い 1 コミットで置き換えます（前の版は残しません）
+- 素材と動画のブランチを持ってこないで clone するとき: `git clone --single-branch https://github.com/sean-sunagaku/chalkfile.git`
 
 ## サイト変更の検証
 
@@ -91,7 +120,7 @@ npm test                                  # Range の境界・保存対象の制
 bun scripts/check_content.ts --self-test
 bun scripts/check_content.ts
 bun scripts/build_site.ts --strict         # site/data と全 MP4/JPG の生成が必要
-npm run test:browser                       # 実 Chrome と生成済み13本の動画を使う
+npm run test:browser                       # 実 Chrome と、Stripe 講座の生成済み 13 本の動画を使う
 ```
 
 専用の lint スクリプトはありません。CI は型検査、Range・保存対象テスト、content 点検を行います。実ブラウザのテストはローカルの生成物が必要なため、CI の content 点検だけで再生成功とは扱いません。`PW_CHANNEL=chromium npm run test:browser` なら Playwright の Chromium も選べます（別途そのブラウザが必要）。通常はインストール済みの Chrome を一時プロファイルで使います。
@@ -160,7 +189,7 @@ bash scripts/deploy_pages.sh
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、設定（`config.json`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方・テーマの作り方をまとめた Claude Code のスキル |
 
-生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は Git に入れません。
+生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は main に入れません。台詞の音声と BGM・効果音は `materials` ブランチ（`bun scripts/materials.ts pull`）、公開中の講座サイトと動画は `gh-pages` ブランチにあります。
 
 ## 安全と公開のきまり
 

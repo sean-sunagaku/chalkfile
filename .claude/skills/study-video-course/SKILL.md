@@ -33,6 +33,8 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 `content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座を `content/index.ts` の `COURSES` に足す。
 
+共通プロンプト＋テーマ別の指示から講座を丸ごと作るとき（全体設計 → 第 1 章 → 残りの章を並行で）は、スキル `course-from-prompt`（`.claude/skills/course-from-prompt/SKILL.md`）。読む教材・実践課題・AI チャットの質問例・章の計画（目次）まで作る章立ての講座は、レクチャーの `material` と講座の `syllabus`・`sources` を書く。ID のきまり、根拠の種類（研究・公式・実務・仮の例）、改善前・改善後の画面（`screens`）、字幕の焼き込みは [references/materials.md](references/materials.md)。見本は `content/nudge-product/`。
+
 ### 4. 声・音・動画を作る
 
 ```bash
@@ -65,6 +67,8 @@ bash scripts/deploy_pages.sh
 
 コミットしてから流す。`site/dist` を gh-pages ブランチに 1 コミットで強制 push する（動画を main の履歴に積まない）。1〜2 分で `site/config.json` の `baseUrl` に出る。初回の Pages の設定は pipeline.md。
 
+台詞の声を作り直したら、素材のブランチも置き換える: `bun scripts/materials.ts push`（台詞の声と BGM・効果音を `materials` ブランチに 1 コミットで置く。pipeline.md の「素材」）。
+
 ## よくある直し
 
 | 頼まれたこと | やること |
@@ -76,6 +80,7 @@ bash scripts/deploy_pages.sh
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
 | 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → READMEとこのSkillの案内を合わせる |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
+| VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
 
 ## やらないこと
 

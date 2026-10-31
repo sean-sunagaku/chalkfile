@@ -2,7 +2,7 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { BigScene, ConceptsScene, EndingScene, GoalsScene, OpeningScene, PointsScene, RecapScene, RefsScene } from '../../content/types';
 import { courseOf } from '../../content';
-import { CourseMark } from '../components/chrome';
+import { CourseMark, unitOf } from '../components/chrome';
 import { Glass, Icon, IconBadge, Pill, Rich, Smart } from '../components/ui';
 import credits from '../generated/credits.json';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME, TONES, tone } from '../theme';
@@ -48,7 +48,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const sub2 = spring({ frame: frame - HIT_FRAME - 12, fps, config: { damping: 200 }, durationInFrames: 24 });
   const no = String(lecture.no).padStart(2, '0');
   const course = courseOf(lecture.id);
-  const total = course.lectures.length;
+  const { label: unit, total } = unitOf(lecture.id);
   return (
     <>
       <div style={{ position: 'absolute', left: PAD, top: 64, opacity: early }}>
@@ -136,7 +136,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
       </div>
       <div style={{ position: 'absolute', left: PAD, right: PAD, bottom: 70, display: 'flex', alignItems: 'center', gap: 14, opacity: early }}>
         <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 22, color: C.muted, letterSpacing: 4, marginRight: 10 }}>
-          LECTURE {no} / {total}
+          {unit} {no} / {total}
         </div>
         {Array.from({ length: total }, (_, i) => (
           <div
@@ -394,7 +394,7 @@ export const Refs: React.FC<{ s: RefsScene }> = ({ s }) => (
 export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
   const { lecture } = useScene();
   const course = courseOf(lecture.id);
-  const total = course.lectures.length;
+  const { label: unit, total } = unitOf(lecture.id);
   const p = useAppear(0);
   const q = useAppear(0, 14);
   const c = useAppear(0, 26);
@@ -402,7 +402,7 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
     <Content style={{ alignItems: 'center', gap: 40, top: 150 }}>
       {s.next ? (
         <>
-          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}>NEXT LECTURE</div>
+          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}>NEXT {unit}</div>
           <div style={{ opacity: q, transform: `translateY(${dropY(q)}px)` }}>
             <Glass t="violet" active={1} style={{ padding: '44px 64px', display: 'flex', alignItems: 'center', gap: 44 }}>
               <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 120, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>

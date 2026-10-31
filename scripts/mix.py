@@ -192,7 +192,8 @@ def build(lec_id: str) -> None:
         if si > 0:
             sfx("whoosh", scene["start"] - 0.08)
         for li, line in enumerate(scene["lines"]):
-            clip = read_wav(Path(line["file"]))
+            # synth.ts はこのフォルダからの相対パスで書く（前の設計図の絶対パスもそのまま読める）
+            clip = read_wav(ROOT / line["file"])
             place(voice, clip, line["start"])
             intervals.append((line["start"], line["end"]))
             if line.get("sfx"):

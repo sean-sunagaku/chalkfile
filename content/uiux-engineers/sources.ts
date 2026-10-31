@@ -1,0 +1,196 @@
+import type { Lecture, Source } from '../types';
+
+/**
+ * UI・UX 講座の出典。checked は出典を開いて確かめた日。
+ * 規格・法令・公式ガイドライン（official）、研究（research）、専門機関や実務家の指針（practice）を分けて書く。
+ */
+export const UIUX_SOURCES: Source[] = [
+  {
+    id: 'iso-9241-210-2019',
+    title: 'ISO 9241-210:2019 Ergonomics of human-system interaction — Part 210: Human-centred design for interactive systems',
+    url: 'https://www.iso.org/standard/77520.html',
+    publisher: 'ISO',
+    year: '2019',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: '3.15 user experience の定義（システム・製品・サービスの利用や利用の予想から生じる利用者の知覚と反応。使う前・間・後に生じる）と、5 章の人間中心設計の 6 つの原則（利用者・タスク・環境の理解、利用者を交えた評価、繰り返し など）'
+  },
+  {
+    id: 'iso-9241-11-2018',
+    title: 'ISO 9241-11:2018 Ergonomics of human-system interaction — Part 11: Usability: Definitions and concepts',
+    url: 'https://www.iso.org/standard/63500.html',
+    publisher: 'ISO',
+    year: '2018',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: '3.1.1 usability の定義（特定の利用者が特定の利用状況で、効果・効率・満足を伴って特定の目標を達成できる度合い）。3.1.10 目標（意図した結果）・3.1.11 タスク（目標は手段によらない）・3.1.15 利用状況も、各国の規格機関の公式プレビューで確認。日本の JIS Z 8521:2020 はこれを基にした規格（修正あり）で、訳語は「効果・効率・満足」',
+  },
+  {
+    id: 'nng-10-heuristics',
+    title: '10 Usability Heuristics for User Interface Design',
+    url: 'https://www.nngroup.com/articles/ten-usability-heuristics/',
+    publisher: 'Jakob Nielsen（Nielsen Norman Group）',
+    year: '1994（2020 年改訂・2024 年見直し）',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: '10 のユーザビリティ・ヒューリスティクス（システムの状態を見せる・現実の世界に合わせる・記憶より見て分かる・エラーを防ぐ など）。具体的なガイドラインではなく大まかな経験則と明記',
+  },
+  {
+    id: 'nng-ux-definition',
+    title: 'The Definition of User Experience (UX)',
+    url: 'https://www.nngroup.com/articles/definition-user-experience/',
+    publisher: 'Don Norman, Jakob Nielsen（Nielsen Norman Group）',
+    year: '1998',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: 'UX は会社・サービス・製品と利用者のやりとりのすべてで、UI は大事な一部だが UI が良くても良い UX になるとは限らない、という説明'
+  },
+  {
+    id: 'nng-thinking-aloud',
+    title: 'Thinking Aloud: The #1 Usability Tool',
+    url: 'https://www.nngroup.com/articles/thinking-aloud-the-1-usability-tool/',
+    publisher: 'Jakob Nielsen（Nielsen Norman Group）',
+    year: '2012',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: '利用者に考えを声に出してもらいながら使ってもらう思考発話法の説明。Nielsen はユーザビリティの一番の道具と位置づけ、万能ではない・統計的な比較には向かないとも書く',
+  },
+  {
+    id: 'nng-5-users',
+    title: 'Why You Only Need to Test with 5 Users',
+    url: 'https://www.nngroup.com/articles/why-you-only-need-to-test-with-5-users/',
+    publisher: 'Jakob Nielsen（Nielsen Norman Group）',
+    year: '2000',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: '1 人が見つける問題の割合を約 31% と置くモデルでは 5 人で約 85%。利用者層が同じ・問題を見つける定性テスト・繰り返すことが前提'
+  },
+  {
+    id: 'nng-gestalt-proximity',
+    title: 'Proximity Principle in Visual Design',
+    url: 'https://www.nngroup.com/articles/gestalt-proximity/',
+    publisher: 'Aurora Harley（Nielsen Norman Group）',
+    year: '2020',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: '近くにあるものは一つのまとまりに見える（ゲシュタルトの近接の原則）と、画面への当てはめ方。記事は整列とグリッドを扱っておらず、それは別の記事（nng-grids）の話として、この講座では分けて扱う',
+  },
+  {
+    id: 'nng-error-messages',
+    title: 'Error-Message Guidelines',
+    url: 'https://www.nngroup.com/articles/error-message-guidelines/',
+    publisher: 'Tim Neusesser, Evan Sunwall（Nielsen Norman Group）',
+    year: '2023',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: 'エラーは原因のそばに出し（色だけに頼らない）、具体的に・責めずに伝え、直し方や候補を示し、入力を残す',
+  },
+  {
+    id: 'govuk-error-message',
+    title: 'Error message（GOV.UK Design System）',
+    url: 'https://design-system.service.gov.uk/components/error-message/',
+    publisher: 'GOV.UK（英国政府）',
+    year: '—',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: 'エラーは入力欄の近くに出し、何が起きて・どう直すかを具体的に、前向きな言い方で書く。入力を消さない。上のまとめ（Error summary）と同じ文言にする、という政府のサービスの指針',
+  },
+  {
+    id: 'wcag-22',
+    title: 'Web Content Accessibility Guidelines (WCAG) 2.2',
+    url: 'https://www.w3.org/TR/WCAG22/',
+    publisher: 'W3C',
+    year: '2023（2024-12-12 更新）',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: 'コントラスト比（本文 4.5:1）・色だけに頼らない・ターゲットのサイズ・エラーの特定・ラベルなどの達成基準',
+  },
+  {
+    id: 'jis-x-8341-3',
+    title: 'JIS X 8341-3:2016 解説',
+    url: 'https://waic.jp/docs/jis2016/understanding/201604/',
+    publisher: '情報通信アクセス協議会 ウェブアクセシビリティ基盤委員会（WAIC）',
+    year: '2016',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: 'JIS X 8341-3:2016 は ISO/IEC 40500:2012（WCAG 2.0）と一致する規格（WAIC の解説で確認）。WCAG 2.2 が ISO/IEC 40500:2025 になったのを受けて改正の見込みで、順調なら 2027 年、遅くとも 2028 年（WAIC のお知らせ waic-jis-news-2026）',
+  },
+  {
+    id: 'cao-sabetsu-kaisho',
+    title: '障害を理由とする差別の解消の推進',
+    url: 'https://www8.cao.go.jp/shougai/suishin/sabekai.html',
+    publisher: '内閣府',
+    year: '2024 年 4 月 1 日施行の改正',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: '改正法（2024-04-01 施行）で、事業者による合理的配慮の提供が「努めなければならない」から「しなければならない」に（第 8 条 2 項）。ウェブの改善などの環境の整備は努力義務のまま（第 5 条）。ページからリンクされた法律本文と新旧対照条文で確認'
+  },
+  {
+    id: 'digital-a11y-guidebook',
+    title: 'ウェブアクセシビリティ導入ガイドブック',
+    url: 'https://www.digital.go.jp/resources/introduction-to-web-accessibility-guidebook',
+    publisher: 'デジタル庁',
+    year: '2025-10-16 更新',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: 'ウェブアクセシビリティの考え方と導入の進め方の入門（2025-10-16 版の PDF で確認）。事業者の合理的配慮は義務、ウェブアクセシビリティは環境の整備として努力義務。チェックツールで確かめられるのは達成基準の 2〜3 割程度で、目視・キーボード・スクリーンリーダーでも確かめる。記号は読み上げられないことがある。入力形式の制限は入力の前に説明する',
+  },
+  {
+    id: 'faulkner-2003',
+    title: 'Beyond the five-user assumption: Benefits of increased sample sizes in usability testing',
+    url: 'https://doi.org/10.3758/BF03195514',
+    publisher: 'Laura Faulkner（Behavior Research Methods, Instruments, & Computers 35）',
+    year: '2003',
+    kind: 'research',
+    checked: '2026-10-30',
+    note: '60 人のデータから 5 人組を選ぶと、見つかる問題の割合は 55〜99% とばらついた。最も少ない組でも 10 人なら 80%、20 人なら 95%。5 人で必ず 85% とは言えない根拠。Springer はログインに飛ばされ、PubMed の抄録（PMID 14587545）で確認',
+  },
+  {
+    id: 'nng-placeholders',
+    title: 'Placeholders in Form Fields Are Harmful',
+    url: 'https://www.nngroup.com/articles/form-design-placeholders/',
+    publisher: 'Katie Sherwin（Nielsen Norman Group）',
+    year: '2014',
+    kind: 'practice',
+    checked: '2026-10-30',
+    note: '入力欄の中の薄い文字（プレースホルダー）をラベル代わりにすると、入力で消えて記憶の負担になる・見直せない・コントラストが低い・読み上げない支援技術がある。ラベルは欄の外に常に見えるように置く',
+  },
+  {
+    id: 'hornbaek-law-2007',
+    title: 'Meta-Analysis of Correlations Among Usability Measures',
+    url: 'https://www.kasperhornbaek.dk/papers/CHI2007_MetaAnalysis.pdf',
+    publisher: 'Kasper Hornbæk, Effie Lai-Chong Law（CHI 2007）',
+    year: '2007',
+    kind: 'research',
+    checked: '2026-10-30',
+    note: '73 の研究の分析で、有効さ・効率・満足の数字どうしの相関は全体に低い。3 つは別々に測るべきという主張を支える（著者の公開原稿）',
+  },
+  {
+    id: 'w3c-understanding-redundant-entry',
+    title: 'Understanding Success Criterion 3.3.7: Redundant Entry',
+    url: 'https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html',
+    publisher: 'W3C Web Accessibility Initiative（WAI）',
+    year: 'WCAG 2.2 の解説',
+    kind: 'official',
+    checked: '2026-10-30',
+    note: '3.3.7（レベル A。WCAG 2.2 で追加。W3C の「What’s New in WCAG 2.2」でも確認）。同じ手続きの中で前に入れた情報をもう一度求めるなら、自動で入れるか選べるようにする。ブラウザの自動入力だけでは足りない。例外は、再入力が欠かせない場合・安全のため（パスワードの確認など）・前の情報が使えなくなった場合。手続きを閉じてから戻ってきた場合には当たらない（第 3 章・第 6 章）',
+  },
+  {
+    id: 'waic-wcag22-ja',
+    title: 'Web Content Accessibility Guidelines (WCAG) 2.2（日本語訳）',
+    url: 'https://waic.jp/translations/WCAG22/',
+    publisher: '情報通信アクセス協議会 ウェブアクセシビリティ基盤委員会（WAIC）',
+    year: '2024-12-12 版の訳（作業中。達成基準の名前の訳は 2026-06-08 に見直し）',
+    kind: 'official',
+    checked: '2026-10-31',
+    note: 'WCAG 2.2 の参考訳（翻訳は作業中で、正式版は W3C の英語版）。原則の訳（知覚可能・操作可能・理解可能・堅牢）と、達成基準の名前（1.1.1 非テキストコンテンツ、1.3.3 感覚による特性、1.3.5 入力目的の特定、1.4.1 色の用途、1.4.3 コントラスト (最低限)、1.4.6 コントラスト (高度)、1.4.11 非テキストのコントラスト、2.1.1 キーボード、2.4.7 フォーカスの可視化、2.4.11 隠されないフォーカス (最低限)、2.5.8 ターゲットのサイズ (最低限)、3.3.1 エラーの特定、3.3.2 ラベル又は指示、3.3.3 エラーの修正提案、3.3.7 冗長な入力項目 など）、用語（コントラスト比・相対輝度・サイズの大きな（テキスト））を確かめた。2.2 に適合するサイトは 2.0・2.1 にも適合することを意図し、新しい目標として 2.2 を採ることを勧める、という記述も（第 5 章・第 6 章・第 7 章）',
+  },
+];
+
+/** 出典の id から、講座サイトの「出典・参考資料」タブに出す形にする */
+export const docsOf = (ids: string[]): Lecture['docs'] =>
+  ids.map((id) => {
+    const s = UIUX_SOURCES.find((x) => x.id === id);
+    if (!s) throw new Error(`出典が無い: ${id}`);
+    return { title: `${s.publisher}（${s.year}）${s.title}`, url: s.url };
+  });

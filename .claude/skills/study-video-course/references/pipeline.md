@@ -11,7 +11,7 @@
 | VOICEVOX | 0.25 | 声（エンジンが `127.0.0.1:50021`） |
 | Remotion | 4.0.440 | 映像 |
 
-VOICEVOX はアプリを開くか、macOS ならエンジンだけを起動する。
+VOICEVOX はアプリを開くか、macOS ならエンジンだけを起動する。台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出せばよい（下の「素材」）。
 
 ```bash
 /Applications/VOICEVOX.app/Contents/Resources/vv-engine/run --host 127.0.0.1 --port 50021
@@ -30,6 +30,19 @@ curl -s http://127.0.0.1:50021/version
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、`site/media/`、`site/*.html`、`site/config.json` | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bash scripts/deploy_pages.sh` | `site/dist/` | gh-pages ブランチ |
+| `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は gh-pages も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
+| `bun scripts/materials.ts push` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（親の無い 1 コミットで置き換える） |
+
+## 素材（`materials` ブランチ）
+
+VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作り直しに VOICEVOX が要るので、素材だけを置くブランチ `materials` に置く。main の履歴には入れない（動画を gh-pages に置くのと同じ考え方）。
+
+- 中身: `tts/<講座 ID>/<key>.flac`・`.kana`（台本の全部の台詞。`key` は `scripts/voices.ts` の `ttsKey`）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻した後の中身）、`README.md`
+- 取り出す: `bun scripts/materials.ts pull` → `bun scripts/synth.ts` は VOICEVOX につながずに時刻を決める（声のキャッシュが全部当たる）。足りない台詞があると、VOICEVOX に届かないことと `pull` を案内して止まる
+- 確かめる: `bun scripts/materials.ts check`（台本の全部の台詞の声が `.work/tts/` にあるか）
+- 置き換える: 台詞を直したら、台本をコミット → synth（kana を見る）→ `bun scripts/materials.ts push`。コミットしていない台本の変更があると止まる。公開（deploy_pages）と同じ時に置き換えて、公開中の動画と素材をそろえる
+- FLAC は可逆なので、WAV に戻すと VOICEVOX の出力と同じバイトになる（`pull` が `SHA256SUMS` で確かめる）。音声は WAV のままの 3 分の 1 ほど
+- 前の版は残さない（push のたびに置き換える）。前の素材が要るときは、そのときの台本のコミットから VOICEVOX で作り直す
 
 ## 確かめ方
 
