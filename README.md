@@ -13,9 +13,9 @@
 | 講座 | 中身 | 長さ |
 |---|---|---|
 | [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/chalkfile/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
-| ナッジ理論をプロダクト改善に活かす（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 計画 7 章・第 1 章（約 7 分）を制作 |
-| エンジニアのための UI・UX デザイン（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 計画 8 章・第 1 章（約 6 分）を制作 |
-| 個人開発者のためのマーケティング（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 計画 8 章・第 1 章（約 7 分）を制作 |
+| [ナッジ理論をプロダクト改善に活かす](https://sean-sunagaku.github.io/chalkfile/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
+| [エンジニアのための UI・UX デザイン](https://sean-sunagaku.github.io/chalkfile/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
+| [個人開発者のためのマーケティング](https://sean-sunagaku.github.io/chalkfile/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
 
 ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 
@@ -116,7 +116,7 @@ npm test                                  # Range の境界・保存対象の制
 bun scripts/check_content.ts --self-test
 bun scripts/check_content.ts
 bun scripts/build_site.ts --strict         # site/data と全 MP4/JPG の生成が必要
-npm run test:browser                       # 実 Chrome と生成済み13本の動画を使う
+npm run test:browser                       # 実 Chrome と、Stripe 講座の生成済み 13 本の動画を使う
 ```
 
 専用の lint スクリプトはありません。CI は型検査、Range・保存対象テスト、content 点検を行います。実ブラウザのテストはローカルの生成物が必要なため、CI の content 点検だけで再生成功とは扱いません。`PW_CHANNEL=chromium npm run test:browser` なら Playwright の Chromium も選べます（別途そのブラウザが必要）。通常はインストール済みの Chrome を一時プロファイルで使います。
