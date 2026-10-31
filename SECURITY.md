@@ -19,7 +19,8 @@ To report a vulnerability, please use GitHub's private vulnerability reporting (
 
 - 講座サイト
   - ページに出す文字は全部エスケープする。リンクは `https://` と `http://` だけを通し、`javascript:` などは無効にする
-  - CSP（Content-Security-Policy）で、動いてよいスクリプトをページの中のものだけにハッシュで限る。外のスクリプトは読み込まない
+  - CSP（Content-Security-Policy）で、動いてよいページのスクリプトをハッシュで限る。PWAのworkerとmanifestは同一originだけを許可し、外部スクリプトは読み込まない
+  - オフライン用の保存は生成した公開教材・同一originとscope内のMP4/JPGだけ。全ファイルのサイズとSHA-256を照合してから確定する。外部URL・リダイレクト・不完全な応答を保存せず、DRM・認証・アクセス制限を回避しない
   - リファラーは `strict-origin-when-cross-origin`、外へのリンクは `noopener noreferrer`
   - 台本のデータはスクリプトとして動かない形（`type="application/json"`）で埋め込み、`<` を `<` に置き換える
 - 公開の前の点検（`bun scripts/check_content.ts`）

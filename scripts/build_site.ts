@@ -13,6 +13,8 @@ import { COURSES } from '../content';
 import { THEMES, themeOf } from '../content/themes';
 import type { ChapterMaterial, Course, Source } from '../content/types';
 import { fontLink, themeCss } from './site_theme';
+import { asset, buildPwa, bundle, hash } from './pwa';
+import type { Asset, CourseManifest } from '../site/offline-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const SITE = path.join(ROOT, 'site');
@@ -36,6 +38,16 @@ const plain = (s: string) => s.replace(/\*\*/g, '');
 const credits = JSON.parse(readFileSync(path.join(ROOT, 'src/generated/credits.json'), 'utf8')) as string[];
 const template = readFileSync(path.join(SITE, 'template.html'), 'utf8');
 const home = readFileSync(path.join(SITE, 'home.html'), 'utf8');
+const offlinePanel = readFileSync(path.join(SITE, 'offline-panel.html'), 'utf8');
+const offlineCss = readFileSync(path.join(SITE, 'offline.css'), 'utf8');
+const offlineClient = await bundle(path.join(SITE, 'offline-client.ts'));
+const generatedManifests: CourseManifest[] = [];
+const shellAssets: Asset[] = [];
+const appParts = (root: string, course?: { id: string; title: string; pageVersion: string }) => ({
+  head: `<link rel="manifest" href="${root}manifest.webmanifest"><link rel="apple-touch-icon" href="${root}icons/icon-180.png"><meta name="theme-color" content="${themeOf().color.bg}"><meta name="apple-mobile-web-app-capable" content="yes">`,
+  panel: offlinePanel.replace('__COURSE_HIDDEN__', course ? '' : 'hidden').replace('__LIBRARY_OPEN__', course ? '' : 'open'),
+  script: `<script id="pwa-data" type="application/json">${JSON.stringify({ root, course, courses: COURSES.map((c) => ({ id: c.id, title: c.title })) }).replace(/</g, '\\u003c')}</script><script>${offlineClient}</script>`,
+});
 
 const favicon = (ink: string, accent: string) =>
   'data:image/svg+xml,' +
@@ -131,6 +143,8 @@ const csp = (html: string) => {
     "img-src 'self' data:",
     "media-src 'self' blob:",
     "connect-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
@@ -183,9 +197,26 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
     ui: course.ui ?? {},
     planned,
   };
-  const json = JSON.stringify({ course: meta, credits, lectures }).replace(/</g, '\\u003c');
+  const mediaFiles: { file: string; data: Buffer; type: string }[] = [];
+  for (const lec of course.lectures) for (const ext of ['mp4', 'jpg']) {
+    const file = `${lec.id}.${ext}`;
+    const from = path.join(MEDIA, file);
+    if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: ext === 'mp4' ? 'video/mp4' : 'image/jpeg' });
+    else missing.push(file);
+  }
+  // 版は教材・表示・動画の全入力で決まる。保存した HTML と MP4 を別の版に混ぜない。
+  const pageVersion = hash(JSON.stringify({ meta, credits, lectures, theme, template, offlinePanel, offlineCss, offlineClient,
+    builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]) }));
+  const json = JSON.stringify({ course: meta, credits, pageVersion, lectures: lectures.map((lec) => ({ ...lec,
+    video: `media/${lec.id}.mp4?v=${pageVersion}`, poster: `media/${lec.id}.jpg?v=${pageVersion}`,
+  })) }).replace(/</g, '\\u003c');
+  const app = appParts('../', { id: course.id, title: course.title, pageVersion });
   const url = `${base}${course.id}/`;
   const html = template
+    .replace('__PWA_HEAD__', () => app.head)
+    .replace('__OFFLINE_CSS__', () => offlineCss)
+    .replace('__OFFLINE_PANEL__', () => app.panel)
+    .replace('__PWA_SCRIPT__', () => app.script)
     .replace('__TITLE__', () => esc(`${course.title}｜${config.series}`))
     .replace('__HEAD_META__', () =>
       headMeta({
@@ -205,15 +236,25 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
     .replace('__COURSE_JSON__', () => json);
   const out = path.join(DIST, course.id);
   mkdirSync(out, { recursive: true });
-  writeFileSync(path.join(out, 'index.html'), csp(html));
+  const page = Buffer.from(csp(html));
+  writeFileSync(path.join(out, 'index.html'), page);
   rmSync(path.join(out, 'media'), { recursive: true, force: true });
   mkdirSync(path.join(out, 'media'));
   for (const lec of course.lectures) {
     for (const ext of ['mp4', 'jpg']) {
       const f = path.join(MEDIA, `${lec.id}.${ext}`);
       if (existsSync(f)) place(f, path.join(out, 'media', `${lec.id}.${ext}`));
-      else missing.push(`${lec.id}.${ext}`);
     }
+  }
+  // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
+  const manifestPath = path.join(out, 'offline-manifest.json');
+  rmSync(manifestPath, { force: true });
+  if (mediaFiles.length === course.lectures.length * 2) {
+    const files = [asset(`${course.id}/`, page, 'text/html'), ...mediaFiles.map((f) => asset(`${course.id}/media/${f.file}?v=${pageVersion}`, f.data, f.type))];
+    const manifest: CourseManifest = { schema: 1, id: course.id, title: course.title, pageVersion, revision: hash(JSON.stringify(files)),
+      bytes: files.reduce((sum, f) => sum + f.bytes, 0), files };
+    generatedManifests.push(manifest);
+    writeFileSync(manifestPath, JSON.stringify(manifest));
   }
   console.log(`site/dist/${course.id}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}`);
 }
@@ -279,6 +320,10 @@ const themeCards = Object.values(THEMES)
 
 const first = COURSES[0];
 const homeHtml = home
+  .replace('__PWA_HEAD__', () => appParts('./').head)
+  .replace('__OFFLINE_CSS__', () => offlineCss)
+  .replace('__OFFLINE_PANEL__', () => appParts('./').panel)
+  .replace('__PWA_SCRIPT__', () => appParts('./').script)
   .replace('__TITLE__', () => esc(`${config.series}：台本から講座動画を作る`))
   .replace('__HEAD_META__', () =>
     headMeta({ title: config.series, description: config.seriesSub, url: base, image: `${base}assets/hero.jpg`, icon: favicon(brand.color.ink, brand.color.accent) }),
@@ -295,7 +340,9 @@ const homeHtml = home
   .replaceAll('__REPO__', () => esc(config.repoUrl))
   .replace('__CREDITS__', () => esc(`ナレーション ${credits.join('・')}　動画 Remotion　BGM・効果音はプログラムで合成したオリジナル`));
 mkdirSync(DIST, { recursive: true });
-writeFileSync(path.join(DIST, 'index.html'), csp(homeHtml));
+const homePage = Buffer.from(csp(homeHtml));
+writeFileSync(path.join(DIST, 'index.html'), homePage);
+shellAssets.push(asset('./', homePage, 'text/html'));
 
 // 一覧ページの画像（site/assets）を写す
 const copyDir = (from: string, to: string) => {
@@ -307,12 +354,19 @@ const copyDir = (from: string, to: string) => {
     else {
       rmSync(b, { force: true });
       place(a, b);
+      shellAssets.push(asset(path.relative(DIST, b).split(path.sep).join('/'), readFileSync(b), 'image/jpeg'));
     }
   }
 };
 // 名前を変えた画像が残らないように、写す前に消す
 rmSync(path.join(DIST, 'assets'), { recursive: true, force: true });
 if (existsSync(ASSETS)) copyDir(ASSETS, path.join(DIST, 'assets'));
+// トップの講座サムネイルも小さな起動用ファイルとして保持。動画は選択した講座だけ取得する。
+for (const c of COURSES) {
+  const f = `${c.id}/media/${c.lectures[0].id}.jpg`;
+  if (existsSync(path.join(DIST, f))) shellAssets.push(asset(f, readFileSync(path.join(DIST, f)), 'image/jpeg'));
+}
+await buildPwa(SITE, DIST, brand, generatedManifests.map((m) => m.id), shellAssets);
 // GitHub Pages に Jekyll を通させない（そのまま配る）
 writeFileSync(path.join(DIST, '.nojekyll'), '');
 console.log(`site/dist/index.html  講座 ${COURSES.length} つ  テーマ ${Object.keys(THEMES).length} つ`);

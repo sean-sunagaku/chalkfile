@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "lib": ["DOM", "DOM.Iterable", "WebWorker", "ES2022"] },
+  "include": ["*.ts"]
+}

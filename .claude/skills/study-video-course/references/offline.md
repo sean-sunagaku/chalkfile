@@ -1,0 +1,45 @@
+# 講座の事前保存・オフライン再生・PWA
+
+既存の GitHub Pages に静的ファイルを追加する。配信先や動画の権利条件を変更しない。
+
+## 作る場所
+
+- `scripts/build_site.ts` と `scripts/pwa.ts`: 教材の版、ファイルごとの SHA-256・サイズ、講座の `offline-manifest.json`、起動用ページ、Web App Manifest、アイコン、worker を作る。
+- `site/offline-client.ts` と `offline-panel.html`・`offline.css`: 選択して保存、バイト単位の進捗、保存状態、キャンセル、再試行、削除、更新、推定容量、保持要求、インストールの案内。
+- `site/sw.ts`: 完全な講座の確定、保存版の教材と MP4 の配信、Range、起動用ページ、途中終了の片付け。
+- `site/offline-shared.ts`: 保存対象の形式・範囲と、単一 bytes Range の解釈。
+- `tests/offline.test.ts` と `tests/browser/`: 境界値と実ブラウザの回帰テスト。通信などの障害は `tests/browser-server.ts` で注入する。
+
+## 保存と更新の約束
+
+1. 表示するだけでは動画を保存しない。利用者が講座を開いて保存を選ぶ。起動用の HTML・アイコン・トップの画像だけは worker の導入時に保持する。
+2. 生成した同一 origin / アプリ scope 内の教材ページ・MP4・JPG だけを保存する。外部 URL、リダイレクト、opaque 応答、206、違う MIME、別講座へのパス、DRM や認証付き配信を受け入れない。取得には `credentials: omit` を指定する。権利・保存許可のある公開コンテンツだけを対象にする。
+3. 1 ファイルずつ全文を取得して、宣言サイズと SHA-256 を照合する。MP4 は現行の15MB制約内で作る。保存側の上限は1ファイル32MiB、講座全体1GiB。合わないデータや不足した生成物から保存用 manifest を配らない。
+4. 仮の Cache 領域に全ファイルがそろってから、registry の1件の pointer を切り替える。失敗やキャンセルで前の完全な版を消さない。再試行は全体を取得し直す。ブラウザ終了で残った仮領域は次の状態確認/起動時に片付ける。
+5. 教材・表示・動画の入力から版を決める。ページと動画 URL に版を対応させ、保存した講座のページはオンラインでも保存版を返す。新しい教材に古い MP4 を組み合わせない。更新を自動で取得せず、利用者が選んで全検証後に切り替える。
+6. 更新後は直前の完全な版も1つ保持し、開いていたタブの再生に使う。現在の教材と保存の版が違ったら停止と再読み込みの案内を出す。さらに古い動画を要求されたら別の版へ置き換えず、利用不可として返す。
+7. 削除は当該講座の全保存版と仮領域を消す。学習用 localStorage は残す。Cache の名前をアプリの scope と schema で区切り、同じ GitHub Pages origin の別サイトの Cache を消さない。
+8. 保存に日数による期限はない。worker の更新は全タブを閉じてから反映し、講座の Cache を維持する。schema を変更するときは移行を設計し、全消去で済ませない。ブラウザや利用者による消去は防げず、欠損検出時は再保存を案内する。
+
+## 再生と案内
+
+完全な200応答から単一の `bytes=start-end`・`start-`・`-suffix` を切り出し、206と正しい `Content-Range`・`Content-Length`・`video/mp4` を返す。範囲外は416。複数 Range と未知/不正な形式は無視して200、HEADは本文なし。If-Rangeが保存版のETagと異なれば全文200を返す。オンラインの未保存動画は配信元のRange応答を利用する。
+
+オンライン視聴、単体MP4のダウンロード、アプリ内の講座保存、PWAインストールは別操作として表示する。インストールだけで講座を保存したとは言わない。外部の公式ドキュメントはオンライン必須。フォントは外部取得できなくてもシステムの日本語フォントにフォールバックする。
+
+iOSもCache APIのブラウザ保存であり、「ファイル」アプリへの一括書出しや、そこからの取込みを意味しない。ブラウザとホーム画面アプリで同じ保存が使えるとは仮定せず、使う方で保存して機内モードで起動・再生を確かめる。推定quotaや保持要求の許可から、保存の永続性・実機動作・バックグラウンド完了を保証しない。
+
+## 検証と公開
+
+`npm run typecheck`、`npm test`、content点検のself-testと本体、`bun scripts/build_site.ts --strict`、`npm run test:browser` を実行する。専用lintスクリプトはない。再生確認には実際に生成した動画と字幕データが必要。mock・型検査・ブラウザのモバイル幅からiOS実機成功を推定しない。PCと375pxの画面、実際のオフライン通信断、ブラウザ終了からの再起動、保存/削除、更新失敗/成功、キャンセル/再試行、容量例外、バイト列を照合したRangeとシークを記録する。
+
+動画・生成物・ブラウザプロファイル・秘密情報をmainに入れない。既存 `deploy_pages.sh` はforce pushを使う。依頼の境界でforce pushが禁止されていれば実行せず、その制約とPRの状態を報告する。
+
+## 一次資料（2026-10-31確認）
+
+- [Service Workers仕様 / Cache.put](https://w3c.github.io/ServiceWorker/#cache-put): Cache APIは206応答をそのまま保存する用途ではない。完全な応答を明示的に保存する。
+- [HTTP Semantics / Range（RFC 9110）](https://httpwg.org/specs/rfc9110.html#field.range): Range、206、416、If-Rangeの意味。
+- [WebKitのStorage Policy](https://webkit.org/blog/14403/updates-to-storage-policy/): quotaは上限で保存できる量の保証ではなく、保持要求の可否と消去はブラウザの判断を伴う。
+- [WebKit Features in Safari 26.0](https://webkit.org/blog/17333/webkit-features-in-safari-26-0/): ホーム画面への追加とWebアプリとしての起動。
+- [ChromeのPWAインストール案内](https://developer.chrome.com/blog/pwa-install-features/): アプリのインストール導線。`beforeinstallprompt`が発生する場合だけ専用ボタンで呼び出す。
+- [Playwright / Service Workers](https://playwright.dev/docs/service-workers): 本物のworkerを使うテストの範囲。ネットワーク障害とOS/実機での挙動は区別する。
