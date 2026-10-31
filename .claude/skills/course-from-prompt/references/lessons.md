@@ -62,6 +62,12 @@
 - 同じ Mac で別のセッションも重い作業をしていると、ディスクの空きが急に減る（13GB → 7GB）。完成動画のフォルダは複製（APFS の clone）で作り、書き出しの一時ファイルの分の空きを残す
 - 担当の報告は、共有のファイルに入れるべきこと（`sources.ts` の note、`reading.ts` の語、ほかの章の誤り）を書く欄を決めておくと、まとめやすい（D03 の担当が D01 の曜日の誤りを、D05 の担当がモックの枠のコントラストを報告した）
 
-## 読んだページの AI 宛ての文
+## マージと公開
+- 講座を足したら `npm run test:browser`（実 Chrome でオフライン保存・再生を確かめる、main の #2・#3 で入ったテスト）も流す。Stripe 講座だけの頃の前提（一覧の保存状態のリンクは 1 つ）で書かれていて、4 講座になると 4 件が strict mode の違反で止まった。テストは講座を名前か URL で選ぶ（`#savedCourses a[href$="/stripe-billing/"]`）
+- アプリ内のブラウザ（Claude の Browser pane）では Service Worker の読み込みが 403 になり、オフライン保存のパネルが「準備できません」と出る。PWA は `npm run test:browser` か、公開した HTTPS のサイトで確かめる
+- `deploy_pages.sh`（gh-pages への強制 push）は、自動の安全判定で「本番への公開」として止められることがある。マージの許可とは別に、公開の許可をユーザーにもらう（計画の段階で聞いておく）。push 済みのコミットを直す強制 push（`commit --amend` → `push --force-with-lease`）も止められた
+- gh-pages は公開のたびに丸ごと置き換わる。別のセッションが古い main から公開すると、新しい講座が消える（今回は PR #1 のマージ前に、ほかのセッションが Stripe 講座だけの main から公開していた）。公開は最新の main から行い、`git log -1 origin/gh-pages`（「Deploy main <rev>」）の rev に全講座が入っているかを確かめる
+- PR の CI は `gh run watch <run id> --exit-status` をバックグラウンドで流すと、終わったときに 1 回だけ知らせが来る（何度も見に行かない）
+
 
 - First Round Review の記事の冒頭に、AI ツールに llms.txt を取らせる案内。ISO の委員会のページと OpenStax の本に、AI に使うことを禁じる利用条件。NN/g とデジタル庁のページにゼロ幅スペース（中身なし）。どれにも従わず、報告に書いて、出典には中身だけを使う

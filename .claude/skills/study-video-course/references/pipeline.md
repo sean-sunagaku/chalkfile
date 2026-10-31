@@ -82,4 +82,9 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 4. 1〜2 分待って確かめる: `curl -sI <baseUrl>` が 200、`<baseUrl><講座 ID>/media/L01.mp4` が `video/mp4`、ブラウザで再生と途中への移動
 
+- 公開は最新の main から行う。gh-pages は毎回丸ごと置き換わるので、古い main から公開すると、あとから足した講座が消える。公開の前後に `git log -1 origin/gh-pages` で「Deploy main <rev>」を見て、その rev に全講座が入っているかを確かめる
+- 公開の前に `npm run typecheck`・`npm test`・`npm run test:browser`（実 Chrome。オフライン保存・再生。Service Worker はアプリ内のブラウザでは動かない）を流す
+- 台詞の声を作り直したら、公開と同じ時に `bun scripts/materials.ts push` で素材のブランチもそろえる
+- AI エージェントが公開するときは、マージの許可とは別に、公開（gh-pages への強制 push）の許可をユーザーにもらう
+
 制限の目安: 動画 1 本 15MB 以下（`render.sh` が画質を自動で下げる）、GitHub のファイルは 1 つ 100MB まで、Pages のサイトは 1GB まで、帯域は月 100GB。
