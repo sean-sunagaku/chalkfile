@@ -1,11 +1,14 @@
 import { test, expect, chromium, type Page, type APIRequestContext } from '@playwright/test';
-import { readFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseManifest, CourseStatus } from '../../site/offline-shared';
 
 const route = '/chalkfile/stripe-billing/';
 const manifest = JSON.parse(readFileSync('site/dist/stripe-billing/offline-manifest.json', 'utf8')) as CourseManifest;
+// 一覧の「講座ごとの保存状態」は、build した講座の数だけ並ぶ。テストは Stripe 講座のリンクを選ぶ
+const courseCount = readdirSync('site/dist', { withFileTypes: true }).filter((d) => d.isDirectory() && existsSync(path.join('site/dist', d.name, 'offline-manifest.json'))).length;
+const savedLink = (page: Page) => page.locator(`#savedCourses a[href$="${route}"]`);
 const evidence = process.env.CHALKFILE_EVIDENCE_DIR ?? '/tmp/chalkfile-pwa-evidence';
 mkdirSync(evidence, { recursive: true });
 
@@ -50,7 +53,7 @@ test('一覧ページの375px表示から保存状態とインストール案内
   page.on('pageerror', (e) => errors.push(e.message));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/chalkfile/');
-  await expect(page.locator('#savedCourses a')).toHaveCount(1);
+  await expect(page.locator('#savedCourses a')).toHaveCount(courseCount);
   await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
   await expect(page.locator('h1')).toHaveText('Chalkfile');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
@@ -60,7 +63,7 @@ test('一覧ページの375px表示から保存状態とインストール案内
   await page.locator('#installHelp summary').click();
   await expect(page.locator('#installHelp')).toContainText('ホーム画面に追加');
   await page.screenshot({ path: path.join(evidence, 'home-mobile-375.png'), fullPage: false });
-  await page.locator('#savedCourses a').click();
+  await savedLink(page).click();
   await expect(page.locator('#offlineSave')).toBeEnabled();
   expect(errors).toEqual([]);
 });
@@ -184,7 +187,7 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   await page.screenshot({ path: path.join(evidence, 'offline-playback.png'), fullPage: false });
   await page.goto('/chalkfile/');
   await expect(page.locator('#savedCourses')).toContainText('保存済み');
-  await page.locator('#savedCourses a').click();
+  await savedLink(page).click();
   await expect(page.locator('#savedState')).toContainText('保存済み');
   await page.locator('#offlineDelete').click();
   await expect(page.locator('#savedState')).toContainText('未保存');
@@ -329,7 +332,7 @@ test('ブラウザ完全終了後のオフライン起動とworker更新後に�
     await context.setOffline(true);
     page = await context.newPage(); await page.goto('/chalkfile/');
     await expect(page.locator('#savedCourses')).toContainText('保存済み');
-    await page.locator('#savedCourses a').click();
+    await savedLink(page).click();
     await expect(page.locator('#savedState')).toContainText('保存済み');
     await playAndPause(page, 90);
   } finally { await context.close(); rmSync(profile, { recursive: true, force: true }); }

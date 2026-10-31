@@ -101,7 +101,7 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
       const response = await page.goto('/chalkfile/');
       expect(response!.fromServiceWorker()).toBeTruthy();
       await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
-      await page.locator('#savedCourses a').click();
+      await page.locator(`#savedCourses a[href$="${course}"]`).click();
       await expect(page.locator('#offlineMessage')).toContainText('保存済みの教材と全動画を利用できます');
       await expect(page.locator('#networkState')).toContainText('オフライン');
       await refresh(page);
