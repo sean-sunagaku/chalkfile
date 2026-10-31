@@ -6,8 +6,8 @@ import { dropY, useAppear } from '../timing';
 
 /*
  * 架空のアプリの画面（改善前・改善後）。画面の中の色は「そのアプリの色」なので、講座のテーマではなくここの M で描く。
- * 改善後の文字は、白い地に対して WCAG のコントラスト比 4.5:1 以上（M.muted のプレースホルダーだけ 3:1 前後）。
- * 入力欄の枠（M.field）は 3:1 以上（1.4.11。枠が欄の手がかりになるため）。
+ * 改善後の文字は、白い地に対して WCAG のコントラスト比 4.5:1 以上（プレースホルダーの M.muted も 4.83:1。1.4.3 の対象）。
+ * 入力欄・白地のボタン・チェックボックス・トグルのオフ・まだ進んでいないステップの枠（M.field）は 3:1 以上（1.4.11。部品と状態の手がかりになるため）。
  * weak を付けた部品は、改善前の悪い例としてわざと薄く描く（コントラスト比 2:1 前後）。
  */
 const M = {
@@ -15,10 +15,10 @@ const M = {
   bar: '#EEF1F5',
   ink: '#1F2430',
   sub: '#4A5160',
-  muted: '#7C8594',
+  /** プレースホルダー（白と 4.83:1） */
+  muted: '#6B7280',
   weak: '#BCC2CC',
-  line: '#C9D0DA',
-  /** 入力欄の枠（白と 3.31:1） */
+  /** 入力欄・白地のボタン（secondary）・チェックボックス・トグルのオフ・まだのステップの枠（白と 3.31:1。部品の境目の 3:1 を満たす） */
   field: '#858E9C',
   weakLine: '#E6E9EE',
   primary: '#2459D6',
@@ -39,7 +39,7 @@ const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean; flex?: boo
     return <div style={{ fontSize: weak ? 15 : 18, color: weak ? M.weak : M.primary, textDecoration: 'underline', fontWeight: 600, alignSelf: 'center', padding: '0 6px' }}>{text}</div>;
   }
   const base: React.CSSProperties = { height: 52, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 800, padding: '0 12px', flex: flex ? 1 : undefined, whiteSpace: 'nowrap' };
-  if (variant === 'secondary') return <div style={{ ...base, border: `1.5px solid ${weak ? M.weakLine : M.line}`, color: weak ? M.weak : M.ink, background: M.bg }}>{text}</div>;
+  if (variant === 'secondary') return <div style={{ ...base, border: `1.5px solid ${weak ? M.weakLine : M.field}`, color: weak ? M.weak : M.ink, background: M.bg }}>{text}</div>;
   if (variant === 'danger') return <div style={{ ...base, background: M.danger, color: '#FFFFFF' }}>{text}</div>;
   return <div style={{ ...base, background: weak ? M.primaryWeak : M.primary, color: '#FFFFFF' }}>{text}</div>;
 };
@@ -111,7 +111,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
             <div style={{ fontSize: 18, fontWeight: 700, color: M.ink }}>{b.label}</div>
             {b.sub ? <div style={{ fontSize: 15, color: M.sub, marginTop: 2 }}>{b.sub}</div> : null}
           </div>
-          <div style={{ width: 54, height: 30, borderRadius: 99, background: b.on ? M.primary : '#C3CAD5', position: 'relative', flexShrink: 0 }}>
+          <div style={{ width: 54, height: 30, borderRadius: 99, background: b.on ? M.primary : M.field, position: 'relative', flexShrink: 0 }}>
             <div style={{ position: 'absolute', top: 3, left: b.on ? 27 : 3, width: 24, height: 24, borderRadius: 99, background: '#FFFFFF' }} />
           </div>
         </div>
@@ -124,7 +124,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
               width: 22,
               height: 22,
               borderRadius: 6,
-              border: `2px solid ${b.checked ? M.primary : M.line}`,
+              border: `2px solid ${b.checked ? M.primary : M.field}`,
               background: b.checked ? M.primary : M.bg,
               display: 'flex',
               alignItems: 'center',
@@ -145,7 +145,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
             const on = i === b.current;
             return (
               <React.Fragment key={i}>
-                {i ? <div style={{ flex: 1, height: 2, background: done || on ? M.primary : M.line }} /> : null}
+                {i ? <div style={{ flex: 1, height: 2, background: done || on ? M.primary : M.field }} /> : null}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div
                     style={{
@@ -153,7 +153,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
                       height: 26,
                       borderRadius: 99,
                       background: done || on ? M.primary : M.bg,
-                      border: `2px solid ${done || on ? M.primary : M.line}`,
+                      border: `2px solid ${done || on ? M.primary : M.field}`,
                       color: done || on ? '#FFFFFF' : M.sub,
                       display: 'flex',
                       alignItems: 'center',
