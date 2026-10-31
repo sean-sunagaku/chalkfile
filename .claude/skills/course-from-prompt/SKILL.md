@@ -43,6 +43,7 @@ node scripts/stills.mjs L01:1   # 初回は Chrome Headless Shell を落とす�
 3. 担当は、自分の章のファイルだけを書き、`synth`（読みの確認）と `stills`（静止画の確認）までやって報告する。`synth.ts` は `timeline.json` をロックして書くので、同時に流してよい
 4. 親は報告を受けた順に、`sources.ts` の候補の note を直し、`mix` → `CAPTIONS=1 bash scripts/render.sh <ID>` を順番に流す（書き出しは 1 本ずつ。並べると CPU を取り合う。1 本 8〜13 分なので、20 章で 4〜5 時間。待ち行列のファイルに章 ID を足していく形にし、`CONCURRENCY=<コア数-3>` で並列数を合わせる）
 5. 全章がそろったら、担当どうしで二重に足した出典（同じ id）を出し、note をまとめて講座の `sources.ts` に移す。担当が報告した「ほかの章・共有の部品の誤り」（曜日・モックの色など）を直し、影響する章を書き出し直す
+6. 事実確認担当を付ける（第 2 章以降も省かない）。書いた担当とは別のサブエージェントに、事実確認の手順（[references/factcheck-brief.md](references/factcheck-brief.md)）と章 ID を 3〜4 章ずつ渡す（講座ごとに 2 つ）。こちらの結論は渡さない。担当は自分の章のファイルだけを直し、合成と静止画まで確かめて報告する。講座の `sources.ts`・共有の部品は親が報告を見て直す。3 講座・20 章で、直すところが無かったのは 1 章だけだった
 
 ## 5. まとめて確かめ、出す
 
@@ -57,7 +58,9 @@ bun scripts/export_deliverables.ts <ID> …          # out/deliverables/（完�
 
 書き出した動画は、`ffprobe` の長さを `timeline.json` と比べ（サイト用と字幕つきの両方）、改善前・改善後の画面の場面から静止画を抜いて見る（モックの色・日付。担当の静止画の確認の後に直した共有の部品は、ここでしか確かめられない）。
 
-`syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。公開はマージ後に `bash scripts/deploy_pages.sh`。
+書き出す前に `bun scripts/materials.ts check` で、台本の全部の台詞の声が手元にあるかを見る（`reading.ts` を直した後に合成し直していない章が見つかる）。`reading.ts` は全講座で共有なので、直したら全講座の台詞の読みが変わらないかを比べ、変わった章（ほかの講座も）を合成・書き出し直す。
+
+`syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。作業が長くなったら、PR を更新する前に `origin/main` を取り込む（別の PR がマージされていることがある）。公開はマージ後に `bash scripts/deploy_pages.sh`。台詞の声を作ったら `bun scripts/materials.ts push` で素材のブランチも置き換える（VOICEVOX の無い手元でも作り直せるように。README の「素材から作り直す」）。
 
 ## 守ること
 

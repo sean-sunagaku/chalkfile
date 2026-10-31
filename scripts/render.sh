@@ -40,6 +40,8 @@ for id in "${ids[@]}"; do
   fi
   if [ ! -s "out/master/$id.mp4" ]; then echo "$id: 映像の書き出しに失敗しました" >&2; exit 1; fi
   crf=21
+  # 6 分より長い動画は、これまで crf 27 か 29 でしか上限（約 14MB）に近づかなかった（3 講座の 23 本）。21〜25 を試す書き出しを省く
+  if [ "$(python3 -c "import json; t=json.load(open('src/generated/timeline.json'))['$id']; print(t['durationInFrames'] // t['fps'])")" -gt 360 ]; then crf=27; fi
   while :; do
     ffmpeg -y -hide_banner -loglevel error -i "out/master/$id.mp4" -i "public/audio/mix/$id.wav" \
       -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf "$crf" -maxrate 2000k -bufsize 4000k \
