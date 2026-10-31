@@ -1,0 +1,19 @@
+/* 色と書体は既存の講座テーマを使う。 */
+[hidden] { display: none !important; }
+.offline-box { padding: 16px 18px; margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); font-size: 14px; }
+.offline-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; }
+.offline-box h2 { margin: 0; font-size: 18px; line-height: 1.6; }
+.offline-box p { margin: 8px 0; max-width: 90ch; color: var(--fg-2); }
+.offline-box .offline-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.offline-box .btn { font: inherit; font-weight: 700; min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--raise); color: var(--fg); white-space: normal; }
+.offline-box .btn.primary { background: var(--grad); color: var(--on-accent); border-color: transparent; }
+.offline-box .btn:disabled { opacity: 0.6; cursor: default; }
+.offline-box details { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.offline-box summary { cursor: pointer; font-weight: 700; }
+.offline-box ul { margin: 10px 0; padding-left: 20px; }
+.offline-box li { margin-block: 8px; }
+.offline-box li span { display: block; font-size: 13px; color: var(--muted); }
+.offline-box progress { width: 100%; margin-top: 10px; accent-color: var(--violet); }
+#networkState { font-size: 12px; color: var(--muted); }
+#offlineMessage { min-height: 1.7em; }
+#playbackStatus { font-size: 13px; color: var(--muted); margin: 8px 0; }

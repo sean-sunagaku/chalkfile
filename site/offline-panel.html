@@ -1,0 +1,30 @@
+<section class="offline-box" aria-labelledby="offlineHeading">
+  <div class="offline-top"><h2 id="offlineHeading">オフラインで学ぶ</h2><span id="networkState" role="status"></span></div>
+  <div id="courseOffline" __COURSE_HIDDEN__>
+    <p id="savedState">保存状態を確認しています…</p>
+    <p id="downloadSize">保存サイズを確認しています…</p>
+    <div class="offline-actions">
+      <button class="btn primary" id="offlineSave" type="button" disabled>この講座をアプリ内に保存</button>
+      <button class="btn" id="offlineCancel" type="button" hidden>保存をキャンセル</button>
+      <button class="btn" id="offlineCheck" type="button" disabled>更新を確認</button>
+      <button class="btn" id="offlineDelete" type="button" disabled>保存を削除</button>
+      <button class="btn" id="offlineReload" type="button" hidden>保存した版を開く</button>
+    </div>
+  </div>
+  <progress id="offlineProgress" aria-label="講座の保存進捗" max="1" value="0" hidden></progress>
+  <p id="offlineMessage" role="status" aria-live="polite">保存機能を準備しています…</p>
+  <details __LIBRARY_OPEN__><summary>講座ごとの保存状態</summary><ul id="savedCourses"></ul><p>講座を開き、保存ボタンで選んでください。表示するだけでは動画を保存しません。</p></details>
+  <details><summary>保存容量と使い方</summary>
+    <p id="storageState">保存容量を確認しています…</p>
+    <button class="btn" id="offlinePersist" type="button">保存を保持するようブラウザに要求</button>
+    <p>アプリ内保存には、台本・字幕・クイズ・全動画を含みます。公式ドキュメントなど外部リンクには通信が必要です。オンライン再生や「動画ファイルをダウンロード」はアプリ内保存にはなりません。</p>
+    <p>保存中は画面を開いておいてください。通信やアプリが途切れた場合は、保存状態を確認して再試行できます。更新は手動です。更新失敗時は前の完全な版を維持し、成功時は直前の版も1つ保持します。更新には新しい版の分の空き容量が必要です。</p>
+    <p>iPhone・iPadでもブラウザの保存領域を使います。「ファイル」アプリの動画をこのアプリに取り込む機能はありません。ブラウザとホーム画面のアプリで保存が共有されるとは限らないため、使う方で保存し、機内モードで起動・再生を確かめてください。空き容量、長期間の未使用、サイトデータの削除などで保存が消える場合があります。実機での保存維持やバックグラウンド保存は保証しません。</p>
+  </details>
+  <details id="installHelp"><summary>アプリをインストールする</summary>
+    <p id="installState">対応ブラウザではインストールボタン、またはブラウザのメニューから追加できます。インストールだけでは動画は保存されません。</p>
+    <button class="btn" id="pwaInstall" type="button" hidden>Chalkfile をインストール</button>
+    <p>iPhone・iPad：Safari の共有メニューで「ホーム画面に追加」を選びます。表示される場合は「Webアプリとして開く」を有効にして追加してください。</p>
+  </details>
+  <p id="appUpdate" hidden>アプリの更新があります。保存が終わってから、このサイトのタブをすべて閉じて開き直してください。完全な講座の保存は維持します。</p>
+</section>

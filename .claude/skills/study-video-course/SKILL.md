@@ -9,6 +9,8 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 正本は台本のデータ（`content/<講座>/Lxx.ts`）。声も動画もサイトも、台本からコマンドで作り直す。動画を手で編集しない。
 
+講座サイトの事前保存・オフライン再生・PWAを直すときは [references/offline.md](references/offline.md) に従う。利用者が選んだ講座の公開教材・MP4だけを保存し、不完全な保存を成功扱いしない。オンライン再生・単体ファイル保存・アプリ内保存・インストールを区別する。READMEの利用手順も一緒に更新する。
+
 ```
 調べる → 講座を設計する → 台本を書く → synth（声と時刻）→ mix（音）→ render（動画）→ 確かめる → build_site → deploy_pages
 ```
@@ -47,7 +49,8 @@ bash scripts/render.sh L01 L02                                   # 動画
 - 見た目: `node scripts/stills.mjs L01 --mid` で `out/stills/` に静止画を書き、全部見る。文字のはみ出し・重なり・小さすぎを直す
 - 長さ: `ffprobe` の動画の長さが `src/generated/timeline.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本ファイルを渡して、主張ごとに公式で確かめてもらう（research.md の「事実確認」）
-- 型: `npx tsc --noEmit`
+- 型: `npm run typecheck`（動画・台本と、PWAのページ/worker）
+- オフライン/PWA: `npm test`、`bun scripts/build_site.ts --strict` → `npm run test:browser`。実動画、通信断・再起動、保存/削除、失敗/更新/キャンセル/再試行、Range・シーク・繰り返し、PC/375pxとインストール導線を確かめる（[offline.md](references/offline.md)）。実機未検証を成功とはしない。専用lintスクリプトはない
 - 安全: `bun scripts/check_content.ts`（AI への指示文・HTML・見えない文字・秘密情報・手元の禁止語）。きまりは [references/safety.md](references/safety.md)
 - 権利: `bun scripts/check_overlap.ts <講座 ID>`（台本と、レクチャーの `docs` の公式ページを突き合わせ、言い回しが続けて同じところを探す）。ロゴ・画面写真・他人の画像が無いことも見る。きまりは [references/rights.md](references/rights.md)
 - サイト: `bun scripts/build_site.ts` → `bun scripts/serve.ts` で開き、再生・途中への移動・字幕・スマホの幅（375px）を見る
@@ -69,6 +72,7 @@ bash scripts/deploy_pages.sh
 | 図や画面の文字だけ直す | 台本を直す → stills → render（声は変わらないので synth と mix は要らない） |
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.mjs --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
+| 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → READMEとこのSkillの案内を合わせる |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 
 ## やらないこと

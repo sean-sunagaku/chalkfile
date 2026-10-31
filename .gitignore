@@ -6,6 +6,8 @@ public/audio/
 site/media/
 site/data/
 site/dist/
+test-results/
+playwright-report/
 
 .DS_Store
 

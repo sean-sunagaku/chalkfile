@@ -7,12 +7,14 @@
 __CSP__
 <meta name="referrer" content="strict-origin-when-cross-origin">
 __HEAD_META__
+__PWA_HEAD__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 __FONT_LINK__
 <style>
 /* レイアウト: 左に講義シアター（動画・操作・タブ）、右にカリキュラム。900px 未満では縦に積む。色・書体・背景の飾りは講座のテーマで決まる（build_site.ts が下に差し込む） */
 __THEME_CSS__
+__OFFLINE_CSS__
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -382,6 +384,7 @@ button { font: inherit; color: inherit; }
     <span class="links" id="links" hidden></span>
   </div>
 
+  __OFFLINE_PANEL__
   <div class="layout">
     <section aria-label="講義">
       <div class="theater" id="theater">
@@ -404,12 +407,15 @@ button { font: inherit; color: inherit; }
       <div class="ccbar" id="cc" aria-live="off"></div>
       </div>
 
+      <p id="playbackStatus" role="status">オンライン再生を準備しています。</p>
       <div class="now">
         <div class="now-title">
           <div class="eyebrow" id="nowEyebrow">LECTURE 01</div>
           <h2 id="nowTitle">このコースで作るもの</h2>
         </div>
         <div class="now-actions">
+          <button class="btn" id="loopToggle" type="button" aria-pressed="false">この動画を繰り返す</button>
+          <a class="btn" id="fileDownload" download>動画ファイルをダウンロード</a>
           <div class="speed" role="group" aria-label="再生速度" id="speed">
             <button type="button" data-rate="1">1.0×</button>
             <button type="button" data-rate="1.25">1.25×</button>
@@ -487,6 +493,7 @@ button { font: inherit; color: inherit; }
 
       <div class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
         <p>__DOCS_NOTE__</p>
+        <p>外部の公式ドキュメントを開くには通信が必要です。</p>
         <ul class="docs" id="docs"></ul>
       </div>
 
@@ -521,6 +528,23 @@ button { font: inherit; color: inherit; }
   var video = $("video");
   var player = $("player");
   var theater = $("theater");
+  var offlineState = { saved: false, online: navigator.onLine };
+  function playbackStatus() {
+    $("playbackStatus").textContent = offlineState.saved ? "アプリ内の保存版を再生します。動画ファイルのダウンロードとは別の保存です。" : offlineState.online ? "オンライン再生です。オフラインで使うには上の保存ボタンを選んでください。" : "この講座は未保存です。動画の再生には通信が必要です。";
+  }
+  window.addEventListener("chalkfile:offline-state", function (event) {
+    offlineState = event.detail;
+    if (offlineState.saved && offlineState.pageVersion !== DATA.pageVersion) {
+      video.pause();
+      $("playbackStatus").textContent = "保存版が更新されました。上の「保存した版を開く」で開き直してください。";
+    } else playbackStatus();
+  });
+  video.addEventListener("error", function () { $("playbackStatus").textContent = "動画を再生できません。通信と保存状態を確認し、再読み込みまたは保存を再試行してください。"; });
+  $("loopToggle").addEventListener("click", function () {
+    video.loop = !video.loop;
+    $("loopToggle").setAttribute("aria-pressed", String(video.loop));
+    clearNext();
+  });
 
   // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
   var KEY = "chalkfile:" + DATA.course.id + ":";
@@ -608,9 +632,9 @@ button { font: inherit; color: inherit; }
     video.pause();
     video.innerHTML = "";
     video.removeAttribute("src");
-    video.poster = "media/" + lec.id + ".jpg";
+    video.poster = lec.poster;
     var src = document.createElement("source");
-    src.src = "media/" + lec.id + ".mp4";
+    src.src = lec.video;
     src.type = "video/mp4";
     // 全画面（iPhone など）用の字幕は、埋め込んだ台本からその場で WebVTT を作る
     var tr = document.createElement("track");
@@ -621,13 +645,15 @@ button { font: inherit; color: inherit; }
     video.appendChild(src);
     video.appendChild(tr);
     video.load();
+    $("fileDownload").href = lec.video;
+    $("fileDownload").download = lec.id + ".mp4";
+    playbackStatus();
     var resume = progress[lec.id] && !progress[lec.id].done ? progress[lec.id].t || 0 : 0;
-    video.addEventListener("loadedmetadata", function onMeta() {
-      video.removeEventListener("loadedmetadata", onMeta);
+    video.onloadedmetadata = function () {
       if (resume > 3 && resume < lec.duration - 5) video.currentTime = resume;
       video.playbackRate = prefs.rate;
       hideNativeTrack();
-    });
+    };
     if (play) video.play().catch(function () {});
     $("nowEyebrow").textContent = "LECTURE " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
     $("nowTitle").textContent = lec.title;
@@ -970,7 +996,7 @@ button { font: inherit; color: inherit; }
   // ── キーボード ──
   document.addEventListener("keydown", function (e) {
     var tag = (e.target.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "textarea" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (["input", "textarea", "select", "button", "a", "summary"].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
     var k = e.key;
     if (k === " " || k === "k") { e.preventDefault(); if (video.paused) video.play().catch(function () {}); else video.pause(); }
     else if (k === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); }
@@ -1014,5 +1040,6 @@ button { font: inherit; color: inherit; }
   showTab(store.get("tab", "overview"));
 })();
 </script>
+__PWA_SCRIPT__
 </body>
 </html>
