@@ -233,6 +233,7 @@ const pull = async (courses: Course[], videos: boolean) => {
         }),
     );
     // 取り出す先（WAV）と、もとの FLAC。中身が同じ WAV が手元にあれば、変換を飛ばす
+    mkdirSync(path.join(ROOT, TTS), { recursive: true });
     const targets: [flac: string, rel: string][] = [];
     for (const c of present) {
       const dir = path.join(tmp, 'tts', c.id);
@@ -247,7 +248,6 @@ const pull = async (courses: Course[], videos: boolean) => {
         targets.push([path.join(dir, name), `${local}/${name.replace(/\.flac$/, '.wav')}`]);
       }
     }
-    mkdirSync(path.join(ROOT, TTS), { recursive: true });
     const same = (rel: string) => existsSync(path.join(ROOT, rel)) && sha256(path.join(ROOT, rel)) === sums.get(rel);
     const jobs = targets.filter(([, rel]) => !same(rel)).map(([flac, rel]): [string, string] => [flac, path.join(ROOT, rel)]);
     console.log(`WAV に戻す: ${jobs.length} 本（同じ中身が手元にある ${targets.length - jobs.length} 本は飛ばす）`);
