@@ -16,8 +16,8 @@ export const VOICES: Record<VoiceId, { speaker: number; speed: number; intonatio
   'zundamon-cry': { speaker: 76, speed: 1.0, intonation: 1.1, pitch: 0, credit: 'VOICEVOX:ずんだもん' },
   // No.7（ノーマル）を少し速く、抑揚を強く: 講師の声で短く刺すツッコミ
   tsukkomi: { speaker: 29, speed: 1.14, intonation: 1.3, pitch: 0, credit: 'VOICEVOX:No.7' },
-  // 青山龍星（しっとり）: 天の声（淡々と、真実や先のことをばらすナレーション）
-  tennokoe: { speaker: 84, speed: 0.98, intonation: 1.0, pitch: 0, credit: 'VOICEVOX:青山龍星' },
+  // 玄野武宏（ノーマル）: 天の声（淡々と、真実や先のことをばらすナレーション）。青山龍星（しっとり）は聞きにくかった
+  tennokoe: { speaker: 11, speed: 1.02, intonation: 1.1, pitch: 0, credit: 'VOICEVOX:玄野武宏' },
 };
 
 /** 講座サイトのクレジットに出す声（全講座で共通の講師と呼び込み）。ほかの声を使う講座は、講座の sourceNote にも書く */
