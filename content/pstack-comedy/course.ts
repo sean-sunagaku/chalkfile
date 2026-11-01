@@ -7,8 +7,9 @@ export const PSTACK_COMEDY: Course = {
   theme: 'stage',
   disclaimer: 'Cursor 社・pstack の作者とは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています',
   title: '笑ってわかる pstack',
-  subtitle: 'Cursor 向けのスキル集 pstack を、ずんだもんとざっくり知るお笑い版',
-  headline: '**速く進みたいなら、まず深く**のスキル集を、ざっくり',
+  subtitle: 'Cursor 向けのスキル集 pstack の考え方と使い方',
+  headline: '**速く進みたいなら、まず深く**のスキル集',
+  standalone: true,
   sections: [{ no: 1, title: 'ざっくり入門' }],
   lectures: [P01],
   cast: {

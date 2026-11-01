@@ -185,10 +185,14 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   return (
     <div style={{ position: 'absolute', left: PAD, right: PAD, top: 52, height: 150 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 21, letterSpacing: 5, color: C.muted }}>
-          {unitOf(lecture.id).label} {String(lecture.no).padStart(2, '0')}
-          <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>{lecture.title}</span>
-        </div>
+        {courseOf(lecture.id).standalone ? (
+          <div />
+        ) : (
+          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 21, letterSpacing: 5, color: C.muted }}>
+            {unitOf(lecture.id).label} {String(lecture.no).padStart(2, '0')}
+            <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>{lecture.title}</span>
+          </div>
+        )}
         <CourseMark />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 14 }}>
