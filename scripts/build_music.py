@@ -8,7 +8,7 @@
   public/audio/music/bed.wav          講義 BGM ループ（120 BPM・C major・64 小節 = 128.0 s）
   public/audio/music/sting_intro.wav  タイトルカード用ジングル（約 5.5 s）
   public/audio/music/sting_outro.wav  エンドカード用ジングル（約 3.5 s）
-  public/audio/sfx/*.wav              UI 効果音（mono）
+  public/audio/sfx/*.wav              UI 効果音（mono）。harisen・chin・drumroll・deden・zuko はお笑い版の掛け合い用
   public/audio/music/preview/*.mp3    試聴用 MP3
 
 実行（tools/stripe-billing-course で）:
@@ -1204,6 +1204,82 @@ def sfx_type() -> np.ndarray:
     return filt(fade_in(0.9 * click + 0.5 * thock, 0.0003), "lowpass", 8000.0)
 
 
+# お笑い版の掛け合い用 ---------------------------------------------------------
+def sfx_harisen() -> np.ndarray:
+    """ツッコミのハリセン「パシッ」: 紙が重なって鳴る鋭いノイズの破裂 3 枚と、短い部屋鳴り。"""
+    n = to_samples(0.32)
+    x = np.zeros(n)
+    for i, (dt, g) in enumerate(((0.0, 1.0), (0.0055, 0.75), (0.0125, 0.5))):
+        s = to_samples(dt)
+        k = n - s
+        add_into(x, s, rng_for("harisen", i).standard_normal(k) * perc(k, 0.0003, 0.016), g)
+    body = filt(x, "bandpass", 2300.0, 0.8) + 0.55 * filt(x, "highpass", 5200.0) + 0.3 * filt(x, "lowpass", 700.0)
+    ir = mid(reverb_ir(0.22, 0.18, 0.1, "harisen"))
+    return body + 0.15 * signal.oaconvolve(body, ir)[:n]
+
+
+def sfx_chin() -> np.ndarray:
+    """スベったときの「チーン」: おりんのように長く残る金属の響き（非整数倍の倍音と、ゆっくりしたうなり）。"""
+    n = to_samples(2.6)
+    t = np.arange(n) / SR
+    f = 1180.0
+    partials = ((1.0, 1.0, 1.5), (1.004, 0.55, 1.5), (2.72, 0.32, 0.6), (5.06, 0.14, 0.3), (8.14, 0.05, 0.15))
+    y = sum(a * np.sin(2 * np.pi * f * r * t + 0.4 * i) * np.exp(-t / tau) for i, (r, a, tau) in enumerate(partials))
+    strike = filt(rng_for("chin").standard_normal(n), "bandpass", 3800.0, 1.2) * perc(n, 0.0002, 0.0025)
+    return fade_in(y + 0.25 * strike, 0.0006)
+
+
+def sfx_drumroll() -> np.ndarray:
+    """溜めのドラムロール（1.5 秒、だんだん大きく）と、最後の「ジャン」（シンバルとキック）。"""
+    roll = 1.5
+    n = to_samples(roll + 1.6)
+    x = np.zeros(n)
+    hits = [snare_sample(k) for k in range(6)]
+    tight = np.exp(-np.arange(hits[0].shape[-1]) / SR / 0.05)
+    step = 1 / 26  # 1 秒に 26 打
+    for i in range(int(roll / step)):
+        u = i * step / roll
+        g = (0.18 + 0.62 * u**1.6) * (1.0 if i % 2 == 0 else 0.85)
+        add_into(x, to_samples(i * step), hits[i % len(hits)] * tight, g)
+    end = to_samples(roll)
+    add_into(x, end, mid(crash_sample(1.5)), 0.9)
+    add_into(x, end, kick_sample(), 0.8)
+    add_into(x, end, snare_sample(9), 0.7)
+    return x
+
+
+def sfx_deden() -> np.ndarray:
+    """衝撃の「デデーン」: 低い金管の和音（ノコギリ波）を短く 1 回、長く 1 回。低い太鼓を重ねる。"""
+    n = to_samples(1.8)
+    x = np.zeros(n)
+    chord = (38, 45, 50, 53)  # D2 A2 D3 F3（短三和音）
+    for start, dur, g in ((0.0, 0.13, 0.8), (0.2, 1.0, 1.0)):
+        s = to_samples(start)
+        k = n - s
+        tt = np.arange(k) / SR
+        tone = sum(saw(hz(m) * (1 + 0.002 * j), k) for j, m in enumerate(chord)) / len(chord)
+        tail = np.exp(-dur / (dur * 1.8)) * np.exp(-(tt - dur) / 0.12)
+        env = np.minimum(tt / 0.012, 1.0) * np.where(tt < dur, np.exp(-tt / (dur * 1.8)), tail)
+        brass = sweep(tone * env, "lowpass", 900.0 + 2600.0 * np.exp(-tt / 0.15), q=0.9)
+        add_into(x, s, brass, g)
+        add_into(x, s, tom_sample(55.0), 0.7 * g)
+    return x
+
+
+def sfx_zuko() -> np.ndarray:
+    """ずっこけの「ヒューン」: すべり笛のように音程が下がる音（ビブラート付き）と、最後の小さな着地。"""
+    n = to_samples(0.9)
+    t = np.arange(n) / SR
+    u = np.clip(t / 0.62, 0.0, 1.0)
+    f = 1500.0 * (280.0 / 1500.0) ** (u**1.3) * (1 + 0.025 * np.sin(2 * np.pi * 7.0 * t))
+    env = np.minimum(t / 0.01, 1.0) * np.where(t < 0.62, 1.0, np.exp(-(t - 0.62) / 0.05))
+    whistle = (osc_sine(f, n) + 0.18 * osc_sine(2 * f, n)) * env
+    breath = filt(rng_for("zuko").standard_normal(n), "bandpass", 2000.0, 0.7) * env * 0.05
+    land = np.zeros(n)
+    add_into(land, to_samples(0.64), tom_sample(90.0), 0.5)
+    return whistle + breath + land
+
+
 SFX = {
     "pop": sfx_pop,
     "whoosh": sfx_whoosh,
@@ -1212,6 +1288,11 @@ SFX = {
     "reveal": sfx_reveal,
     "correct": sfx_correct,
     "type": sfx_type,
+    "harisen": sfx_harisen,
+    "chin": sfx_chin,
+    "drumroll": sfx_drumroll,
+    "deden": sfx_deden,
+    "zuko": sfx_zuko,
 }
 
 
@@ -1369,7 +1450,19 @@ def verify(files: list[Path]) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description="講座動画の BGM・ジングル・効果音を合成する")
     ap.add_argument("--skip-verify", action="store_true", help="ffmpeg による計測・継ぎ目検査・MP3 作成を省略")
+    ap.add_argument("--only", nargs="+", metavar="NAME", help="指定した効果音だけを書き出す（BGM・ジングル・ほかの効果音には触れない）")
     args = ap.parse_args()
+
+    if args.only:
+        unknown = [k for k in args.only if k not in SFX]
+        if unknown:
+            raise SystemExit(f"効果音が無い: {unknown}（{', '.join(SFX)}）")
+        for name in args.only:
+            path = SFX_DIR / f"{name}.wav"
+            x = finish_sfx(SFX[name]())
+            write_wav(path, x, f"sfx-{name}")
+            print(f"wrote {path.relative_to(ROOT)}  {x.shape[-1] / SR:.2f} s  true peak {true_peak_db(x):.2f} dBTP")
+        return
 
     files = []
     jobs = [

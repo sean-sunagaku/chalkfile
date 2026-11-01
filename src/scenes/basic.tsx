@@ -5,6 +5,7 @@ import { courseOf } from '../../content';
 import { CourseMark, unitOf } from '../components/chrome';
 import { Glass, Icon, IconBadge, Pill, Rich, Smart } from '../components/ui';
 import credits from '../generated/credits.json';
+import lectureCredits from '../generated/lecture-credits.json';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME, TONES, tone } from '../theme';
 import { dropY, useActiveLine, useAppear, useScene } from '../timing';
 
@@ -438,7 +439,7 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
       </div>
       <div style={{ position: 'absolute', bottom: 0, fontFamily: SANS, fontSize: 22, color: C.muted, opacity: c, textAlign: 'center', lineHeight: 1.7 }}>
         {course.disclaimer ? <div>{course.disclaimer}</div> : null}
-        <div>ナレーション　{(credits as string[]).join('　')}　／　BGM・効果音　オリジナル（プログラムで合成）</div>
+        <div>ナレーション　{((lectureCredits as Record<string, string[]>)[lecture.id] ?? (credits as string[])).join('　')}　／　BGM・効果音　オリジナル（プログラムで合成）</div>
       </div>
     </Content>
   );

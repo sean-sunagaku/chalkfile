@@ -9,6 +9,24 @@ export const VOICES: Record<VoiceId, { speaker: number; speed: number; intonatio
   narrator: { speaker: 29, speed: 1.06, intonation: 1.12, pitch: 0, credit: 'VOICEVOX:No.7' },
   // 青山龍星（ノーマル）: レクチャー名の呼び込み
   announcer: { speaker: 13, speed: 1.0, intonation: 1.25, pitch: 0, credit: 'VOICEVOX:青山龍星' },
+  // ここから、お笑い版の掛け合いの声
+  // ずんだもん（ノーマル）: ボケ
+  zundamon: { speaker: 3, speed: 1.08, intonation: 1.2, pitch: 0, credit: 'VOICEVOX:ずんだもん' },
+  // ずんだもん（なみだめ）: ボケがへこんだとき
+  'zundamon-cry': { speaker: 76, speed: 1.0, intonation: 1.1, pitch: 0, credit: 'VOICEVOX:ずんだもん' },
+  // No.7（ノーマル）を少し速く、抑揚を強く: 講師の声で短く刺すツッコミ
+  tsukkomi: { speaker: 29, speed: 1.14, intonation: 1.3, pitch: 0, credit: 'VOICEVOX:No.7' },
+  // 青山龍星（しっとり）: 天の声（淡々と、真実や先のことをばらすナレーション）
+  tennokoe: { speaker: 84, speed: 0.98, intonation: 1.0, pitch: 0, credit: 'VOICEVOX:青山龍星' },
+};
+
+/** 講座サイトのクレジットに出す声（全講座で共通の講師と呼び込み）。ほかの声を使う講座は、講座の sourceNote にも書く */
+export const SITE_CREDITS: string[] = [...new Set([VOICES.narrator.credit, VOICES.announcer.credit])];
+
+/** レクチャーで使った声のクレジット（VOICES の順・重なりなし）。動画のエンディングに出す */
+export const creditsOf = (voices: Iterable<VoiceId>): string[] => {
+  const used = new Set(voices);
+  return [...new Set((Object.keys(VOICES) as VoiceId[]).filter((v) => used.has(v)).map((v) => VOICES[v].credit))];
 };
 
 /** 読み上げる文（英字はカナに開く）。英字が残ったら止める */

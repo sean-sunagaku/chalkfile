@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../content';
 import type { Course } from '../content/types';
-import { speechOf, ttsKey } from './voices';
+import { speechOf, ttsKey, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const BRANCH = 'materials';
@@ -121,7 +121,7 @@ bun scripts/materials.ts pull --videos           # 公開中のサイト（gh-pa
 
 ## クレジットと利用規約
 
-- ナレーション: VOICEVOX:No.7、VOICEVOX:青山龍星。音声を使うときは、VOICEVOX と各キャラクターの利用規約に従い、クレジットを書いてください
+- 声: ${[...new Set(Object.values(VOICES).map((v) => v.credit))].join('、')}。音声を使うときは、VOICEVOX と各キャラクターの利用規約に従い、クレジットを書いてください
 - BGM・ジングル・効果音: \`scripts/build_music.py\` が numpy で合成したオリジナル（外の音源は使っていません）
 `;
 
