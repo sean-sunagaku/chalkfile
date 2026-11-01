@@ -169,6 +169,7 @@ const WORDS: Record<string, string> = {
   div: 'ディヴ',
   rem: 'レム',
   chrome: 'クローム',
+  rive: 'ライブ',
 };
 
 const LETTERS: Record<string, string> = {
