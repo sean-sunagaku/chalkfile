@@ -441,6 +441,8 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
       <div style={{ position: 'absolute', left: PAD, top: CONTENT_TOP + 10, display: 'flex', alignItems: 'center', gap: 34, opacity: q }}>
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 150, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Q{s.no}</div>
         <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / {quizTotal}</div>
+        {/* 考える時間だけ出す札。大きな「Q1」の下に置くと、書体によって文字の下の端と重なるので、横に並べる */}
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: TONES.amber.text, opacity: thinkO }}>○ か × か？</div>
       </div>
       <div style={{ position: 'absolute', left: PAD, right: PAD, top: 420, opacity: q, transform: `translateY(${dropY(q)}px)` }}>
         <Glass t="violet" active={stamp > 0.05 ? 0.4 : 1} style={{ padding: '40px 52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 40 }}>
@@ -499,9 +501,6 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
             <Smart text={s.explain} t={ok ? 'mint' : 'coral'} />
           </div>
         </div>
-      </div>
-      <div style={{ position: 'absolute', left: PAD, top: 360, fontFamily: SANS, fontWeight: 700, fontSize: 28, color: TONES.amber.text, opacity: thinkO }}>
-        ○ か × か？
       </div>
     </>
   );

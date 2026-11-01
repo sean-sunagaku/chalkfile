@@ -33,7 +33,7 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 `content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座を `content/index.ts` の `COURSES` に足す。
 
-ボケ・ツッコミ・天の声の掛け合いで進む「お笑い版」（笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出）は [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`。
+**講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる**（ユーザーの方針）。笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出、守ることは [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`（章立て）と `content/rive-comedy/`（1 本だけの解説動画）。
 
 共通プロンプト＋テーマ別の指示から講座を丸ごと作るとき（全体設計 → 第 1 章 → 残りの章を並行で）は、スキル `course-from-prompt`（`.claude/skills/course-from-prompt/SKILL.md`）。読む教材・実践課題・AI チャットの質問例・章の計画（目次）まで作る章立ての講座は、レクチャーの `material` と講座の `syllabus`・`sources` を書く。ID のきまり、根拠の種類（研究・公式・実務・仮の例）、改善前・改善後の画面（`screens`）、字幕の焼き込みは [references/materials.md](references/materials.md)。見本は `content/nudge-product/`。
 
@@ -42,7 +42,7 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 ```bash
 bun scripts/synth.ts L01 L02                                     # 声と時刻（VOICEVOX）
 uv run --with numpy --with scipy python scripts/mix.py L01 L02   # 音
-bash scripts/render.sh L01 L02                                   # 動画
+CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字幕なし・サイト用の字幕焼き込み・配る用の字幕焼き込み）
 ```
 
 前提のツール、VOICEVOX の起動、ハマりどころは [references/pipeline.md](references/pipeline.md)。
@@ -59,7 +59,7 @@ bash scripts/render.sh L01 L02                                   # 動画
 - オフライン/PWA: `npm test`、`bun scripts/build_site.ts --strict` → `npm run test:browser`。実動画、通信断・再起動、保存/削除、失敗/更新/キャンセル/再試行、Range・シーク・繰り返し、PC/375pxとインストール導線を確かめる（[offline.md](references/offline.md)）。実機未検証を成功とはしない。専用lintスクリプトはない
 - 安全: `bun scripts/check_content.ts`（AI への指示文・HTML・見えない文字・秘密情報・手元の禁止語）。きまりは [references/safety.md](references/safety.md)
 - 権利: `bun scripts/check_overlap.ts <講座 ID>`（台本と、レクチャーの `docs` の公式ページを突き合わせ、言い回しが続けて同じところを探す）。ロゴ・画面写真・他人の画像が無いことも見る。きまりは [references/rights.md](references/rights.md)
-- サイト: `bun scripts/build_site.ts` → `bun scripts/serve.ts` で開き、再生・途中への移動・字幕・スマホの幅（375px）を見る
+- サイト: `bun scripts/build_site.ts` → `bun scripts/serve.ts` で開き、再生・途中への移動・字幕（オン・オフで字幕入りの版と字幕なしの版が差し替わるか、全画面で字幕が見えるか）・スマホの幅（375px）を見る
 
 ### 6. 公開する
 

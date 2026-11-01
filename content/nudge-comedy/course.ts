@@ -22,7 +22,6 @@ export const NUDGE_COMEDY: Course = {
     narrator: { name: '先生', tone: 'coral' },
     tsukkomi: { name: '先生', tone: 'coral' },
     tennokoe: { name: '天の声', tone: 'violet' },
-    announcer: { name: '天の声', tone: 'violet' },
   },
   sources: NUDGE_PRODUCT.sources,
   links: [{ label: '真面目版（教材・実践課題つき）', url: 'https://sean-sunagaku.github.io/chalkfile/nudge-product/' }],
@@ -30,5 +29,5 @@ export const NUDGE_COMEDY: Course = {
   docsNote:
     '動画の主張と出典は、真面目版の講座「ナッジ理論をプロダクト改善に活かす」の第 1 章と同じです（2026 年 10 月 30 日に開いて確かめた研究論文・公式資料）。ずんだもん（ボケ）の台詞は、笑いのためにわざと間違えています。正しい内容は、先生のツッコミと画面の表で確かめてください。読む教材と実践課題は、真面目版にあります。効果を約束するものではありません。',
   sourceNote:
-    'ボケの声は VOICEVOX:ずんだもん。台本と図は、真面目版のナッジ講座と同じ研究・公式資料（Thaler & Sunstein など、2026 年 10 月確認）をもとに作成。サンプル家計簿は架空のアプリで、数字は説明用の仮の例です',
+    'ボケの声は VOICEVOX:ずんだもん、天の声は VOICEVOX:玄野武宏。台本と図は、真面目版のナッジ講座と同じ研究・公式資料（Thaler & Sunstein など、2026 年 10 月確認）をもとに作成。サンプル家計簿は架空のアプリで、数字は説明用の仮の例です',
 };

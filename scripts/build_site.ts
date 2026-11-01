@@ -204,11 +204,15 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
     if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: ext === 'mp4' ? 'video/mp4' : 'image/jpeg' });
     else missing.push(file);
   }
+  // 字幕を焼き込んだ版（render.sh の CAPTIONS=1 が書く <id>.cc.mp4）。あるレクチャーは、字幕オンのときにこちらを流す（全画面でも字幕が見える）
+  const withCc = new Set(course.lectures.filter((lec) => existsSync(path.join(MEDIA, `${lec.id}.cc.mp4`))).map((lec) => lec.id));
+  for (const id of withCc) mediaFiles.push({ file: `${id}.cc.mp4`, data: readFileSync(path.join(MEDIA, `${id}.cc.mp4`)), type: 'video/mp4' });
   // 版は教材・表示・動画の全入力で決まる。保存した HTML と MP4 を別の版に混ぜない。
   const pageVersion = hash(JSON.stringify({ meta, credits, lectures, theme, template, offlinePanel, offlineCss, offlineClient,
     builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]) }));
   const json = JSON.stringify({ course: meta, credits, pageVersion, lectures: lectures.map((lec) => ({ ...lec,
     video: `media/${lec.id}.mp4?v=${pageVersion}`, poster: `media/${lec.id}.jpg?v=${pageVersion}`,
+    videoCc: withCc.has(lec.id) ? `media/${lec.id}.cc.mp4?v=${pageVersion}` : '',
   })) }).replace(/</g, '\\u003c');
   const app = appParts('../', { id: course.id, title: course.title, pageVersion });
   const url = `${base}${course.id}/`;
@@ -241,7 +245,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
   rmSync(path.join(out, 'media'), { recursive: true, force: true });
   mkdirSync(path.join(out, 'media'));
   for (const lec of course.lectures) {
-    for (const ext of ['mp4', 'jpg']) {
+    for (const ext of ['mp4', 'jpg', 'cc.mp4']) {
       const f = path.join(MEDIA, `${lec.id}.${ext}`);
       if (existsSync(f)) place(f, path.join(out, 'media', `${lec.id}.${ext}`));
     }
@@ -249,7 +253,7 @@ for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.i
   // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
   const manifestPath = path.join(out, 'offline-manifest.json');
   rmSync(manifestPath, { force: true });
-  if (mediaFiles.length === course.lectures.length * 2) {
+  if (mediaFiles.length === course.lectures.length * 2 + withCc.size) {
     const files = [asset(`${course.id}/`, page, 'text/html'), ...mediaFiles.map((f) => asset(`${course.id}/media/${f.file}?v=${pageVersion}`, f.data, f.type))];
     const manifest: CourseManifest = { schema: 1, id: course.id, title: course.title, pageVersion, revision: hash(JSON.stringify(files)),
       bytes: files.reduce((sum, f) => sum + f.bytes, 0), files };
