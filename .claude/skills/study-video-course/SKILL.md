@@ -33,7 +33,7 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 `content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座を `content/index.ts` の `COURSES` に足す。
 
-**講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる**（ユーザーの方針）。笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出、守ることは [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`（章立て）と `content/rive-comedy/`（1 本だけの解説動画）。
+**講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる**（ユーザーの方針）。既存の講座を作り直すときも、comedy.md の「この形を基準にする」（ユーザーに好評だった掛け合いの型と例）にそろえる。笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出、守ることは [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`（章立て）と `content/rive-comedy/`（1 本だけの解説動画）。
 
 共通プロンプト＋テーマ別の指示から講座を丸ごと作るとき（全体設計 → 第 1 章 → 残りの章を並行で）は、スキル `course-from-prompt`（`.claude/skills/course-from-prompt/SKILL.md`）。読む教材・実践課題・AI チャットの質問例・章の計画（目次）まで作る章立ての講座は、レクチャーの `material` と講座の `syllabus`・`sources` を書く。ID のきまり、根拠の種類（研究・公式・実務・仮の例）、改善前・改善後の画面（`screens`）、字幕の焼き込みは [references/materials.md](references/materials.md)。見本は `content/nudge-product/`。
 

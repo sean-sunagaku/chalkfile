@@ -22,7 +22,7 @@ node scripts/stills.mjs L01:1   # 初回は Chrome Headless Shell を落とす�
 
 新しい作業は main を最新にしてからブランチを切る（`feat/<講座>`）。
 
-講座には、お笑い（ずんだもん＝ボケ・先生＝ツッコミ・天の声の掛け合い）を必ず入れる（ユーザーの方針）。作り方は [study-video-course/references/comedy.md](../study-video-course/references/comedy.md)。章を書く担当にも comedy.md を読ませ、事実確認の担当には「ツッコミの大げさな言葉を台詞で打ち消す直しは入れない」と伝える。書き出しは字幕の焼き込みの版も作る（`CAPTIONS=1`）。
+講座には、お笑い（ずんだもん＝ボケ・先生＝ツッコミ・天の声の掛け合い）を必ず入れる（ユーザーの方針）。作り方は [study-video-course/references/comedy.md](../study-video-course/references/comedy.md)。掛け合いは、その「この形を基準にする」（ユーザーに好評だった型と例。既存の講座を作り直すときも同じ）にそろえ、章を書く担当には W01（`content/nudge-comedy/W01.ts`）と R01（`content/rive-comedy/R01.ts`）を見本として読ませる。章を書く担当にも comedy.md を読ませ、事実確認の担当には「ツッコミの大げさな言葉を台詞で打ち消す直しは入れない」と伝える。書き出しは字幕の焼き込みの版も作る（`CAPTIONS=1`）。
 
 ## 1. 調べる（サブエージェントで並行）
 
