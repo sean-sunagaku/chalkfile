@@ -170,6 +170,9 @@ const WORDS: Record<string, string> = {
   rem: 'レム',
   chrome: 'クローム',
   rive: 'ライブ',
+  pstack: 'ピースタック',
+  poteto: 'ポテト',
+  cursor: 'カーソル',
 };
 
 const LETTERS: Record<string, string> = {
