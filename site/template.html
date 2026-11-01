@@ -88,28 +88,32 @@ button { font: inherit; color: inherit; }
 .intro .links a:hover { border-color: var(--violet); }
 .intro .links svg { width: 16px; height: 16px; flex: none; }
 
-/* プレーヤー（字幕は動画の下の帯に出し、図を隠さない） */
-.theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
-.player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); }
+/* プレーヤー（字幕をオンにすると、動画を少し縮めて、プレーヤーの中の下に字幕の帯を空ける。図は字幕で隠さない） */
+.theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); container-type: inline-size; }
+.player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); font-size: clamp(12px, 2.1cqw, 26px); --ccband: max(13%, 2.9em); }
 .player video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--stage); }
+.player.cc-on video { height: calc(100% - var(--ccband)); }
 .ccbar {
-  min-height: 3.6em;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: var(--ccband);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 18px;
+  padding: 0.25em 4%;
+  box-sizing: border-box;
   text-align: center;
   color: #F1F3FF;
   background: var(--stage);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: clamp(14px, 1.45vw, 19px);
+  font-size: 1em;
   font-weight: 700;
-  line-height: 1.6;
+  line-height: 1.35;
   text-wrap: balance;
 }
 .theater:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; background: #000; }
-.theater:fullscreen .player { flex: 1; aspect-ratio: auto; }
-.theater:fullscreen .ccbar { font-size: clamp(18px, 2vw, 30px); min-height: 3.2em; }
+.theater:fullscreen .player { flex: 1; aspect-ratio: auto; font-size: clamp(18px, 2cqw, 34px); }
 .nextup {
   position: absolute;
   inset: 0;
@@ -429,6 +433,7 @@ button { font: inherit; color: inherit; }
       <div class="theater" id="theater">
       <div class="player" id="player">
         <video id="video" playsinline preload="metadata" controls></video>
+        <div class="ccbar" id="cc" aria-live="off"></div>
         <div class="nextup" id="nextup" hidden>
           <div class="nextup-card">
             <div class="eyebrow">NEXT LECTURE</div>
@@ -443,7 +448,6 @@ button { font: inherit; color: inherit; }
           </div>
         </div>
       </div>
-      <div class="ccbar" id="cc" aria-live="off"></div>
       </div>
 
       <p id="playbackStatus" role="status">オンライン再生を準備しています。</p>
@@ -708,7 +712,7 @@ button { font: inherit; color: inherit; }
     video.removeAttribute("src");
     video.poster = lec.poster;
     var src = document.createElement("source");
-    src.src = lec.video;
+    src.src = srcFor(lec);
     src.type = "video/mp4";
     // 全画面（iPhone など）用の字幕は、埋め込んだ台本からその場で WebVTT を作る
     var tr = document.createElement("track");
@@ -719,8 +723,7 @@ button { font: inherit; color: inherit; }
     video.appendChild(src);
     video.appendChild(tr);
     video.load();
-    $("fileDownload").href = lec.video;
-    $("fileDownload").download = lec.id + ".mp4";
+    applyCc();
     playbackStatus();
     var resume = progress[lec.id] && !progress[lec.id].done ? progress[lec.id].t || 0 : 0;
     video.onloadedmetadata = function () {
@@ -779,9 +782,14 @@ button { font: inherit; color: inherit; }
     for (var k = 0; k < video.textTracks.length; k++) video.textTracks[k].mode = "hidden";
   }
   video.addEventListener("webkitbeginfullscreen", function () {
-    if (prefs.cc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+    if (prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
   });
   video.addEventListener("webkitendfullscreen", hideNativeTrack);
+  // 動画だけの全画面（標準のコントロールの全画面ボタン）でも、字幕を焼き込んだ版が無いときはネイティブ字幕を出す
+  document.addEventListener("fullscreenchange", function () {
+    if (document.fullscreenElement === video && prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+    else hideNativeTrack();
+  });
 
   // ── 字幕・台本の追従 ──
   function findCue(t) {
@@ -894,11 +902,38 @@ button { font: inherit; color: inherit; }
     store.set("prefs", prefs);
     renderSpeed();
   });
+  // 字幕を焼き込んだ版（videoCc）があるレクチャーは、字幕オンのとき動画ごと差し替える（どの全画面でも字幕が見える）。
+  // 無いレクチャーは、動画を少し縮めて、プレーヤーの中の下に字幕の帯を出す
+  function srcFor(lec) { return prefs.cc && lec.videoCc ? lec.videoCc : lec.video; }
+  function applyCc() {
+    var lec = L[current];
+    var burned = !!lec.videoCc;
+    $("cc").hidden = !prefs.cc || burned;
+    $("player").classList.toggle("cc-on", prefs.cc && !burned);
+    var want = srcFor(lec);
+    $("fileDownload").href = want;
+    $("fileDownload").download = lec.id + (want === lec.video ? "" : ".captioned") + ".mp4";
+  }
+  function swapSource() {
+    var s = video.querySelector("source");
+    var want = srcFor(L[current]);
+    if (!s || s.getAttribute("src") === want) return;
+    var t = video.currentTime, paused = video.paused;
+    s.setAttribute("src", want);
+    video.onloadedmetadata = function () {
+      video.currentTime = t;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    video.load();
+    if (!paused) video.play().catch(function () {});
+  }
   function setCC(on) {
     prefs.cc = on;
     store.set("prefs", prefs);
     $("ccToggle").setAttribute("aria-pressed", on ? "true" : "false");
-    $("cc").hidden = !on;
+    applyCc();
+    swapSource();
   }
   $("ccToggle").addEventListener("click", function () { setCC(!prefs.cc); });
 

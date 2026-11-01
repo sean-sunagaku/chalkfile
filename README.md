@@ -26,7 +26,7 @@
 - 講座とコードは AI（Claude Code）を使って作り、事実は人が出典を開いて確かめています
 - 説明は、公式ドキュメントで確かめた事実を自分の言葉で書いたものです。公式の文章・図・画面写真は写していません（台本と、出典にした公式ページ 43 本を `scripts/check_overlap.ts` で突き合わせています）
 
-講座サイトでは、動画のほかに台本（検索できる）・チャプター・字幕・確認クイズ・公式ドキュメントへのリンク・自分用のメモが使えます。進み具合とメモはブラウザに保存されます。
+講座サイトでは、動画のほかに台本（検索できる）・チャプター・字幕・確認クイズ・公式ドキュメントへのリンク・自分用のメモが使えます。進み具合とメモはブラウザに保存されます。字幕は「字幕」ボタン（C キー）でオン・オフできます。字幕を焼き込んだ版があるレクチャー（お笑い版の講座）は、字幕オンのときその版を流すので、全画面でも字幕が見えます。
 
 ## 講座を保存してオフラインで学ぶ（PWA）
 
@@ -103,7 +103,7 @@ npm install
 bun scripts/materials.ts pull                                   # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
 bun scripts/synth.ts                                            # 時刻・字幕・ミックスの設計図（取り出した音声を使う）
 uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス
-bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る）
+bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る。サイト用の <id>.cc.mp4 も）
 bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材と講座サイト
 ```
 
@@ -204,7 +204,7 @@ bash scripts/deploy_pages.sh
 ## クレジットとライセンス
 
 - コードと台本: [MIT License](LICENSE)
-- 声: VOICEVOX:No.7、VOICEVOX:青山龍星、VOICEVOX:ずんだもん（お笑い版のボケ）。音声を使うときは、各キャラクターの利用規約に従ってクレジットを書く
+- 声: VOICEVOX:No.7、VOICEVOX:青山龍星、VOICEVOX:ずんだもん（お笑い版のボケ）、VOICEVOX:玄野武宏（お笑い版の天の声）。音声を使うときは、各キャラクターの利用規約に従ってクレジットを書く
 - 動画: [Remotion](https://www.remotion.dev/)。Remotion のライセンスは別で、個人と小さな会社は無料、大きな会社で使うときは[ライセンス](https://www.remotion.dev/license)が要る
 - BGM・効果音: `scripts/build_music.py` が numpy で合成したオリジナル
 - フォント: Zen Maru Gothic、Noto Sans JP、Inter、JetBrains Mono（SIL Open Font License）

@@ -3,7 +3,8 @@
 #   bash scripts/render.sh            # 全レクチャー
 #   bash scripts/render.sh L03 L05    # 一部だけ
 # 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（15MB 以下）、site/media/<id>.jpg
-# CAPTIONS=1 を付けると、日本語の字幕を焼き込んだ版も作る: out/captioned/<id>.mp4（講座サイトの外で、音なしでも見られる版）
+# CAPTIONS=1 を付けると、日本語の字幕を焼き込んだ版も作る: out/captioned/<id>.mp4（講座サイトの外で、音なしでも見られる版）と、
+#   site/media/<id>.cc.mp4（講座サイト用。字幕オンのときにこちらを流すので、全画面でも字幕が見える）
 # CONCURRENCY=12 のように渡すと、Remotion の並列数を変える（既定 8。CPU のコア数より少なくする）
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -12,6 +13,21 @@ if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { LECTURES } 
 mkdir -p out/master site/media .work/render-public
 # 映像は無音で書き出すので public/（音声で 1GB 近い）は要らない。空のフォルダを渡して、一時フォルダへの複製を避ける
 LIMIT=$((14500 * 1024))
+# サイト用の MP4 にする（15MB 以下になるまで crf を上げる）。$1: 映像（無音）、$2: 出力、$3: レクチャー ID
+site_encode() {
+  crf=21
+  # 6 分より長い動画は、これまで crf 27 か 29 でしか上限（約 14MB）に近づかなかった（3 講座の 23 本）。21〜25 を試す書き出しを省く
+  if [ "$(python3 -c "import json; t=json.load(open('src/generated/timeline.json'))['$3']; print(t['durationInFrames'] // t['fps'])")" -gt 360 ]; then crf=27; fi
+  while :; do
+    ffmpeg -y -hide_banner -loglevel error -i "$1" -i "public/audio/mix/$3.wav" \
+      -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf "$crf" -maxrate 2000k -bufsize 4000k \
+      -pix_fmt yuv420p -profile:v high -g 150 -c:a aac -b:a 128k -ar 48000 -shortest -movflags +faststart \
+      "$2"
+    size=$(stat -f%z "$2")
+    if [ "$size" -le "$LIMIT" ] || [ "$crf" -ge 29 ]; then break; fi
+    crf=$((crf + 2))
+  done
+}
 # CHUNK=1500 のように渡すと、その枚数ずつ分けて書き出して最後につなぐ。
 # Remotion は書き出し中のフレームを一時フォルダに JPEG で置く（5 分で 1〜2GB）ので、ディスクの空きが少ないとき用
 CHUNK=${CHUNK:-0}
@@ -39,18 +55,7 @@ for id in "${ids[@]}"; do
     npx remotion render src/index.ts "$id" "out/master/$id.mp4" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
   fi
   if [ ! -s "out/master/$id.mp4" ]; then echo "$id: 映像の書き出しに失敗しました" >&2; exit 1; fi
-  crf=21
-  # 6 分より長い動画は、これまで crf 27 か 29 でしか上限（約 14MB）に近づかなかった（3 講座の 23 本）。21〜25 を試す書き出しを省く
-  if [ "$(python3 -c "import json; t=json.load(open('src/generated/timeline.json'))['$id']; print(t['durationInFrames'] // t['fps'])")" -gt 360 ]; then crf=27; fi
-  while :; do
-    ffmpeg -y -hide_banner -loglevel error -i "out/master/$id.mp4" -i "public/audio/mix/$id.wav" \
-      -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf "$crf" -maxrate 2000k -bufsize 4000k \
-      -pix_fmt yuv420p -profile:v high -g 150 -c:a aac -b:a 128k -ar 48000 -shortest -movflags +faststart \
-      "site/media/$id.mp4"
-    size=$(stat -f%z "site/media/$id.mp4")
-    if [ "$size" -le "$LIMIT" ] || [ "$crf" -ge 29 ]; then break; fi
-    crf=$((crf + 2))
-  done
+  site_encode "out/master/$id.mp4" "site/media/$id.mp4" "$id"
   ffmpeg -y -hide_banner -loglevel error -ss 4.2 -i "out/master/$id.mp4" -frames:v 1 -vf scale=1280:-2 -q:v 3 "site/media/$id.jpg"
   echo "$id: $(( $(date +%s) - start )) 秒  crf=$crf  $(( size / 1024 / 1024 )) MB"
   if [ "${CAPTIONS:-0}" = "1" ]; then
@@ -61,5 +66,7 @@ for id in "${ids[@]}"; do
       -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -profile:v high -g 150 \
       -c:a aac -b:a 160k -ar 48000 -shortest -movflags +faststart "out/captioned/$id.mp4"
     echo "$id: 字幕つき $(( $(stat -f%z "out/captioned/$id.mp4") / 1024 / 1024 )) MB"
+    site_encode "out/master/$id.cc.mp4" "site/media/$id.cc.mp4" "$id"
+    echo "$id: サイト用の字幕つき crf=$crf  $(( size / 1024 / 1024 )) MB"
   fi
 done
