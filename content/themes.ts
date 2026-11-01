@@ -165,7 +165,49 @@ export const PAPER: Theme = {
   radius: 14,
 };
 
-export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: PAPER };
+/**
+ * お笑いの舞台のような配色。クリームの地に黒に近い文字、幕の赤が主役の色で、照明の黄色の帯を斜めに入れる。
+ * 掛け合い（漫才・コント）で進む講座向け。書体は角の丸いゴシック。
+ */
+export const STAGE: Theme = {
+  id: 'stage',
+  label: 'Stage',
+  summary: 'お笑いの舞台のような配色。クリームの地に黒に近い文字、幕の赤と照明の黄色の帯。角の丸いゴシック。',
+  scheme: 'light',
+  fonts: ['zen-maru'],
+  color: {
+    bg: '#FFF8E8',
+    bg2: '#FFEFCC',
+    surface: '#FFFFFF',
+    surface2: '#FFF6E2',
+    ink: '#241A16',
+    sub: '#4A3C34',
+    muted: '#7E6F64',
+    line: '#F0E0C2',
+    line2: '#D8C29C',
+    accent: '#D9342A',
+    onAccent: '#FFFFFF',
+    code: '#2B201C',
+  },
+  shadow: '0 2px 0 rgba(36,26,22,0.06), 0 22px 44px -22px rgba(36,26,22,0.34)',
+  gradient: ['#D9342A', '#FFB020'],
+  display: ['#241A16', '#B8281F'],
+  mesh: ['#FFB020', '#FF7A59', '#FF9AB5', '#7CC8F0'],
+  tones: {
+    pink: '#D13C74',
+    violet: '#6F4FD2',
+    cyan: '#157FB5',
+    mint: '#168A63',
+    amber: '#B97300',
+    coral: '#D6402B',
+    slate: '#76685E',
+  },
+  syntax: { plain: '#F6EFE8', comment: '#A1958B', string: '#C4E6A2', keyword: '#FFB1A0', deco: '#FFD08A', number: '#FFDF85', fn: '#A8D4F5' },
+  decor: 'band',
+  radius: 18,
+};
+
+export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: PAPER, stage: STAGE };
 
 export const DEFAULT_THEME = 'chalkfile';
 

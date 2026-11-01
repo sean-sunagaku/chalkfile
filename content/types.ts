@@ -3,9 +3,14 @@
 
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
 
-export type VoiceId = 'narrator' | 'announcer';
+/**
+ * 声（VOICEVOX の話者と話し方は scripts/voices.ts）。narrator: 講師、announcer: 呼び込み。
+ * お笑い版の掛け合い: zundamon（ボケ）・zundamon-cry（ボケの涙声）・tsukkomi（講師の声で短く刺すツッコミ）・tennokoe（天の声）
+ */
+export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | 'tsukkomi' | 'tennokoe';
 
-export type SfxId = 'pop' | 'whoosh' | 'chime' | 'tick' | 'reveal' | 'correct' | 'type';
+/** 効果音。harisen 以降はお笑い版の掛け合い用（ツッコミ・スベり・溜め・衝撃・ずっこけ） */
+export type SfxId = 'pop' | 'whoosh' | 'chime' | 'tick' | 'reveal' | 'correct' | 'type' | 'harisen' | 'chin' | 'drumroll' | 'deden' | 'zuko';
 
 export type IconName =
   | 'user'
@@ -93,9 +98,13 @@ export type Line = {
   /** 読み上げ用の文。省略すると t を辞書で開いたもの */
   s?: string;
   v?: VoiceId;
-  /** この台詞の後に足す間（秒） */
+  /** この台詞の後に足す間（秒）。負の値で、台詞の間（0.3 秒）を詰める（食い気味のツッコミ。最短 0.05 秒） */
   pause?: number;
   sfx?: SfxId;
+  /** 台詞の後の間に鳴らす効果音（ボケがスベった後の chin、溜めの drumroll など） */
+  sfxAfter?: SfxId;
+  /** cut: この台詞の頭で BGM を止める（急にシリアスにする）。back: この台詞の頭で戻す。戻さなければ場面の終わりで戻る */
+  bgm?: 'cut' | 'back';
 };
 
 type Base = {
@@ -571,6 +580,8 @@ export type Course = {
   theme?: string;
   /** 動画のはじめと終わり、サイトの見出しの下に出す注意書き（実在の会社や製品を扱う講座では「非公式」と書く） */
   disclaimer?: string;
+  /** 掛け合いの講座の配役（声ごとの名前と色）。字幕の帯と、サイトの台本・字幕に名前を付ける */
+  cast?: Partial<Record<VoiceId, { name: string; tone: Tone }>>;
   /** 1 本の動画の呼び名（動画の見出しとサイトに出す）。既定は LECTURE。章立ての講座は CHAPTER */
   unitLabel?: 'LECTURE' | 'CHAPTER';
   /** 講座の設計（全体の目次・到達目標・動画構成）。まだ作っていない章もサイトのカリキュラムに「準備中」で出る */

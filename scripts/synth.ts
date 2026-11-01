@@ -8,9 +8,9 @@
 //   site/data/<id>.json, <id>.vtt        講座サイトの台本と字幕
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { LECTURES } from '../content';
+import { courseOf, LECTURES } from '../content';
 import type { Lecture, Scene, VoiceId } from '../content/types';
-import { speechOf, ttsKey, VOICES } from './voices';
+import { creditsOf, SITE_CREDITS, speechOf, ttsKey, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const ENGINE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
@@ -20,6 +20,7 @@ const FPS = 30;
 const LEAD_IN = 0.45;
 const OPENING_LEAD_IN = 2.05; // ジングルの「ドン」（sting_intro の 2.0 秒）に合わせて呼び込む
 const GAP = 0.3;
+const MIN_GAP = 0.05;
 const TAIL = 0.75;
 const ENDING_TAIL = 4.0; // 締めのジングル（3.5 秒）を最後まで鳴らす
 
@@ -88,7 +89,7 @@ const synth = async (text: string, voice: VoiceId): Promise<{ file: string; sec:
   return { file, sec: wavSeconds(buf), kana };
 };
 
-type TimedLine = { start: number; end: number; file: string; text: string; voice: VoiceId; sfx?: string; pauseAfter: number };
+type TimedLine = { start: number; end: number; file: string; text: string; voice: VoiceId; sfx?: string; sfxAfter?: string; bgm?: string; pauseAfter: number };
 type TimedScene = { kind: Scene['kind']; heading: string; start: number; end: number; lines: TimedLine[] };
 
 const sec2f = (s: number) => Math.round(s * FPS);
@@ -108,8 +109,9 @@ const buildLecture = async (lec: Lecture) => {
       kanaLog.push(`${lec.id} s${si + 1}-${li + 1} [${voice}] ${line.t}\n    ${kana}`);
       // フレームに丸めた開始時刻を正にする（映像と音を同じ時刻で揃える）
       const ls = sec2f(cursor) / FPS;
-      const pauseAfter = GAP + (line.pause ?? 0);
-      lines.push({ start: ls, end: ls + sec, file, text: line.t, voice, sfx: line.sfx, pauseAfter });
+      // 負の pause は台詞の間を詰める（食い気味のツッコミ）。声が重ならないよう 0.05 秒は空ける
+      const pauseAfter = Math.max(MIN_GAP, GAP + (line.pause ?? 0));
+      lines.push({ start: ls, end: ls + sec, file, text: line.t, voice, sfx: line.sfx, sfxAfter: line.sfxAfter, bgm: line.bgm, pauseAfter });
       cursor = ls + sec + (li === scene.lines.length - 1 ? 0 : pauseAfter);
     }
     const tail = (scene.kind === 'ending' ? ENDING_TAIL : TAIL) + (scene.hold ?? 0);
@@ -152,7 +154,7 @@ for (const lec of targets) {
           start: s.start,
           end: s.end,
           // 手元の場所に縛られないよう、このフォルダからの相対パスで書く
-          lines: s.lines.map((l) => ({ file: path.relative(ROOT, l.file), start: l.start, end: l.end, sfx: l.sfx, pauseAfter: l.pauseAfter })),
+          lines: s.lines.map((l) => ({ file: path.relative(ROOT, l.file), start: l.start, end: l.end, sfx: l.sfx, sfxAfter: l.sfxAfter, bgm: l.bgm, pauseAfter: l.pauseAfter })),
         })),
       },
       null,
@@ -160,7 +162,10 @@ for (const lec of targets) {
     ),
   );
 
-  const cues = scenes.flatMap((s, si) => s.lines.map((l) => ({ start: +l.start.toFixed(2), end: +l.end.toFixed(2), text: l.text, scene: si, heading: s.heading })));
+  // 掛け合いの講座は、サイトの台本と字幕に話している人の名前を付ける（「ずんだもん：…」）
+  const cast = courseOf(lec.id).cast ?? {};
+  const said = (l: TimedLine) => (cast[l.voice] ? `${cast[l.voice]!.name}：${l.text}` : l.text);
+  const cues = scenes.flatMap((s, si) => s.lines.map((l) => ({ start: +l.start.toFixed(2), end: +l.end.toFixed(2), text: said(l), scene: si, heading: s.heading })));
   writeFileSync(
     path.join(SITE_DATA, `${lec.id}.json`),
     JSON.stringify({ id: lec.id, duration: +duration.toFixed(2), chapters: scenes.map((s, si) => ({ scene: si, start: +s.start.toFixed(2), heading: s.heading || lec.title, kind: s.kind })), cues }),
@@ -194,4 +199,7 @@ try {
 } finally {
   rmSync(lockDir, { recursive: true, force: true });
 }
-writeFileSync(path.join(GEN_DIR, 'credits.json'), JSON.stringify(Object.values(VOICES).map((v) => v.credit)));
+// 講座サイトのクレジット（全講座で共通の声）と、動画のエンディングに出すレクチャーごとのクレジット（使った声だけ）
+writeFileSync(path.join(GEN_DIR, 'credits.json'), JSON.stringify(SITE_CREDITS));
+const lectureCredits: Record<string, string[]> = Object.fromEntries(LECTURES.map((l) => [l.id, creditsOf(l.scenes.flatMap((s) => s.lines.map((ln) => ln.v ?? 'narrator')))]));
+writeFileSync(path.join(GEN_DIR, 'lecture-credits.json'), JSON.stringify(lectureCredits));

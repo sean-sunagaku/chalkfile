@@ -6,7 +6,8 @@ public/audio/mix/<id>.wav（48kHz・ステレオ・16bit、-16 LUFS / true peak 
 - ナレーションは -17 LUFS にそろえる
 - BGM（bed.wav、-18 LUFS のループ）は、話している間は -17 dB、話していない間は -7 dB（自動で下げる）
 - 冒頭は sting_intro（2.0 秒で「ドン」）、最後は sting_outro
-- 効果音: 台詞の sfx、場面の切り替わりの whoosh、クイズの考える時間の tick
+- 効果音: 台詞の sfx（台詞の頭）と sfxAfter（台詞の後の間）、場面の切り替わりの whoosh、クイズの考える時間の tick
+- 台詞の bgm: cut で BGM を止め、back（なければ場面の終わり）で戻す（急にシリアスにする）
 
   uv run --with numpy --with scipy python scripts/mix.py            # 全部
   uv run --with numpy --with scipy python scripts/mix.py L01 L05    # 一部だけ
@@ -36,7 +37,23 @@ BED_SPEECH_DB = -17.0
 BED_FREE_DB = -7.0
 BED_START = 4.4  # ジングルの余韻に重ねて BGM を入れる
 STING_DB = -1.5
-SFX_DB = {"pop": -14.0, "chime": -13.0, "whoosh": -15.0, "tick": -9.0, "reveal": -7.0, "correct": -7.0, "type": -14.0}
+SFX_DB = {
+    "pop": -14.0,
+    "chime": -13.0,
+    "whoosh": -15.0,
+    "tick": -9.0,
+    "reveal": -7.0,
+    "correct": -7.0,
+    "type": -14.0,
+    # お笑い版の掛け合い用（聞こえの大きさを reveal・chime の近くにそろえる）
+    "harisen": -4.0,
+    "chin": -14.0,
+    "drumroll": -10.0,
+    "deden": -7.0,
+    "zuko": -16.0,
+}
+BGM_CUT_FADE = 0.12  # BGM を止めるときの短いフェード（秒）
+BGM_BACK_FADE = 0.8  # 戻すときのフェード（秒）
 FINAL_LUFS = -16.0
 FINAL_TP = -1.5
 
@@ -112,6 +129,23 @@ def speech_gain(n: int, intervals: list[tuple[float, float]]) -> np.ndarray:
     t_ctl = np.arange(len(m)) / ctl
     t = np.arange(n) / RATE
     return (10 ** (np.interp(t, t_ctl, g_db) / 20)).astype(np.float32)
+
+
+def bgm_cuts(n: int, scenes: list[dict]) -> np.ndarray:
+    """台詞の bgm: cut から、同じ場面の bgm: back（なければ場面の終わり）まで BGM を止めるゲイン"""
+    g = np.ones(n, dtype=np.float32)
+    for scene in scenes:
+        lines = scene["lines"]
+        for i, line in enumerate(lines):
+            if line.get("bgm") != "cut":
+                continue
+            back = next((ln for ln in lines[i + 1 :] if ln.get("bgm") == "back"), None)
+            a = int(round((line["start"] - 0.1) * RATE))
+            b = int(round(((back["start"] - 0.25) if back else scene["end"]) * RATE))
+            if b <= a:
+                continue
+            g *= fade(n, a, a + int(BGM_CUT_FADE * RATE), rising=False) + fade(n, b, b + int(BGM_BACK_FADE * RATE), rising=True)
+    return np.clip(g, 0.0, 1.0)
 
 
 def fade(n: int, a: int, b: int, rising: bool) -> np.ndarray:
@@ -199,6 +233,9 @@ def build(lec_id: str) -> None:
             if line.get("sfx"):
                 # 声の頭（1 モーラ目）を消さないよう、映像の動き出しに合わせて少し前に鳴らす
                 sfx(line["sfx"], line["start"] - 0.2)
+            if line.get("sfxAfter"):
+                # 台詞の後の間に鳴らす（ボケの後の「チーン」、溜めのドラムロールなど）
+                sfx(line["sfxAfter"], line["end"] + 0.08)
             # クイズ: 問題を読んだあとの考える時間に 3 回 tick
             if scene["kind"] == "quiz" and li == 0:
                 for k in range(3):
@@ -221,7 +258,7 @@ def build(lec_id: str) -> None:
     env = fade(n, b0, b0 + int(1.4 * RATE), rising=True) * fade(
         n, int((out_at - 1.2) * RATE), int((out_at + 0.4) * RATE), rising=False
     )
-    bed_bus *= (env * speech_gain(n, intervals))[:, None]
+    bed_bus *= (env * speech_gain(n, intervals) * bgm_cuts(n, plan["scenes"]))[:, None]
 
     stings = np.zeros((n, 2), dtype=np.float32)
     # 「ドン」（2.0 秒）のあとは呼び込みの声の下に回す

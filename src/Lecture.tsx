@@ -2,14 +2,14 @@ import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
 import { courseOf, LECTURES } from '../content';
 import { themeOf } from '../content/themes';
-import type { Scene } from '../content/types';
+import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
 import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/basic';
 import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/data';
 import { Flow, Sequence as SequenceDiagram, States } from './scenes/diagram';
 import { Screens } from './scenes/mock';
-import { alpha, applyTheme, C, H, SANS } from './theme';
+import { alpha, applyTheme, C, H, SANS, tone } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
 
 export type LectureTimeline = { fps: number; durationInFrames: number; scenes: SceneTiming[] };
@@ -81,7 +81,8 @@ const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = (
 const CAPTION_SCALE = 0.88;
 const CAPTION_BAND = H - Math.round(H * CAPTION_SCALE);
 
-type Cue = { start: number; end: number; text: string };
+/** who: 掛け合いの講座で、話している人の名前と色（講座の cast） */
+type Cue = { start: number; end: number; text: string; who?: { name: string; tone: Tone } };
 
 const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
   const frame = useCurrentFrame();
@@ -107,19 +108,38 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
       }}
     >
       {show ? (
-        <div
-          style={{
-            fontFamily: SANS,
-            fontWeight: 700,
-            fontSize: 38,
-            lineHeight: 1.42,
-            color: '#FFFFFF',
-            textAlign: 'center',
-            letterSpacing: 1,
-            textWrap: 'balance' as React.CSSProperties['textWrap'],
-          }}
-        >
-          {cue.text}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+          {cue.who ? (
+            <div
+              style={{
+                flex: 'none',
+                fontFamily: SANS,
+                fontWeight: 900,
+                fontSize: 28,
+                color: '#FFFFFF',
+                background: tone(cue.who.tone).main,
+                borderRadius: 999,
+                padding: '6px 20px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {cue.who.name}
+            </div>
+          ) : null}
+          <div
+            style={{
+              fontFamily: SANS,
+              fontWeight: 700,
+              fontSize: 38,
+              lineHeight: 1.42,
+              color: '#FFFFFF',
+              textAlign: cue.who ? 'left' : 'center',
+              letterSpacing: 1,
+              textWrap: 'balance' as React.CSSProperties['textWrap'],
+            }}
+          >
+            {cue.text}
+          </div>
         </div>
       ) : null}
     </div>
@@ -145,8 +165,11 @@ export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: strin
       </Sequence>
     );
   });
+  const cast = courseOf(id).cast ?? {};
   const cues: Cue[] = captions
-    ? lecture.scenes.flatMap((s, i) => s.lines.map((ln, k) => ({ start: tl.scenes[i].start + tl.scenes[i].lines[k].start, end: tl.scenes[i].start + tl.scenes[i].lines[k].end, text: ln.t })))
+    ? lecture.scenes.flatMap((s, i) =>
+        s.lines.map((ln, k) => ({ start: tl.scenes[i].start + tl.scenes[i].lines[k].start, end: tl.scenes[i].start + tl.scenes[i].lines[k].end, text: ln.t, who: cast[ln.v ?? 'narrator'] })),
+      )
     : [];
   return (
     // auto-phrase: 日本語を文節で折り返す（「飛べ／る」のような割れを防ぐ）
