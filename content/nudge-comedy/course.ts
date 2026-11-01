@@ -26,7 +26,7 @@ export const NUDGE_COMEDY: Course = {
   },
   sources: NUDGE_PRODUCT.sources,
   links: [{ label: '真面目版（教材・実践課題つき）', url: 'https://sean-sunagaku.github.io/chalkfile/nudge-product/' }],
-  ui: { takeaways: '要点メモ', docs: '出典・参考資料', searchHint: '監禁、買収、スラッジ' },
+  ui: { takeaways: '要点メモ', docs: '出典・参考資料', searchHint: 'ダークパターン、スラッジ、監禁' },
   docsNote:
     '動画の主張と出典は、真面目版の講座「ナッジ理論をプロダクト改善に活かす」の第 1 章と同じです（2026 年 10 月 30 日に開いて確かめた研究論文・公式資料）。ずんだもん（ボケ）の台詞は、笑いのためにわざと間違えています。正しい内容は、先生のツッコミと画面の表で確かめてください。読む教材と実践課題は、真面目版にあります。効果を約束するものではありません。',
   sourceNote:
