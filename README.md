@@ -16,6 +16,7 @@
 | [ナッジ理論をプロダクト改善に活かす](https://sean-sunagaku.github.io/chalkfile/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
 | [エンジニアのための UI・UX デザイン](https://sean-sunagaku.github.io/chalkfile/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
 | [個人開発者のためのマーケティング](https://sean-sunagaku.github.io/chalkfile/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
+| [笑って覚えるナッジ理論](https://sean-sunagaku.github.io/chalkfile/nudge-comedy/)（`nudge-comedy`） | ナッジ講座のお笑い版。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、ナッジと強制・お金・ダークパターンの違い、良いナッジの 3 つの条件を覚える（中身と出典は真面目版と同じ） | 1 章（試作）・約 8 分 |
 
 ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 
@@ -142,6 +143,7 @@ GitHub Pages と同じサブパスで手動確認する場合は `PORT=8876 BASE
 | `chalkfile`（既定） | 明るい教室の黒板を裏返した配色。文字は黒板の深い緑、色はチョーク、コードだけ黒板の面。角の丸いゴシック（Zen Maru Gothic） |
 | `indigo` | 白い地・紺の文字・紫の主役の色・右上の角を斜めに切るグラデーションの帯。英字は Inter（Stripe 講座のテーマ） |
 | `night` | 最初の版の暗いテーマ。濃紺の地にピンクから水色のグラデーション |
+| `stage` | お笑いの舞台のような配色。クリームの地に黒に近い文字、幕の赤と照明の黄色の帯（お笑い版の講座のテーマ） |
 
 ```ts
 // content/index.ts
@@ -201,7 +203,7 @@ bash scripts/deploy_pages.sh
 ## クレジットとライセンス
 
 - コードと台本: [MIT License](LICENSE)
-- ナレーション: VOICEVOX:No.7、VOICEVOX:青山龍星。音声を使うときは、各キャラクターの利用規約に従ってクレジットを書く
+- 声: VOICEVOX:No.7、VOICEVOX:青山龍星、VOICEVOX:ずんだもん（お笑い版のボケ）。音声を使うときは、各キャラクターの利用規約に従ってクレジットを書く
 - 動画: [Remotion](https://www.remotion.dev/)。Remotion のライセンスは別で、個人と小さな会社は無料、大きな会社で使うときは[ライセンス](https://www.remotion.dev/license)が要る
 - BGM・効果音: `scripts/build_music.py` が numpy で合成したオリジナル
 - フォント: Zen Maru Gothic、Noto Sans JP、Inter、JetBrains Mono（SIL Open Font License）
