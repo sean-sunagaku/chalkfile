@@ -20,7 +20,7 @@ export const R01: Lecture = {
   docs: [
     { title: 'Rive のランタイム（公式ドキュメント。対応環境・オープンソースと MIT ライセンス）', url: 'https://rive.app/docs/runtimes' },
     { title: 'ステートマシン（公式ドキュメント）', url: 'https://rive.app/docs/editor/state-machine/state-machine' },
-    { title: 'Rive 公式サイト（機能と料金プラン）', url: 'https://rive.app/' },
+    { title: '料金プラン（公式）', url: 'https://rive.app/pricing' },
   ],
   quiz: [
     {
@@ -140,7 +140,7 @@ export const R01: Lecture = {
         { keys: ['idle', 'hungry', 'happy'], at: 9 },
       ],
       lines: [
-        { t: 'そして、Rive の一番の特徴が、ステートマシンです。' },
+        { t: 'そして、Rive の大きな特徴の一つが、ステートマシンです。' },
         { t: 'ステーキ……マシン……？', v: Z, pause: -0.15 },
         { t: '焼きません。', v: T, sfx: 'harisen', pause: 0.3 },
         { t: '動きと動きを、線でつないで、切り替わる条件を決める仕組みです。', bgm: 'cut', sfx: 'chime' },
@@ -152,7 +152,7 @@ export const R01: Lecture = {
         { t: '食べ終わったら、ふつうに戻ります。' },
         { t: '複雑では、なかった。', v: TEN, pause: 0.3 },
         { t: 'アプリは、ずんだ餅が来た、という合図を渡すだけ。どの動きに、どう切り替えるかは、ファイルの中に入っています。', sfx: 'chime' },
-        { t: 'ボタンなら、待機、押された、成功。アプリは、押された、と伝えるだけです。' },
+        { t: 'ボタンなら、待機、押された、成功。押されたことは、ファイルの中で受け取れます。アプリは、成功した、と伝えるだけです。' },
       ],
     },
     {
@@ -183,14 +183,14 @@ export const R01: Lecture = {
         { cells: ['Web', 'Web（JS）・React'], at: 1, tone: 'cyan' },
         { cells: ['スマホのアプリ', 'Apple・Android・React Native・Flutter'], at: 2, tone: 'mint' },
         { cells: ['ゲームエンジン', 'Unity・Unreal'], at: 3, tone: 'violet' },
-        { cells: ['そのほか', 'C++・C#'], at: 4, tone: 'slate' },
+        { cells: ['そのほか', 'C++'], at: 4, tone: 'slate' },
       ],
       lines: [
         { t: 'では、どこで動くのか。公式のランタイムが、こんなにあります。' },
         { t: 'ウェブ。', sfx: 'pop' },
         { t: 'iPhone や Android のアプリ。Flutter や React Native も。', s: 'アイフォーンや、アンドロイドのアプリ。フラッターや、リアクトネイティブも。', sfx: 'pop' },
         { t: 'ゲームエンジンの、Unity と Unreal。', s: 'ゲームエンジンの、ユニティと、アンリアル。', sfx: 'pop' },
-        { t: 'そのほか、C++ や C# も。', s: 'そのほか、シープラスプラスや、シーシャープも。', sfx: 'pop' },
+        { t: 'そのほか、C++ も。', s: 'そのほか、シープラスプラスも。', sfx: 'pop' },
         { t: 'ずんだ餅の上でも、動くのだ？', s: 'ずんだ餅のうえでも、動くのだ？', v: Z, pause: -0.15 },
         { t: '画面の上で、動かしてください。', v: T, sfx: 'harisen' },
         { t: 'しかも、公式のランタイムは、すべてオープンソースで、MIT ライセンス。仕事でも使えます。', s: 'しかも、公式のランタイムは、すべてオープンソースで、エムアイティーライセンス。仕事でも使えます。', sfx: 'chime' },
