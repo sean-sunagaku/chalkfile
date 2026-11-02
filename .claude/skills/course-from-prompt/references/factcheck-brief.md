@@ -59,7 +59,7 @@ Chalkfile（このリポジトリ）の章立ての講座（例: ナッジ `nudg
 2. `bun scripts/check_content.ts`（止める 0 件）
 3. `bun scripts/check_overlap.ts <講座 ID>`（公式ページとの 16 文字以上の一致。法律・達成基準の名前と、「」で分けた引用は残してよい。自分の章の一致を見る）
 4. 台詞を直した章は `bun scripts/synth.ts <ID>`（VOICEVOX のエンジンは 127.0.0.1:50021 で動いている。synth.ts は timeline.json をロックして書くので、ほかの担当と同時に流してよい）→ `.work/kana/<ID>.txt` で、直した台詞の読みを全部見る → 誤読は `s` で直して合成し直す。合成の出力の長さ（分）を控える
-5. 画面の文字を直した場面は `node scripts/stills.mjs <ID>:<場面の番号（1 始まり）>` で静止画を撮り、`out/stills/` の該当の画像を見る（文字のはみ出し・重なり）
+5. 画面の文字を直した場面は `node scripts/stills.ts <ID>:<場面の番号（1 始まり）>` で静止画を撮り、`out/stills/` の該当の画像を見る（文字のはみ出し・重なり）
 
 ## 報告（最後に親へ返すテキスト。日本語で、簡潔に）
 
