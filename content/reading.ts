@@ -54,6 +54,19 @@ const PHRASES: [string, string][] = [
   ['最初の行動', 'さいしょのこうどう'],
   ['四・三パーセント', 'よんてんさんパーセント'],
   ['ナッジ・ユニット', 'ナッジユニット'],
+  // Super-agent の講座の用語（英字のまま画面に出し、読みだけ開く）
+  ['Super-agent', 'スーパーエージェント'],
+  ['DeepSeek Harness', 'ディープシーク・ハーネス'],
+  ['DeepSeek', 'ディープシーク'],
+  ['GitHub', 'ギットハブ'],
+  ['ReAct', 'リアクト'],
+  ['Chain of Recall', 'チェーン・オブ・リコール'],
+  ['Inline & Spill', 'インライン・アンド・スピル'],
+  ['Fast Path', 'ファストパス'],
+  ['Slow Path', 'スローパス'],
+  ['Agent Team', 'エージェントチーム'],
+  ['A2A', 'エーツーエー'],
+  ['Anthropic', 'アンソロピック'],
 ];
 
 const WORDS: Record<string, string> = {
@@ -173,6 +186,15 @@ const WORDS: Record<string, string> = {
   pstack: 'ピースタック',
   poteto: 'ポテト',
   cursor: 'カーソル',
+  agent: 'エージェント',
+  router: 'ルーター',
+  worker: 'ワーカー',
+  thread: 'スレッド',
+  watchdog: 'ウォッチドッグ',
+  inline: 'インライン',
+  spill: 'スピル',
+  bash: 'バッシュ',
+  daemon: 'デーモン',
 };
 
 const LETTERS: Record<string, string> = {
