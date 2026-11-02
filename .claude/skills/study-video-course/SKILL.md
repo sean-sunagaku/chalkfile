@@ -91,6 +91,8 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 Mac Safariは `safaridriver` と `bun tests/verify-safari.ts` を使える。必要な初回設定はApple公式の `safaridriver --enable`（環境によりsudo認可が必要）。ロック中のpointer入力や画面更新の制限を、CLI全体が使えないという判断へ広げない。非表示中は保存/字幕ボタンのDOM clickと、動画から実際に取り出した非単色フレームを検証する。`--disconnect-wifi=<interface>` を明示した場合だけ実際にWi-Fiを切り、独立した復旧プロセスを先に用意する。Safariのnavigator.onLineだけで通信断を断定しない。実機が未接続ならシミュレータを実機成功として扱わない。
 
+Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDriver element clickによる保存/字幕切替と、再生時刻・実フレームの進行を別途確認する。非表示時のDOM clickの結果から通常操作の成功を推測しない。個人の通常ウィンドウやCookieを使わず、一時の自動試験セッションを終了する。iPhoneはMacの解除とは別に利用可能か確認し、接続不能のミラーリング画面を実機Safariの検証結果にしない。
+
 ## よくある直し
 
 | 頼まれたこと | やること |

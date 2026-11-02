@@ -1,6 +1,6 @@
 # Workers 配信の公開確認（2026-11-02）
 
-P-SUN-84 / SUN-1654〜1659。日本語8講座・通常版45本と字幕焼き込み9本を対象とする。M3/M4は含めない。
+P-SUN-84 / SUN-1654〜1659。初回公開の日本語8講座・通常版45本と字幕焼き込み9本を対象とした結果を記録する。後続mainで追加されたGA4講座の確認は下記の再開結果に分ける。M3/M4は含めない。
 
 ## 公開されたもの
 
@@ -31,7 +31,9 @@ PR: [土台 #13](https://github.com/sean-sunagaku/chalkfile/pull/13)、[Releases
 
 Mac Safariは本人のCLI実行指示を受け、Apple公式safaridriverをCLIで有効にして別途確認した。画面ロック中でもWebDriverの実セッションを作れるため、最初の「Macの手動解除待ち」は解消した。非表示documentではnative pointerのclickやcompositorのframe数が機能しなかったため、同じ保存/字幕ボタンのDOM clickを使い、実際の動画をCanvasへ取り出して非単色のデコード画像を確認した。Wi-Fiの電源オフ、独立した外部リクエストの失敗、Safariの未保存URLへのfetch失敗を照合して通信断を確認した。navigator.onLineはtrueのままだったため、これを通信の証拠には使っていない。
 
-オフラインの起動は同じ隔離Safariセッション内の新規タブで行った。Safariプロセス全体の再起動、画面ロックを解除したnative pointer操作、音声の聴取まで成功したとは主張しない。Wi-Fiはfinallyと45秒の独立watchdogで復旧し、終了後の通常HTTPS 200も確認した。全体のブラウザ終了/再起動は前記Chromeで確認済み。
+オフラインの起動は同じ隔離Safariセッション内の新規タブで行った。Safariプロセス全体の再起動と音声の聴取まで成功したとは主張しない。Wi-Fiはfinallyと45秒の独立watchdogで復旧し、終了後の通常HTTPS 200も確認した。全体のブラウザ終了/再起動は前記Chromeで確認済み。
+
+その後、本人がMacを解除した状態でRive講座を新しい隔離Safariセッションから確認した。documentがvisibleであることを確認し、DOM clickへの切替を使わず、WebDriverの通常のelement clickでアプリ内保存と字幕切替に成功。30秒/90秒へのシークで再生時刻が進み、1920×1080・デコード済みフレーム数26/58を確認した。保存は全教材・全動画22.5MBの完了表示を読み戻した。この実行はオンラインの通常操作の確認で、初回の実通信断の結果と区別して記録する。
 
 www作成直後は端末の負のDNSキャッシュが残ったため、公開DNSと一致するIPを明示してTLS検証を保った確認も行った。その後、通常DNSでのwww移行にも成功した。HTMLのwww移行は静的assets内のCSP hash付きJSで行うため、最初のHTTP状態は200（不明pathは404）。
 
@@ -47,14 +49,18 @@ www作成直後は端末の負のDNSキャッシュが残ったため、公開DN
 
 ## Actionsの実行結果と本人の残作業
 
+再開時の最新mainにはGA4講座（3講義・通常版3本/字幕版3本）が追加され、9講座・60動画になっていた。[新mainのActions](https://github.com/sean-sunagaku/chalkfile/actions/runs/41445266401)はG01〜G03のポスター不足を検出し、公開前に停止した。[PR23](https://github.com/sean-sunagaku/chalkfile/pull/23)で、SHA-256照合済みの通常版からrender.shと同じ4.2秒地点・幅1280・JPEG品質3の画像を補い、目視した。Releasesの全60本のサイズ/提供SHAと手元SHA、strict build（82 files・5.0MB・MP4なし）、公開物点検、typecheck、単体67件、Chrome回帰21成功/未公開言語4skipを確認した。
+
+古いローカル移行SW生成物による回帰の失敗も修正した。テストサーバーは起動時に現在のソースから組み立てる。旧SWの生成物を意図的に置いてから起動した移行2件が成功し、再生成したSWは本番gh-pagesのものとSHA一致。PR23はmainの `978aef79f35a56f5e7104ed5e1c6fe702381559e` へマージ済み。[そのmainの公開workflow](https://github.com/sean-sunagaku/chalkfile/actions/runs/41450025967)はinstallからstrict build/公開物点検まで成功し、Deployのsecret未設定チェックで停止した。Cloudflareの最終認可確認を待っており、API token作成・production secret登録とActionsの実公開成功は未完了。現行本番へのGA4講座の追加はまだ成功と扱わない。
+
 [mainの公開workflow](https://github.com/sean-sunagaku/chalkfile/actions/runs/41411442324)では、install/型/単体/content/ffmpeg/素材取得/cached-only合成/Releases照合/strict build/公開物点検がすべて成功。Deployで未登録のAPI tokenを検出して停止した。現行本番は既存のローカルOAuthを使うWranglerから公開したもの。Actionsでの実公開成功は未確認。
 
 [非mainのworkflow_dispatch](https://github.com/sean-sunagaku/chalkfile/actions/runs/41412622989)はjob全体がskippedで、公開しなかった。production environmentはmain限定、Cloudflare secretはDeploy stepだけに渡す。Action SHA固定、contents: read、npm ci --ignore-scripts、公開の直列化も検査対象。
 
 本人が行う作業:
 
-1. [配信手順](workers-delivery.md)の公式cf CLIの初回認可を本人が承認する。認可後のtoken作成/production secret登録/mainのdeploy開始は `setup_cloudflare_ci.ts apply` で進める。API tokenの値を会話やファイルへコピーする必要はない。初回の5分有効Device Grantは未承認で期限切れになり、token作成は未実施。Actions経由の実公開成功は引き続き未確認。
-2. iPhone実機をこのMacから利用できる状態にする。CoreDeviceにはpaired/unavailableのiPhone 11があり、利用可能なmobile inventoryにはシミュレータだけだった。Apple WebDriverの `platformName: iOS / safari:useSimulator: false` でも実機sessionを作れなかった。実機が接続されればCLIで確認を続ける。Chromeの375px表示やシミュレータを実機成功として扱わない。
+1. [配信手順](workers-delivery.md)の公式cf CLIの初回認可を本人が承認する。認可後のtoken作成/production secret登録/mainのdeploy開始は `setup_cloudflare_ci.ts apply` で進める。API tokenの値を会話やファイルへコピーする必要はない。再開時はブラウザに権限を表示し、新規の機密アクセスを与える最終確認を依頼した。Device Grantは確認待ちの間に期限切れになったため、同じコードを再利用しない。token作成は未実施、production secretの件数0を読み戻した。Actions経由の実公開成功は引き続き未確認。
+2. iPhone実機をこのMacから利用できる状態にする。Mac解除後もCoreDeviceのiPhone 11はpaired/unavailable、利用可能なmobile inventoryにはシミュレータだけだった。iPhone Mirroringも「iPhoneに接続できません」の案内だった。以前のApple WebDriverの `platformName: iOS / safari:useSimulator: false` でも実機sessionを作れなかった。実機が接続されればCLIで確認を続ける。Chromeの375px表示やシミュレータを実機成功として扱わない。
 3. ドメインの商標確認（SUN-1653）は本人が判断する。登録済み/自動更新オフの方針は変更していない。
 
 Safari確認手順: `https://chalkfile.com/rive-comedy/` を開く→再生→90秒へシーク→字幕オン/オフ→アプリ内保存完了→ブラウザを閉じる→通信を切る（iPhoneは機内モード、Wi-Fiもオフ）→同じURL/ホーム画面のアプリから開く→再生/シーク/字幕切替→動画ファイルDL→通信を戻す→保存削除と再保存。OS/Safari版、成否、最初に止まった手順をSUN-1659へ残す。
@@ -77,3 +83,5 @@ bun tests/verify-safari.ts --disconnect-wifi=en1 # 明示したWi-Fiを短時間
 ローカル証跡: `production-offline-restart.json`、`production-legacy-before.json`、`production-legacy-after.json`、`production-redirects.json`、`production-edge-measurement.json`、`site-smoke.json` と対応するスクリーンショット。公開できる要約だけを本書/Issueに残した。
 
 今回のSafariの証跡は `.work/evidence/safari/verification-offline.json`（オンラインの確認も含む）と動画から取り出したフレーム画像。通信断を省略した実行は `verification-online.json` に分けて保存する。初回有効化は `sudo /usr/bin/safaridriver --enable` を使えるが、管理者認可がなければ本人がその端末で行う。パスワードを会話やファイルへ貼る方法は使わない。[Apple公式のCLI設定](https://developer.apple.com/documentation/safari-developer-tools/macos-enabling-webdriver)
+
+Mac解除後の通常pointer操作の証跡は `.work/evidence/safari/verification-visible.json` と `visible-pointer.png`。個人のSafariウィンドウ、Cookie、ログイン状態を使わず、一時の自動試験セッションで確認して終了した。
