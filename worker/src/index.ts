@@ -1,5 +1,9 @@
 // サイトは assets が先に配信する。Worker を先に通すのは /media/* だけ。
+import manifest from '../../site/media-manifest.json';
+import { validateMediaManifest } from '../../site/media-shared';
+import { createMediaHandler } from './media';
 export type Env = { ASSETS: { fetch(request: Request): Promise<Response> } };
+const media = createMediaHandler(validateMediaManifest(manifest).entries);
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -9,7 +13,7 @@ export default {
       url.protocol = 'https:';
       return Response.redirect(url.href, 301);
     }
-    if (url.pathname.startsWith('/media/')) return new Response('動画が見つかりません。', { status: 404 });
+    if (url.pathname.startsWith('/media/')) return media(request);
     return env.ASSETS.fetch(request);
   },
 };
