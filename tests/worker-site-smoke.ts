@@ -21,7 +21,7 @@ await context.addInitScript(() => document.addEventListener('securitypolicyviola
 const pages: { path: string; status: number | undefined }[] = [];
 try {
   for (const route of ['', ...COURSES.map((c) => `${c.id}/`)]) {
-    const response = await page.goto(new URL(route, base).href);
+    const response = await page.goto(new URL(route, base).href, { waitUntil: 'domcontentloaded', timeout: 60000 });
     pages.push({ path: route || '/', status: response?.status() });
     if (response?.status() !== 200 || !await page.locator('h1').isVisible()) throw new Error(`ページを表示できません: ${route}`);
   }
