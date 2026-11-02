@@ -56,6 +56,8 @@ bun scripts/setup_cloudflare_ci.ts apply
 
 最初の認可だけは、cfが表示するCloudflareのURLと期限付きコードを本人が承認する。CLIにもこの認可を省く仕組みはない。期限切れなら認可コマンドをやり直す。既存Wrangler OAuthにはtoken発行scopeがないため、権限があると推測したり、認証ファイルから取り出してCIへ流用したりしない。cfは独立した専用profileを使い、OAuth認証はOS keychainで暗号化して保持する。[Cloudflare CLIの認可](https://developers.cloudflare.com/cf/get-started/)・[2026-10-01のtoken発行scope追加](https://developers.cloudflare.com/changelog/post/2026-10-01-account-api-token-provisioning/)
 
+認可画面のSensitive scopesには `Account API Token Provisioning` が表示されるが、初期状態ではオフだった。この権限を選ばない認可ではtoken作成を進めない。画面には必須のUser Read/Background Accessと、Account Read・Workers Write・Workers Routes Write・Account Zone Readも表示される。対象accountと実際に与える権限を最終承認前に確認し、無関係な権限を追加しない。この初回認可と、CI用に作るtokenの3権限は区別する。
+
 `plan` は変更や認証を行わず、固定のリポジトリ/account/zone/3権限を表示する。`apply` はproductionのmain限定policyとaccount IDを読み戻してから、`chalkfile.com` のzoneを一意に確認する。許可された3権限だけのaccount API tokenを公式cfで作り、その応答をメモリ内から `gh secret set` の標準入力へ渡す。秘密値は表示・ファイル保存・コマンド引数への展開をしない。登録失敗時は、その実行で発行したtokenだけを失効する。すでにproduction secretがあれば新規発行せず、存在を確認してmainのActionsを開始する。登録失敗で結果が不明な場合は、発行したtokenの失効とGitHub側の状態を確認してから再試行する。
 
 CI側のtokenへはtoken作成権限・KV/R2/D1/Registrar/請求権限を渡さない。cfをプロジェクトの公開ツールへ移行する操作もしない。通常公開は固定版Wranglerのまま。secret検査はCloudflareの現行prefix付き認証値も文章全体から検出する。[tokenの形式](https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/)
