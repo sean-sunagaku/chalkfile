@@ -57,13 +57,18 @@ www作成直後は端末の負のDNSキャッシュが残ったため、公開DN
 
 [非mainのworkflow_dispatch](https://github.com/sean-sunagaku/chalkfile/actions/runs/41412622989)はjob全体がskippedで、公開しなかった。production environmentはmain限定、Cloudflare secretはDeploy stepだけに渡す。Action SHA固定、contents: read、npm ci --ignore-scripts、公開の直列化も検査対象。
 
+今回の確認範囲: 2026-11-02の本人指示「実機はしなくていい」により、iPhone実機はM1/M2の完了条件から除外した。Mac Safari/Chrome、実通信断、保存/Range/シーク/移行の検証は維持する。iPhone未検証を成功に置き換えない。
+
+Cloudflareの表示済み権限については本人から続行許可を受領済み。トークン作成の実行許可を再度求める必要はないが、公式cfの本人認可が完了するまでは発行APIを呼ばない。Macのロック解除とCloudflareでの認可完了は別の状態として確認する。
+
 本人が行う作業:
 
 1. [配信手順](workers-delivery.md)の公式cf CLIの初回認可を本人が承認する。認可後のtoken作成/production secret登録/mainのdeploy開始は `setup_cloudflare_ci.ts apply` で進める。API tokenの値を会話やファイルへコピーする必要はない。再開時はブラウザに権限を表示し、新規の機密アクセスを与える最終確認を依頼した。Device Grantは確認待ちの間に期限切れになったため、同じコードを再利用しない。token作成は未実施、production secretの件数0を読み戻した。Actions経由の実公開成功は引き続き未確認。
-2. iPhone実機をこのMacから利用できる状態にする。Mac解除後もCoreDeviceのiPhone 11はpaired/unavailable、利用可能なmobile inventoryにはシミュレータだけだった。iPhone Mirroringも「iPhoneに接続できません」の案内だった。以前のApple WebDriverの `platformName: iOS / safari:useSimulator: false` でも実機sessionを作れなかった。実機が接続されればCLIで確認を続ける。Chromeの375px表示やシミュレータを実機成功として扱わない。
-3. ドメインの商標確認（SUN-1653）は本人が判断する。登録済み/自動更新オフの方針は変更していない。
+2. ドメインの商標確認（SUN-1653）は本人が判断する。登録済み/自動更新オフの方針は変更していない。
 
-Safari確認手順: `https://chalkfile.com/rive-comedy/` を開く→再生→90秒へシーク→字幕オン/オフ→アプリ内保存完了→ブラウザを閉じる→通信を切る（iPhoneは機内モード、Wi-Fiもオフ）→同じURL/ホーム画面のアプリから開く→再生/シーク/字幕切替→動画ファイルDL→通信を戻す→保存削除と再保存。OS/Safari版、成否、最初に止まった手順をSUN-1659へ残す。
+除外前のiPhone接続確認では、CoreDeviceのiPhone 11はpaired/unavailable、利用可能なmobile inventoryはシミュレータだけで、Mirroringも接続不能だった。Apple WebDriverでも実機sessionを作れなかった。これらは接続確認の記録であり、実機Safariの動作確認ではない。今後、追加依頼があれば対象を再確認して実施する。
+
+任意で追加検証する場合のSafari手順: `https://chalkfile.com/rive-comedy/` を開く→再生→90秒へシーク→字幕オン/オフ→アプリ内保存完了→ブラウザを閉じる→通信を切る（iPhoneは機内モード、Wi-Fiもオフ）→同じURL/ホーム画面のアプリから開く→再生/シーク/字幕切替→動画ファイルDL→通信を戻す→保存削除と再保存。OS/Safari版、成否、最初に止まった手順をSUN-1659へ残す。
 
 ## 再実行と証跡
 
