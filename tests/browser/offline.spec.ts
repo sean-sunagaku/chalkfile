@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseManifest, CourseStatus } from '../../site/offline-shared';
 
-const route = '/chalkfile/stripe-billing/';
+const route = '/stripe-billing/';
 const manifest = JSON.parse(readFileSync('site/dist/stripe-billing/offline-manifest.json', 'utf8')) as CourseManifest;
 // 一覧の「講座ごとの保存状態」は、build した講座の数だけ並ぶ。テストは Stripe 講座のリンクを選ぶ
 const courseCount = readdirSync('site/dist', { withFileTypes: true }).filter((d) => d.isDirectory() && existsSync(path.join('site/dist', d.name, 'offline-manifest.json'))).length;
@@ -52,7 +52,7 @@ test('一覧ページの375px表示から保存状態とインストール案内
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/chalkfile/');
+  await page.goto('/');
   await expect(page.locator('#savedCourses a')).toHaveCount(courseCount);
   await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
   await expect(page.locator('h1')).toHaveText('Chalkfile');
@@ -136,8 +136,8 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
   await expect(page.locator('#networkState')).toContainText('オフライン');
   await playAndPause(page, 0);
-  const mp4 = manifest.files.find((f) => f.url.includes('L01.mp4'))!;
-  const source = readFileSync('site/dist/stripe-billing/media/L01.mp4');
+  const mp4 = manifest.files.find((f) => f.url.includes('/L01.'))!;
+  const source = readFileSync('site/media/L01.mp4');
   for (const [range, start, end, code] of [
     ['bytes=0-127', 0, 127, 206], ['bytes=1000-1127', 1000, 1127, 206],
     ['bytes=-128', source.length - 128, source.length - 1, 206],
@@ -146,7 +146,7 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
     ['bytes=0-1,20-21', 0, source.length - 1, 200],
   ] as const) {
     const response = await page.evaluate(async ({ url, range }) => {
-      const r = await fetch(new URL(url, location.origin + '/chalkfile/'), { headers: { Range: range } });
+      const r = await fetch(new URL(url, location.origin + '/'), { headers: { Range: range } });
       const bytes = new Uint8Array(await r.arrayBuffer());
       return { status: r.status, length: bytes.length, head: [...bytes.slice(0, 128)], range: r.headers.get('Content-Range'), type: r.headers.get('Content-Type') };
     }, { url: mp4.url, range });
@@ -158,13 +158,13 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
     } else expect(response.range).toBe(`bytes */${source.length}`);
   }
   const head = await page.evaluate(async (url) => {
-    const r = await fetch(new URL(url, location.origin + '/chalkfile/'), { method: 'HEAD', headers: { Range: 'bytes=0-20' } });
+    const r = await fetch(new URL(url, location.origin + '/'), { method: 'HEAD', headers: { Range: 'bytes=0-20' } });
     return { status: r.status, length: r.headers.get('Content-Length'), bytes: (await r.arrayBuffer()).byteLength };
   }, mp4.url);
   expect(head).toEqual({ status: 200, length: String(source.length), bytes: 0 });
   for (const [etag, code, bytes] of [[`"${mp4.sha256}"`, 206, 128], ['"older-version"', 200, source.length]] as const) {
     const conditional = await page.evaluate(async ({ url, etag }) => {
-      const r = await fetch(new URL(url, location.origin + '/chalkfile/'), { headers: { Range: 'bytes=0-127', 'If-Range': etag } });
+      const r = await fetch(new URL(url, location.origin + '/'), { headers: { Range: 'bytes=0-127', 'If-Range': etag } });
       return { status: r.status, bytes: (await r.arrayBuffer()).byteLength };
     }, { url: mp4.url, etag });
     expect(conditional).toEqual({ status: code, bytes });
@@ -180,12 +180,12 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   await page.locator('.lec[data-i="0"]').click();
   await page.locator('.lec[data-i="1"]').click();
   await playAndPause(page, 20);
-  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => v.currentSrc)).toContain('L02.mp4?v=');
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => v.currentSrc)).toMatch(/L02\.[a-f0-9]{64}\.mp4$/);
   await page.getByRole('tab', { name: '概要', exact: true }).click();
   await page.locator('#chapters button').nth(1).click();
   await expect(page.locator('#cc')).not.toBeEmpty();
   await page.screenshot({ path: path.join(evidence, 'offline-playback.png'), fullPage: false });
-  await page.goto('/chalkfile/');
+  await page.goto('/');
   await expect(page.locator('#savedCourses')).toContainText('保存済み');
   await savedLink(page).click();
   await expect(page.locator('#savedState')).toContainText('保存済み');
@@ -197,7 +197,7 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   expect(response!.status()).toBe(503);
   await expect(page.getByRole('heading', { name: 'この教材は保存されていません' })).toBeVisible();
   await page.getByRole('link', { name: 'Chalkfile の講座一覧と保存状態へ' }).click();
-  expect(page.url()).toContain('/chalkfile/');
+  expect(page.url()).toContain('/');
   expect(runtimeErrors).toEqual([]);
 });
 
@@ -223,7 +223,7 @@ test('容量不足の保存例外を表示し、未保存として再試行で�
     (globalThis as any).originalPut = original;
     Cache.prototype.put = function (input, response) {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-      if (url.includes('.mp4?')) return Promise.reject(new DOMException('容量不足テスト', 'QuotaExceededError'));
+      if (url.includes('/media/') && url.split('?')[0].endsWith('.mp4')) return Promise.reject(new DOMException('容量不足テスト', 'QuotaExceededError'));
       return original.call(this, input, response);
     };
   });
@@ -274,8 +274,8 @@ test('教材更新：旧版の教材と動画を維持し、失敗後に再試�
   await expect(page.locator('#offlineReload')).toBeVisible();
   expect((await status(page)).saved!.manifest.revision).not.toBe(original.manifest.revision);
   // 更新後も直前の版の MP4 を混ぜずに返せる。
-  const oldFile = original.manifest.files.find((f) => f.url.includes('L01.mp4'))!;
-  const oldRange = await page.evaluate(async (url) => (await fetch(new URL(url, location.origin + '/chalkfile/'), { headers: { Range: 'bytes=0-127' } })).status, oldFile.url);
+  const oldFile = original.manifest.files.find((f) => f.url.includes('/L01.'))!;
+  const oldRange = await page.evaluate(async (url) => (await fetch(new URL(url, location.origin + '/'), { headers: { Range: 'bytes=0-127' } })).status, oldFile.url);
   expect(oldRange).toBe(206);
   await page.locator('#offlineReload').click();
   await expect(page).toHaveTitle(/更新テスト/);
@@ -288,8 +288,8 @@ test('教材更新：旧版の教材と動画を維持し、失敗後に再試�
 test('保存ファイルの欠損を検出し、保存済み表示と再生を止めて再保存できる', async ({ page, context }) => {
   await ready(page); await save(page);
   const stored = (await status(page)).saved!;
-  await page.evaluate(async ({ cache, url }) => { await (await caches.open(cache)).delete(new URL(url, location.origin + '/chalkfile/').href); },
-    { cache: stored.cache, url: stored.manifest.files.find((f) => f.url.includes('L02.mp4'))!.url });
+  await page.evaluate(async ({ cache, url }) => { await (await caches.open(cache)).delete(new URL(url, location.origin + '/').href); },
+    { cache: stored.cache, url: stored.manifest.files.find((f) => f.url.includes('/L02.'))!.url });
   await page.reload();
   await expect(page.locator('#savedState')).toContainText('保存が不完全');
   expect((await status(page)).saved).toBeNull();
@@ -330,7 +330,7 @@ test('ブラウザ完全終了後のオフライン起動とworker更新後に�
     await context.close();
     context = await chromium.launchPersistentContext(profile, { channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, baseURL: 'http://127.0.0.1:8877' });
     await context.setOffline(true);
-    page = await context.newPage(); await page.goto('/chalkfile/');
+    page = await context.newPage(); await page.goto('/');
     await expect(page.locator('#savedCourses')).toContainText('保存済み');
     await savedLink(page).click();
     await expect(page.locator('#savedState')).toContainText('保存済み');

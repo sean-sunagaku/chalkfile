@@ -63,6 +63,17 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
     if (f.url === `${id}/`) {
       if (f.type !== 'text/html' || f.bytes > 4 * 1024 * 1024) throw new OfflineError('page');
     } else {
+      // 同じoriginの /media/ を先に判定。通常版・字幕版とも本文のhashとパスのhashを一致させる。
+      const hashed = /^\/media\/([a-z]{2})\/([A-Za-z0-9][A-Za-z0-9_-]*)\/([A-Za-z0-9][A-Za-z0-9_-]*)(\.cc)?\.([a-f0-9]{64})\.mp4$/.exec(f.url);
+      if (hashed) {
+        if (hashed[1] !== (lang || 'ja') || hashed[2] !== slug || hashed[5] !== f.sha256 || f.type !== 'video/mp4') throw new OfflineError('media');
+        const key = `${hashed[3]}${lang ? `.${lang}` : ''}`;
+        const types = media.get(key) ?? new Set<string>();
+        types.add(hashed[4] ? 'cc' : 'mp4');
+        media.set(key, types);
+        bytes += f.bytes;
+        continue;
+      }
       const rest = inMedia ? url.href.slice(mediaRoot.length) : url.href.slice(scope.length);
       const match = new RegExp(`^${inMedia ? '' : `${lang ? `${lang}\\/` : ''}`}([A-Za-z0-9][A-Za-z0-9_-]*)\\/${inMedia ? '' : 'media\\/'}${MEDIA_NAME}\\?v=([a-f0-9]{64})$`).exec(rest);
       // 訳の講座の動画は、名前の終わりに講座の言語が付く（S01.en）。日本語の講座は付かない（S01）

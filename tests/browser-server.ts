@@ -5,10 +5,12 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { byteRange } from '../site/offline-shared';
 import type { CourseManifest } from '../site/offline-shared';
+import mediaManifest from '../site/media-manifest.json';
+import { mediaPath, validateMediaManifest } from '../site/media-shared';
+import { localMediaPath } from '../scripts/media';
 
 const root = path.resolve(import.meta.dir, '../site/dist');
-const siteConfig = JSON.parse(readFileSync(path.resolve(import.meta.dir, '../site/config.json'), 'utf8')) as { media?: Record<string, { url: string }> };
-const mediaMounts: [string, string][] = Object.entries(siteConfig.media ?? {}).map(([lang, m]) => [new URL(m.url).pathname, path.resolve(import.meta.dir, '../site/dist-media', lang)]);
+const mediaEntries = new Map(validateMediaManifest(mediaManifest).entries.map((e) => [mediaPath(e), e]));
 // mediaDown: 訳の動画のサイトがまだ無い（公開の前・Pages の反映待ち）ときを作る
 let control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false };
 let fullVideoDownloads = 0;
@@ -50,14 +52,15 @@ Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
   }
   if (u.pathname === '/__test/stats') return Response.json({ fullVideoDownloads, manifestRequests, manifestFailures });
   // 訳の言語の動画のサイト（site/config.json の media）は、公開と同じパス（/chalkfile-media-en/ など）で site/dist-media/<言語>/ を配る
-  const media = mediaMounts.find(([prefix]) => u.pathname.startsWith(prefix));
-  if (!u.pathname.startsWith('/chalkfile/') && !media) return new Response('not found', { status: 404 });
+  const media = mediaEntries.get(u.pathname);
+  if (u.pathname.startsWith('/media/') && !media) return new Response('not found', { status: 404 });
   if (media && control.mediaDown) return new Response('not found', { status: 404 });
-  const [prefix, dir] = media ?? ['/chalkfile/', root];
+  const prefix = '/';
+  const dir = root;
   let relative: string;
   try { relative = decodeURIComponent(u.pathname.slice(prefix.length)); } catch { return new Response('bad request', { status: 400 }); }
-  let file = path.join(dir, relative);
-  if (!file.startsWith(dir + path.sep) && file !== dir) return new Response('forbidden', { status: 403 });
+  let file = media ? localMediaPath(media) : path.join(dir, relative);
+  if (!media && !file.startsWith(dir + path.sep) && file !== dir) return new Response('forbidden', { status: 403 });
   if (!existsSync(file)) return new Response('not found', { status: 404 });
   if (statSync(file).isDirectory()) {
     if (!u.pathname.endsWith('/')) return Response.redirect(`${u.pathname}/`, 301);
@@ -76,9 +79,9 @@ Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
   }
   if (relative === 'sw.js' && control.workerUpdate) data = Buffer.concat([data, Buffer.from('\n// worker更新テスト\n')]);
   const type = types[path.extname(file)] ?? 'application/octet-stream';
-  if (relative.endsWith('.mp4') && !req.headers.has('Range')) {
+  if (req.method === 'GET' && relative.endsWith('.mp4') && !req.headers.has('Range')) {
     fullVideoDownloads++;
-    if (relative.endsWith('L03.mp4')) {
+    if (media?.lecture === 'L03') {
       if (control.mode === 'fail') return new Response('通信失敗テスト', { status: 500 });
       if (control.mode === 'redirect') return Response.redirect('https://example.com/restricted.mp4', 302);
       if (control.mode === 'partial') return new Response(data.subarray(0, 100), { status: 206, headers: { 'Content-Type': type, 'Content-Range': `bytes 0-99/${data.length}` } });
@@ -89,6 +92,7 @@ Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
   }
   const size = data.byteLength;
   const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': String(size), 'Cache-Control': 'no-store' };
+  if (media && u.searchParams.get('download') === '1') Object.assign(headers, { 'Content-Disposition': `attachment; filename="${media.lecture}${media.kind === 'captioned' ? '.captioned' : ''}.mp4"` });
   if (req.method === 'HEAD') return new Response(null, { headers });
   const range = byteRange(req.headers.get('Range'), size);
   if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });

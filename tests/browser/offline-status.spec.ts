@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
 
-const course = '/chalkfile/stripe-billing/';
+const course = '/stripe-billing/';
 const evidence = '/tmp/chalkfile-pwa-evidence/offline-status';
 
 async function control(request: APIRequestContext, data: Record<string, unknown> = {}) {
@@ -98,7 +98,7 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
       await context.close();
       context = await chromium.launchPersistentContext(profile, { ...options, offline: true });
       page = await context.newPage(); observe(page);
-      const response = await page.goto('/chalkfile/');
+      const response = await page.goto('/');
       expect(response!.fromServiceWorker()).toBeTruthy();
       await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
       await page.locator(`#savedCourses a[href$="${course}"]`).click();

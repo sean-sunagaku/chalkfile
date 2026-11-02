@@ -22,6 +22,8 @@ import { fontLink, themeCss } from './site_theme';
 import { asset, buildPwa, bundle, hash } from './pwa';
 import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
+import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
+import { checkMedia, readMediaManifest } from './media';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const SITE = path.join(ROOT, 'site');
@@ -220,6 +222,16 @@ const csp = (html: string) => {
 const strict = process.argv.includes('--strict');
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const missing: string[] = [];
+const mediaManifest = readMediaManifest();
+if (strict) checkMedia(mediaManifest);
+const videoEntries = new Map(mediaManifest.entries.map((e) => [mediaKey(e), e]));
+function videoFor(lang: string, course: string, lecture: string, kind: MediaEntry['kind'], required = true) {
+  const entry = videoEntries.get(mediaKey({ lang, course, lecture, kind }));
+  if (!entry && required) throw new Error(`動画の一覧がありません: ${lang}/${course}/${lecture}。先に bun scripts/media.ts push`);
+  return entry;
+}
+// 全体buildでは以前のMP4や未公開のページを残さない。元動画には触れない。
+if (!wanted.length) rmSync(DIST, { recursive: true, force: true });
 
 /** 講座の動画で使った声のクレジット。日本語は全講座で共通（講師と呼び込み。ほかの声は講座の sourceNote） */
 const courseCredits = (course: Course, lang: Lang): string[] =>
@@ -284,30 +296,28 @@ for (const lang of SITE_LANGS) {
       planned,
     };
     const mediaFiles: { file: string; data: Buffer; type: string }[] = [];
-    for (const lec of lectures) for (const ext of ['mp4', 'jpg']) {
-      const file = `${lec.key}.${ext}`;
+    const videos: MediaEntry[] = [];
+    for (const lec of lectures) {
+      videos.push(videoFor(lang, course.id, lec.id, 'standard')!);
+      const cc = videoFor(lang, course.id, lec.id, 'captioned', false);
+      if (cc) videos.push(cc);
+      const file = `${lec.key}.jpg`;
       const from = path.join(MEDIA, file);
-      if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: ext === 'mp4' ? 'video/mp4' : 'image/jpeg' });
+      if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: 'image/jpeg' });
       else missing.push(file);
     }
-    // 字幕を焼き込んだ版（render.sh の CAPTIONS=1 が書く <key>.cc.mp4）。あるレクチャーは、字幕オンのときにこちらを流す（全画面でも字幕が見える）
-    const withCc = new Set(lectures.filter((lec) => existsSync(path.join(MEDIA, `${lec.key}.cc.mp4`))).map((lec) => lec.key));
-    for (const key of withCc) mediaFiles.push({ file: `${key}.cc.mp4`, data: readFileSync(path.join(MEDIA, `${key}.cc.mp4`)), type: 'video/mp4' });
-    // 動画の場所。日本語（と動画のサイトが無い言語）は講座の media/、訳の言語は動画のサイトの <講座>/（同じ origin のパス）
-    const mediaUrl = mRoot ? `${mRoot}${course.id}/` : 'media/';
-    const manifestMedia = mRoot ? `${mRoot}${course.id}/` : `${cid}/media/`;
     const courseCreditsList = courseCredits(course, lang);
     // 版は教材・表示・動画の全入力で決まる。保存した HTML と MP4 を別の版に混ぜない。
     const pageVersion = hash(JSON.stringify({ lang, meta, credits: courseCreditsList, lectures, theme, template, offlinePanel, offlineCss, offlineClient, text: T,
-      builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]), mediaUrl }));
+      builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]), videos }));
     const json = JSON.stringify({ course: meta, credits: courseCreditsList, pageVersion, lang: { code: lang, html: info.html, label: info.label }, text: T,
       lectures: lectures.map(({ key, ...lec }) => ({ ...lec,
-        video: `${mediaUrl}${key}.mp4?v=${pageVersion}`, poster: `${mediaUrl}${key}.jpg?v=${pageVersion}`,
-        videoCc: withCc.has(key) ? `${mediaUrl}${key}.cc.mp4?v=${pageVersion}` : '',
+        video: mediaPath(videoFor(lang, course.id, lec.id, 'standard')!), poster: `media/${key}.jpg?v=${pageVersion}`,
+        videoCc: videoFor(lang, course.id, lec.id, 'captioned', false) ? mediaPath(videoFor(lang, course.id, lec.id, 'captioned')!) : '',
       })) }).replace(/</g, '\\u003c');
     const app = appParts(lang, root, { id: cid, title: course.title, pageVersion });
     const url = `${base}${cid}/`;
-    const firstPoster = mRoot ? `${new URL(base).origin}${mRoot}${course.id}/${lectures[0].key}.jpg` : `${url}media/${lectures[0].key}.jpg`;
+    const firstPoster = `${url}media/${lectures[0].key}.jpg`;
     const html = fillText(template, T)
       .replace('__LANG__', () => info.html)
       .replace('__HOME__', () => '../')
@@ -342,15 +352,22 @@ for (const lang of SITE_LANGS) {
     const page = Buffer.from(csp(html));
     writeFileSync(path.join(out, 'index.html'), page);
     // 動画とポスターを置く（日本語は講座の media/、訳の言語は動画のサイトの <講座>/）
-    const mediaOut = mRoot ? path.join(DIST_MEDIA, lang, course.id) : path.join(out, 'media');
+    const mediaOut = path.join(out, 'media');
     rmSync(mediaOut, { recursive: true, force: true });
     mkdirSync(mediaOut, { recursive: true });
     for (const f of mediaFiles) place(path.join(MEDIA, f.file), path.join(mediaOut, f.file));
     // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
     const manifestPath = path.join(out, 'offline-manifest.json');
     rmSync(manifestPath, { force: true });
-    if (mediaFiles.length === lectures.length * 2 + withCc.size) {
-      const files = [asset(`${cid}/`, page, 'text/html'), ...mediaFiles.map((f) => asset(`${manifestMedia}${f.file}?v=${pageVersion}`, f.data, f.type))];
+    if (mediaFiles.length === lectures.length) {
+      const files = [asset(`${cid}/`, page, 'text/html'),
+        ...lectures.flatMap((lec) => {
+          const normal = videoFor(lang, course.id, lec.id, 'standard')!;
+          const poster = mediaFiles.find((f) => f.file === `${lec.key}.jpg`)!;
+          const cc = videoFor(lang, course.id, lec.id, 'captioned', false);
+          const videoAsset = (e: MediaEntry): Asset => ({ url: mediaPath(e), bytes: e.bytes, sha256: e.sha256, type: 'video/mp4' });
+          return [videoAsset(normal), asset(`${cid}/media/${poster.file}?v=${pageVersion}`, poster.data, poster.type), ...(cc ? [videoAsset(cc)] : [])];
+        })];
       const manifest: CourseManifest = { schema: 1, id: cid, title: course.title, pageVersion, revision: hash(JSON.stringify(files)),
         bytes: files.reduce((sum, f) => sum + f.bytes, 0), files };
       generatedManifests.push(manifest);
@@ -407,8 +424,7 @@ const courseCard = (c: Course, lang: Lang, o: { href: string; poster: string; ta
 const posterOf = (c: Course, lang: Lang, root: string) => {
   const l = (c.lang ?? 'ja') as Lang;
   const key = videoKey(c.lectures[0].id, l);
-  const m = mediaRoot(l);
-  return m ? `${m}${c.id}/${key}.jpg` : `${root}${LANG_INFO[l].path}${c.id}/media/${key}.jpg`;
+  return `${root}${LANG_INFO[l].path}${c.id}/media/${key}.jpg`;
 };
 
 mkdirSync(DIST, { recursive: true });
@@ -537,39 +553,20 @@ rmSync(path.join(DIST, '_redirects'), { force: true });
 writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/sw.js\n  Cache-Control: no-cache\n');
 writeFileSync(path.join(DIST, '404.html'), '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></html>');
 
-/* ───────────── 訳の言語の動画のサイト（site/dist-media/<言語>/） ───────────── */
-
-for (const lang of SITE_LANGS) {
-  const m = mediaRoot(lang);
-  if (!m) continue;
-  const dir = path.join(DIST_MEDIA, lang);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(path.join(dir, '.nojekyll'), '');
-  const site = `${base}${LANG_INFO[lang].path}`;
-  // 動画だけのサイト。人が開いたときのために、講座サイトへの案内だけを置く（スクリプトなし）
-  writeFileSync(
-    path.join(dir, 'index.html'),
-    `<!doctype html>\n<html lang="${LANG_INFO[lang].html}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(config.series)} media (${lang})</title>\n<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">\n<meta name="robots" content="noindex"><style>body { font-family: system-ui,sans-serif; line-height: 1.8; margin: 10vh auto; padding: 24px; max-width: 36em; }</style></head>\n<body><h1>${esc(config.series)} media (${esc(LANG_INFO[lang].label)})</h1><p>This site only hosts the ${esc(LANG_INFO[lang].label)} videos of the ${esc(config.series)} course site. Watch them on the course site.</p><p><a href="${esc(site)}">${esc(site)}</a></p></body></html>\n`,
-  );
-  writeFileSync(
-    path.join(dir, 'README.md'),
-    `# ${config.series} media (${lang})\n\n${config.series}（${config.repoUrl}）の講座サイト ${site} の、${LANG_INFO[lang].label} の動画とポスターだけを置く GitHub Pages のサイトです。\n\`scripts/deploy_pages.sh\` が gh-pages を 1 コミットで置き換えます（手で編集しない）。\n\nThis site only hosts the ${LANG_INFO[lang].label} videos of the ${config.series} course site (${site}). The gh-pages branch is replaced on every deploy by \`scripts/deploy_pages.sh\` in ${config.repoUrl}.\n`,
-  );
-}
-
-const du = (dir: string): number => (existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).reduce((s, e) => s + (e.isDirectory() ? du(path.join(dir, e.name)) : statSync(path.join(dir, e.name)).size), 0) : 0);
-const sizes = [{ name: 'site/dist', bytes: du(DIST) }, ...SITE_LANGS.filter(mediaRoot).map((l) => ({ name: `site/dist-media/${l}`, bytes: du(path.join(DIST_MEDIA, l)) }))];
-console.log(`site/dist/ ほか  講座 ${SITE_LANGS.map((l) => `${l} ${coursesIn(l).length}`).join('・')}  テーマ ${Object.keys(THEMES).length} つ  大きさ ${sizes.map((s) => `${s.name} ${(s.bytes / 1e6).toFixed(0)}MB`).join('・')}`);
-// GitHub Pages は 1 サイト 1GB まで。超えそうなら公開しない（動画の置き場所を分ける。README の「公開」）
-const over = sizes.filter((s) => s.bytes > 950e6);
-if (over.length) {
-  const msg = `GitHub Pages の上限（1 サイト 1GB）に近い: ${over.map((s) => `${s.name} ${(s.bytes / 1e6).toFixed(0)}MB`).join('・')}`;
-  if (strict) {
-    console.error(msg);
-    process.exit(1);
+// 静的 assets の制限は動画の総量から分けて点検する。
+const emitted: { name: string; bytes: number }[] = [];
+const inspect = (dir: string) => {
+  for (const file of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, file.name);
+    if (file.isDirectory()) inspect(full);
+    else emitted.push({ name: path.relative(DIST, full), bytes: statSync(full).size });
   }
-  console.warn(msg);
+};
+inspect(DIST);
+if (emitted.length > 20000 || emitted.some((f) => f.bytes > 25 * 1024 ** 2 || f.name.endsWith('.mp4'))) {
+  throw new Error('Workers assets のファイル数・サイズ制限、または MP4 非混入の条件を満たしません。');
 }
+console.log(`site/dist: ${emitted.length} files・${(emitted.reduce((n, f) => n + f.bytes, 0) / 1e6).toFixed(1)}MB・MP4なし。公開言語: ${SITE_LANGS.join(',')}`);
 
 if (missing.length) {
   const msg = `まだ動画かポスターが無い: ${missing.join(' ')}（bash scripts/render.sh で作る）`;
