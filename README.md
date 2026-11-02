@@ -30,6 +30,7 @@ Worker の `/media/` はこの一覧だけを中継します。GET と HEAD を�
 | [笑ってわかる Rive アニメーション](https://chalkfile.com/rive-comedy/)（`rive-comedy`。英語・中国語の訳あり（未公開） | Rive をざっくり知るお笑い版（ずんだもん・先生・天の声）。エディタとランタイム、.riv、ステートマシン、対応する環境と注意点 | 1 本・約 4 分 |
 | [笑ってわかる pstack](https://chalkfile.com/pstack-comedy/)（`pstack-comedy`。英語・中国語の訳あり（未公開） | Cursor 向けのスキル集 pstack をざっくり知るお笑い版（ずんだもん・先生・天の声）。考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と使う前の注意 | 1 本・約 5 分 |
 | [笑ってわかる Super-agent](https://chalkfile.com/superagent-comedy/)（`superagent-comedy`。英語・中国語の訳あり（未公開） | DeepSeek Harness チームの設計記事「Exploring Super-agent Design」を読み解くお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加するふるいゲームも）。会話（セッション）に縛られないエージェントの 4 つの性質と 5 つの部品（二層構造・イベント駆動・全二重とチャンネル・計算と状態と環境の分離・Watchdog）、記事の予備の実験、残る課題 | 6 章・約 47 分 |
+| [笑ってわかる GA4](https://chalkfile.com/ga4-comedy/)（`ga4-comedy`） | GA4（Google アナリティクス 4）を短く知るお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加する問題も）。イベントとパラメータ、ディメンションと指標、サイトが送る項目名（email_entry）と値（signature）、それを「メールの入口」として見るカスタム ディメンションの設定と、保存の後の注意 | 3 章・約 10 分 |
 
 ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 

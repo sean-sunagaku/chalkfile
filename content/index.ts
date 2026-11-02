@@ -24,6 +24,7 @@ import { PSTACK_COMEDY_ZH } from './pstack-comedy/zh/course';
 import { SUPERAGENT_COMEDY } from './superagent-comedy/course';
 import { SUPERAGENT_COMEDY_EN } from './superagent-comedy/en/course';
 import { SUPERAGENT_COMEDY_ZH } from './superagent-comedy/zh/course';
+import { GA4_COMEDY } from './ga4-comedy/course';
 import { NUDGE_PRODUCT } from './nudge-product/course';
 import { UIUX_ENGINEERS } from './uiux-engineers/course';
 import { LANGS, localizeCourse, parseVideoKey, videoKey, type CourseL10n, type Lang, type TranslatedLang } from './i18n';
@@ -50,7 +51,7 @@ export const STRIPE_BILLING: Course = {
 };
 
 /** 講座を足すときは、content/<講座 ID>/ に台本を置いてここに並べる */
-export const COURSES: Course[] = [STRIPE_BILLING, NUDGE_PRODUCT, UIUX_ENGINEERS, INDIE_MARKETING, NUDGE_COMEDY, RIVE_COMEDY, PSTACK_COMEDY, SUPERAGENT_COMEDY];
+export const COURSES: Course[] = [STRIPE_BILLING, NUDGE_PRODUCT, UIUX_ENGINEERS, INDIE_MARKETING, NUDGE_COMEDY, RIVE_COMEDY, PSTACK_COMEDY, SUPERAGENT_COMEDY, GA4_COMEDY];
 
 /** 動画を作るときは、全講座のレクチャーをまとめて扱う（ID は講座をまたいで重ならないようにする） */
 export const LECTURES: Lecture[] = COURSES.flatMap((c) => c.lectures);
