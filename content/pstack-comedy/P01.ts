@@ -18,7 +18,7 @@ export const P01: Lecture = {
   section: { no: 1, title: 'ざっくり入門' },
   title: 'pstack ってなに？',
   summary:
-    'pstack を、ずんだもんと先生の掛け合いでざっくり知る。作った人と考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、23 個の手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と、使う前の注意。',
+    '作った人と考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、23 個の手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と、使う前の注意。',
   docs: [
     { title: 'pstack の README（GitHub の cursor/plugins。入れ方・スキル・手順書・原則の一覧）', url: 'https://github.com/cursor/plugins/tree/main/pstack' },
     { title: '/poteto-mode の説明（GitHub）', url: 'https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md' },
@@ -72,21 +72,17 @@ export const P01: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'ざっくり入門',
       title: 'pstack ってなに？',
-      subtitle: 'お笑い版　ずんだもんと、ざっくり知る',
       lines: [
         { t: 'pstack ってなに？', v: 'announcer', pause: 0.3 },
         { t: 'ピースタック……！　ずんだ餅を、山盛りに積むのだ！', v: Z, pause: -0.15 },
         { t: '積みません。', v: T, sfx: 'harisen' },
         { t: 'pstack は、AI のエージェントに、深く調べて少なく良いコードを書かせる、スキルの詰め合わせです。' },
-        { t: 'この動画は、pstack をざっくり知る、お笑い版である。', v: TEN },
       ],
     },
     {
       kind: 'points',
       heading: '困りごと: 速いけど、確かめていない',
-      evidence: 'example',
       columns: 3,
       items: [
         { title: '3 分で、1,000 行', body: 'AI に頼んだ', at: 1, tone: 'cyan', icon: 'zap' },
@@ -107,7 +103,6 @@ export const P01: Lecture = {
     {
       kind: 'points',
       heading: 'pstack とは',
-      evidence: 'official',
       columns: 3,
       items: [
         { title: '作った人', body: 'Cursor のエンジニア poteto（Lauren Tan）さん。React のコアチームの一人', at: 0, tone: 'violet', icon: 'user' },
@@ -125,7 +120,6 @@ export const P01: Lecture = {
     {
       kind: 'big',
       heading: '作者の合言葉',
-      evidence: 'official',
       cite: 'pstack README「if you want to go fast, go deep first」（2026-11 確認）',
       kicker: 'README の合言葉',
       text: '速く進みたいなら、**まず深く**',
@@ -145,7 +139,6 @@ export const P01: Lecture = {
     {
       kind: 'points',
       heading: '始め方: コマンドは 3 つ',
-      evidence: 'official',
       numbered: true,
       columns: 3,
       items: [
@@ -169,7 +162,6 @@ export const P01: Lecture = {
     {
       kind: 'flow',
       heading: '/poteto-mode の中身',
-      evidence: 'official',
       nodes: [
         { key: 'ask', label: '頼みごと', sub: '例: このバグを直して', x: 300, y: 450, w: 400, h: 150, tone: 'slate', icon: 'message', at: 0 },
         { key: 'pick', label: '手順書を 1 つ選ぶ', sub: '23 個から（調査・バグ修正 など）', x: 860, y: 450, w: 460, h: 150, tone: 'violet', icon: 'book', at: 1 },
@@ -201,7 +193,6 @@ export const P01: Lecture = {
     {
       kind: 'table',
       heading: '主なスキル',
-      evidence: 'official',
       cite: 'pstack README と各スキルの説明（2026-11 確認・版 0.15.36）',
       columns: ['スキル', 'やること'],
       widths: [0.27, 0.73],
@@ -263,7 +254,6 @@ export const P01: Lecture = {
     {
       kind: 'points',
       heading: '使う前の注意',
-      evidence: 'official',
       columns: 3,
       items: [
         { title: '使う量が増えやすい', body: '並べて走らせるスキルは、一度に何本ぶんもモデルを動かす', at: 1, tone: 'amber', icon: 'gauge' },

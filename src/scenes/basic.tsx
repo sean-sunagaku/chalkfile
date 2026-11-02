@@ -50,6 +50,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const no = String(lecture.no).padStart(2, '0');
   const course = courseOf(lecture.id);
   const { label: unit, total } = unitOf(lecture.id);
+  const solo = course.standalone === true;
   return (
     <>
       <div style={{ position: 'absolute', left: PAD, top: 64, opacity: early }}>
@@ -68,7 +69,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
           filter: 'blur(8px)',
         }}
       />
-      <div style={{ position: 'absolute', left: PAD + 20, top: 250, width: 520, height: 520, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', left: PAD + 20, top: 250, width: 520, height: 520, display: solo ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {[0, 1, 2].map((k) => {
           const r = ring(k);
           return (
@@ -105,12 +106,14 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
           {no}
         </div>
       </div>
-      <div style={{ position: 'absolute', left: 660, right: PAD, top: 250, height: 520, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22 }}>
-        <div style={{ opacity: early, transform: `translateY(${dropY(early)}px)` }}>
-          <Pill t="violet" size={26}>
-            {s.section}
-          </Pill>
-        </div>
+      <div style={{ position: 'absolute', left: solo ? PAD : 660, right: PAD, top: 250, height: 520, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22 }}>
+        {s.section ? (
+          <div style={{ opacity: early, transform: `translateY(${dropY(early)}px)` }}>
+            <Pill t="violet" size={26}>
+              {s.section}
+            </Pill>
+          </div>
+        ) : null}
         <div style={{ opacity: soft, transform: `translateX(${(1 - soft) * -40}px)` }}>
           {titleLines.map((ln, i) => (
             <div
@@ -131,25 +134,31 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             </div>
           ))}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 36, color: C.sub, opacity: sub2, transform: `translateY(${dropY(sub2, 14)}px)` }}>
-          <Smart text={s.subtitle} />
-        </div>
+        {s.subtitle ? (
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 36, color: C.sub, opacity: sub2, transform: `translateY(${dropY(sub2, 14)}px)` }}>
+            <Smart text={s.subtitle} />
+          </div>
+        ) : null}
       </div>
       <div style={{ position: 'absolute', left: PAD, right: PAD, bottom: 70, display: 'flex', alignItems: 'center', gap: 14, opacity: early }}>
-        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 22, color: C.muted, letterSpacing: 4, marginRight: 10 }}>
-          {unit} {no} / {total}
-        </div>
-        {Array.from({ length: total }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              width: i + 1 === lecture.no ? 46 : 14,
-              height: 14,
-              borderRadius: 99,
-              background: i + 1 === lecture.no ? GRAD : i + 1 < lecture.no ? C.trackDone : C.track,
-            }}
-          />
-        ))}
+        {solo ? null : (
+          <>
+            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 22, color: C.muted, letterSpacing: 4, marginRight: 10 }}>
+              {unit} {no} / {total}
+            </div>
+            {Array.from({ length: total }, (_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: i + 1 === lecture.no ? 46 : 14,
+                  height: 14,
+                  borderRadius: 99,
+                  background: i + 1 === lecture.no ? GRAD : i + 1 < lecture.no ? C.trackDone : C.track,
+                }}
+              />
+            ))}
+          </>
+        )}
         {course.disclaimer ? <div style={{ marginLeft: 'auto', fontFamily: SANS, fontWeight: 500, fontSize: 21, color: C.muted }}>{course.disclaimer}</div> : null}
       </div>
     </>
@@ -422,21 +431,23 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
           {s.closing ? <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 42, color: C.sub, opacity: q }}>{s.closing}</div> : null}
         </>
       )}
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center', opacity: c }}>
-        {Array.from({ length: total }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              width: i + 1 === lecture.no ? 46 : 16,
-              height: 16,
-              borderRadius: 99,
-              background: i + 1 <= lecture.no ? GRAD : C.track,
-              opacity: i + 1 < lecture.no ? 0.6 : 1,
-            }}
-          />
-        ))}
-        <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>{lecture.no} / {total} 完了</div>
-      </div>
+      {course.standalone ? null : (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', opacity: c }}>
+          {Array.from({ length: total }, (_, i) => (
+            <div
+              key={i}
+              style={{
+                width: i + 1 === lecture.no ? 46 : 16,
+                height: 16,
+                borderRadius: 99,
+                background: i + 1 <= lecture.no ? GRAD : C.track,
+                opacity: i + 1 < lecture.no ? 0.6 : 1,
+              }}
+            />
+          ))}
+          <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>{lecture.no} / {total} 完了</div>
+        </div>
+      )}
       <div style={{ position: 'absolute', bottom: 0, fontFamily: SANS, fontSize: 22, color: C.muted, opacity: c, textAlign: 'center', lineHeight: 1.7 }}>
         {course.disclaimer ? <div>{course.disclaimer}</div> : null}
         <div>ナレーション　{((lectureCredits as Record<string, string[]>)[lecture.id] ?? (credits as string[])).join('　')}　／　BGM・効果音　オリジナル（プログラムで合成）</div>

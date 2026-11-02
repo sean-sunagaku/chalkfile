@@ -1,6 +1,7 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { CodeScene, CompareScene, CompareSide, NumbersScene, PhoneScene, PhoneScreen, QuizScene, TableScene, TerminalScene, TimelineScene } from '../../content/types';
+import { courseOf } from '../../content';
 import { Glass, Icon, IconBadge, Pill, Smart } from '../components/ui';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, mix, MONO, PAD, SANS, SYNTAX, TONES, tone } from '../theme';
 import { dropY, lineEnd, lineStart, useActiveLine, useAppear, useFocus, useScene } from '../timing';
@@ -440,7 +441,9 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
     <>
       <div style={{ position: 'absolute', left: PAD, top: CONTENT_TOP + 10, display: 'flex', alignItems: 'center', gap: 34, opacity: q }}>
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 150, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Q{s.no}</div>
-        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / {quizTotal}</div>
+        {courseOf(lecture.id).standalone ? null : (
+          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / {quizTotal}</div>
+        )}
         {/* 考える時間だけ出す札。大きな「Q1」の下に置くと、書体によって文字の下の端と重なるので、横に並べる */}
         <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: TONES.amber.text, opacity: thinkO }}>○ か × か？</div>
       </div>
