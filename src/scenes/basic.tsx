@@ -1,13 +1,12 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { BigScene, ConceptsScene, EndingScene, GoalsScene, OpeningScene, PointsScene, RecapScene, RefsScene } from '../../content/types';
-import { courseOf } from '../../content';
 import { CourseMark, unitOf } from '../components/chrome';
 import { Glass, Icon, IconBadge, Pill, Rich, Smart } from '../components/ui';
 import credits from '../generated/credits.json';
 import lectureCredits from '../generated/lecture-credits.json';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME, TONES, tone } from '../theme';
-import { dropY, useActiveLine, useAppear, useScene } from '../timing';
+import { dropY, useActiveLine, useAppear, useScene, useText } from '../timing';
 
 /** ジングルの「ドン」が鳴るフレーム（sting_intro の 2.0 秒。synth.ts の OPENING_LEAD_IN と合わせる） */
 export const HIT_FRAME = 60;
@@ -36,7 +35,7 @@ const Content: React.FC<{ children: React.ReactNode; style?: React.CSSProperties
 export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { lecture } = useScene();
+  const { lecture, course } = useScene();
   const hit = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 14, mass: 0.7 }, durationInFrames: 40 });
   const soft = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 200 }, durationInFrames: 26 });
   const early = interpolate(frame, [4, 28], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -45,11 +44,11 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
     const f = frame - HIT_FRAME - k * 6;
     return { s: interpolate(f, [0, 50], [0.6, 1.7], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }), o: interpolate(f, [0, 8, 50], [0, 0.55, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) };
   };
-  const titleLines = s.title.split('　');
+  // 全角の空白（日本語）か改行で、タイトルを 2 行に分ける
+  const titleLines = s.title.split(/　|\n/);
   const sub2 = spring({ frame: frame - HIT_FRAME - 12, fps, config: { damping: 200 }, durationInFrames: 24 });
   const no = String(lecture.no).padStart(2, '0');
-  const course = courseOf(lecture.id);
-  const { label: unit, total } = unitOf(lecture.id);
+  const { label: unit, total } = unitOf(course);
   const solo = course.standalone === true;
   return (
     <>
@@ -143,13 +142,15 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
       <div style={{ position: 'absolute', left: PAD, right: PAD, bottom: 70, display: 'flex', alignItems: 'center', gap: 14, opacity: early }}>
         {solo ? null : (
           <>
-            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 22, color: C.muted, letterSpacing: 4, marginRight: 10 }}>
+            {/* 注意書きが長い言語（英語）でも、番号は折り返さない */}
+            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 22, color: C.muted, letterSpacing: 4, marginRight: 10, whiteSpace: 'nowrap', flexShrink: 0 }}>
               {unit} {no} / {total}
             </div>
             {Array.from({ length: total }, (_, i) => (
               <div
                 key={i}
                 style={{
+                  flexShrink: 0,
                   width: i + 1 === lecture.no ? 46 : 14,
                   height: 14,
                   borderRadius: 99,
@@ -159,7 +160,7 @@ export const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             ))}
           </>
         )}
-        {course.disclaimer ? <div style={{ marginLeft: 'auto', fontFamily: SANS, fontWeight: 500, fontSize: 21, color: C.muted }}>{course.disclaimer}</div> : null}
+        {course.disclaimer ? <div style={{ marginLeft: 'auto', fontFamily: SANS, fontWeight: 500, fontSize: 21, color: C.muted, textAlign: 'right' }}>{course.disclaimer}</div> : null}
       </div>
     </>
   );
@@ -402,9 +403,10 @@ export const Refs: React.FC<{ s: RefsScene }> = ({ s }) => (
 );
 
 export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
-  const { lecture } = useScene();
-  const course = courseOf(lecture.id);
-  const { label: unit, total } = unitOf(lecture.id);
+  const { lecture, course, lang } = useScene();
+  const text = useText();
+  const key = lang === 'ja' ? lecture.id : `${lecture.id}.${lang}`;
+  const { label: unit, total } = unitOf(course);
   const p = useAppear(0);
   const q = useAppear(0, 14);
   const c = useAppear(0, 26);
@@ -426,7 +428,7 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
       ) : (
         <>
           <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 110, opacity: p, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-            おつかれさまでした
+            {text.done}
           </div>
           {s.closing ? <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 42, color: C.sub, opacity: q }}>{s.closing}</div> : null}
         </>
@@ -445,12 +447,12 @@ export const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
               }}
             />
           ))}
-          <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>{lecture.no} / {total} 完了</div>
+          <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>{text.progress(lecture.no, total)}</div>
         </div>
       )}
       <div style={{ position: 'absolute', bottom: 0, fontFamily: SANS, fontSize: 22, color: C.muted, opacity: c, textAlign: 'center', lineHeight: 1.7 }}>
         {course.disclaimer ? <div>{course.disclaimer}</div> : null}
-        <div>ナレーション　{((lectureCredits as Record<string, string[]>)[lecture.id] ?? (credits as string[])).join('　')}　／　BGM・効果音　オリジナル（プログラムで合成）</div>
+        <div>{text.credits((lectureCredits as Record<string, string[]>)[key] ?? (credits as string[]))}</div>
       </div>
     </Content>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../content/types';
 import { Icon, Pill, Rich } from '../components/ui';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, PAD, SANS, tone } from '../theme';
-import { dropY, useAppear } from '../timing';
+import { dropY, useAppear, useText } from '../timing';
 
 /*
  * 架空のアプリの画面（改善前・改善後）。画面の中の色は「そのアプリの色」なので、講座のテーマではなくここの M で描く。
@@ -45,6 +45,7 @@ const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean; flex?: boo
 };
 
 const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
+  const required = useText().required;
   switch (b.type) {
     case 'title':
       return <div style={{ fontSize: 28, fontWeight: 900, color: b.weak ? M.weak : M.ink, lineHeight: 1.3 }}>{b.text}</div>;
@@ -56,7 +57,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
           {b.label ? (
             <div style={{ fontSize: 18, fontWeight: 700, color: b.weak ? M.weak : M.ink }}>
               {b.label}
-              {b.required ? <span style={{ marginLeft: 8, fontSize: 14, color: M.danger, fontWeight: 800 }}>必須</span> : null}
+              {b.required ? <span style={{ marginLeft: 8, fontSize: 14, color: M.danger, fontWeight: 800 }}>{required}</span> : null}
             </div>
           ) : null}
           <div

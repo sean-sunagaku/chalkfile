@@ -6,8 +6,14 @@ public/audio/
 site/media/
 site/data/
 site/dist/
+site/dist-media/
 test-results/
 playwright-report/
+.wrangler/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
 
 .DS_Store
 

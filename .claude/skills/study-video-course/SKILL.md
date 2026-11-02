@@ -1,9 +1,19 @@
 ---
 name: study-video-course
-description: ナレーション付きの勉強動画（講座）を、調べる → 講座の設計 → テーマ（トンマナ）→ 台本 → 声 → 動画 → 講座サイト → GitHub Pages の順に作る・直す・公開する。このリポジトリ（Chalkfile）の Remotion と VOICEVOX の仕組みを使う。Use when 新しい講座や勉強動画を作りたい、レクチャーを足したい、台本・台詞・図を直したい、読み間違いを直したい、動画を作り直したい、講座サイトを公開したい、講座のトンマナ（色・書体・背景）を変えたい・新しいテーマを作りたい、調べ方や画面・話し方のスタイルを確かめたい。Triggers "勉強動画", "トンマナ", "テーマを作る", "配色を変える", "講座を作る", "講座動画", "レクチャーを足す", "台本を直す", "読み間違い", "GitHub Pages に出す", "study video"
+description: ナレーション付きの勉強動画（講座）を、調べる → 講座の設計 → テーマ（トンマナ）→ 台本 → 声 → 動画 → 講座サイト → GitHub Pages の順に作る・直す・公開する。英語・中国語の版（声・画面・図・字幕・サイト）も作る。このリポジトリ（Chalkfile）の Remotion と VOICEVOX・Kokoro の仕組みを使う。Use when 新しい講座や勉強動画を作りたい、講座を英語・中国語にしたい・多言語にしたい、レクチャーを足したい、台本・台詞・図を直したい、読み間違いを直したい、動画を作り直したい、講座サイトを公開したい、講座のトンマナ（色・書体・背景）を変えたい・新しいテーマを作りたい、調べ方や画面・話し方のスタイルを確かめたい。Triggers "多言語", "英語版", "中国語版", "翻訳", "勉強動画", "トンマナ", "テーマを作る", "配色を変える", "講座を作る", "講座動画", "レクチャーを足す", "台本を直す", "読み間違い", "GitHub Pages に出す", "study video"
 ---
 
 # 勉強動画の講座を作る
+
+保存機能はルート `/` とhash付き `/media/` を使う。動画URL・通常/字幕版・保存サイズとhashを `site/media-manifest.json` から生成し、ポスターは静的assetsに残す。`build_site.ts --strict` はReleasesと手元のhashを照合する。`npm run test:browser` は `tests/browser-server.ts` の同じURLで、通信断・再起動・Range・字幕版切替・単体downloadを検証する。公開されていない言語はskipとして記録する。
+
+`/media/` の変更では `tests/worker.test.ts` を含む `npm test`、`wrangler dev` と本番の `Range: bytes=0-1` を確認する。署名付きredirect URLを保存・ログ出力しない。上流にCookieやAuthorizationを渡さず、本文はstreamのままにする。HEADではRangeを無視し、エラーはno-store。キャッシュ最適化は実測後に判断する。
+
+動画配信の正本は `site/media-manifest.json`。動画を変えたらローカルで `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。
+
+配信移行時は `wrangler.jsonc` を正本にし、`npm run dev:worker` でルート `/` と SW scope `/` を確かめる。サイトは assets、動画は `/media/` の受付に分け、MP4 を assets に置かない。Workers Free を維持する。認証ファイルを読まず、機密情報をcommit/push/公開物/ログへ含めない。push 前に追跡ファイルと差分を点検し、API トークンは GitHub/Cloudflare の secret だけで扱う。
+
+Workers assets の HTML 正規化で `.html` は転送される。保存用の取得はリダイレクトを拒否するため、起動用のオフラインページは `/offline/` を使う。移行時は単なる200確認に加え、新規ブラウザcontextでSWのinstallとscopeを検証する。
 
 1 つの講座は、3〜6 分のレクチャー動画 10〜15 本と、講座サイト 1 枚でできている。講座サイトでは、動画・台本（検索できる）・チャプター・字幕・確認クイズ・公式ドキュメントへのリンク・自分用のメモが使える。
 
@@ -36,6 +46,10 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 **講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる**（ユーザーの方針）。既存の講座を作り直すときも、comedy.md の「この形を基準にする」（ユーザーに好評だった掛け合いの型と例）にそろえる。笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出、守ることは [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`（章立て）と `content/pstack-comedy/`（1 本だけの解説動画。表示を少なくした形）。
 
 共通プロンプト＋テーマ別の指示から講座を丸ごと作るとき（全体設計 → 第 1 章 → 残りの章を並行で）は、スキル `course-from-prompt`（`.claude/skills/course-from-prompt/SKILL.md`）。読む教材・実践課題・AI チャットの質問例・章の計画（目次）まで作る章立ての講座は、レクチャーの `material` と講座の `syllabus`・`sources` を書く。ID のきまり、根拠の種類（研究・公式・実務・仮の例）、改善前・改善後の画面（`screens`）、字幕の焼き込みは [references/materials.md](references/materials.md)。見本は `content/nudge-product/`。
+
+### 3.5 英語・中国語にする（多言語）
+
+日本語の台本が正本。英語（en）と中国語（zh・簡体字）は、`content/<講座>/<言語>/<ID>.ts` に「訳の上書き」を書いて重ねる（場面と要素は日本語と同じ数・順、台詞は言語ごとに書き直す）。声は Kokoro（手元で動く・Apache-2.0）、動画は `S01.en` のような名前で作り、講座サイトは `/en/`・`/zh/` に出る。訳の動画は、言語ごとの別の GitHub Pages のサイト（同じ origin）に置く。お笑いは直訳せず、言語ごとに作り直す。書き方・声・確かめ方・置き場所は [references/i18n.md](references/i18n.md)。
 
 ### 4. 声・音・動画を作る
 
@@ -83,6 +97,8 @@ bash scripts/deploy_pages.sh
 | 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → READMEとこのSkillの案内を合わせる |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
+| 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → `TRANSLATIONS` に並べる → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
+| 日本語の台本を直した（訳がある講座） | 日本語を直す → `bun scripts/i18n.ts status` で「台本が変わった」訳を見直す → `stamp` → 訳の動画も synth から作り直す |
 
 ## やらないこと
 
@@ -92,4 +108,5 @@ bash scripts/deploy_pages.sh
 - パスワード・API キー・Webhook の署名シークレットを台本に書かない（例は `sk_test_...` のような省略か、環境変数）
 - 画面の固定の文字に絵文字をアイコン代わりに使わない（アイコンは lucide-react の名前を `icon` に書く）
 - 静止画を見ずに書き出さない。読みを見ずに公開しない
-- 動画（`site/media/`）を main にコミットしない
+- 動画（`site/media/`・`site/dist-media/`）を main にコミットしない
+- 訳で、事実（説明・数字・名前・クイズの答え・出典）を変えない。出典の文章を訳して載せない

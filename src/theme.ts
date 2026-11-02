@@ -1,8 +1,10 @@
 import { loadFont as loadInter } from '@remotion/google-fonts/Inter';
 import { loadFont as loadJetBrains } from '@remotion/google-fonts/JetBrainsMono';
 import { loadFont as loadNoto } from '@remotion/google-fonts/NotoSansJP';
+import { loadFont as loadNotoSC } from '@remotion/google-fonts/NotoSansSC';
 import { loadFont as loadZenMaru } from '@remotion/google-fonts/ZenMaruGothic';
-import { themeOf } from '../content/themes';
+import type { Lang } from '../content/i18n';
+import { fontsFor, themeOf } from '../content/themes';
 import type { FontKey, Theme, Tone } from '../content/types';
 
 export const W = 1920;
@@ -45,7 +47,9 @@ const family = (k: FontKey | 'mono'): string => {
           ? loadInter('normal', { weights: ['400', '500', '600', '700', '800', '900'], subsets: ['latin'] }).fontFamily
           : k === 'noto'
             ? loadNoto('normal', { weights: ['400', '500', '700', '900'], ignoreTooManyRequestsWarning: true }).fontFamily
-            : loadJetBrains('normal', { weights: ['400', '500', '700'], subsets: ['latin'] }).fontFamily;
+            : k === 'noto-sc'
+              ? loadNotoSC('normal', { weights: ['400', '500', '700', '900'], ignoreTooManyRequestsWarning: true }).fontFamily
+              : loadJetBrains('normal', { weights: ['400', '500', '700'], subsets: ['latin'] }).fontFamily;
   }
   return families[k]!;
 };
@@ -107,13 +111,13 @@ export let MONO = '';
 export let SYNTAX: Theme['syntax'];
 export let MESH: string[] = [];
 
-let fontsOf: Theme | null = null;
+let fontsOf = '';
 
-/** fonts=false は色だけ差し替える（読み込みの前の仮の値。書体は描くテーマの分だけ読む） */
-export const applyTheme = (theme: Theme, fonts = true) => {
-  if (fonts && fontsOf !== theme) {
-    fontsOf = theme;
-    SANS = [...theme.fonts.map(family), 'sans-serif'].join(', ');
+/** fonts=false は色だけ差し替える（読み込みの前の仮の値。書体は描くテーマと言語の分だけ読む） */
+export const applyTheme = (theme: Theme, fonts = true, lang: Lang = 'ja') => {
+  if (fonts && fontsOf !== `${theme.id}:${lang}`) {
+    fontsOf = `${theme.id}:${lang}`;
+    SANS = [...fontsFor(theme, lang).map(family), 'sans-serif'].join(', ');
     MONO = `${family('mono')}, ${SANS}`;
   }
   if (THEME === theme) return;

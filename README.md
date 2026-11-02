@@ -4,7 +4,17 @@
 
 講座を TypeScript の台本として書くと、VOICEVOX の声、Remotion の動画、静的な講座サイト（動画・台本・字幕・確認クイズ）までをコマンドで作れます。台本は何度でも直して作り直せます。調べ方と書き方は Claude Code のスキルにまとめてあるので、Claude Code と一緒に講座を作れます。
 
-**サイト: https://sean-sunagaku.github.io/chalkfile/**
+**移行先: https://chalkfile.com/**（移行完了までは https://sean-sunagaku.github.io/chalkfile/ も公開中。訳は未公開）
+
+Cloudflare Workers の設定は `wrangler.jsonc`、動画受付は `worker/src/index.ts` です。`npm ci --ignore-scripts` → 素材と教材の生成 → `bun scripts/build_site.ts --strict` → `npm run dev:worker` で、ルート `/` と SW scope `/` を確認します。サイトは静的 assets、動画は `/media/` に分け、MP4 は assets へアップロードしません。Workers は無料プランを維持します。
+
+機密情報は commit・push・公開物・ログに入れません。API トークンは GitHub の production environment secret、アカウント ID は vars に置きます。認証情報を設定ファイルや会話に貼らないでください。
+
+動画は手元の `site/media/` から `bun scripts/media.ts push` で GitHub Releases へ先に置きます。講座×言語のタグ `media-ja-<講座>` と、中身の SHA-256 を含むファイル名を使い、確認後に `site/media-manifest.json` を更新します。`bun scripts/media.ts check` は公開asset・サイズ・GitHub提供のSHA-256と、手元にある動画のSHA-256を照合します。変更のない動画は送り直さず、古いハッシュのassetは自動削除しません。CIはcheckだけを実行します。
+
+Worker の `/media/` はこの一覧だけを中継します。GET と HEAD を受け、Range / If-Range 以外のリクエストヘッダーを上流へ送りません。元の Releases URL から期限つきredirectを毎回たどり、本文をstreamのまま返します。通常再生は `video/mp4`、単体保存の `?download=1` だけに attachment を付けます。配信元の404は404、通信や5xxは502になり、失敗を長期キャッシュしません。
+
+講座は英語と中国語（簡体字）にもできます。声・画面の文字・図の文字・字幕・講座サイトの UI まで言語ごとに切り替わり、お笑いの掛け合いは直訳せずに言語ごとに作り直しています（下の「多言語（英語・中国語）」）。
 
 まだ初期の段階です。今は講座を作るためのリポジトリで、エンジン（動画とサイトを作る部分）をパッケージと CLI に分けるのが次の段階です。
 
@@ -16,11 +26,11 @@
 | [ナッジ理論をプロダクト改善に活かす](https://sean-sunagaku.github.io/chalkfile/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
 | [エンジニアのための UI・UX デザイン](https://sean-sunagaku.github.io/chalkfile/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
 | [個人開発者のためのマーケティング](https://sean-sunagaku.github.io/chalkfile/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
-| [笑って覚えるナッジ理論](https://sean-sunagaku.github.io/chalkfile/nudge-comedy/)（`nudge-comedy`） | ナッジ講座のお笑い版。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、ナッジと強制・お金・ダークパターンの違い、良いナッジの 3 つの条件を覚える（中身と出典は真面目版と同じ） | 1 章（試作）・約 8 分 |
-| [笑ってわかる Rive アニメーション](https://sean-sunagaku.github.io/chalkfile/rive-comedy/)（`rive-comedy`） | Rive をざっくり知るお笑い版（ずんだもん・先生・天の声）。エディタとランタイム、.riv、ステートマシン、対応する環境と注意点 | 1 本・約 4 分 |
-| [笑ってわかる pstack](https://sean-sunagaku.github.io/chalkfile/pstack-comedy/)（`pstack-comedy`） | Cursor 向けのスキル集 pstack をざっくり知るお笑い版（ずんだもん・先生・天の声）。考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と使う前の注意 | 1 本・約 5 分 |
-| [笑ってわかる Super-agent](https://sean-sunagaku.github.io/chalkfile/superagent-comedy/)（`superagent-comedy`） | DeepSeek Harness チームの設計記事「Exploring Super-agent Design」を読み解くお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加するふるいゲームも）。会話（セッション）に縛られないエージェントの 4 つの性質と 5 つの部品（二層構造・イベント駆動・全二重とチャンネル・計算と状態と環境の分離・Watchdog）、記事の予備の実験、残る課題 | 6 章・約 47 分 |
-| [笑ってわかる GA4](https://sean-sunagaku.github.io/chalkfile/ga4-comedy/)（`ga4-comedy`） | GA4（Google アナリティクス 4）を短く知るお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加する問題も）。イベントとパラメータ、ディメンションと指標、サイトが送る項目名（email_entry）と値（signature）、それを「メールの入口」として見るカスタム ディメンションの設定と、保存の後の注意 | 3 章・約 10 分 |
+| [笑って覚えるナッジ理論](https://sean-sunagaku.github.io/chalkfile/nudge-comedy/)（`nudge-comedy`。英語・中国語の訳あり（未公開） | ナッジ講座のお笑い版。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、ナッジと強制・お金・ダークパターンの違い、良いナッジの 3 つの条件を覚える（中身と出典は真面目版と同じ） | 1 章（試作）・約 8 分 |
+| [笑ってわかる Rive アニメーション](https://sean-sunagaku.github.io/chalkfile/rive-comedy/)（`rive-comedy`。英語・中国語の訳あり（未公開） | Rive をざっくり知るお笑い版（ずんだもん・先生・天の声）。エディタとランタイム、.riv、ステートマシン、対応する環境と注意点 | 1 本・約 4 分 |
+| [笑ってわかる pstack](https://sean-sunagaku.github.io/chalkfile/pstack-comedy/)（`pstack-comedy`。英語・中国語の訳あり（未公開） | Cursor 向けのスキル集 pstack をざっくり知るお笑い版（ずんだもん・先生・天の声）。考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と使う前の注意 | 1 本・約 5 分 |
+| [笑ってわかる Super-agent](https://sean-sunagaku.github.io/chalkfile/superagent-comedy/)（`superagent-comedy`。英語・中国語の訳あり（未公開） | DeepSeek Harness チームの設計記事「Exploring Super-agent Design」を読み解くお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加するふるいゲームも）。会話（セッション）に縛られないエージェントの 4 つの性質と 5 つの部品（二層構造・イベント駆動・全二重とチャンネル・計算と状態と環境の分離・Watchdog）、記事の予備の実験、残る課題 | 6 章・約 47 分 |
+| [笑ってわかる GA4](https://chalkfile.com/ga4-comedy/)（`ga4-comedy`） | GA4（Google アナリティクス 4）を短く知るお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加する問題も）。イベントとパラメータ、ディメンションと指標、サイトが送る項目名（email_entry）と値（signature）、それを「メールの入口」として見るカスタム ディメンションの設定と、保存の後の注意 | 3 章・約 10 分 |
 
 ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 
@@ -55,7 +65,31 @@
 
 iOS もブラウザの保存領域を使い、「ファイル」アプリの動画を取り込む機能はありません。ブラウザとホーム画面アプリの保存が共有されるとは限らないため、実際に使う方で保存し、機内モードで起動・シーク・再生を確かめてください。`navigator.storage.persist()` による保持要求はブラウザが判断し、拒否される場合もあります。実機での保存維持・バックグラウンド保存・すべてのブラウザでの動作は保証しません。設計と一次資料は [offline.md](.claude/skills/study-video-course/references/offline.md) にあります。
 
-保存対象はこのサイトで公開している、閲覧権限と保存許可のある自作教材・同一 origin の MP4 です。外部動画・外部ドキュメント・DRM・認証やアクセス制限のある配信は対象にしません。配信先は既存の GitHub Pages のままです。
+保存対象はこのサイトで公開している、閲覧権限と保存許可のある自作教材・同一 origin の MP4 です。外部動画・外部ドキュメント・DRM・認証やアクセス制限のある配信は対象にしません。chalkfile.com の静的教材と、同じ origin の `/media/` で受け付ける動画を保存します。動画はマニフェストのサイズとSHA-256を確かめてから保存します。
+
+## 多言語（英語・中国語）
+
+日本語の台本が正本で、英語（en）と中国語（zh・簡体字）は、日本語の台本に「訳の上書き」を重ねて作ります。いま訳があるのは、お笑い版の 4 講座（笑って覚えるナッジ理論・笑ってわかる Rive アニメーション・笑ってわかる pstack・笑ってわかる Super-agent。動画 9 本 × 2 言語）です。
+
+- 訳のファイル: `content/<講座>/<言語>/<レクチャー ID>.ts`（場面と画面の要素は日本語と同じ数・順で文字だけを書き、台詞は言語ごとに書き直す）と `content/<講座>/<言語>/course.ts`。`content/index.ts` の `TRANSLATIONS` に並べる。重ね方は `content/i18n.ts`
+- 声: 英語と中国語は [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)（Apache-2.0。手元で動く）。先生・ずんだもん・天の声・呼び込みに別々の声を当てています（`scripts/voices.ts` の `KOKORO`）。訳の版のずんだもんは VOICEVOX:ずんだもんの声ではありません
+- 動画の名前: `S01.en.mp4`・`S01.en.cc.mp4`（字幕を焼き込んだ版）・`S01.zh.mp4` など。Remotion のコンポジションは `S01-en`
+- サイト: 日本語は今までどおり `/chalkfile/<講座>/`、訳は `/chalkfile/en/<講座>/`・`/chalkfile/zh/<講座>/`。ページの上の切り替えで言語を移れます。訳の一覧には、まだ訳していない講座を「日本語だけ」で並べます
+- 動画の置き場所と公開: 公開先は chalkfile.com の Cloudflare Worker（動画は GitHub Releases に置き、Worker が `/media/` で範囲を中継する。2026-11-02 に決定、SUN-1647）に移します。それまで訳は公開しません（`site/config.json` の `publishLangs` が `["ja"]`）。訳の動画の向き先は `site/config.json` の `media` で差し替えます（いまは手元で確かめるための仮の場所）
+- 読みの確認: 英語と中国語は Whisper で聞き取り直して、読み間違いと中国語の多音字の読みを一覧にします（`uv run scripts/check_speech.py <key>`）
+
+```bash
+bun scripts/i18n.ts try superagent-comedy en S03   # 訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ）
+bun scripts/i18n.ts stamp 'S03.*'                  # 訳したときの日本語の台本の指紋を書く
+bun scripts/synth.ts S03.en S03.zh                  # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルのダウンロード）
+uv run scripts/check_speech.py S03.en S03.zh        # 聞き取りの点検
+uv run --with numpy --with scipy python scripts/mix.py S03.en S03.zh
+CAPTIONS=1 bash scripts/render.sh S03.en S03.zh
+bun scripts/build_site.ts                           # site/dist/en/… と、訳の動画の site/dist-media/<言語>/…
+bun scripts/i18n.ts status                          # 訳の表（訳あり・日本語の台本が変わった・未訳）と訳し残し
+```
+
+詳しい書き方・声・確かめ方は、スキルの [i18n.md](.claude/skills/study-video-course/references/i18n.md) です。
 
 ## 作り方
 
@@ -71,7 +105,7 @@ iOS もブラウザの保存領域を使い、「ファイル」アプリの動�
 
 ## 作り直す
 
-前提: Node.js、[bun](https://bun.sh/)、ffmpeg、[uv](https://docs.astral.sh/uv/)、[VOICEVOX](https://voicevox.hiroshiba.jp/)（エンジンが `127.0.0.1:50021` で動いていること）
+前提: Node.js、[bun](https://bun.sh/)、ffmpeg、[uv](https://docs.astral.sh/uv/)、[VOICEVOX](https://voicevox.hiroshiba.jp/)（エンジンが `127.0.0.1:50021` で動いていること）。英語・中国語の声は uv が Kokoro を用意します（初回に Python の道具とモデルの重みを取ってくる）
 
 ```bash
 npm install
@@ -176,10 +210,11 @@ export const STRIPE_BILLING: Course = {
 bash scripts/deploy_pages.sh
 ```
 
-`site/dist` を `gh-pages` ブランチに 1 コミットで強制 push します。動画を main の履歴に積まないためです。初回だけ、リポジトリの Settings → Pages で「Deploy from a branch」「gh-pages」「/ (root)」を選びます。
+`site/dist` を `gh-pages` ブランチに 1 コミットで強制 push します。動画を main の履歴に積まないためです。最新の main（`origin/main`）からでないと止まります。初回だけ、リポジトリの Settings → Pages で「Deploy from a branch」「gh-pages」「/ (root)」を選びます。出す言語は `site/config.json` の `publishLangs`（いまは日本語だけ。訳は chalkfile.com の Worker ができてから出す。上の「多言語」）。
 
 - 公開先の URL とシリーズ名は `site/config.json`（共有用の画像（OGP）の URL にも使う）
-- 動画は 1 本 15MB 以下に収める（`render.sh` が画質を自動で下げる）。GitHub Pages はサイト全体で 1GB、帯域は月 100GB が目安
+- 動画は 1 本 15MB 以下に収める（`render.sh` が画質を自動で下げる）。GitHub Pages はサイト全体で 1GB、帯域は月 100GB が目安。`build_site.ts --strict` は、どのサイトも 950MB を超えたら止まる
+- 訳の動画を GitHub Releases に置かないのは、ダウンロードの URL が別のホストに飛び、どちらも CORS に答えないので、アプリ内保存で中身を確かめられないから（2026-11-02 に確かめた）
 
 ## フォルダ
 
@@ -189,13 +224,14 @@ bash scripts/deploy_pages.sh
 | `content/themes.ts` | テーマ（トンマナ）の定義 |
 | `content/stripe-billing/L01.ts`〜`L13.ts` | Stripe 講座の台本と画面構成 |
 | `content/types.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素） |
+| `content/i18n.ts`・`content/<講座>/<言語>/` | 多言語の型と重ね方・訳のファイル（英語 `en`・中国語 `zh`） |
 | `content/reading.ts` | 読み上げ用の読み（英字をカナに開く・誤読しやすい語） |
 | `src/` | Remotion の動画（`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描く。`theme.ts` がテーマの色と書体を差し込む） |
 | `scripts/` | 音楽・合成・ミックス・書き出し・サイト・公開のスクリプト |
-| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、設定（`config.json`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
+| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、言語ごとの決まった文字（`i18n.ts`）、設定（`config.json`。訳の動画のサイトは `media`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方・テーマの作り方をまとめた Claude Code のスキル |
 
-生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`）は main に入れません。台詞の音声と BGM・効果音は `materials` ブランチ（`bun scripts/materials.ts pull`）、公開中の講座サイトと動画は `gh-pages` ブランチにあります。
+生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`・`site/dist-media/`）は main に入れません。台詞の音声と BGM・効果音は `materials` ブランチ（`bun scripts/materials.ts pull`）、公開中の講座サイトと動画は `gh-pages` ブランチにあります。
 
 ## 安全と公開のきまり
 
@@ -208,7 +244,8 @@ bash scripts/deploy_pages.sh
 
 - コードと台本: [MIT License](LICENSE)
 - 声: VOICEVOX:No.7、VOICEVOX:青山龍星、VOICEVOX:ずんだもん（お笑い版のボケ）、VOICEVOX:玄野武宏（お笑い版の天の声）。音声を使うときは、各キャラクターの利用規約に従ってクレジットを書く
+- 英語・中国語の声: Kokoro-82M・Kokoro-82M-v1.1-zh（hexgrad、Apache-2.0。声の名前は動画の終わりとサイトに出す）
 - 動画: [Remotion](https://www.remotion.dev/)。Remotion のライセンスは別で、個人と小さな会社は無料、大きな会社で使うときは[ライセンス](https://www.remotion.dev/license)が要る
 - BGM・効果音: `scripts/build_music.py` が numpy で合成したオリジナル
-- フォント: Zen Maru Gothic、Noto Sans JP、Inter、JetBrains Mono（SIL Open Font License）
+- フォント: Zen Maru Gothic、Noto Sans JP、Noto Sans SC（中国語）、Inter、JetBrains Mono（SIL Open Font License）
 - サービス名は各社の商標です

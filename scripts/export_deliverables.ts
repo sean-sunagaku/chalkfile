@@ -1,16 +1,17 @@
 // 章ごとの「完成動画と編集用データ」を 1 つのフォルダにまとめる（講座サイトの外で使うとき）。
 //   bun scripts/export_deliverables.ts N01 D01 M01
+//   bun scripts/export_deliverables.ts S01.en S01.zh    # 訳の動画（出力は out/deliverables/<講座 ID>/S01.en/ など）
 // 出力: out/deliverables/<講座 ID>/<レクチャー ID>/
 //   <id>.captioned.mp4   日本語字幕を焼き込んだ動画（CAPTIONS=1 bash scripts/render.sh の出力）
 //   <id>.mp4             字幕なしの動画（講座サイト用。字幕は .vtt を重ねる）
-//   <id>.ja.vtt / .srt   字幕（台詞の時刻は合成の実測）
+//   <id>.ja.vtt / .srt   字幕（台詞の時刻は合成の実測。訳の動画は <id>.vtt。例 S01.en.vtt）
 //   <id>.mix.wav         ナレーション・BGM・効果音をまとめた音
 //   <章 ID>.md           教材一式（build_materials.ts の出力。台本・絵コンテ・課題を含む）
 //   README.md            中身と、作り直し方（編集の正本は content/ の台本）
 // 動画は Git に入れない（out/ は .gitignore）。
 import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { courseOf, LECTURES } from '../content';
+import { videoOf } from '../content';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const ids = process.argv.slice(2);
@@ -30,9 +31,9 @@ const stamp = (x: number, sep: string) => {
 };
 
 for (const id of ids) {
-  const lec = LECTURES.find((l) => l.id === id);
-  if (!lec) throw new Error(`レクチャーが無い: ${id}`);
-  const course = courseOf(id);
+  const { lecture: lec, course, lang } = videoOf(id);
+  // 字幕のファイル名: 日本語は <id>.ja.vtt（今までどおり）、訳は <id>.vtt（名前に言語が入っている）
+  const sub = lang === 'ja' ? `${id}.ja` : id;
   const dir = path.join(ROOT, 'out/deliverables', course.id, id);
   mkdirSync(dir, { recursive: true });
   const got: string[] = [];
@@ -50,9 +51,9 @@ for (const id of ids) {
   const dataFile = path.join(ROOT, 'site/data', `${id}.json`);
   if (existsSync(dataFile)) {
     const cues = (JSON.parse(readFileSync(dataFile, 'utf8')) as { cues: Cue[] }).cues;
-    writeFileSync(path.join(dir, `${id}.ja.vtt`), `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${stamp(c.start, '.')} --> ${stamp(c.end, '.')}\n${c.text}\n`).join('\n')}`);
-    writeFileSync(path.join(dir, `${id}.ja.srt`), cues.map((c, i) => `${i + 1}\n${stamp(c.start, ',')} --> ${stamp(c.end, ',')}\n${c.text}\n`).join('\n'));
-    got.push(`${id}.ja.vtt`, `${id}.ja.srt`);
+    writeFileSync(path.join(dir, `${sub}.vtt`), `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${stamp(c.start, '.')} --> ${stamp(c.end, '.')}\n${c.text}\n`).join('\n')}`);
+    writeFileSync(path.join(dir, `${sub}.srt`), cues.map((c, i) => `${i + 1}\n${stamp(c.start, ',')} --> ${stamp(c.end, ',')}\n${c.text}\n`).join('\n'));
+    got.push(`${sub}.vtt`, `${sub}.srt`);
   }
   if (lec.material) copy(`docs/courses/${course.id}/${lec.material.id}.md`, `${lec.material.id}.md`);
   writeFileSync(
@@ -68,11 +69,15 @@ for (const id of ids) {
       '',
       '## 編集と作り直し',
       '',
-      `- 正本は台本 \`content/${course.id}/${id}.ts\`（台詞・画面・教材・課題）と、出典 \`content/${course.id}/sources.ts\``,
+      lang === 'ja'
+        ? `- 正本は台本 \`content/${course.id}/${id}.ts\`（台詞・画面・教材・課題）と、出典 \`content/${course.id}/sources.ts\``
+        : `- 正本は日本語の台本 \`content/${course.id}/${lec.id}.ts\` と、それに重ねる訳 \`content/${course.id}/${lang}/${lec.id}.ts\`（台詞と画面の文字）`,
       `- 台詞を直したら: \`bun scripts/synth.ts ${id}\` → \`uv run --with numpy --with scipy python scripts/mix.py ${id}\` → \`CAPTIONS=1 bash scripts/render.sh ${id}\` → \`bun scripts/build_materials.ts\` → \`bun scripts/export_deliverables.ts ${id}\``,
       '- 台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出す: `bun scripts/materials.ts pull`（README の「素材から作り直す」）',
       '- 場面だけ見る: `npx remotion studio`（props の captions を true にすると字幕つき）',
-      '- ナレーション: VOICEVOX:No.7（講師）、VOICEVOX:青山龍星（呼び込み）。BGM・効果音はプログラムで合成したオリジナル',
+      lang === 'ja'
+        ? '- ナレーション: VOICEVOX:No.7（講師）、VOICEVOX:青山龍星（呼び込み）。BGM・効果音はプログラムで合成したオリジナル'
+        : '- ナレーション: Kokoro-82M（Apache-2.0。声は scripts/voices.ts の KOKORO）。BGM・効果音はプログラムで合成したオリジナル',
       '',
     ].join('\n'),
   );

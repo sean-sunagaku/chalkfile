@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # 講座動画を書き出す。映像（Remotion・無音）→ 音（mix.py の WAV）と合わせて Web 用 MP4 → ポスター画像。
-#   bash scripts/render.sh            # 全レクチャー
-#   bash scripts/render.sh L03 L05    # 一部だけ
-# 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（15MB 以下）、site/media/<id>.jpg
+#   bash scripts/render.sh                  # 全部の動画（全部の言語）
+#   bash scripts/render.sh L03 L05          # 一部だけ
+#   bash scripts/render.sh P01.en P01.zh    # 訳の動画（レクチャー ID.言語。コンポジションは P01-en）
+# 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（15MB 以下）、site/media/<id>.jpg（<id> は動画の名前。訳は P01.en.mp4）
 # CAPTIONS=1 を付けると、日本語の字幕を焼き込んだ版も作る: out/captioned/<id>.mp4（講座サイトの外で、音なしでも見られる版）と、
 #   site/media/<id>.cc.mp4（講座サイト用。字幕オンのときにこちらを流すので、全画面でも字幕が見える）
 # CONCURRENCY=12 のように渡すと、Remotion の並列数を変える（既定 8。CPU のコア数より少なくする）
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ids=("$@")
-if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { LECTURES } from './content'; console.log(LECTURES.map((l) => l.id).join(' '))")"; fi
+if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { VIDEOS } from './content'; console.log(VIDEOS.map((v) => v.key).join(' '))")"; fi
 mkdir -p out/master site/media .work/render-public
 # 映像は無音で書き出すので public/（音声で 1GB 近い）は要らない。空のフォルダを渡して、一時フォルダへの複製を避ける
 LIMIT=$((14500 * 1024))
@@ -33,6 +34,8 @@ site_encode() {
 CHUNK=${CHUNK:-0}
 for id in "${ids[@]}"; do
   start=$(date +%s)
+  # Remotion のコンポジションの ID はドットを使えない（P01.en → P01-en）
+  comp=${id//./-}
   rm -f "out/master/$id.mp4"
   if [ "$CHUNK" -gt 0 ]; then
     total=$(python3 -c "import json; print(json.load(open('src/generated/timeline.json'))['$id']['durationInFrames'])")
@@ -43,7 +46,7 @@ for id in "${ids[@]}"; do
     while [ "$s" -lt "$total" ]; do
       e=$((s + CHUNK - 1))
       if [ "$e" -ge "$total" ]; then e=$((total - 1)); fi
-      npx remotion render src/index.ts "$id" "out/master/$id.part$k.mp4" --frames="$s-$e" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
+      npx remotion render src/index.ts "$comp" "out/master/$id.part$k.mp4" --frames="$s-$e" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
       if [ ! -s "out/master/$id.part$k.mp4" ]; then echo "$id: 映像の書き出しに失敗しました（$s-$e）" >&2; exit 1; fi
       echo "file '$id.part$k.mp4'" >> "$list"
       s=$((e + 1))
@@ -52,7 +55,7 @@ for id in "${ids[@]}"; do
     ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i "$list" -c copy "out/master/$id.mp4"
     rm -f "out/master/$id".part*.mp4 "$list"
   else
-    npx remotion render src/index.ts "$id" "out/master/$id.mp4" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
+    npx remotion render src/index.ts "$comp" "out/master/$id.mp4" --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
   fi
   if [ ! -s "out/master/$id.mp4" ]; then echo "$id: 映像の書き出しに失敗しました" >&2; exit 1; fi
   site_encode "out/master/$id.mp4" "site/media/$id.mp4" "$id"
@@ -60,7 +63,7 @@ for id in "${ids[@]}"; do
   echo "$id: $(( $(date +%s) - start )) 秒  crf=$crf  $(( size / 1024 / 1024 )) MB"
   if [ "${CAPTIONS:-0}" = "1" ]; then
     mkdir -p out/captioned
-    npx remotion render src/index.ts "$id" "out/master/$id.cc.mp4" --props='{"captions":true}' --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
+    npx remotion render src/index.ts "$comp" "out/master/$id.cc.mp4" --props='{"captions":true}' --public-dir=.work/render-public --muted --codec=h264 --crf=16 --concurrency=${CONCURRENCY:-8} --log=error 2>&1 | grep -v "network requests" || true
     if [ ! -s "out/master/$id.cc.mp4" ]; then echo "$id: 字幕つきの映像の書き出しに失敗しました" >&2; exit 1; fi
     ffmpeg -y -hide_banner -loglevel error -i "out/master/$id.cc.mp4" -i "public/audio/mix/$id.wav" \
       -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -profile:v high -g 150 \
