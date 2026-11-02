@@ -15,6 +15,7 @@ import { INDIE_MARKETING } from './indie-marketing/course';
 import { NUDGE_COMEDY } from './nudge-comedy/course';
 import { RIVE_COMEDY } from './rive-comedy/course';
 import { PSTACK_COMEDY } from './pstack-comedy/course';
+import { SUPERAGENT_COMEDY } from './superagent-comedy/course';
 import { NUDGE_PRODUCT } from './nudge-product/course';
 import { UIUX_ENGINEERS } from './uiux-engineers/course';
 import type { Course, Lecture } from './types';
@@ -40,7 +41,7 @@ export const STRIPE_BILLING: Course = {
 };
 
 /** 講座を足すときは、content/<講座 ID>/ に台本を置いてここに並べる */
-export const COURSES: Course[] = [STRIPE_BILLING, NUDGE_PRODUCT, UIUX_ENGINEERS, INDIE_MARKETING, NUDGE_COMEDY, RIVE_COMEDY, PSTACK_COMEDY];
+export const COURSES: Course[] = [STRIPE_BILLING, NUDGE_PRODUCT, UIUX_ENGINEERS, INDIE_MARKETING, NUDGE_COMEDY, RIVE_COMEDY, PSTACK_COMEDY, SUPERAGENT_COMEDY];
 
 /** 動画を作るときは、全講座のレクチャーをまとめて扱う（ID は講座をまたいで重ならないようにする） */
 export const LECTURES: Lecture[] = COURSES.flatMap((c) => c.lectures);

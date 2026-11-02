@@ -73,7 +73,7 @@ const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${St
 const describe = (s: Scene): string => {
   switch (s.kind) {
     case 'opening':
-      return `${s.section}／タイトル「${s.title.replace(/　/g, ' ')}」／${s.subtitle}`;
+      return [s.section, `タイトル「${s.title.replace(/　/g, ' ')}」`, s.subtitle].filter(Boolean).join('／');
     case 'goals':
       return s.items.map((x, i) => `${i + 1}. ${x.text}`).join(' ');
     case 'points':

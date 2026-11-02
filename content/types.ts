@@ -121,9 +121,11 @@ type Base = {
 
 export type OpeningScene = Base & {
   kind: 'opening';
-  section: string;
+  /** タイトルの上の札。省略すると出さない */
+  section?: string;
   title: string;
-  subtitle: string;
+  /** タイトルの下の一文。省略すると出さない */
+  subtitle?: string;
 };
 
 export type GoalsScene = Base & {
@@ -584,6 +586,8 @@ export type Course = {
   cast?: Partial<Record<VoiceId, { name: string; tone: Tone }>>;
   /** 1 本の動画の呼び名（動画の見出しとサイトに出す）。既定は LECTURE。章立ての講座は CHAPTER */
   unitLabel?: 'LECTURE' | 'CHAPTER';
+  /** 1 本だけで完結する解説動画。動画に番号（オープニングの 01 と 01 / 1、見出しの上の LECTURE 01、クイズの 1 / 1、終わりの 1 / 1 完了）を出さない */
+  standalone?: boolean;
   /** 講座の設計（全体の目次・到達目標・動画構成）。まだ作っていない章もサイトのカリキュラムに「準備中」で出る */
   syllabus?: Syllabus;
   /** 出典の一覧（教材と台本から id で引く） */
