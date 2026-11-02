@@ -30,7 +30,7 @@ bun scripts/check_content.ts --self-test
 bun scripts/check_content.ts
 ```
 
-- 動画の見た目を変えたら `node scripts/stills.mjs <ID>` で静止画を見る
+- 動画の見た目を変えたら `node scripts/stills.ts <ID>` で静止画を見る
 - 台詞を変えたら synth → mix → render の順に作り直し、`.work/kana/<id>.txt` の読みを見る
 - 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
 - 動画（`site/media/`）と生成物はコミットしない

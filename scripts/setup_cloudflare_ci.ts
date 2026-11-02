@@ -41,8 +41,10 @@ export async function registerGeneratedToken(token: { id: string; value: string 
   }
 }
 async function run(args: string[], stdin?: string) {
-  const child = Bun.spawn(args, { stdin: stdin === undefined ? 'ignore' : 'pipe', stdout: 'pipe', stderr: 'ignore', env: { ...process.env, CI: '1', CLOUDFLARE_ACCOUNT_ID: ACCOUNT } });
-  if (stdin !== undefined) { child.stdin.write(stdin); child.stdin.end(); }
+  // 標準入力はいつも pipe にし、渡す値が無いときはすぐに閉じる（stdin が条件で変わると、型の上で child.stdin が undefined になりうる）
+  const child = Bun.spawn(args, { stdin: 'pipe', stdout: 'pipe', stderr: 'ignore', env: { ...process.env, CI: '1', CLOUDFLARE_ACCOUNT_ID: ACCOUNT } });
+  if (stdin !== undefined) child.stdin.write(stdin);
+  child.stdin.end();
   const [stdout, code] = await Promise.all([new Response(child.stdout).text(), child.exited]);
   return { code, stdout };
 }

@@ -1,15 +1,17 @@
-// 確認用の静止画を書き出す（1 回だけバンドルして複数フレームを撮る）。
-//   node scripts/stills.mjs L01            # 各場面の終わり（要素が出そろった状態）
-//   node scripts/stills.mjs L01 --mid      # 各場面の中ほども
-//   node scripts/stills.mjs L01@120 L03@900 --scale=1
-//   node scripts/stills.mjs L02:3 --theme=chalkfile   # 講座のテーマの代わりに別のテーマで描く（テーマを作るとき）
-//   node scripts/stills.mjs N01 --captions            # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で描く
-//   node scripts/stills.mjs P01.en:3 P01.zh --mid     # 訳の動画（レクチャー ID.言語）
+// 確認用の静止画を書き出す（1 回だけバンドルして複数フレームを撮る）。Node が型を取り除いて、そのまま動かす。
+//   node scripts/stills.ts L01            # 各場面の終わり（要素が出そろった状態）
+//   node scripts/stills.ts L01 --mid      # 各場面の中ほども
+//   node scripts/stills.ts L01@120 L03@900 --scale=1
+//   node scripts/stills.ts L02:3 --theme=chalkfile   # 講座のテーマの代わりに別のテーマで描く（テーマを作るとき）
+//   node scripts/stills.ts N01 --captions            # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で描く
+//   node scripts/stills.ts P01.en:3 P01.zh --mid     # 訳の動画（レクチャー ID.言語）
+// Node で動かすので、型だけを読むときは import type にする（型を取り除いたあとに import が残らない）
 import { bundle } from '@remotion/bundler';
 import { renderStill, selectComposition } from '@remotion/renderer';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { LectureTimeline } from '../src/Lecture';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -21,11 +23,11 @@ const theme = themeArg ? themeArg.split('=')[1] : '';
 const captions = args.includes('--captions');
 const targets = args.filter((a) => !a.startsWith('--'));
 // L03:3,6 のように場面番号（1 始まり）で絞れる
-const parseTarget = (t) => {
+const parseTarget = (t: string) => {
   const [head, scenes] = t.split(':');
   return { head, only: scenes ? scenes.split(',').map(Number) : null };
 };
-const timeline = JSON.parse(readFileSync(path.join(ROOT, 'src/generated/timeline.json'), 'utf8'));
+const timeline = JSON.parse(readFileSync(path.join(ROOT, 'src/generated/timeline.json'), 'utf8')) as Record<string, LectureTimeline>;
 const outDir = path.join(ROOT, 'out/stills');
 mkdirSync(outDir, { recursive: true });
 
@@ -40,7 +42,7 @@ for (const t of targets) {
   // 訳の動画 P01.en のコンポジションは P01-en（content/i18n.ts の compositionId）
   const composition = await selectComposition({ serveUrl, id: id.replace(/\./g, '-'), inputProps });
   const tl = timeline[id];
-  const frames = at
+  const frames: { f: number; name: string }[] = at
     ? [{ f: Number(at), name: `f${at}` }]
     : tl.scenes.flatMap((s, i) => {
         if (only && !only.includes(i + 1)) return [];

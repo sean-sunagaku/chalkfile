@@ -156,7 +156,7 @@ const WRAP: Record<Lang, React.CSSProperties> = {
 
 /**
  * id は動画の名前（日本語は S01、訳は S01.en。content/i18n.ts の videoKey）。
- * theme を渡すと、講座のテーマの代わりにそのテーマで描く（stills.mjs --theme=… でテーマを試すとき）。
+ * theme を渡すと、講座のテーマの代わりにそのテーマで描く（stills.ts --theme=… でテーマを試すとき）。
  * captions を true にすると、台詞の字幕を焼き込む（音を出せない場所でも要点が分かる動画）。
  */
 export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string; captions?: boolean }> = ({ id, audio = false, theme, captions = false }) => {

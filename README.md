@@ -132,7 +132,7 @@ bun scripts/serve.ts                                            # 手元で見�
 - 場面だけ見たいとき: `npx remotion studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
 - 読みの確認: `synth.ts` が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
 - 音声の鍵と読みの網: `npm test` が、全台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を `tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし合わせ、変わった動画と台詞を出す。台詞・`reading.ts`・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](tests/fixtures/snapshots/README.md)）
-- 見た目の確認: `node scripts/stills.mjs L04:3 --mid` で、場面の中ほどと終わりを静止画にする
+- 見た目の確認: `node scripts/stills.ts L04:3 --mid` で、場面の中ほどと終わりを静止画にする
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`（台本と、レクチャーの `docs` に並べた公式ページで、言い回しが続けて同じところを探す。ネットにつなぐ）
 - ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
 
@@ -161,7 +161,7 @@ bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材�
 
 ```bash
 npm ci --ignore-scripts
-npm run typecheck                         # Remotion・台本と、PWA のブラウザ/worker コード
+npm run typecheck                         # Remotion・台本、PWA のブラウザ/worker コード、scripts・tests
 npm test                                  # Range の境界・保存対象の制約（動画なしで実行できる）
 bun scripts/check_content.ts --self-test
 bun scripts/check_content.ts
@@ -200,7 +200,7 @@ export const STRIPE_BILLING: Course = {
 ```
 
 - テーマを作る: `content/themes.ts` に足す（項目は `content/types.ts` の `Theme`）。地・文字・主役の色・図の 7 色・コードの色分け・背景の飾り（`chalk`・`band`・`stars`）・書体を決める
-- 書き出す前に試す: `node scripts/stills.mjs L02:3 L03:3 --theme=<id>`（講座のテーマを変えずに、そのテーマで静止画を描く）
+- 書き出す前に試す: `node scripts/stills.ts L02:3 L03:3 --theme=<id>`（講座のテーマを変えずに、そのテーマで静止画を描く）
 - 項目の意味と確かめ方は [スキルの theme.md](.claude/skills/study-video-course/references/theme.md)
 - 実在のブランドに寄せるときは、色の雰囲気までにする。テーマの名前に会社名を付けず、ロゴ・社名の書体は使わない
 
