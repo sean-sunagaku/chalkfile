@@ -373,6 +373,12 @@ for (const c of COURSES) {
 await buildPwa(SITE, DIST, brand, generatedManifests.map((m) => m.id), shellAssets);
 // GitHub Pages に Jekyll を通させない（そのまま配る）
 writeFileSync(path.join(DIST, '.nojekyll'), '');
+// 動画は /media/ の Worker で配る。静的 assets に MP4 や手元の設定を混ぜない。
+writeFileSync(path.join(DIST, '.assetsignore'), '**/*.mp4\n.*\n');
+// www の転送は zone の Redirect Rule で行う。assets の _redirects はホスト条件を受け付けない。
+rmSync(path.join(DIST, '_redirects'), { force: true });
+writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/sw.js\n  Cache-Control: no-cache\n');
+writeFileSync(path.join(DIST, '404.html'), '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></html>');
 console.log(`site/dist/index.html  講座 ${COURSES.length} つ  テーマ ${Object.keys(THEMES).length} つ`);
 
 if (missing.length) {

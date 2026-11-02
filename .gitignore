@@ -8,6 +8,11 @@ site/data/
 site/dist/
 test-results/
 playwright-report/
+.wrangler/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
 
 .DS_Store
 

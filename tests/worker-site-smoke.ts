@@ -1,0 +1,31 @@
+// wrangler dev / workers.dev / 本番の同じ静的ルートと SW scope を検証する。
+import { chromium } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { COURSES } from '../content';
+
+const base = process.argv[2] ?? 'http://127.0.0.1:8787/';
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true });
+const context = await browser.newContext();
+const page = await context.newPage();
+const violations: string[] = [];
+const errors: string[] = [];
+page.on('pageerror', (e) => errors.push(e.message));
+await context.exposeFunction('recordCspViolation', (directive: string) => violations.push(directive));
+await context.addInitScript(() => document.addEventListener('securitypolicyviolation', (e) => {
+  void (window as unknown as { recordCspViolation(d: string): Promise<void> }).recordCspViolation(e.violatedDirective);
+}));
+const pages: { path: string; status: number | undefined }[] = [];
+try {
+  for (const route of ['', ...COURSES.map((c) => `${c.id}/`)]) {
+    const response = await page.goto(new URL(route, base).href);
+    pages.push({ path: route || '/', status: response?.status() });
+    if (response?.status() !== 200 || !await page.locator('h1').isVisible()) throw new Error(`ページを表示できません: ${route}`);
+  }
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+  const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+  if (new URL(scope).pathname !== '/') throw new Error('SW の scope が / ではありません');
+  if (violations.length || errors.length) throw new Error('CSP またはページのエラーがあります');
+  mkdirSync('.work/evidence', { recursive: true });
+  writeFileSync('.work/evidence/site-smoke.json', JSON.stringify({ base, pages, scope, violations, errors }, null, 2));
+  console.log(`全 ${pages.length} ページ 200・CSP/JS エラーなし・SW scope /`);
+} finally { await browser.close(); }

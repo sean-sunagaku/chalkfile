@@ -1,7 +1,7 @@
 // PWA の静的ファイルと、テーマの色から作る自前のアイコン。外部画像は使わない。
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Theme } from '../content/types';
 import type { Asset } from '../site/offline-shared';
@@ -61,8 +61,11 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
   writeFileSync(path.join(dist, 'manifest.webmanifest'), manifest);
   shell.push(asset('manifest.webmanifest', Buffer.from(manifest), 'application/manifest+json'));
   const offline = readFileSync(path.join(site, 'offline.html'));
-  writeFileSync(path.join(dist, 'offline.html'), offline);
-  shell.push(asset('offline.html', offline, 'text/html'));
+  // Workers assets は .html を拡張子なしへ転送する。検証取得は redirect:error なので正規の /offline/ を使う。
+  rmSync(path.join(dist, 'offline.html'), { force: true });
+  mkdirSync(path.join(dist, 'offline'), { recursive: true });
+  writeFileSync(path.join(dist, 'offline/index.html'), offline);
+  shell.push(asset('offline/', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
   const result = await Bun.build({
     entrypoints: [path.join(site, 'sw.ts')], target: 'browser',
