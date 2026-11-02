@@ -1,0 +1,27 @@
+{
+  "counts": {
+    "byLang": {
+      "en": {
+        "lines": 761,
+        "videos": 9
+      },
+      "ja": {
+        "lines": 2838,
+        "videos": 48
+      },
+      "zh": {
+        "lines": 756,
+        "videos": 9
+      }
+    },
+    "keys": 4213,
+    "lines": 4355,
+    "videos": 66
+  },
+  "hashes": {
+    "credits": "5120922b554f6b781757095f37e1dd97be3700d2dffcf8e40b7e2d0943e4fe70",
+    "fingerprints": "ff2934d4bf12ab1aed3e05874643a55d440c65aabb4cc86d452005347099a759",
+    "keys": "560847007fe9a214b82abd9dc432e72b5e4375791f187bef785273b8bb83b58e",
+    "speech": "e2f1383b6056b9b16a374ab2482940c0d254f91bd1e72e2c0700cb2a38dcf5f4"
+  }
+}
