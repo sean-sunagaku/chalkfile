@@ -344,6 +344,20 @@ test('読めない保存の記録は、動画を消さずに隔離して保存�
   expect(await marks()).toEqual([]);
 });
 
+test('オンラインで存在しない URL を開くと、保存されていないとは言わずに 404 のページを返す。オフラインは今までどおり', async ({ page, context }) => {
+  await ready(page);
+  const online = await page.goto('/no-such-course/');
+  expect(online!.fromServiceWorker()).toBeTruthy();
+  expect(online!.status()).toBe(404);
+  await expect(page.getByRole('heading', { name: '教材が見つかりません' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'この教材は保存されていません' })).toHaveCount(0);
+  await context.setOffline(true);
+  const offline = await page.reload();
+  expect(offline!.status()).toBe(503);
+  await expect(page.getByRole('heading', { name: 'この教材は保存されていません' })).toBeVisible();
+  await context.setOffline(false);
+});
+
 test('外部動画を指す教材情報は拒否し、取得しない', async ({ page, request }) => {
   const requests: string[] = [];
   page.context().on('request', (r) => { if (r.url().includes('example.com')) requests.push(r.url()); });

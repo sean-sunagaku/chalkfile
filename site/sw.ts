@@ -398,7 +398,8 @@ async function route(req: Request): Promise<Response> {
   }
   try {
     const response = await fetch(req);
-    if (response.ok || req.mode !== 'navigate') return response;
+    // 存在しない URL・消えた講座の 404 などの 4xx（と転送）は、そのまま返す。保存した画面に頼るのは、通信の失敗と 5xx のときだけ
+    if (response.status < 500 || req.mode !== 'navigate') return response;
   } catch { /* オフラインでは選択して保存した教材と起動用ページだけ返す */ }
   const shell = await caches.open(shellName);
   // 動画のサイトの URL に、一覧のページを返さない（保存していない訳の動画とポスターは、下の 503 になる）
