@@ -14,7 +14,7 @@ description: 共通プロンプト（実務に使える講座を、講師兼動�
 ## 0. 準備（初めての手元）
 
 ```bash
-git clone https://github.com/sean-sunagaku/chalkfile.git && cd chalkfile && npm install
+git clone https://github.com/sean-sunagaku/chalkfile.git && cd chalkfile && npm ci --ignore-scripts
 /Applications/VOICEVOX.app/Contents/Resources/vv-engine/run --host 127.0.0.1 --port 50021   # 別の端末で
 uv run --with numpy --with scipy python scripts/build_music.py
 node scripts/stills.mjs L01:1   # 初回は Chrome Headless Shell を落とす。Node 26 で止まったら lessons.md の手順で展開
@@ -63,7 +63,9 @@ bun scripts/export_deliverables.ts <ID> …          # out/deliverables/（完�
 
 書き出す前に `bun scripts/materials.ts check` で、台本の全部の台詞の声が手元にあるかを見る（`reading.ts` を直した後に合成し直していない章が見つかる）。`reading.ts` は全講座で共有なので、直したら全講座の台詞の読みが変わらないかを比べ、変わった章（ほかの講座も）を合成・書き出し直す。
 
-`syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。作業が長くなったら、PR を更新する前に `origin/main` を取り込む（別の PR がマージされていることがある）。公開はマージ後に、最新の main で `bash scripts/deploy_pages.sh`（gh-pages を丸ごと置き換えるので、公開の許可をユーザーにもらい、`git log -1 origin/gh-pages` で公開した rev を確かめる）。台詞の声を作ったら `bun scripts/materials.ts push` で素材のブランチも置き換える（VOICEVOX の無い手元でも作り直せるように。README の「素材から作り直す」）。
+`syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。作業が長くなったら、PR を更新する前に `origin/main` を取り込む（別の PR がマージされていることがある）。台詞の声を作ったら `bun scripts/materials.ts push` で素材のブランチも置き換える（VOICEVOX の無い手元でも作り直せるように。README の「素材から作り直す」）。
+
+公開は README の「[公開（Workers / Releases）](../../../README.md#公開workers--releases)」に従う（main に入ると Actions が本番に出すので、マージの前に公開の許可をユーザーにもらう）。
 
 ## 守ること
 
