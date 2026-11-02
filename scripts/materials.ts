@@ -1,7 +1,7 @@
 // 動画の素材（台詞の音声と読み・BGM とジングル・効果音）を、素材だけを置くブランチ `materials` と出し入れする。
 // 素材があれば、台詞を変えていない章は VOICEVOX・Kokoro なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せる。
 // 台詞の音声は、日本語（VOICEVOX）と訳の言語（Kokoro）のものを、講座ごとのフォルダにまとめて置く（名前は文と声から決まるので重ならない）。
-//   bun scripts/materials.ts pull [講座 ID …] [--videos]   # 素材を取り出す（--videos で、公開中のサイトの動画とポスターも）
+//   bun scripts/materials.ts pull [講座 ID …] [--videos]   # 素材を取り出す（--videos で Releases の動画も）
 //   bun scripts/materials.ts check [講座 ID …]             # 台本の全部の台詞の音声が手元にあるか
 //   bun scripts/materials.ts push [--message 文]           # 手元の素材で `materials` ブランチを作り直して push する
 // 素材は main の履歴に入れない。親の無い 1 コミットのブランチに置き、push のたびに置き換える（gh-pages と同じ考え方）。
@@ -12,6 +12,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
+import { pullMedia } from './media';
 import { LANGS, type Lang } from '../content/i18n';
 import type { Course } from '../content/types';
 import { KOKORO, speechIn, ttsKeyIn, VOICES } from './voices';
@@ -20,7 +21,6 @@ const ROOT = path.resolve(import.meta.dir, '..');
 const BRANCH = 'materials';
 const REMOTE = process.env.MATERIALS_REMOTE ?? 'origin';
 const TRACKING = `refs/remotes/${REMOTE}/${BRANCH}`;
-const PAGES = `refs/remotes/${REMOTE}/gh-pages`;
 const TTS = '.work/tts';
 /** BGM・ジングル・効果音（scripts/build_music.py の出力）と、ブランチの中の置き場所 */
 const AUDIO_DIRS: [local: string, inBranch: string][] = [
@@ -123,7 +123,7 @@ ${perCourse.map((p) => `| \`tts/${p.course.id}/\` | ${p.course.title}（${p.cour
 \`\`\`bash
 bun scripts/materials.ts pull                    # 全部の講座の素材を .work/tts/ と public/audio/ に取り出す
 bun scripts/materials.ts pull nudge-product      # 1 つの講座だけ
-bun scripts/materials.ts pull --videos           # 公開中のサイト（gh-pages）の動画とポスターも site/media/ に取り出す
+bun scripts/materials.ts pull --videos           # Releases の動画も site/media/ に取り出す（ポスターは site/posters/）
 \`\`\`
 
 ## クレジットと利用規約
@@ -267,45 +267,8 @@ const pull = async (courses: Course[], videos: boolean) => {
     rmSync(tmp, { recursive: true, force: true });
   }
 
-  if (videos) {
-    git(['fetch', '--quiet', REMOTE, `+refs/heads/gh-pages:${PAGES}`]);
-    const media = path.join(ROOT, 'site/media');
-    mkdirSync(media, { recursive: true });
-    const vtmp = mkdtempSync(path.join(tmpdir(), 'chalkfile-videos-'));
-    try {
-      for (const c of courses) {
-        if (!listIn(PAGES, `${c.id}/media`).length) {
-          console.warn(`${c.id}: 公開中のサイトに動画が無い（bash scripts/render.sh で書き出す）`);
-          continue;
-        }
-        extract(PAGES, [`${c.id}/media`], vtmp);
-        const files = readdirSync(path.join(vtmp, c.id, 'media'));
-        for (const name of files) copyFileSync(path.join(vtmp, c.id, 'media', name), path.join(media, name));
-        console.log(`${c.id}: 公開中のサイトから動画とポスター ${files.length} 個を site/media/ に取り出した`);
-      }
-      console.log(`（gh-pages @ ${git(['log', '-1', '--format=%h %s', PAGES])}）`);
-      // 訳の言語の動画は、言語ごとの動画のサイト（site/config.json の media の repo の gh-pages）から取り出す
-      const config = JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')) as { media?: Record<string, { repo: string }> };
-      for (const [lang, m] of Object.entries(config.media ?? {})) {
-        const ref = `refs/remotes/media-${lang}/gh-pages`;
-        try {
-          git(['fetch', '--quiet', m.repo, `+refs/heads/gh-pages:${ref}`], { quiet: true });
-        } catch {
-          console.warn(`${lang}: 動画のサイト（${m.repo}）の gh-pages を取れない（まだ公開していない）`);
-          continue;
-        }
-        for (const c of courses) {
-          if (!listIn(ref, c.id).length) continue;
-          extract(ref, [c.id], vtmp);
-          const files = readdirSync(path.join(vtmp, c.id));
-          for (const name of files) copyFileSync(path.join(vtmp, c.id, name), path.join(media, name));
-          console.log(`${lang}/${c.id}: 動画のサイトから動画とポスター ${files.length} 個を site/media/ に取り出した`);
-        }
-      }
-    } finally {
-      rmSync(vtmp, { recursive: true, force: true });
-    }
-  }
+  if (videos) await pullMedia(courses.map((c) => c.id));
+
   console.log(
     videos
       ? '次は bun scripts/synth.ts（VOICEVOX なしで時刻と字幕を作る）→ bun scripts/build_site.ts'

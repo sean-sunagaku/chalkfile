@@ -1,9 +1,9 @@
 // サイトは assets が先に配信する。Worker を先に通すのは /media/* だけ。
 import manifest from '../../site/media-manifest.json';
-import { validateMediaManifest } from '../../site/media-shared';
+import { allMediaEntries, validateMediaManifest } from '../../site/media-shared';
 import { createMediaHandler } from './media';
 export type Env = { ASSETS: { fetch(request: Request): Promise<Response> } };
-const media = createMediaHandler(validateMediaManifest(manifest).entries);
+const media = createMediaHandler(allMediaEntries(validateMediaManifest(manifest)));
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

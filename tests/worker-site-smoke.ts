@@ -18,11 +18,11 @@ await context.exposeFunction('recordCspViolation', (directive: string, blocked: 
 await context.addInitScript(() => document.addEventListener('securitypolicyviolation', (e) => {
   void (window as unknown as { recordCspViolation(d: string, b: string): Promise<void> }).recordCspViolation(e.violatedDirective, e.blockedURI.split('?')[0]);
 }));
-const pages: { path: string; status: number | undefined }[] = [];
+const pages: { path: string; status: number | undefined; cacheControl?: string; transformed?: boolean }[] = [];
 try {
   for (const route of ['', ...COURSES.map((c) => `${c.id}/`)]) {
     const response = await page.goto(new URL(route, base).href, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    pages.push({ path: route || '/', status: response?.status() });
+    pages.push({ path: route || '/', status: response?.status(), cacheControl: response?.headers()['cache-control'], transformed: (await response?.text())?.includes('static.cloudflareinsights.com/beacon') });
     if (response?.status() !== 200 || !await page.locator('h1').isVisible()) throw new Error(`ページを表示できません: ${route}`);
   }
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
@@ -30,6 +30,6 @@ try {
   if (new URL(scope).pathname !== '/') throw new Error('SW の scope が / ではありません');
   mkdirSync('.work/evidence', { recursive: true });
   writeFileSync('.work/evidence/site-smoke.json', JSON.stringify({ base, resolveIp, pages, scope, violations, errors }, null, 2));
-  if (violations.length || errors.length) { console.error({ violations, errors }); throw new Error('CSP またはページのエラーがあります'); }
+  if (violations.length || errors.length) { console.error({ pages, violations, errors }); throw new Error('CSP またはページのエラーがあります'); }
   console.log(`全 ${pages.length} ページ 200・CSP/JS エラーなし・SW scope /`);
 } finally { await browser.close(); }

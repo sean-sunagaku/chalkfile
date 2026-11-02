@@ -10,7 +10,8 @@ export type MediaEntry = {
   sha256: string;
   tag: string;
 };
-export type MediaManifest = { schema: 1; entries: MediaEntry[] };
+export type MediaManifest = { schema: 1; entries: MediaEntry[]; retained?: MediaEntry[] };
+export const allMediaEntries = (manifest: MediaManifest) => [...manifest.entries, ...(manifest.retained ?? [])];
 const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const LANG = /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
 const HASH = /^[a-f0-9]{64}$/;
@@ -24,18 +25,21 @@ export const releaseUrl = (entry: MediaEntry) =>
 
 export function validateMediaManifest(value: unknown): MediaManifest {
   const m = value as MediaManifest;
-  if (!m || m.schema !== 1 || !Array.isArray(m.entries) || !m.entries.length || m.entries.length > 20000) throw new Error('動画マニフェストの形式が不正です。');
+  if (!m || m.schema !== 1 || !Array.isArray(m.entries) || !m.entries.length ||
+      (m.retained !== undefined && !Array.isArray(m.retained)) || allMediaEntries(m).length > 20000) throw new Error('動画マニフェストの形式が不正です。');
   const keys = new Set<string>();
-  for (const e of m.entries) {
+  const paths = new Set<string>();
+  for (const e of allMediaEntries(m)) {
     if (!e || !LANG.test(e.lang) || !ID.test(e.course) || !ID.test(e.lecture) ||
         !['standard', 'captioned'].includes(e.kind) || !HASH.test(e.sha256) ||
         !Number.isSafeInteger(e.bytes) || e.bytes <= 0 || e.bytes >= 2 * 1024 ** 3 ||
-        e.tag !== `media-${e.lang}-${e.course}` || e.filename !== mediaFilename(e) || keys.has(mediaKey(e))) {
+        e.tag !== `media-${e.lang}-${e.course}` || e.filename !== mediaFilename(e) || paths.has(mediaPath(e)) || (m.entries.includes(e) && keys.has(mediaKey(e)))) {
       throw new Error('動画の名前・サイズ・ハッシュ・タグが不正か重複しています。');
     }
     keys.add(mediaKey(e));
+    paths.add(mediaPath(e));
   }
-  for (const e of m.entries) if (e.kind === 'captioned' && !keys.has(mediaKey({ ...e, kind: 'standard' }))) {
+  for (const e of allMediaEntries(m)) if (e.kind === 'captioned' && !keys.has(mediaKey({ ...e, kind: 'standard' }))) {
     throw new Error('字幕焼き込み版の通常動画がありません。');
   }
   return m;

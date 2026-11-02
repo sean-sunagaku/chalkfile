@@ -30,6 +30,7 @@ const SITE = path.join(ROOT, 'site');
 const DIST = path.join(SITE, 'dist');
 const DIST_MEDIA = path.join(SITE, 'dist-media');
 const MEDIA = path.join(SITE, 'media');
+const POSTERS = path.join(SITE, 'posters');
 const ASSETS = path.join(SITE, 'assets');
 
 /** media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ） */
@@ -201,6 +202,9 @@ if (problems.length) {
 
 /** ページの中のスクリプト（<script> だけのもの）のハッシュで CSP を作る。ほかのスクリプトは動かない */
 const csp = (html: string) => {
+  // HTML は無料の assets のまま返し、www は本文の小さなスクリプトで同じ道筋の apex へ移す。
+  // http:// や任意の外部hostを移行先に使わない。query/hashも保持する。
+  html = html.replace('__CSP__', `__CSP__<script>if(location.hostname==='www.chalkfile.com'){location.replace('https://chalkfile.com'+location.pathname+location.search+location.hash);}</script>`);
   const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`);
   const policy = [
     "default-src 'self'",
@@ -302,7 +306,7 @@ for (const lang of SITE_LANGS) {
       const cc = videoFor(lang, course.id, lec.id, 'captioned', false);
       if (cc) videos.push(cc);
       const file = `${lec.key}.jpg`;
-      const from = path.join(MEDIA, file);
+      const from = existsSync(path.join(POSTERS, file)) ? path.join(POSTERS, file) : path.join(MEDIA, file);
       if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: 'image/jpeg' });
       else missing.push(file);
     }
@@ -355,7 +359,7 @@ for (const lang of SITE_LANGS) {
     const mediaOut = path.join(out, 'media');
     rmSync(mediaOut, { recursive: true, force: true });
     mkdirSync(mediaOut, { recursive: true });
-    for (const f of mediaFiles) place(path.join(MEDIA, f.file), path.join(mediaOut, f.file));
+    for (const f of mediaFiles) place(existsSync(path.join(POSTERS, f.file)) ? path.join(POSTERS, f.file) : path.join(MEDIA, f.file), path.join(mediaOut, f.file));
     // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
     const manifestPath = path.join(out, 'offline-manifest.json');
     rmSync(manifestPath, { force: true });
@@ -550,8 +554,9 @@ writeFileSync(path.join(DIST, '.nojekyll'), '');
 // MP4 とローカル設定は静的 assets に送らない。
 writeFileSync(path.join(DIST, '.assetsignore'), '**/*.mp4\n.*\n');
 rmSync(path.join(DIST, '_redirects'), { force: true });
-writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/sw.js\n  Cache-Control: no-cache\n');
-writeFileSync(path.join(DIST, '404.html'), '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></html>');
+// 保存用SHA-256とCSPを保つため、proxyによるHTML/画像の変更と自動beacon挿入を止める。
+writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n/sw.js\n  Cache-Control: no-cache, no-transform\n');
+writeFileSync(path.join(DIST, '404.html'), csp('<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title></head><body><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></body></html>'));
 
 // 静的 assets の制限は動画の総量から分けて点検する。
 const emitted: { name: string; bytes: number }[] = [];
