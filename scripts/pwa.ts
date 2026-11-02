@@ -4,6 +4,7 @@ import { deflateSync } from 'node:zlib';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Theme } from '../content/types';
+import { fill, SITE_TEXT } from '../site/i18n';
 import type { Asset } from '../site/offline-shared';
 
 export const hash = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
@@ -44,7 +45,8 @@ export async function bundle(file: string): Promise<string> {
   return result.outputs[0].text();
 }
 
-export async function buildPwa(site: string, dist: string, brand: Theme, courses: string[], shell: Asset[]) {
+/** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイトのパス（言語 → /chalkfile-media-en/ など） */
+export async function buildPwa(site: string, dist: string, brand: Theme, courses: string[], shell: Asset[], mediaRoots: Record<string, string> = {}) {
   mkdirSync(path.join(dist, 'icons'), { recursive: true });
   for (const size of [180, 192, 512]) {
     const bytes = icon(size, brand);
@@ -60,13 +62,17 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
   }, null, 2);
   writeFileSync(path.join(dist, 'manifest.webmanifest'), manifest);
   shell.push(asset('manifest.webmanifest', Buffer.from(manifest), 'application/manifest+json'));
-  const offline = readFileSync(path.join(site, 'offline.html'));
+  // 未保存のページは 1 つで全部の言語を並べる（{{ja.key}} を site/i18n.ts の文字にする。HTML として出すのでエスケープする）
+  const esc = (x: string) => x.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+  const offline = Buffer.from(
+    readFileSync(path.join(site, 'offline.html'), 'utf8').replace(/\{\{(ja|en|zh)\.(\w+)\}\}/g, (_, lang: 'ja' | 'en' | 'zh', key: keyof (typeof SITE_TEXT)['ja']) => esc(fill(SITE_TEXT[lang][key]))),
+  );
   writeFileSync(path.join(dist, 'offline.html'), offline);
   shell.push(asset('offline.html', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
   const result = await Bun.build({
     entrypoints: [path.join(site, 'sw.ts')], target: 'browser',
-    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell }) },
+    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));
   writeFileSync(path.join(dist, 'sw.js'), await result.outputs[0].text());

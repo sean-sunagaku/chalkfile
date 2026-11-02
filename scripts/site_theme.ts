@@ -1,5 +1,7 @@
 // 講座のテーマ（content/themes.ts）から、講座サイトの書体の読み込みと色の決まり（CSS）を作る。
 // 動画（src/theme.ts）と同じテーマの値から作るので、動画とサイトのトンマナがそろう。
+import type { Lang } from '../content/i18n';
+import { fontsFor } from '../content/themes';
 import type { FontKey, Theme } from '../content/types';
 
 const rgb = (hex: string) => {
@@ -17,14 +19,21 @@ const FONT: Record<FontKey, { family: string; query: string }> = {
   'zen-maru': { family: '"Zen Maru Gothic"', query: 'Zen+Maru+Gothic:wght@500;700;900' },
   inter: { family: '"Inter"', query: 'Inter:wght@400;500;600;700;800' },
   noto: { family: '"Noto Sans JP"', query: 'Noto+Sans+JP:wght@400;500;700;900' },
+  'noto-sc': { family: '"Noto Sans SC"', query: 'Noto+Sans+SC:wght@400;500;700;900' },
 };
 
-export const fontLink = (t: Theme) =>
-  `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${[...t.fonts.map((f) => FONT[f].query), 'JetBrains+Mono:wght@500;700']
+export const fontLink = (t: Theme, lang: Lang = 'ja') =>
+  `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${[...fontsFor(t, lang).map((f) => FONT[f].query), 'JetBrains+Mono:wght@500;700']
     .map((q) => `family=${q}`)
     .join('&')}&display=swap">`;
 
-const fontBody = (t: Theme) => [...t.fonts.map((f) => FONT[f].family), '"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"', 'system-ui', 'sans-serif'].join(', ');
+/** 書体が読めないときの、端末の書体（中国語は簡体字の書体、ほかは日本語の書体） */
+const SYSTEM: Record<Lang, string[]> = {
+  ja: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"'],
+  en: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"'],
+  zh: ['"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"'],
+};
+const fontBody = (t: Theme, lang: Lang) => [...fontsFor(t, lang).map((f) => FONT[f].family), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
 
 /** 背景の飾り（動画の decor と同じ考え方） */
 const decorCss = (t: Theme) => {
@@ -54,7 +63,7 @@ const decorCss = (t: Theme) => {
 .decor { display: none; }`;
 };
 
-export const themeCss = (t: Theme) => {
+export const themeCss = (t: Theme, lang: Lang = 'ja') => {
   const c = t.color;
   const light = t.scheme === 'light';
   // 明るい地では、図の色を文字に使うと薄いので、見出しの色を少し混ぜて読める濃さにする
@@ -85,7 +94,7 @@ export const themeCss = (t: Theme) => {
     '--shadow': t.shadow,
     '--stage': c.code,
     '--radius': `${Math.min(t.radius, 18)}px`,
-    '--font-body': fontBody(t),
+    '--font-body': fontBody(t, lang),
     '--font-mono': '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace',
   };
   return `:root {

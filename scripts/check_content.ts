@@ -3,7 +3,7 @@
 //   bun scripts/check_content.ts --self-test  # 見つけるべき例を見つけられるかを試す（この点検そのものの点検）
 //
 // 見るもの
-//   1. 台本（content/ の講座）の全部の文字
+//   1. 台本（content/ の講座。訳の講座も）の全部の文字。訳の講座に残った日本語（訳し残し）も止める
 //      - AI への指示文（プロンプトインジェクション）: 「前の指示を無視して」「ignore previous instructions」など
 //      - HTML・スクリプト・javascript: のリンク（サイトに出る文字。コードの場面と端末の場面は除く）
 //      - 見えない文字（ゼロ幅・向きを変える制御文字）、制御文字
@@ -128,11 +128,23 @@ const walk = (v: unknown, where: string, site: boolean, out: Finding[], key = ''
 };
 
 const checkContent = async (out: Finding[]) => {
-  const { COURSES } = await import(path.join(ROOT, 'content/index.ts'));
-  for (const c of COURSES) {
-    const { lectures, ...rest } = c;
-    walk(rest, c.id, true, out);
-    for (const lec of lectures) walk(lec, `${c.id}/${lec.id}`, true, out);
+  const { COURSES, coursesIn } = await import(path.join(ROOT, 'content/index.ts'));
+  const { LANGS, TRANSLATED_LANGS, untranslated } = await import(path.join(ROOT, 'content/i18n.ts'));
+  // 日本語の台本と、訳の講座（日本語の台本に訳を重ねたもの）の全部の文字
+  for (const lang of LANGS) {
+    for (const c of coursesIn(lang)) {
+      const { lectures, ...rest } = c;
+      const at = lang === 'ja' ? c.id : `${lang}/${c.id}`;
+      walk(rest, at, true, out);
+      for (const lec of lectures) walk(lec, `${at}/${lec.id}`, true, out);
+    }
+  }
+  // 訳し残し（訳の講座に残った日本語の文字）は止める
+  for (const lang of TRANSLATED_LANGS) for (const c of coursesIn(lang)) for (const u of untranslated(c, lang, COURSES.find((x: { id: string }) => x.id === c.id))) out.push({ level: 'error', where: u.split(':')[0], what: '訳し残し（日本語のまま）', sample: u.slice(u.indexOf(':') + 2) });
+  // 訳したあとに日本語の台本が変わった訳は、注意として出す（bun scripts/i18n.ts status で見直して stamp）
+  const { translationRows } = await import(path.join(ROOT, 'scripts/i18n.ts'));
+  for (const r of translationRows() as { state: string; file: string; id: string; lang: string }[]) {
+    if (r.state === 'stale') out.push({ level: 'warn', where: r.file, what: `訳のあとで日本語の台本（${r.id}）が変わった。訳を見直して bun scripts/i18n.ts stamp ${r.id}.${r.lang}`, sample: '' });
   }
 };
 

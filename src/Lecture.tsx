@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
-import { courseOf, LECTURES } from '../content';
+import { videoOf } from '../content';
+import { LANG_INFO, type Lang } from '../content/i18n';
 import { themeOf } from '../content/themes';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
@@ -146,34 +147,41 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
   );
 };
 
+/** 言語ごとの折り返し。日本語は文節で（「飛べ／る」のような割れを防ぐ）、英語は単語で、中国語は句読点を行頭に置かない */
+const WRAP: Record<Lang, React.CSSProperties> = {
+  ja: { wordBreak: 'auto-phrase' as React.CSSProperties['wordBreak'] },
+  en: { wordBreak: 'normal', overflowWrap: 'break-word' },
+  zh: { wordBreak: 'normal', lineBreak: 'strict' },
+};
+
 /**
+ * id は動画の名前（日本語は S01、訳は S01.en。content/i18n.ts の videoKey）。
  * theme を渡すと、講座のテーマの代わりにそのテーマで描く（stills.mjs --theme=… でテーマを試すとき）。
- * captions を true にすると、日本語の字幕を焼き込む（音を出せない場所でも要点が分かる動画）。
+ * captions を true にすると、台詞の字幕を焼き込む（音を出せない場所でも要点が分かる動画）。
  */
 export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string; captions?: boolean }> = ({ id, audio = false, theme, captions = false }) => {
-  const lecture = LECTURES.find((l) => l.id === id)!;
+  const { lecture, course, lang } = videoOf(id);
   const tl = TIMELINE[id];
-  // 子の部品より先に、この動画のテーマの色と書体に差し替える
-  applyTheme(themeOf(theme || courseOf(id).theme));
+  // 子の部品より先に、この動画のテーマの色と書体（言語に合わせる）に差し替える
+  applyTheme(themeOf(theme || course.theme), true, lang);
   const scenes = lecture.scenes.map((s, i) => {
     const st = tl.scenes[i];
     return (
       <Sequence key={i} from={st.start} durationInFrames={st.duration} name={`${i + 1} ${s.kind}`}>
-        <SceneProvider value={{ ...st, scene: s, lecture, index: i }}>
+        <SceneProvider value={{ ...st, scene: s, lecture, index: i, course, lang }}>
           <SceneFrame s={s} duration={st.duration} caution={lecture.caution} />
         </SceneProvider>
       </Sequence>
     );
   });
-  const cast = courseOf(id).cast ?? {};
+  const cast = course.cast ?? {};
   const cues: Cue[] = captions
     ? lecture.scenes.flatMap((s, i) =>
         s.lines.map((ln, k) => ({ start: tl.scenes[i].start + tl.scenes[i].lines[k].start, end: tl.scenes[i].start + tl.scenes[i].lines[k].end, text: ln.t, who: cast[ln.v ?? 'narrator'] })),
       )
     : [];
   return (
-    // auto-phrase: 日本語を文節で折り返す（「飛べ／る」のような割れを防ぐ）
-    <AbsoluteFill lang="ja" style={{ fontFamily: SANS, wordBreak: 'auto-phrase' as React.CSSProperties['wordBreak'] }}>
+    <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>
       <Background />
       {captions ? (
         <>

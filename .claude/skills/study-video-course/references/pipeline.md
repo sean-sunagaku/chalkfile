@@ -8,7 +8,8 @@
 | bun | 1.3.6 | synth・build_site・serve |
 | uv | 0.9 | mix.py・build_music.py（numpy・scipy） |
 | ffmpeg | 8.0 | 音と映像の合わせ・ポスター |
-| VOICEVOX | 0.25 | 声（エンジンが `127.0.0.1:50021`） |
+| VOICEVOX | 0.25 | 日本語の声（エンジンが `127.0.0.1:50021`） |
+| Kokoro（`kokoro` 0.9.4・`misaki` 0.9.4） | Kokoro-82M・v1.1-zh | 英語と中国語の声（`scripts/tts_kokoro.py` を `uv run` が用意する。初回はモデルを取ってくる） |
 | Remotion | 4.0.440 | 映像 |
 
 VOICEVOX はアプリを開くか、macOS ならエンジンだけを起動する。台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出せばよい（下の「素材」）。
@@ -23,13 +24,15 @@ curl -s http://127.0.0.1:50021/version
 | コマンド | 入力 | 出力 |
 |---|---|---|
 | `uv run --with numpy --with scipy python scripts/build_music.py` | なし | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
-| `bun scripts/synth.ts [ID…]` | 台本、`reading.ts` | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`src/generated/timeline.json`、`.work/plan/`、`.work/kana/`、`site/data/` |
+| `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`src/generated/timeline.json`、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
+| `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
+| `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |
 | `uv run --with numpy --with scipy python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM | `public/audio/mix/<id>.wav` |
 | `bash scripts/render.sh [ID…]` | `src/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（15MB 以下）・`.jpg`（ポスター） |
 | `node scripts/stills.mjs <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、`site/media/`、`site/*.html`、`site/config.json` | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
-| `bash scripts/deploy_pages.sh` | `site/dist/` | gh-pages ブランチ |
+| `bash scripts/deploy_pages.sh` | `site/dist/`（`site/config.json` の `publishLangs` に訳の言語があるときは `site/dist-media/<言語>/` も） | 講座サイトの gh-pages（最新の main からだけ。いまは日本語だけ。訳の公開先は chalkfile.com の Worker に移る（[i18n.md](i18n.md)）） |
 | `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は gh-pages も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
 | `bun scripts/materials.ts push` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（親の無い 1 コミットで置き換える） |
 
@@ -82,7 +85,8 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 4. 1〜2 分待って確かめる: `curl -sI <baseUrl>` が 200、`<baseUrl><講座 ID>/media/L01.mp4` が `video/mp4`、ブラウザで再生と途中への移動
 
-- 公開は最新の main から行う。gh-pages は毎回丸ごと置き換わるので、古い main から公開すると、あとから足した講座が消える。公開の前後に `git log -1 origin/gh-pages` で「Deploy main <rev>」を見て、その rev に全講座が入っているかを確かめる
+- 公開は最新の main から行う。gh-pages は毎回丸ごと置き換わるので、古い main から公開すると、あとから足した講座が消える（`deploy_pages.sh` は HEAD が origin/main と違うと止まる）。公開の前後に `git log -1 origin/gh-pages` で「Deploy main <rev>」を見て、その rev に全講座が入っているかを確かめる
+- 訳はまだ公開しない（`publishLangs` が `["ja"]`。公開先は chalkfile.com の Worker に移る。[i18n.md](i18n.md) の「動画の置き場所と公開」）。どのサイトも 1GB を超えないように、`build_site.ts --strict` が 950MB で止める
 - 公開の前に `npm run typecheck`・`npm test`・`npm run test:browser`（実 Chrome。オフライン保存・再生。Service Worker はアプリ内のブラウザでは動かない）を流す
 - 台詞の声を作り直したら、公開と同じ時に `bun scripts/materials.ts push` で素材のブランチもそろえる
 - AI エージェントが公開するときは、マージの許可とは別に、公開（gh-pages への強制 push）の許可をユーザーにもらう
