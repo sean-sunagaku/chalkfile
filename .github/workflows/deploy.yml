@@ -35,6 +35,10 @@ jobs:
       - run: npm test
       - run: bun scripts/check_content.ts --self-test
       - run: bun scripts/check_content.ts
+      - name: 素材の可逆音声を復元するffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
       - name: 素材と講義データ
         run: |
           bun scripts/materials.ts pull
