@@ -923,7 +923,7 @@ button { font: inherit; color: inherit; }
     $("cc").hidden = !prefs.cc || burned;
     $("player").classList.toggle("cc-on", prefs.cc && !burned);
     var want = srcFor(lec);
-    $("fileDownload").href = want;
+    $("fileDownload").href = want + (want.indexOf('?') === -1 ? '?' : '&') + 'download=1';
     $("fileDownload").download = lec.id + (want === lec.video ? "" : ".captioned") + ".mp4";
   }
   function swapSource() {

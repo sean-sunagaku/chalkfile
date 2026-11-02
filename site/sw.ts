@@ -344,6 +344,8 @@ async function cachedResponse(req: Request, response: Response): Promise<Respons
  * media は動画のサイトの URL（relative は動画のサイトの中のパス）。2 文字の英小文字の講座 ID は使わない（content/index.ts）
  */
 function courseIdOf(url: URL): { id: string; relative: string; media: boolean } {
+  const hashed = /^\/media\/([a-z]{2})\/([A-Za-z0-9][A-Za-z0-9_-]*)\//.exec(url.pathname);
+  if (hashed) return { id: `${hashed[1] === 'ja' ? '' : `${hashed[1]}/`}${hashed[2]}`, relative: url.pathname.slice(1), media: true };
   for (const [lang, root] of Object.entries(mediaRoots)) {
     if (url.href.startsWith(root)) {
       const relative = url.pathname.slice(new URL(root).pathname.length);
@@ -358,6 +360,8 @@ function courseIdOf(url: URL): { id: string; relative: string; media: boolean } 
 
 async function route(req: Request): Promise<Response> {
   const url = new URL(req.url);
+  const download = url.searchParams.get('download') === '1';
+  if (download) url.searchParams.delete('download');
   const { id, relative, media } = courseIdOf(url);
   if (req.mode === 'navigate' && !media && relative && COURSE_ID.test(relative)) return Response.redirect(new URL(`${relative}/`, scope), 301);
   if (COURSE_ID.test(id)) {
@@ -367,10 +371,17 @@ async function route(req: Request): Promise<Response> {
       const file = v.manifest.files.find((f) => navigation ? f.url === `${id}/` : assetUrl(f) === url.href);
       if (file && await complete(v)) {
         const response = await (await caches.open(v.cache)).match(assetUrl(file));
-        if (response) return cachedResponse(req, response);
+        if (response) {
+          const served = await cachedResponse(req, response);
+          if (download && file.type === 'video/mp4') {
+            const name = /\/([A-Za-z0-9_-]+)(\.cc)?\.[a-f0-9]{64}\.mp4$/.exec(url.pathname);
+            if (name) served.headers.set('Content-Disposition', `attachment; filename="${name[1]}${name[2] ? '.captioned' : ''}.mp4"`);
+          }
+          return served;
+        }
       }
     }
-    if (record.versions.length && (media || relative.includes('/media/')) && url.searchParams.has('v')) {
+    if (record.versions.length && (media || relative.includes('/media/')) && (media || url.searchParams.has('v'))) {
       return new Response('この保存版の動画は利用できません。講座を再読み込みし、オンラインで保存し直してください。 / This saved video is not available. Reload the course and save it again online.', { status: 503 });
     }
   }

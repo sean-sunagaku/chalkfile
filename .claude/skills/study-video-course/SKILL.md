@@ -5,6 +5,8 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 # 勉強動画の講座を作る
 
+保存機能はルート `/` とhash付き `/media/` を使う。動画URL・通常/字幕版・保存サイズとhashを `site/media-manifest.json` から生成し、ポスターは静的assetsに残す。`build_site.ts --strict` はReleasesと手元のhashを照合する。`npm run test:browser` は `tests/browser-server.ts` の同じURLで、通信断・再起動・Range・字幕版切替・単体downloadを検証する。公開されていない言語はskipとして記録する。
+
 `/media/` の変更では `tests/worker.test.ts` を含む `npm test`、`wrangler dev` と本番の `Range: bytes=0-1` を確認する。署名付きredirect URLを保存・ログ出力しない。上流にCookieやAuthorizationを渡さず、本文はstreamのままにする。HEADではRangeを無視し、エラーはno-store。キャッシュ最適化は実測後に判断する。
 
 動画配信の正本は `site/media-manifest.json`。動画を変えたらローカルで `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。

@@ -29,6 +29,18 @@ const manifest = () => ({ schema: 1, id: 'sample', title: 'サンプル教材', 
     { url: `sample/media/S01.jpg?v=${hash}`, bytes: 20, sha256: hash, type: 'image/jpeg' },
   ] });
 const scope = 'https://example.com/chalkfile/';
+test('/media/ の通常版と字幕版を、言語・講座・本文hashが一致するときだけ保存する', () => {
+  const m = manifest();
+  m.files[1].url = `/media/ja/sample/S01.${hash}.mp4`;
+  m.files.push({ ...m.files[1], url: `/media/ja/sample/S01.cc.${hash}.mp4`, bytes: 15 });
+  m.bytes += 15;
+  expect(validateManifest(m, 'sample', 'https://example.com/').files).toHaveLength(4);
+  for (const url of [`/media/en/sample/S01.${hash}.mp4`, `/media/ja/other/S01.${hash}.mp4`, `/media/ja/sample/S01.${'b'.repeat(64)}.mp4`,
+    `/media/ja/sample/S01.${hash}.mp4?url=elsewhere`, `https://example.com/media/ja/sample/S01.${hash}.mp4`]) {
+    const bad = structuredClone(m); bad.files[1].url = url;
+    expect(() => validateManifest(bad, 'sample', 'https://example.com/')).toThrow();
+  }
+});
 test('公開用の生成ページ・動画・ポスターがそろった講座だけ保存対象にできる', () => {
   expect(validateManifest(manifest(), 'sample', scope).bytes).toBe(60);
 });

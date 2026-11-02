@@ -10,7 +10,7 @@ import { MEDIA_REPOSITORY, mediaFilename, mediaKey, validateMediaManifest, type 
 const ROOT = path.resolve(import.meta.dir, '..');
 const MANIFEST = path.join(ROOT, 'site/media-manifest.json');
 export const localMediaPath = (e: Pick<MediaEntry, 'lang' | 'lecture' | 'kind'>, root = ROOT) =>
-  path.join(root, 'site/media', `${e.lang === 'ja' ? '' : `${e.lang}/`}${e.lecture}${e.kind === 'captioned' ? '.cc' : ''}.mp4`);
+  path.join(root, 'site/media', `${e.lecture}${e.lang === 'ja' ? '' : `.${e.lang}`}${e.kind === 'captioned' ? '.cc' : ''}.mp4`);
 const digest = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex');
 export const readMediaManifest = () => validateMediaManifest(JSON.parse(readFileSync(MANIFEST, 'utf8')));
 // gh は既存の認証を内部で使う。認証ファイル・token・HTTP header を読み出したり表示したりしない。

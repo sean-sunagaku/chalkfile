@@ -4,7 +4,7 @@
 
 動画の制作は手元のMacで行う。`bun scripts/media.ts push` は日本語の通常版と字幕焼込み版をhash付きでReleasesへ置き、全assetを確認してから `site/media-manifest.json` を更新する。`bun scripts/media.ts check` は公開assetの存在・サイズ・提供されたSHA-256、および手元のMP4のSHA-256を照合し、欠けていれば停止する。`push` は既存のhashを上書きせず、古いassetを消さない。mainへ入れるのは小さな一覧とコードだけ。Actionsは読み取りのcheckを行い、動画の作成・uploadは行わない。
 
-公開用パスは `/media/<言語>/<講座>/<ID>[.cc].<SHA-256>.mp4`。上流は固定の `sean-sunagaku/chalkfile` の `media-<言語>-<講座>` タグに限る。手元の入力は日本語が `site/media/<ID>[.cc].mp4`、将来の翻訳は `site/media/<言語>/<ID>[.cc].mp4` を想定する。
+公開用パスは `/media/<言語>/<講座>/<ID>[.cc].<SHA-256>.mp4`。上流は固定の `sean-sunagaku/chalkfile` の `media-<言語>-<講座>` タグに限る。手元の入力はrenderの形式に合わせ、日本語が `site/media/<ID>[.cc].mp4`、翻訳は `site/media/<ID>.<言語>[.cc].mp4`。
 
 ## 前提
 
