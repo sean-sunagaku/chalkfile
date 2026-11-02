@@ -37,4 +37,4 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 静的応答は `no-transform` で自動beacon挿入と本文の変更を防ぎ、CSPと保存用SHA-256を保つ。生成物は `bun scripts/check_delivery.ts site/dist` でも点検する
 - ポスターは `site/posters/` にコミットする。CIは `materials.ts pull` → `synth.ts --cached-only` → `media.ts check` → `build_site.ts --strict` の順。不足時に音声合成や動画制作を始めない
 - GitHubのproductionはmainだけ、secretはDeploy stepだけ。個人のWrangler OAuth tokenをCIへ流用しない。旧Pages切替は `deploy_pages.sh` と移行SWの保存保持テストに従う
-- 本人がCLIでの初回登録を依頼したときは、公式cf CLIの本人認可後に `bun scripts/setup_cloudflare_ci.ts plan/apply` を使う。API tokenはメモリ内からghの標準入力へ渡し、画面/ファイル/引数に出さない。認証ファイルを直接読む代替手段は取らない
+- 初回登録は `bun scripts/setup_cloudflare_ci.ts plan` で対象と3権限を確認する。cf beta.26ではWorkers Editorの発行scopeを取得できないため、管理画面で対象accountのEditorとchalkfile.comのRoutes Write/Zone Readだけを付け、GitHubのproduction secretへ直接登録する。CLIが最小権限を発行できない場合にAdminへ広げない。登録後の `apply` は既存secretを確認してmainのActionsを開始する。認証ファイルを直接読む代替手段は取らない
