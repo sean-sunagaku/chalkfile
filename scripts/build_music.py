@@ -12,7 +12,7 @@
   public/audio/music/preview/*.mp3    試聴用 MP3
 
 実行（リポジトリの直下で。numpy・scipy の版は pyproject.toml と uv.lock で固定している）:
-  uv run --locked --group audio python scripts/build_music.py
+  uv run --locked --group audio python scripts/build_music.py   # npm run build:music でも同じ
   --skip-verify を付けると ffmpeg による計測・ループ継ぎ目検査・MP3 作成を省略する。
   ffmpeg・ffprobe は PATH から探す（--skip-verify なら要らない）。
 

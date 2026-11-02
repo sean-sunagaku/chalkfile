@@ -81,11 +81,11 @@ iOS もブラウザの保存領域を使い、「ファイル」アプリの動�
 ```bash
 bun scripts/i18n.ts try superagent-comedy en S03   # 訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ）
 bun scripts/i18n.ts stamp 'S03.*'                  # 訳したときの日本語の台本の指紋を書く
-bun scripts/synth.ts S03.en S03.zh                  # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルのダウンロード）
+npm run synth -- S03.en S03.zh                     # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルのダウンロード）
 uv run --locked --script scripts/check_speech.py S03.en S03.zh   # 聞き取りの点検
-uv run --locked --group audio python scripts/mix.py S03.en S03.zh
-CAPTIONS=1 bash scripts/render.sh S03.en S03.zh
-bun scripts/build_site.ts                           # site/dist/en/… と、訳の動画の site/dist-media/<言語>/…
+npm run mix -- S03.en S03.zh
+CAPTIONS=1 npm run render -- S03.en S03.zh
+npm run build:site                                 # site/dist/en/… と、訳の動画の site/dist-media/<言語>/…
 bun scripts/i18n.ts status                          # 訳の表（訳あり・日本語の台本が変わった・未訳）と訳し残し
 ```
 
@@ -113,28 +113,37 @@ bun scripts/i18n.ts status                          # 訳の表（訳あり・�
 - npm の依存は `package-lock.json`。Python の依存は `pyproject.toml` と `uv.lock`（Kokoro と Whisper は、スクリプトの頭と `scripts/<名前>.py.lock`）
 - 手元の版は [mise](https://mise.jdx.dev/) でそろえられます（任意）。`mise settings add idiomatic_version_file_enable_tools node`（bun・python も同じように足す）で、上の 3 つのファイルを読むようになります
 
+コマンドの入口は `package.json` の scripts です（`npm run` だけを流すと一覧が出ます）。道具の役割は次のとおりです。
+
+| 道具 | 役割 |
+|---|---|
+| npm | 依存を入れる（`npm ci --ignore-scripts`）・`package-lock.json`・コマンドの入口（`npm run …`） |
+| bun | TypeScript のスクリプト（合成・教材・サイト・点検）と単体テスト |
+| node | Remotion（書き出し・静止画・Studio）と Playwright（ブラウザのテスト） |
+| uv | Python（BGM・効果音・音のミックス、Kokoro・Whisper） |
+
 ```bash
 npm ci --ignore-scripts
-uv run --locked --group audio python scripts/build_music.py    # BGM・効果音（約 13 秒）
-bun scripts/synth.ts                                            # ナレーションと時刻（初回は数分、以後は変えた台詞だけ）
-uv run --locked --group audio python scripts/mix.py            # 音のミックス（1 本 10 秒ほど）
-bash scripts/render.sh                                          # 動画（1 本 2〜3 分）
-bun scripts/check_content.ts                                    # 台本とファイルの点検（公開の前に必ず）
-bun scripts/build_materials.ts                                  # 読む教材・絵コンテ・AI チャット用のチャンク（docs/courses）
-bun scripts/build_site.ts                                       # 講座サイト（site/dist）
-bun scripts/serve.ts                                            # 手元で見る（http://127.0.0.1:8765/）
+npm run build:music        # BGM・効果音（約 13 秒）
+npm run synth              # ナレーションと時刻（初回は数分、以後は変えた台詞だけ）
+npm run mix                # 音のミックス（1 本 10 秒ほど）
+npm run render             # 動画（1 本 2〜3 分）
+npm run check:content      # 台本とファイルの点検（公開の前に必ず）
+npm run build:materials    # 読む教材・絵コンテ・AI チャット用のチャンク（docs/courses）
+npm run build:site         # 講座サイト（site/dist）
+npm run serve              # 手元で見る（http://127.0.0.1:8765/）
 ```
 
 初めての書き出しで Remotion が Chrome Headless Shell をダウンロードしたまま止まるとき（Node.js 26 で、展開が終わらない）は、[pipeline.md のハマりどころ](.claude/skills/study-video-course/references/pipeline.md) の手順で手で展開します。
 
-一部だけ作り直すときは、`synth.ts`・`mix.py`・`render.sh` に `L03 L05` のようにレクチャー ID を渡します。台詞を直したら synth → mix → render → build_site の順に流します。
+一部だけ作り直すときは、`npm run synth -- L03 L05` のように、`--` のあとにレクチャー ID を渡します（mix・render も同じ）。台詞を直したら synth → mix → render → build_site の順に流します。
 
-- 場面だけ見たいとき: `npx remotion studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
+- 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
 - 読みの確認: `synth.ts` が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
 - 音声の鍵と読みの網: `npm test` が、全台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を `tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし合わせ、変わった動画と台詞を出す。台詞・`reading.ts`・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](tests/fixtures/snapshots/README.md)）
-- 見た目の確認: `node scripts/stills.ts L04:3 --mid` で、場面の中ほどと終わりを静止画にする
+- 見た目の確認: `npm run stills -- L04:3 --mid` で、場面の中ほどと終わりを静止画にする
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`（台本と、レクチャーの `docs` に並べた公式ページで、言い回しが続けて同じところを探す。ネットにつなぐ）
-- ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
+- ディスクの空きが少ないとき: `CHUNK=1200 npm run render -- L04`（1,200 フレームずつ書き出してつなぐ）
 
 ## 素材から作り直す（VOICEVOX なし）
 
@@ -144,11 +153,11 @@ bun scripts/serve.ts                                            # 手元で見�
 
 ```bash
 npm ci --ignore-scripts
-bun scripts/materials.ts pull                                   # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
-bun scripts/synth.ts --cached-only                              # 不足時は停止。VOICEVOX/Kokoroへ接続しない
-uv run --locked --group audio python scripts/mix.py            # 音のミックス
-bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る。サイト用の <id>.cc.mp4 も）
-bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材と講座サイト
+npm run materials:pull                          # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
+npm run synth -- --cached-only                  # 不足時は停止。VOICEVOX/Kokoroへ接続しない
+npm run mix                                     # 音のミックス
+npm run render                                  # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る。サイト用の <id>.cc.mp4 も）
+npm run build:materials && npm run build:site   # 読む教材と講座サイト
 ```
 
 - `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめます。1 つの講座だけなら `bun scripts/materials.ts pull nudge-product`
@@ -161,19 +170,16 @@ bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材�
 
 ```bash
 npm ci --ignore-scripts
-npm run typecheck                         # Remotion・台本、PWA のブラウザ/worker コード、scripts・tests
-npm test                                  # Range の境界・保存対象の制約（動画なしで実行できる）
-bun scripts/check_content.ts --self-test
-bun scripts/check_content.ts
-bun scripts/build_site.ts --strict         # site/data・posters・Releases の一覧が必要。手元の MP4 は任意
-npm run test:browser                       # 実 Chrome と、Stripe 講座の生成済み 13 本の動画を使う
+npm run check                             # 型・単体テスト・台本とファイルの点検（CI と同じ。動画なしで流せる）
+npm run build:site -- --strict            # site/data・posters・Releases の一覧が必要。手元の MP4 は任意
+npm run test:e2e                          # 実 Chrome と、Stripe 講座の生成済み 13 本の動画を使う（test:browser と同じ）
 ```
 
-専用の lint スクリプトはありません。CI は型検査、Range・保存対象テスト、content 点検を行います。実ブラウザのテストはローカルの生成物が必要なため、CI の content 点検だけで再生成功とは扱いません。`PW_CHANNEL=chromium npm run test:browser` なら Playwright の Chromium も選べます（別途そのブラウザが必要）。通常はインストール済みの Chrome を一時プロファイルで使います。
+専用の lint スクリプトはありません。CI は型検査（Remotion・台本、PWA のブラウザ/worker、scripts・tests）、Range・保存対象テスト、content 点検を行います（`npm run check` と同じ）。実ブラウザのテストはローカルの生成物が必要なため、CI の content 点検だけで再生成功とは扱いません。`PW_CHANNEL=chromium npm run test:browser` なら Playwright の Chromium も選べます（別途そのブラウザが必要）。通常はインストール済みの Chrome を一時プロファイルで使います。
 
 ブラウザテストは `127.0.0.1:8877/chalkfile/` に本物の build 出力を配り、オンライン/オフライン、全保存・削除、Range の応答とバイト一致、実動画の再生・停止・シーク・繰り返し、ブラウザ完全終了からの再起動、教材/worker 更新、保存欠損を確認します。容量不足は Cache API の例外、通信失敗・206・破損・途中データ・リダイレクト・キャンセルはテストサーバーで再現します。物理的なディスク枯渇や iOS 実機検証の代わりではありません。証跡は既定で `/tmp/chalkfile-pwa-evidence/` に置き、動画や証跡を main に入れません。`CHALKFILE_EVIDENCE_DIR` で保存先を変えられます。
 
-通常の手元確認はルート `/` の `bun scripts/serve.ts` または `npm run dev:worker` を使います。旧scope `/chalkfile/` の互換性は移行テストで確認します。localhost以外はHTTPSが必要です。
+通常の手元確認はルート `/` の `npm run serve` または `npm run dev:worker` を使います。旧scope `/chalkfile/` の互換性は移行テストで確認します。localhost以外はHTTPSが必要です。
 
 初期案内・進捗・通信エラーの表示を変えた場合は、strict build後に `npm run test:browser -- tests/browser/offline-status.spec.ts` で対象回帰を実行できます。全動画の保存は一時profile内で1回にまとめ、ブラウザ完全終了後のオフライン起動、保存欠損、遅い通信エラーと保存進捗の競合、操作結果の保持を確認します。既存の全体回帰は、変更の影響範囲に応じて追加します。
 

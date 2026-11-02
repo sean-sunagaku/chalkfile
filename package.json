@@ -9,13 +9,27 @@
     "npm": ">=11"
   },
   "scripts": {
-    "studio": "remotion studio",
-    "synth": "bun scripts/synth.ts",
-    "render": "bash scripts/render.sh",
+    "check": "npm run typecheck && npm test && npm run check:content",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
-    "dev:worker": "wrangler dev",
     "test": "bun test tests/*.test.ts",
-    "test:browser": "playwright test"
+    "test:e2e": "playwright test",
+    "test:browser": "playwright test",
+    "check:content": "bun scripts/check_content.ts --self-test && bun scripts/check_content.ts",
+    "build:music": "uv run --locked --group audio python scripts/build_music.py",
+    "synth": "bun scripts/synth.ts",
+    "mix": "uv run --locked --group audio python scripts/mix.py",
+    "render": "bash scripts/render.sh",
+    "stills": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/stills.ts",
+    "studio": "remotion studio",
+    "build:materials": "bun scripts/build_materials.ts",
+    "build:site": "bun scripts/build_site.ts",
+    "serve": "bun scripts/serve.ts",
+    "dev:worker": "wrangler dev",
+    "materials:pull": "bun scripts/materials.ts pull",
+    "materials:check": "bun scripts/materials.ts check",
+    "materials:push": "bun scripts/materials.ts push",
+    "media:check": "bun scripts/media.ts check",
+    "media:push": "bun scripts/media.ts push"
   },
   "dependencies": {
     "@remotion/cli": "4.0.440",
