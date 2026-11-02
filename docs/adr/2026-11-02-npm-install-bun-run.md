@@ -33,6 +33,6 @@
 ## 影響
 
 - 手元には Node と bun の両方が要る
-- Node と bun の版は、今は CI（`.github/workflows/`）に書いている。版のファイル（`.node-version`・`.bun-version`）と `package.json` の `engines`・`packageManager` で固定する予定（T1-01）
+- Node と bun の版は、今は CI（`.github/workflows/`）に書いている。版のファイル（`.node-version`・`.bun-version`）と `package.json` の `engines`・`packageManager` で固定する予定
 - 依存を足したり上げたりすると、`package-lock.json` が変わる。lock は npm で書く
-- Dependabot で npm の依存も見るようにする予定（T1-12）
+- Dependabot で npm の依存も見るようにする予定
