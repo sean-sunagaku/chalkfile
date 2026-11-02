@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
-import { byteRange, COURSE_ID, OfflineError, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
-import type { Asset, CourseManifest, CourseStatus, DownloadProgress, SavedVersion } from './offline-shared';
+import { byteRange, COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
+import type { Asset, CourseManifest, CourseStatus, DownloadProgress, SavedRecord, SavedVersion } from './offline-shared';
 
 /** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。例 en → /chalkfile-media-en/） */
 declare const __BUILD_CONFIG__: { build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string> };
@@ -10,7 +10,8 @@ const scope = sw.registration.scope;
 const prefix = `chalkfile:${new URL(scope).pathname}:offline-v1:`;
 const shellName = `${prefix}shell:${__BUILD_CONFIG__.build}`;
 const registryName = `${prefix}registry`;
-type RecordData = { versions: SavedVersion[] };
+/** unreadable: 記録はあるのに今の検証に通らない。画面では「保存し直す」を案内し、指す Cache は cleanup で隔離する（caches が null なら指す先が分からない） */
+type RecordData = SavedRecord & { unreadable?: { caches: string[] | null } };
 type Job = { controller: AbortController; cancelled: boolean; progress: DownloadProgress; done: Promise<void> };
 const jobs = new Map<string, Job>();
 const deleting = new Set<string>();
@@ -108,15 +109,11 @@ const messageOf = (e: unknown, lang: string) => {
 async function readRecord(id: string): Promise<RecordData> {
   const res = await (await caches.open(registryName)).match(recordUrl(id));
   if (!res) return { versions: [] };
+  let value: unknown;
   try {
-    const r = await res.json() as RecordData;
-    if (!Array.isArray(r.versions) || r.versions.length > 2) throw new Error();
-    for (const v of r.versions) {
-      validateManifest(v.manifest, id, scope, __BUILD_CONFIG__.mediaRoots);
-      if (!v.cache.startsWith(`${prefix}course:${id}:`)) throw new Error();
-    }
-    return r;
-  } catch { return { versions: [] }; }
+    value = await res.json();
+    return parseRecord(value, id, scope, prefix, __BUILD_CONFIG__.mediaRoots);
+  } catch { return { versions: [], unreadable: { caches: recordCaches(value, id, prefix) } }; }
 }
 
 async function complete(v: SavedVersion): Promise<boolean> {
@@ -140,19 +137,33 @@ async function statuses(): Promise<CourseStatus[]> {
   return Promise.all((await ids()).map(async (id) => {
     const r = await readRecord(id);
     const valid = await Promise.all(r.versions.map(complete));
+    // 読めない記録も「不完全」として、保存し直しを案内する（画面の文字は今の不完全の案内を使う）
     return { id, saved: r.versions.find((_, i) => valid[i]) ?? null,
-      incomplete: r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null };
+      incomplete: !!r.unreadable || r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null };
   }));
 }
 
-// worker / ブラウザ終了で残った未完了領域だけを片付ける。保存済みの版は期限で消さない。
+// worker / ブラウザ終了で残った未完了領域を片付ける。保存済みの版は期限で消さない。
+// 読めない記録が指す版は消さずに隔離し、30 日たったら消す（offline-shared の planCleanup）。
 async function cleanup(oldShell = false): Promise<void> {
   if (jobs.size || deleting.size) return;
   const keep = new Set([registryName, shellName]);
-  for (const id of await ids()) for (const v of (await readRecord(id)).versions) keep.add(v.cache);
-  for (const name of await caches.keys()) {
+  const held = { caches: new Set<string>(), ids: new Set<string>() };
+  for (const id of await ids()) {
+    const r = await readRecord(id);
+    for (const v of r.versions) keep.add(v.cache);
+    if (r.unreadable?.caches) for (const name of r.unreadable.caches) held.caches.add(name);
+    else if (r.unreadable) held.ids.add(id);
+  }
+  const plan = planCleanup({ names: await caches.keys(), prefix, keep, held, oldShell, now: Date.now() });
+  // 印を付けてから消す（印を付け直すとき、印の無い間を作らない）
+  for (const name of plan.create) {
     if (jobs.size || deleting.size) return;
-    if ((name.startsWith(`${prefix}course:`) || (oldShell && name.startsWith(`${prefix}shell:`))) && !keep.has(name)) await caches.delete(name);
+    await caches.open(name);
+  }
+  for (const name of plan.remove) {
+    if (jobs.size || deleting.size) return;
+    await caches.delete(name);
   }
 }
 
@@ -279,8 +290,8 @@ async function remove(id: string): Promise<void> {
   deleting.add(id);
   try {
     await (await caches.open(registryName)).delete(recordUrl(id));
-    // 同じ講座の以前の版・未完了領域も削除。学習メモと進捗は別の localStorage に残る。
-    for (const name of await caches.keys()) if (name.startsWith(`${prefix}course:${id}:`)) await caches.delete(name);
+    // 同じ講座の以前の版・未完了領域・隔離した版とその印も削除。学習メモと進捗は別の localStorage に残る。
+    for (const name of await caches.keys()) if ((parseQuarantineName(name)?.cache ?? name).startsWith(`${prefix}course:${id}:`)) await caches.delete(name);
   } finally { deleting.delete(id); await broadcast(); }
 }
 

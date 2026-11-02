@@ -5,7 +5,7 @@ import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
 
 const course = '/stripe-billing/';
-const evidence = '/tmp/chalkfile-pwa-evidence/offline-status';
+const evidence = path.join(process.env.CHALKFILE_EVIDENCE_DIR ?? '/tmp/chalkfile-pwa-evidence', 'offline-status');
 
 async function control(request: APIRequestContext, data: Record<string, unknown> = {}) {
   expect((await request.post('/__test/control', { data })).ok()).toBeTruthy();
