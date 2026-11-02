@@ -4,7 +4,11 @@
 
 講座を TypeScript の台本として書くと、VOICEVOX の声、Remotion の動画、静的な講座サイト（動画・台本・字幕・確認クイズ）までをコマンドで作れます。台本は何度でも直して作り直せます。調べ方と書き方は Claude Code のスキルにまとめてあるので、Claude Code と一緒に講座を作れます。
 
-**サイト: https://sean-sunagaku.github.io/chalkfile/**（English: https://sean-sunagaku.github.io/chalkfile/en/ ・中文: https://sean-sunagaku.github.io/chalkfile/zh/）
+**移行先: https://chalkfile.com/**（移行完了までは https://sean-sunagaku.github.io/chalkfile/ も公開中。訳は未公開）
+
+Cloudflare Workers の設定は `wrangler.jsonc`、動画受付は `worker/src/index.ts` です。`npm ci --ignore-scripts` → 素材と教材の生成 → `bun scripts/build_site.ts --strict` → `npm run dev:worker` で、ルート `/` と SW scope `/` を確認します。サイトは静的 assets、動画は `/media/` に分け、MP4 は assets へアップロードしません。Workers は無料プランを維持します。
+
+機密情報は commit・push・公開物・ログに入れません。API トークンは GitHub の production environment secret、アカウント ID は vars に置きます。認証情報を設定ファイルや会話に貼らないでください。
 
 講座は英語と中国語（簡体字）にもできます。声・画面の文字・図の文字・字幕・講座サイトの UI まで言語ごとに切り替わり、お笑いの掛け合いは直訳せずに言語ごとに作り直しています（下の「多言語（英語・中国語）」）。
 

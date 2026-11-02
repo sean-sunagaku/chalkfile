@@ -1,7 +1,7 @@
 // PWA の静的ファイルと、テーマの色から作る自前のアイコン。外部画像は使わない。
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Theme } from '../content/types';
 import { fill, SITE_TEXT } from '../site/i18n';
@@ -67,8 +67,11 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
   const offline = Buffer.from(
     readFileSync(path.join(site, 'offline.html'), 'utf8').replace(/\{\{(ja|en|zh)\.(\w+)\}\}/g, (_, lang: 'ja' | 'en' | 'zh', key: keyof (typeof SITE_TEXT)['ja']) => esc(fill(SITE_TEXT[lang][key]))),
   );
-  writeFileSync(path.join(dist, 'offline.html'), offline);
-  shell.push(asset('offline.html', offline, 'text/html'));
+  // Workers の HTML 正規化による転送を避け、redirect:error の保存取得で読める正規 URL を使う。
+  rmSync(path.join(dist, 'offline.html'), { force: true });
+  mkdirSync(path.join(dist, 'offline'), { recursive: true });
+  writeFileSync(path.join(dist, 'offline/index.html'), offline);
+  shell.push(asset('offline/', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
   const result = await Bun.build({
     entrypoints: [path.join(site, 'sw.ts')], target: 'browser',

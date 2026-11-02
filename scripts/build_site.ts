@@ -31,15 +31,16 @@ const MEDIA = path.join(SITE, 'media');
 const ASSETS = path.join(SITE, 'assets');
 
 /** media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ） */
-type Config = { series: string; seriesSub: string; baseUrl: string; repoUrl: string; media?: Partial<Record<Lang, { url: string; repo: string }>> };
+type Config = { series: string; seriesSub: string; baseUrl: string; repoUrl: string; publishLangs: Lang[]; media?: Partial<Record<Lang, { url: string; repo: string }>> };
 const config = JSON.parse(readFileSync(path.join(SITE, 'config.json'), 'utf8')) as Config;
 const base = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
 /** サイトに出す言語（既定は全部）。SITE_LANGS=ja のように絞ると、外した言語のページ・切り替え・動画のサイトを作らない */
 const SITE_LANGS: Lang[] = (() => {
-  const v = process.env.SITE_LANGS?.trim();
+  const v = process.env.SITE_LANGS?.trim() || config.publishLangs.join(',');
   if (!v) return [...LANGS];
   const ls = v.split(',').map((x) => x.trim());
   for (const l of ls) if (!isLang(l)) throw new Error(`SITE_LANGS は ${LANGS.join(',')} から選ぶ: ${l}`);
+  for (const l of ls) if (!config.publishLangs.includes(l as Lang)) throw new Error(`未公開の言語はビルドしない: ${l}`);
   if (!ls.includes('ja')) throw new Error('SITE_LANGS には ja（一覧と日本語の講座）を入れる');
   return LANGS.filter((l) => ls.includes(l));
 })();
@@ -530,6 +531,11 @@ const mediaRoots = Object.fromEntries(SITE_LANGS.flatMap((l) => (mediaRoot(l) ? 
 await buildPwa(SITE, DIST, brand, generatedManifests.map((m) => m.id), shellAssets, mediaRoots);
 // GitHub Pages に Jekyll を通させない（そのまま配る）
 writeFileSync(path.join(DIST, '.nojekyll'), '');
+// MP4 とローカル設定は静的 assets に送らない。
+writeFileSync(path.join(DIST, '.assetsignore'), '**/*.mp4\n.*\n');
+rmSync(path.join(DIST, '_redirects'), { force: true });
+writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/sw.js\n  Cache-Control: no-cache\n');
+writeFileSync(path.join(DIST, '404.html'), '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></html>');
 
 /* ───────────── 訳の言語の動画のサイト（site/dist-media/<言語>/） ───────────── */
 

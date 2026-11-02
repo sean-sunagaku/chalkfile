@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chalkfile",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./site/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/media/*"],
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "chalkfile.com", "custom_domain": true }
+  ],
+  "env": {
+    "preview": {
+      "name": "chalkfile-preview",
+      "routes": [],
+      "workers_dev": true
+    }
+  }
+}

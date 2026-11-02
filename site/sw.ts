@@ -384,7 +384,7 @@ async function route(req: Request): Promise<Response> {
   const cached = await shell.match(key);
   if (cached) return cachedResponse(req, cached);
   if (req.mode === 'navigate') {
-    const fallback = await shell.match(new URL('offline.html', scope).href);
+    const fallback = await shell.match(new URL('offline/', scope).href);
     if (fallback) return new Response((await fallback.text()).replaceAll('__ROOT__', new URL(scope).pathname), { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('オフラインです。この教材はアプリ内に保存されていません。 / Offline. This file is not saved in the app.', { status: 503 });

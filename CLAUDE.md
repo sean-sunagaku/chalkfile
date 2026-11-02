@@ -26,3 +26,10 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 秘密情報（API キー・トークン・パスワード・署名シークレット・接続文字列）を読まない・書かない・表示しない
 - `.claude/settings*.json`・`.claude/hooks/`・npm のインストール時スクリプトを足さない（clone した人の手元で勝手に動く）
 - 公開の前に `bun scripts/check_content.ts` を通す（`deploy_pages.sh` も流す）
+
+## Workers への移行
+
+- 公開先は `https://chalkfile.com/`。`wrangler.jsonc` の assets がサイトを配り、Worker を先に通すのは `/media/*` だけ。Workers Free のままにし、Paid へ変更しない
+- 機密情報を commit・push・公開物・ログへ含めない。認証ファイルや `.env` を読まず、API トークンは GitHub/Cloudflare の secret にだけ置く。push 前に差分と追跡ファイルを点検する
+- `npm ci --ignore-scripts` を守り、Wrangler は devDependency の固定版を使う。`npm run dev:worker` でルート `/` と SW scope `/` を確認する
+- 本番の Custom Domain は `chalkfile.com`。www は zone の Redirect Rule で apex へ移す（assets の `_redirects` はホスト条件非対応）。初回は `wrangler deploy --env preview` で確かめてから `wrangler deploy --env=""` で本番へ出す
