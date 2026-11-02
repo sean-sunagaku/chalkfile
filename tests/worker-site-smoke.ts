@@ -11,12 +11,12 @@ const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chro
   args: resolveIp ? [`--host-resolver-rules=MAP chalkfile.com ${resolveIp}`] : [] });
 const context = await browser.newContext();
 const page = await context.newPage();
-const violations: string[] = [];
+const violations: { directive: string; blocked: string }[] = [];
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
-await context.exposeFunction('recordCspViolation', (directive: string) => violations.push(directive));
+await context.exposeFunction('recordCspViolation', (directive: string, blocked: string) => violations.push({ directive, blocked }));
 await context.addInitScript(() => document.addEventListener('securitypolicyviolation', (e) => {
-  void (window as unknown as { recordCspViolation(d: string): Promise<void> }).recordCspViolation(e.violatedDirective);
+  void (window as unknown as { recordCspViolation(d: string, b: string): Promise<void> }).recordCspViolation(e.violatedDirective, e.blockedURI.split('?')[0]);
 }));
 const pages: { path: string; status: number | undefined }[] = [];
 try {
@@ -28,8 +28,8 @@ try {
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
   if (new URL(scope).pathname !== '/') throw new Error('SW の scope が / ではありません');
-  if (violations.length || errors.length) throw new Error('CSP またはページのエラーがあります');
   mkdirSync('.work/evidence', { recursive: true });
   writeFileSync('.work/evidence/site-smoke.json', JSON.stringify({ base, resolveIp, pages, scope, violations, errors }, null, 2));
+  if (violations.length || errors.length) { console.error({ violations, errors }); throw new Error('CSP またはページのエラーがあります'); }
   console.log(`全 ${pages.length} ページ 200・CSP/JS エラーなし・SW scope /`);
 } finally { await browser.close(); }
