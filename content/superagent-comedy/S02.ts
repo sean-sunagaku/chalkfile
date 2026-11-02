@@ -61,9 +61,7 @@ export const S02: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'SECTION 2　二層構造',
       title: '受付と作業を分ける',
-      subtitle: 'お笑い版　Router と Worker の、二層構造',
       lines: [
         { t: '第2章。受付と作業を分ける。', s: 'だいにしょう。受付と作業を分ける。', v: 'announcer', pause: 0.3 },
         { t: '受付のずんだもんなのだ！　注文を聞いて、作って、届けて、片付けるのも、全部ぼくなのだ！', v: Z, pause: -0.15 },

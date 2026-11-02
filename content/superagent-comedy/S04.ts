@@ -56,9 +56,7 @@ export const S04: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'SECTION 3　イベント駆動',
       title: '文脈の詰め方と先回り',
-      subtitle: 'お笑い版　Inline と Spill・Chain of Recall・投機的実行',
       lines: [
         { t: '第4章。文脈の詰め方と、先回り。', s: 'だいよんしょう。文脈の詰め方と、先回り。', v: 'announcer', pause: 0.3 },
         { t: 'ログを、一万行、貼ったのだ！　全部、大事なのだ！', s: 'ログを、いちまんぎょう、貼ったのだ！　全部、大事なのだ！', v: Z, pause: -0.15 },

@@ -66,9 +66,7 @@ export const S06: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'SECTION 4　止まらない仕組み',
       title: '止まらない仕組みと、残る課題',
-      subtitle: 'お笑い版　分離・Watchdog・残る課題',
       lines: [
         { t: '第6章。止まらない仕組みと、残る課題。', s: 'だいろくしょう。止まらない仕組みと、残る課題。', v: 'announcer', pause: 0.3 },
         { t: 'お昼ごはんで、ノートパソコンを閉じたら、エージェントも、全部、止まったのだ。', v: Z, pause: -0.15 },

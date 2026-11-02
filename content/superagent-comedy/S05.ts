@@ -56,9 +56,7 @@ export const S05: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'SECTION 4　止まらない仕組み',
       title: '待たせない・場所で話し方を変える',
-      subtitle: 'お笑い版　非同期の ReAct ループと、チャンネル',
       lines: [
         { t: '第5章。待たせない。場所で、話し方を変える。', s: 'だいごしょう。待たせない。場所で、話し方を変える。', v: 'announcer', pause: 0.3 },
         { t: 'いま、テストを流しているのだ。終わるまで、話しかけないでほしいのだ。', v: Z, pause: -0.15 },

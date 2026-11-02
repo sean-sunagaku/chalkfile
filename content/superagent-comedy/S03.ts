@@ -61,9 +61,7 @@ export const S03: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'SECTION 3　イベント駆動',
       title: '出来事で動く',
-      subtitle: 'お笑い版　Trigger・二段のふるい・パススルー',
       lines: [
         { t: '第3章。出来事で動く。', s: 'だいさんしょう。出来事で動く。', v: 'announcer', pause: 0.3 },
         { t: 'おはようございます！　おはようございます！　グループの全員に、返事をしたのだ！', v: Z, pause: -0.15 },

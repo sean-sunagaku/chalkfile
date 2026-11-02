@@ -56,9 +56,7 @@ export const S01: Lecture = {
   scenes: [
     {
       kind: 'opening',
-      section: 'SECTION 1　はじめに',
       title: 'Super-agent ってなに？',
-      subtitle: 'お笑い版　ずんだもんと、設計の記事を読み解く',
       lines: [
         { t: '第1章。Super-agent ってなに？', s: 'だいいっしょう。スーパーエージェントってなに？', v: 'announcer', pause: 0.3 },
         { t: 'スーパーエージェント！　スーパーで、ずんだ餅を買ってきてくれる、エージェントなのだ！', v: Z, pause: -0.15 },
