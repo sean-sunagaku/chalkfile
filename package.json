@@ -9,7 +9,7 @@
     "render": "bash scripts/render.sh",
     "typecheck": "tsc --noEmit && tsc --noEmit -p site/tsconfig.json && tsc --noEmit -p worker/tsconfig.json",
     "dev:worker": "wrangler dev",
-    "test": "bun test tests/offline.test.ts",
+    "test": "bun test tests/*.test.ts",
     "test:browser": "playwright test"
   },
   "dependencies": {

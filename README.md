@@ -10,6 +10,8 @@ Cloudflare Workers の設定は `wrangler.jsonc`、動画受付は `worker/src/i
 
 機密情報は commit・push・公開物・ログに入れません。API トークンは GitHub の production environment secret、アカウント ID は vars に置きます。認証情報を設定ファイルや会話に貼らないでください。
 
+動画は手元の `site/media/` から `bun scripts/media.ts push` で GitHub Releases へ先に置きます。講座×言語のタグ `media-ja-<講座>` と、中身の SHA-256 を含むファイル名を使い、確認後に `site/media-manifest.json` を更新します。`bun scripts/media.ts check` は公開asset・サイズ・GitHub提供のSHA-256と、手元にある動画のSHA-256を照合します。変更のない動画は送り直さず、古いハッシュのassetは自動削除しません。CIはcheckだけを実行します。
+
 講座は英語と中国語（簡体字）にもできます。声・画面の文字・図の文字・字幕・講座サイトの UI まで言語ごとに切り替わり、お笑いの掛け合いは直訳せずに言語ごとに作り直しています（下の「多言語（英語・中国語）」）。
 
 まだ初期の段階です。今は講座を作るためのリポジトリで、エンジン（動画とサイトを作る部分）をパッケージと CLI に分けるのが次の段階です。

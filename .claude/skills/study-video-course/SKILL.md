@@ -5,6 +5,8 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 # 勉強動画の講座を作る
 
+動画配信の正本は `site/media-manifest.json`。動画を変えたらローカルで `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。
+
 配信移行時は `wrangler.jsonc` を正本にし、`npm run dev:worker` でルート `/` と SW scope `/` を確かめる。サイトは assets、動画は `/media/` の受付に分け、MP4 を assets に置かない。Workers Free を維持する。認証ファイルを読まず、機密情報をcommit/push/公開物/ログへ含めない。push 前に追跡ファイルと差分を点検し、API トークンは GitHub/Cloudflare の secret だけで扱う。
 
 Workers assets の HTML 正規化で `.html` は転送される。保存用の取得はリダイレクトを拒否するため、起動用のオフラインページは `/offline/` を使う。移行時は単なる200確認に加え、新規ブラウザcontextでSWのinstallとscopeを検証する。
