@@ -3,6 +3,8 @@
 const ACCOUNT = '1771bd0a5ec29834c0c8714ffe808889';
 const REPOSITORY = 'sean-sunagaku/chalkfile';
 const PROFILE = 'chalkfile-ci-bootstrap';
+// cf は初回の登録で 1 度だけ使うので package.json に入れず、実行のときに npm exec で取ってくる。
+// 版はここで完全に固定し、インストール時スクリプトは動かさない（下の cf() の --ignore-scripts）
 const CF_VERSION = '1.0.0-beta.26';
 const SECRET_NAME = 'CLOUDFLARE_API_TOKEN';
 let stage = '引数確認';

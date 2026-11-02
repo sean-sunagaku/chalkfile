@@ -1,18 +1,21 @@
 # /// script
-# requires-python = ">=3.10,<3.13"
+# requires-python = ">=3.12,<3.13"
 # dependencies = [
 #   "kokoro==0.9.4",
 #   "misaki[en,zh]==0.9.4",
-#   "numpy",
-#   "scipy",
-#   "soundfile",
+#   "numpy==2.5.4",
+#   "scipy==1.18.1",
+#   "soundfile==0.14.0",
+#   "torch==2.15.0",
 # ]
 # ///
 """英語と中国語の台詞を Kokoro（手元で動く TTS）で読み上げ、synth.ts と同じ形の WAV にする。
 
 synth.ts が足りない台詞だけを JSON にまとめて渡す。直接は呼ばない。
 
-  uv run scripts/tts_kokoro.py <jobs.json> <出力フォルダ>
+  uv run --locked --script scripts/tts_kokoro.py <jobs.json> <出力フォルダ>
+
+依存の版は頭書きと scripts/tts_kokoro.py.lock で固定する。頭書きを変えたら uv lock --script scripts/tts_kokoro.py でロックも作り直す。
 
 jobs.json: [{"key": "...", "text": "...", "repo": "hexgrad/Kokoro-82M", "voice": "af_heart", "g2p": "a", "speed": 1.0}, ...]
 出力: <key>.wav（48kHz・モノラル・16bit。VOICEVOX の出力と同じ形）と <key>.kana（読み。Kokoro に渡した音素）

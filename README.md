@@ -76,14 +76,14 @@ iOS もブラウザの保存領域を使い、「ファイル」アプリの動�
 - 動画の名前: `S01.en.mp4`・`S01.en.cc.mp4`（字幕を焼き込んだ版）・`S01.zh.mp4` など。Remotion のコンポジションは `S01-en`
 - サイト: 日本語は今までどおり `/chalkfile/<講座>/`、訳は `/chalkfile/en/<講座>/`・`/chalkfile/zh/<講座>/`。ページの上の切り替えで言語を移れます。訳の一覧には、まだ訳していない講座を「日本語だけ」で並べます
 - 動画の置き場所と公開: 公開先は chalkfile.com の Cloudflare Worker（動画は GitHub Releases に置き、Worker が `/media/` で範囲を中継する。2026-11-02 に決定、SUN-1647）に移します。それまで訳は公開しません（`site/config.json` の `publishLangs` が `["ja"]`）。訳の動画の向き先は `site/config.json` の `media` で差し替えます（いまは手元で確かめるための仮の場所）
-- 読みの確認: 英語と中国語は Whisper で聞き取り直して、読み間違いと中国語の多音字の読みを一覧にします（`uv run scripts/check_speech.py <key>`）
+- 読みの確認: 英語と中国語は Whisper で聞き取り直して、読み間違いと中国語の多音字の読みを一覧にします（`uv run --locked --script scripts/check_speech.py <key>`）
 
 ```bash
 bun scripts/i18n.ts try superagent-comedy en S03   # 訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ）
 bun scripts/i18n.ts stamp 'S03.*'                  # 訳したときの日本語の台本の指紋を書く
 bun scripts/synth.ts S03.en S03.zh                  # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルのダウンロード）
-uv run scripts/check_speech.py S03.en S03.zh        # 聞き取りの点検
-uv run --with numpy --with scipy python scripts/mix.py S03.en S03.zh
+uv run --locked --script scripts/check_speech.py S03.en S03.zh   # 聞き取りの点検
+uv run --locked --group audio python scripts/mix.py S03.en S03.zh
 CAPTIONS=1 bash scripts/render.sh S03.en S03.zh
 bun scripts/build_site.ts                           # site/dist/en/… と、訳の動画の site/dist-media/<言語>/…
 bun scripts/i18n.ts status                          # 訳の表（訳あり・日本語の台本が変わった・未訳）と訳し残し
@@ -107,11 +107,17 @@ bun scripts/i18n.ts status                          # 訳の表（訳あり・�
 
 前提: Node.js、[bun](https://bun.sh/)、ffmpeg、[uv](https://docs.astral.sh/uv/)、[VOICEVOX](https://voicevox.hiroshiba.jp/)（エンジンが `127.0.0.1:50021` で動いていること）。英語・中国語の声は uv が Kokoro を用意します（初回に Python の道具とモデルの重みを取ってくる）
 
+版は次のファイルに書いてあります（CI も、Node.js と bun は同じファイルを読みます）。
+
+- Node.js は `.node-version`、bun は `.bun-version`、Python は `.python-version`
+- npm の依存は `package-lock.json`。Python の依存は `pyproject.toml` と `uv.lock`（Kokoro と Whisper は、スクリプトの頭と `scripts/<名前>.py.lock`）
+- 手元の版は [mise](https://mise.jdx.dev/) でそろえられます（任意）。`mise settings add idiomatic_version_file_enable_tools node`（bun・python も同じように足す）で、上の 3 つのファイルを読むようになります
+
 ```bash
 npm ci --ignore-scripts
-uv run --with numpy --with scipy python scripts/build_music.py   # BGM・効果音（約 13 秒）
+uv run --locked --group audio python scripts/build_music.py    # BGM・効果音（約 13 秒）
 bun scripts/synth.ts                                            # ナレーションと時刻（初回は数分、以後は変えた台詞だけ）
-uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス（1 本 10 秒ほど）
+uv run --locked --group audio python scripts/mix.py            # 音のミックス（1 本 10 秒ほど）
 bash scripts/render.sh                                          # 動画（1 本 2〜3 分）
 bun scripts/check_content.ts                                    # 台本とファイルの点検（公開の前に必ず）
 bun scripts/build_materials.ts                                  # 読む教材・絵コンテ・AI チャット用のチャンク（docs/courses）
@@ -140,7 +146,7 @@ bun scripts/serve.ts                                            # 手元で見�
 npm ci --ignore-scripts
 bun scripts/materials.ts pull                                   # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
 bun scripts/synth.ts --cached-only                              # 不足時は停止。VOICEVOX/Kokoroへ接続しない
-uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス
+uv run --locked --group audio python scripts/mix.py            # 音のミックス
 bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る。サイト用の <id>.cc.mp4 も）
 bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材と講座サイト
 ```

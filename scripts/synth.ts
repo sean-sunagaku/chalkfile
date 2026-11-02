@@ -122,7 +122,8 @@ const kokoroAll = (videos: Video[]) => {
   const file = path.join(ROOT, '.work', 'kokoro-jobs.json');
   writeFileSync(file, JSON.stringify([...jobs.values()]));
   console.log(`Kokoro で ${jobs.size} 本の台詞を読み上げる（初回はモデルのダウンロードがある）`);
-  const r = spawnSync('uv', ['run', '--quiet', path.join(ROOT, 'scripts/tts_kokoro.py'), file, TTS_DIR], { cwd: ROOT, stdio: 'inherit' });
+  // 依存の版は scripts/tts_kokoro.py.lock で固定する（--locked: ロックと頭書きがずれていたら止まる）
+  const r = spawnSync('uv', ['run', '--quiet', '--locked', '--script', path.join(ROOT, 'scripts/tts_kokoro.py'), file, TTS_DIR], { cwd: ROOT, stdio: 'inherit' });
   rmSync(file, { force: true });
   if (r.error || r.status !== 0) {
     throw new Error('Kokoro の読み上げに失敗した。uv が要る（README の「作り直す」）。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）', { cause: r.error });

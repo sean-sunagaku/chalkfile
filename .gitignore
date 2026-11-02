@@ -1,5 +1,6 @@
 # 生成物（台本から作り直せる。動画は gh-pages ブランチにだけ置く）
 node_modules/
+.venv/
 out/
 .work/
 public/audio/

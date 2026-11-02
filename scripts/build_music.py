@@ -11,9 +11,10 @@
   public/audio/sfx/*.wav              UI 効果音（mono）。harisen・chin・drumroll・deden・zuko はお笑い版の掛け合い用
   public/audio/music/preview/*.mp3    試聴用 MP3
 
-実行（tools/stripe-billing-course で）:
-  uv run --with numpy --with scipy python scripts/build_music.py
+実行（リポジトリの直下で。numpy・scipy の版は pyproject.toml と uv.lock で固定している）:
+  uv run --locked --group audio python scripts/build_music.py
   --skip-verify を付けると ffmpeg による計測・ループ継ぎ目検査・MP3 作成を省略する。
+  ffmpeg・ffprobe は PATH から探す（--skip-verify なら要らない）。
 
 構成メモ:
   - 音源: PolyBLEP ノコギリ波、2-op FM（エレピ・ベル）、加算合成の金属音（ハット・シンバル）
@@ -1306,8 +1307,8 @@ def finish_sfx(x: np.ndarray) -> np.ndarray:
 # ----------------------------------------------------------------------------
 # 検証（ffmpeg で計測・ループの継ぎ目検査・試聴用 MP3）
 # ----------------------------------------------------------------------------
-FFMPEG = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
-FFPROBE = shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe"
+FFMPEG = shutil.which("ffmpeg")
+FFPROBE = shutil.which("ffprobe")
 
 
 def run(cmd: list) -> subprocess.CompletedProcess:
@@ -1420,6 +1421,8 @@ def make_previews(workdir: Path, twice: Path) -> list[Path]:
 
 
 def verify(files: list[Path]) -> None:
+    if not FFMPEG or not FFPROBE:
+        raise SystemExit("ffmpeg・ffprobe が PATH に無い。入れてから流すか、--skip-verify で計測を省く（WAV は書き終えている）")
     print("\n== ffmpeg 計測（ebur128, true peak）==")
     print(f"{'file':<36}{'sec':>9}{'samples':>11}{'ch':>4}{'LUFS':>8}{'TP dBFS':>9}{'peak':>8}{'DC':>10}")
     for f in files:

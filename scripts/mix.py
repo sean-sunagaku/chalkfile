@@ -9,8 +9,10 @@ public/audio/mix/<id>.wav（48kHz・ステレオ・16bit、-16 LUFS / true peak 
 - 効果音: 台詞の sfx（台詞の頭）と sfxAfter（台詞の後の間）、場面の切り替わりの whoosh、クイズの考える時間の tick
 - 台詞の bgm: cut で BGM を止め、back（なければ場面の終わり）で戻す（急にシリアスにする）
 
-  uv run --with numpy --with scipy python scripts/mix.py            # 全部
-  uv run --with numpy --with scipy python scripts/mix.py L01 L05    # 一部だけ
+  uv run --locked --group audio python scripts/mix.py            # 全部
+  uv run --locked --group audio python scripts/mix.py L01 L05    # 一部だけ
+
+numpy の版は pyproject.toml と uv.lock で固定している。ffmpeg は PATH から使う。
 """
 
 from __future__ import annotations
@@ -290,6 +292,9 @@ def build(lec_id: str) -> None:
 
 
 def main() -> None:
+    if {"-h", "--help"} & set(sys.argv[1:]):
+        print(__doc__)
+        return
     ids = sys.argv[1:] or sorted(p.stem for p in PLAN_DIR.glob("*.json"))
     for i in ids:
         build(i)
