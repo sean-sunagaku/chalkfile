@@ -45,7 +45,7 @@ bun scripts/check_content.ts               # 台本と Git に入れる全部の
 
 見るもの: AI への指示文・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・制御文字・秘密情報の形・ローカルの禁止語・https でないリンク・メールアドレスと電話番号（注意）・Claude Code の設定と hooks を Git に入れていないか・npm のインストール時スクリプト。
 
-`deploy_pages.sh` と CI は、この点検に通らないと止まる。指示文の例をわざと見せる講座など、意図して書いたものは `scripts/content-allow.json` にその文字列を足して許す（Pull Request で理由を書く）。
+`scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内を出すときだけ使う）と CI は、この点検に通らないと止まる。指示文の例をわざと見せる講座など、意図して書いたものは `scripts/content-allow.json` にその文字列を足して許す（Pull Request で理由を書く）。
 
 ## 6. clone した人の手元で勝手に動くものを置かない
 

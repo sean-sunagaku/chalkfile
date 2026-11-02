@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 旧 GitHub Pages を移行案内へ置き換える専用手順。通常公開は Actions / Wrangler。
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 if [ -n "$(git status --porcelain)" ]; then
   echo "公開する変更を先にコミットしてください" >&2
   exit 1

@@ -38,7 +38,7 @@ curl -s http://127.0.0.1:50021/version
 | `node scripts/stills.mjs <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、`site/media/`、`site/*.html`、`site/config.json` | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
-| `bash scripts/deploy_pages.sh` | `site/dist/`（`site/config.json` の `publishLangs` に訳の言語があるときは `site/dist-media/<言語>/` も） | 講座サイトの gh-pages（最新の main からだけ。いまは日本語だけ。訳の公開先は chalkfile.com の Worker に移る（[i18n.md](i18n.md)）） |
+| `bash scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内のときだけ。講座サイトの公開には使わない） | `site/dist/`（`site/config.json` の `publishLangs` に訳の言語があるときは `site/dist-media/<言語>/` も） | 講座サイトの gh-pages（最新の main からだけ。いまは日本語だけ。訳の公開先は chalkfile.com の Worker に移る（[i18n.md](i18n.md)）） |
 | `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は gh-pages も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
 | `bun scripts/materials.ts push` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（親の無い 1 コミットで置き換える） |
 
@@ -49,7 +49,7 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 - 中身: `tts/<講座 ID>/<key>.flac`・`.kana`（台本の全部の台詞。`key` は `scripts/voices.ts` の `ttsKey`）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻した後の中身）、`README.md`
 - 取り出す: `bun scripts/materials.ts pull` → `bun scripts/synth.ts` は VOICEVOX につながずに時刻を決める（声のキャッシュが全部当たる）。足りない台詞があると、VOICEVOX に届かないことと `pull` を案内して止まる
 - 確かめる: `bun scripts/materials.ts check`（台本の全部の台詞の声が `.work/tts/` にあるか）
-- 置き換える: 台詞を直したら、台本をコミット → synth（kana を見る）→ `bun scripts/materials.ts push`。コミットしていない台本の変更があると止まる。公開（deploy_pages）と同じ時に置き換えて、公開中の動画と素材をそろえる
+- 置き換える: 台詞を直したら、台本をコミット → synth（kana を見る）→ `bun scripts/materials.ts push`。コミットしていない台本の変更があると止まる。公開（main へのマージ）の前に置き換えて、公開中の動画と素材をそろえる
 - FLAC は可逆なので、WAV に戻すと VOICEVOX の出力と同じバイトになる（`pull` が `SHA256SUMS` で確かめる）。音声は WAV のままの 3 分の 1 ほど
 - 前の版は残さない（push のたびに置き換える）。前の素材が要るときは、そのときの台本のコミットから VOICEVOX で作り直す
 
@@ -87,4 +87,4 @@ JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4�
 
 手元は `npm run dev:worker` でroot/CSP/scopeを確認。初回試験公開は `wrangler deploy --env preview`、本番は `wrangler deploy --env=""`。Workers Freeを維持する。静的assetsはMP4なし・2万files/25MiB以内。`no-transform` で本文hashとCSPを保つ。
 
-`deploy_pages.sh` は旧Pagesを移行案内だけへ置き換える専用手順。最新mainとcleanなcheckout、公開先のRange/CSP検証に通った後、明示した旧SHAに対するforce-with-leaseで置き換える。旧保存cacheは移行SWが保持する。公開と旧Pages切替は本人が依頼した範囲で実行し、許可済み操作を繰り返し確認しない。
+`scripts/legacy/deploy_pages.sh` は旧Pagesを移行案内だけへ置き換える専用手順。最新mainとcleanなcheckout、公開先のRange/CSP検証に通った後、明示した旧SHAに対するforce-with-leaseで置き換える。旧保存cacheは移行SWが保持する。公開と旧Pages切替は本人が依頼した範囲で実行し、許可済み操作を繰り返し確認しない。

@@ -1,4 +1,4 @@
-// 公開の前に、台本と Git に入れるファイルを確かめる。問題があれば止まる（deploy_pages.sh と CI が使う）。
+// 公開の前に、台本と Git に入れるファイルを確かめる。問題があれば止まる（scripts/legacy/deploy_pages.sh と CI が使う）。
 //   bun scripts/check_content.ts                     # 確かめる
 //   bun scripts/check_content.ts --require-denylist  # ローカルの禁止語の一覧が無ければ止める（手元から公開物を出す前に使う）
 //   bun scripts/check_content.ts --self-test         # 見つけるべき例を見つけられるかを試す（この点検そのものの点検）
