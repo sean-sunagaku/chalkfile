@@ -8,7 +8,10 @@ import type { CourseManifest } from '../site/offline-shared';
 import mediaManifest from '../site/media-manifest.json';
 import { mediaPath, validateMediaManifest } from '../site/media-shared';
 import { localMediaPath } from '../scripts/media';
+import { buildMigration } from '../scripts/build_migration';
 
+// 移行SWの古い生成物で結果が変わらないよう、テスト起動時に必ず現在のソースから作る。
+await buildMigration();
 const root = path.resolve(import.meta.dir, '../site/dist');
 const mediaEntries = new Map(validateMediaManifest(mediaManifest).entries.map((e) => [mediaPath(e), e]));
 // mediaDown: 訳の動画のサイトがまだ無い（公開の前・Pages の反映待ち）ときを作る

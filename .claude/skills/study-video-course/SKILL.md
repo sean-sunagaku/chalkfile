@@ -23,6 +23,8 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 保存状態の案内を直すときは、`tests/browser/offline-status.spec.ts` を対象実行し、完全再起動後のオフライン表示と、進捗・通信エラーを遅い応答や状態確認で消さないことを確かめる。公開後の単体MP4ダウンロード操作は、保存検証の一時profileのキャッシュを使って1本だけ確認し、公開での結果を別に記録する。
 
+`npm run test:browser` のサーバーは、移行案内と旧SW用の生成物を起動時に作り直す。移行テストの失敗時は旧保存fixture・現在の移行SW・本番gh-pagesを区別し、生成物が古いという理由で本番の保存cacheを削除しない。
+
 ```
 調べる → 講座を設計する → 台本を書く → synth（声と時刻）→ mix（音）→ render（動画）→ 確かめる → media push/check → build_site → Actions / Wrangler
 ```
@@ -78,6 +80,8 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 ### 6. 公開する
 
 動画とポスターを確認し `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。具体的な初回設定・公開・復旧は [../../../docs/workers-delivery.md](../../../docs/workers-delivery.md)。
+
+新しい講座をReleasesへ置いたときは、全レクチャーの `site/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
 
 静的応答にno-transformを付け、CSPと保存用SHA-256を変える自動挿入を防ぐ。`bash scripts/deploy_pages.sh` は旧Pagesの案内だけを出す。移行SWのcache保持テストを通し、chalkfile.comの本番確認が済んでから切り替える。通常公開に旧Pages用スクリプトを使わない。
 

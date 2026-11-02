@@ -88,7 +88,7 @@ try {
   await click('#offlineSave');
   await until('document.querySelector("#savedState").textContent.includes("保存済み・教材と全動画")', 'アプリ内保存に失敗しました', 240000);
   receipt.saved = await asyncJs('return await new Promise(resolve=>{const c=new MessageChannel();c.port1.onmessage=e=>{c.port1.close();resolve(e.data.courses.find(x=>x.id==="rive-comedy")?.saved)};navigator.serviceWorker.controller.postMessage({protocol:1,type:"STATUS"},[c.port2]);});');
-  assert.ok(receipt.saved?.manifest?.files?.length >= 4); record(); console.log('Safari: 全9ページ、再生、シーク、Rive講座全体の保存に成功');
+  assert.ok(receipt.saved?.manifest?.files?.length >= 4); record(); console.log(`Safari: 全${COURSES.length + 1}ページ、再生、シーク、Rive講座全体の保存に成功`);
   if (iface) {
     const power = Bun.spawnSync(['/usr/sbin/networksetup', '-getairportpower', iface]);
     assert.match(power.stdout.toString(), /: On/);

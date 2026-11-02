@@ -31,6 +31,6 @@ export async function buildMigration() {
   const result = await Bun.build({ entrypoints: [path.resolve(import.meta.dir, '../site/legacy-sw.ts')], target: 'browser' });
   if (!result.success) throw new Error('移行SWを組み立てられません。');
   writeFileSync(path.join(root, 'sw.js'), await result.outputs[0].text());
-  console.log('site/migration-dist: 案内9ページ・404・保存版を保持する移行SWを作成');
+  console.log(`site/migration-dist: 案内${COURSES.length + 1}ページ・404・保存版を保持する移行SWを作成`);
 }
 if (import.meta.main) await buildMigration();
