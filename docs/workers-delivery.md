@@ -28,7 +28,7 @@ npm run dev:worker
 bun tests/worker-site-smoke.ts
 ```
 
-JPGは小さな静的入力として `site/posters/` に入れる。MP4を取得しなくてもCIでサイトを作れる。VTT・講義データはキャッシュ済み音声から作る。`synth --cached-only` は不足時にVOICEVOXやKokoroへ接続しない。動画を手元へ戻す場合は `bun scripts/media.ts pull [講座ID…]` を使う。
+JPGは小さな静的入力として `site/posters/` に入れる。MP4を取得しなくてもCIでサイトを作れる。素材ブランチのFLACをWAVへ可逆復元するため、CIではUbuntuの標準リポジトリからffmpegを入れる。VTT・講義データはキャッシュ済み音声から作る。`synth --cached-only` は不足時にVOICEVOXやKokoroへ接続しない。動画を手元へ戻す場合は `bun scripts/media.ts pull [講座ID…]` を使う。
 
 ## Cloudflare と GitHub の初回設定
 
