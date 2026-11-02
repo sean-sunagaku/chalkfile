@@ -30,6 +30,10 @@ bun tests/worker-site-smoke.ts
 
 JPGは小さな静的入力として `site/posters/` に入れる。MP4を取得しなくてもCIでサイトを作れる。素材ブランチのFLACをWAVへ可逆復元するため、CIではUbuntuの標準リポジトリからffmpegを入れる。VTT・講義データはキャッシュ済み音声から作る。`synth --cached-only` は不足時にVOICEVOXやKokoroへ接続しない。動画を手元へ戻す場合は `bun scripts/media.ts pull [講座ID…]` を使う。
 
+Releasesに動画を追加しただけでは公開入力はそろわない。新しい講座には各レクチャーの `site/posters/<ID>.jpg` も必要で、欠けたままならstrict buildが公開前に停止する。旧手順で作った動画から補う場合は、SHA-256を確認して取得した通常版MP4の4.2秒地点を、`render.sh` と同じ幅1280・JPEG品質3で取り出す。作成したポスターを目視してコミットし、strict buildを通す。CIで動画をダウンロードして画像を補う方式にはしない。
+
+ブラウザ回帰用サーバーは起動時に現在のソースから移行案内とSWを組み立てる。以前の `site/migration-dist` が残っていても、旧SW移行テストに古い生成物を使わない。実際のgh-pagesへの反映は、このテスト生成とは別の `deploy_pages.sh` だけが行う。
+
 ## Cloudflare と GitHub の初回設定
 
 WorkersはFreeを維持する。Paid、R2、Terraformを導入しない。Custom DomainのDNSはWranglerが作る。ローカルの初回認証は `npx --no-install wrangler login`。既存のOAuthが使えるときは再認証しない。認証ファイルやtoken値を読んだり表示したりしない。
