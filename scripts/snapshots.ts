@@ -3,12 +3,12 @@
 // 鍵が変わると素材のブランチの音声が当たらなくなり（CI の synth.ts --cached-only で公開が止まる）、指紋が変わると訳が stale になる。
 //   bun scripts/snapshots.ts            # 今の台本とスナップショットを比べる（違いを動画と台詞ごとに出す。違えば 1 で終わる）
 //   bun scripts/snapshots.ts --update   # 作り直す（わざと変えたときだけ。作り直したら、PR に「合成し直しが要る」と書く）
-// 置き場所と形は tests/fixtures/snapshots/README.md
+// 置き場所と形は tests/fixtures/snapshots/README.md。動画 1 本に 1 ファイルで、全体の値（鍵の一覧など）は置かずにファイルから求める
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { LECTURES, VIDEOS, type Video } from '../content';
-import { LANGS, parseVideoKey, type Lang } from '../content/i18n';
+import { LANGS, parseVideoKey } from '../content/i18n';
 import type { VoiceId } from '../content/types';
 import { fingerprint } from './i18n';
 import { creditsIn, speechIn, ttsKeyIn } from './voices';
@@ -18,12 +18,16 @@ export const SNAPSHOT_DIR = path.join(ROOT, 'tests/fixtures/snapshots');
 
 /** 台詞 1 つ。at は synth.ts の読みの記録（.work/kana）と同じ「s<場面>-<台詞>」 */
 export type LineValue = { at: string; voice: VoiceId; key: string; speech: string };
-/** 動画 1 本。fingerprint は scripts/i18n.ts の stamp が訳のファイルに書く値（訳の動画も、元の日本語の台本から求める） */
-export type VideoValue = { video: string; fingerprint: string; credits: string[]; lines: LineValue[] };
+/**
+ * 動画 1 本。fingerprint は訳の指紋（scripts/i18n.ts の stamp が訳のファイルに書く、日本語の台本の指紋）で、訳がある動画だけが持つ。
+ * 訳の動画と、その元の日本語の動画。訳の無い台本は、画面の文字を直しても困らないので見ない
+ */
+export type VideoValue = { video: string; fingerprint?: string; credits: string[]; lines: LineValue[] };
 
 /** 全部の動画（日本語の全講座と全部の訳）の値。synth.ts と同じ関数・同じ選び方（声は v か先生、読みは speechIn、鍵は ttsKeyIn）で求める */
-export const speechValues = (videos: Video[] = VIDEOS): VideoValue[] =>
-  videos.map(({ key, lang, lecture }) => {
+export const speechValues = (videos: Video[] = VIDEOS): VideoValue[] => {
+  const translated = new Set(videos.filter((v) => v.lang !== 'ja').map((v) => v.lecture.id));
+  return videos.map(({ key, lang, lecture }) => {
     const lines = lecture.scenes.flatMap((scene, si) =>
       scene.lines.map((line, li): LineValue => {
         const voice = line.v ?? 'narrator';
@@ -33,101 +37,85 @@ export const speechValues = (videos: Video[] = VIDEOS): VideoValue[] =>
     );
     const ja = LECTURES.find((l) => l.id === lecture.id);
     if (!ja) throw new Error(`日本語の台本が無い: ${key}`);
-    return { video: key, fingerprint: fingerprint(ja), credits: creditsIn(lang, lines.map((l) => l.voice)), lines };
+    return { video: key, ...(translated.has(lecture.id) ? { fingerprint: fingerprint(ja) } : {}), credits: creditsIn(lang, lines.map((l) => l.voice)), lines };
   });
+};
 
 /* ───────────── 置く形 ───────────── */
 
 /** 動画 1 本のファイル（videos/<動画>.json）。台詞は「<場面>-<台詞> <声> <鍵> <読みのハッシュ>」の 1 行（台本の文はもう 1 か所に写さない） */
-export type VideoFile = { video: string; fingerprint: string; credits: string[]; lines: string[] };
-/** 全体（summary.json）。数と、値の種類ごとの全体のハッシュ */
-export type Summary = {
-  counts: { videos: number; lines: number; keys: number; byLang: Record<string, { videos: number; lines: number }> };
-  hashes: Record<'keys' | 'speech' | 'fingerprints' | 'credits', string>;
-};
-export type Snapshot = { summary?: Summary; videos: Map<string, VideoFile> };
+export type VideoFile = { video: string; fingerprint?: string; credits: string[]; lines: string[] };
+/** 動画の名前 → ファイルの中身 */
+export type Snapshot = Map<string, VideoFile>;
 
-const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-const speechHash = (s: string) => sha256(s).slice(0, 12);
-const byVideo = (a: { video: string }, b: { video: string }) => (a.video < b.video ? -1 : a.video > b.video ? 1 : 0);
-const langOf = (video: string): Lang => parseVideoKey(video).lang;
+const speechHash = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 12);
+const byName = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const keyOf = (line: string) => line.split(' ')[2];
 
-export const summaryOf = (values: VideoValue[]): Summary => {
-  const sorted = [...values].sort(byVideo);
-  // 鍵の一覧は並べ替えて重なりを除く（素材のブランチと .work/tts に要る音声の一覧と同じ）
-  const keys = [...new Set(sorted.flatMap((v) => v.lines.map((l) => l.key)))].sort();
-  const mine = (lang: Lang) => sorted.filter((v) => langOf(v.video) === lang);
-  return {
-    counts: {
-      videos: sorted.length,
-      lines: sorted.reduce((n, v) => n + v.lines.length, 0),
-      keys: keys.length,
-      byLang: Object.fromEntries(LANGS.map((lang) => [lang, { videos: mine(lang).length, lines: mine(lang).reduce((n, v) => n + v.lines.length, 0) }])),
-    },
-    hashes: {
-      keys: sha256(keys.join('\n')),
-      speech: sha256(sorted.flatMap((v) => v.lines.map((l) => `${v.video} ${l.at} ${l.speech}`)).join('\n')),
-      fingerprints: sha256(sorted.map((v) => `${v.video} ${v.fingerprint}`).join('\n')),
-      credits: sha256(sorted.map((v) => `${v.video} ${v.credits.join(', ')}`).join('\n')),
-    },
-  };
-};
-
-export const snapshotOf = (values: VideoValue[]): Snapshot => ({
-  summary: summaryOf(values),
-  videos: new Map(
+export const snapshotOf = (values: VideoValue[]): Snapshot =>
+  new Map(
     [...values]
-      .sort(byVideo)
-      .map((v) => [v.video, { video: v.video, fingerprint: v.fingerprint, credits: v.credits, lines: v.lines.map((l) => `${l.at} ${l.voice} ${l.key} ${speechHash(l.speech)}`) }]),
-  ),
-});
+      .sort((a, b) => byName(a.video, b.video))
+      .map((v) => [
+        v.video,
+        { video: v.video, ...(v.fingerprint ? { fingerprint: v.fingerprint } : {}), credits: v.credits, lines: v.lines.map((l) => `${l.at} ${l.voice} ${l.key} ${speechHash(l.speech)}`) },
+      ]),
+  );
+
+/** 全部の動画の鍵（並べ替えて重なりを除く。素材のブランチと .work/tts に要る音声の一覧と同じ）。全体の値は置かず、こうしてファイルから求める */
+export const snapshotKeys = (snap: Snapshot): string[] => [...new Set([...snap.values()].flatMap((v) => v.lines.map(keyOf)))].sort();
 
 /** JSON はキーを並べて整形し、最後に改行（作り直しても同じバイトになり、差分は変わった台詞の行だけになる） */
 const sortKeys = (v: unknown): unknown =>
   Array.isArray(v)
     ? v.map(sortKeys)
     : v && typeof v === 'object'
-      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([k, x]) => [k, sortKeys(x)]))
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => byName(a, b)).map(([k, x]) => [k, sortKeys(x)]))
       : v;
 const toJson = (v: unknown) => `${JSON.stringify(sortKeys(v), null, 2)}\n`;
 
 export const readSnapshot = (dir = SNAPSHOT_DIR): Snapshot => {
-  const videos = new Map<string, VideoFile>();
+  const snap: Snapshot = new Map();
   const videoDir = path.join(dir, 'videos');
-  for (const f of existsSync(videoDir) ? readdirSync(videoDir).filter((x) => x.endsWith('.json')) : []) {
+  for (const f of existsSync(videoDir) ? readdirSync(videoDir).filter((x) => x.endsWith('.json')).sort() : []) {
     const v = JSON.parse(readFileSync(path.join(videoDir, f), 'utf8')) as VideoFile;
     if (`${v.video}.json` !== f) throw new Error(`スナップショットのファイル名と中身が合わない: videos/${f}（中身は ${v.video}）`);
-    videos.set(v.video, v);
+    snap.set(v.video, v);
   }
-  const summary = path.join(dir, 'summary.json');
-  return { summary: existsSync(summary) ? (JSON.parse(readFileSync(summary, 'utf8')) as Summary) : undefined, videos };
+  return snap;
 };
 
 export const writeSnapshot = (values: VideoValue[], dir = SNAPSHOT_DIR) => {
   const snap = snapshotOf(values);
   const videoDir = path.join(dir, 'videos');
   mkdirSync(videoDir, { recursive: true });
-  // 無くなった動画のファイルを消す（README.md など、動画のファイル以外には触らない）
-  for (const f of readdirSync(videoDir)) if (f.endsWith('.json') && !snap.videos.has(f.slice(0, -'.json'.length))) rmSync(path.join(videoDir, f));
-  for (const [video, v] of snap.videos) writeFileSync(path.join(videoDir, `${video}.json`), toJson(v));
-  writeFileSync(path.join(dir, 'summary.json'), toJson(snap.summary));
+  // 無くなった動画のファイルを消す（動画のファイル以外には触らない）
+  for (const f of readdirSync(videoDir)) if (f.endsWith('.json') && !snap.has(f.slice(0, -'.json'.length))) rmSync(path.join(videoDir, f));
+  for (const [video, v] of snap) writeFileSync(path.join(videoDir, `${video}.json`), toJson(v));
 };
 
 /* ───────────── 比べる ───────────── */
 
-export type Category = 'videos' | 'keys' | 'speech' | 'fingerprints' | 'credits' | 'summary';
+export type Category = 'videos' | 'keys' | 'speech' | 'fingerprints' | 'credits' | 'keyList';
 /** 値の種類ごとの見出しと、変わったときに要ること（テストと、このスクリプトの表示に使う） */
 export const MEANING: Record<Category, { title: string; then: string }> = {
-  videos: { title: '動画が増えた・減った', then: '台本を足した・消したなら --update で作り直す（新しい動画は、PR に「合成し直しが要る」と書く）' },
+  videos: {
+    title: '動画とスナップショットのファイルが合わない（content/index.ts の VIDEOS と videos/<動画>.json）',
+    then: 'bun scripts/snapshots.ts --update で足す・消す。合成が要るかどうかは鍵の差で分かる（スナップショットに無い鍵の数）',
+  },
   keys: { title: '音声の鍵（音声ファイルの名前）が変わった', then: '素材の音声が当たらなくなる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
   speech: { title: '読み（VOICEVOX・Kokoro に渡す文）が変わった', then: '鍵も変わる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
-  fingerprints: { title: '訳の指紋（日本語の台本の指紋）が変わった', then: 'その台本の訳が stale になる（合成は要らない）。わざと変えたなら --update で作り直し、訳がある台本は訳を見直して bun scripts/i18n.ts stamp' },
+  fingerprints: { title: '訳の指紋（訳がある台本の指紋）が変わった', then: 'その訳が stale になる（合成は要らない）。わざと変えたなら --update で作り直し、訳を見直して bun scripts/i18n.ts stamp' },
   credits: { title: '動画の終わりのクレジットが変わった', then: '動画の書き出し直しが要る（音声は同じ）。わざと変えたなら --update で作り直す' },
-  summary: { title: '全体の数・ハッシュが変わった', then: 'ほかの違いを先に見る。ほかに違いが無いなら summary.json が動画のファイルと合っていない（手で直さず --update で作り直す）' },
+  keyList: {
+    title: '鍵の一覧（全部の動画・重なりなし。動画ごとのファイルから求める）が変わった',
+    then: 'スナップショットに無い鍵の台詞は合成が要る。無い鍵が 0 なら、今ある音声を使い回せる（時刻の作り直しだけ）',
+  },
 };
+/** found は値の種類ごとの違い。resynth はスナップショットに無い鍵がある動画（「動画（鍵の数）」。合成が要る） */
 export type Differences = { found: Record<Category, string[]>; resynth: string[] };
 
-/** 1 本の動画で出す台詞の数（ほかは数だけ出す） */
+/** 1 本の動画で出す台詞の数・鍵の数（ほかは数だけ出す） */
 const SHOW = 5;
 const quote = (s: string) => (s.length > 40 ? `${s.slice(0, 40)}…` : s);
 const block = (video: string, items: string[]) => [
@@ -135,20 +123,32 @@ const block = (video: string, items: string[]) => [
   ...items.slice(0, SHOW).map((x) => `  ${x}`),
   ...(items.length > SHOW ? [`  …ほか ${items.length - SHOW} 台詞`] : []),
 ];
+const some = (keys: string[]) => `${keys.slice(0, SHOW).join(' ')}${keys.length > SHOW ? ' …' : ''}`;
 
 /** 置いたスナップショットと今の値の違い。変わった動画と台詞（何番目・どの値）を、値の種類ごとに文にする */
 export const differences = (saved: Snapshot, values: VideoValue[]): Differences => {
-  const found: Record<Category, string[]> = { videos: [], keys: [], speech: [], fingerprints: [], credits: [], summary: [] };
-  const resynth = new Set<string>();
+  const found: Record<Category, string[]> = { videos: [], keys: [], speech: [], fingerprints: [], credits: [], keyList: [] };
+  const savedKeys = new Set(snapshotKeys(saved));
+  const resynth: string[] = [];
   const now = new Map(values.map((v) => [v.video, v]));
-  for (const v of [...values].sort(byVideo)) {
-    const old = saved.videos.get(v.video);
+  for (const v of [...values].sort((a, b) => byName(a.video, b.video))) {
+    const fresh = new Set(v.lines.map((l) => l.key).filter((k) => !savedKeys.has(k)));
+    if (fresh.size) resynth.push(`${v.video}（${fresh.size}）`);
+    const old = saved.get(v.video);
     if (!old) {
-      found.videos.push(`${v.video}: 新しい動画（スナップショットに無い。台詞 ${v.lines.length}）`);
-      resynth.add(v.video);
+      found.videos.push(`${v.video}: videos/${v.video}.json が無い（新しい動画。台詞 ${v.lines.length}・スナップショットに無い鍵 ${fresh.size}）`);
       continue;
     }
-    if (old.fingerprint !== v.fingerprint) found.fingerprints.push(`${v.video}: ${old.fingerprint} → ${v.fingerprint}${langOf(v.video) === 'ja' ? '' : `（元の日本語の台本 ${parseVideoKey(v.video).id}）`}`);
+    if (old.fingerprint !== v.fingerprint) {
+      const source = parseVideoKey(v.video).lang === 'ja' ? '' : `（元の日本語の台本 ${parseVideoKey(v.video).id}）`;
+      found.fingerprints.push(
+        !old.fingerprint
+          ? `${v.video}: 訳ができた（指紋 ${v.fingerprint} を置く）`
+          : !v.fingerprint
+            ? `${v.video}: 訳が無くなった（指紋 ${old.fingerprint} を外す）`
+            : `${v.video}: ${old.fingerprint} → ${v.fingerprint}${source}`,
+      );
+    }
     if (old.credits.join('\n') !== v.credits.join('\n')) found.credits.push(`${v.video}: ${old.credits.join('、')} → ${v.credits.join('、')}`);
     const before = new Map(
       old.lines.map((s) => {
@@ -175,29 +175,17 @@ export const differences = (saved: Snapshot, values: VideoValue[]): Differences 
       keys.push(`${a} 台詞が無くなった`);
       speech.push(`${a} 台詞が無くなった`);
     }
-    if (keys.length) {
-      found.keys.push(...block(v.video, keys));
-      resynth.add(v.video);
-    }
+    if (keys.length) found.keys.push(...block(v.video, keys));
     if (speech.length) found.speech.push(...block(v.video, speech));
   }
-  for (const video of [...saved.videos.keys()].sort()) if (!now.has(video)) found.videos.push(`${video}: 動画が無くなった`);
-  const s = summaryOf(values);
-  if (!saved.summary) found.summary.push('summary.json が無い');
-  else {
-    const c = saved.summary.counts;
-    const counts: [string, number | undefined, number][] = [
-      ['動画', c.videos, s.counts.videos],
-      ['台詞', c.lines, s.counts.lines],
-      ['鍵（重なりなし）', c.keys, s.counts.keys],
-    ];
-    for (const [name, from, to] of counts) if (from !== to) found.summary.push(`${name}の数: ${from} → ${to}`);
-    for (const [name, to] of Object.entries(s.hashes)) {
-      const from = saved.summary.hashes[name as keyof Summary['hashes']];
-      if (from !== to) found.summary.push(`全体の ${name}: ${from} → ${to}`);
-    }
-  }
-  return { found, resynth: [...resynth].sort() };
+  for (const video of [...saved.keys()].sort(byName)) if (!now.has(video)) found.videos.push(`${video}: 動画が無いのに videos/${video}.json が残っている`);
+  // 全体の鍵の一覧は、動画ごとのファイルから求めて比べる（スナップショットに無い鍵 = 合成が要る台詞）
+  const nowKeys = new Set(values.flatMap((v) => v.lines.map((l) => l.key)));
+  const added = [...nowKeys].filter((k) => !savedKeys.has(k)).sort();
+  const removed = [...savedKeys].filter((k) => !nowKeys.has(k)).sort();
+  if (added.length) found.keyList.push(`スナップショットに無い鍵 ${added.length}（合成が要る）: ${some(added)}`);
+  if (removed.length) found.keyList.push(`使わなくなった鍵 ${removed.length}（素材に残るだけ）: ${some(removed)}`);
+  return { found, resynth };
 };
 
 /** 違いを表示用の行にする（違いが無ければ空） */
@@ -215,13 +203,18 @@ if (import.meta.main) {
   const values = speechValues();
   const diff = differences(readSnapshot(), values);
   const lines = report(diff);
-  const { counts } = summaryOf(values);
-  const size = `動画 ${counts.videos} 本（${LANGS.map((l) => `${l} ${counts.byLang[l].videos}`).join('・')}）・台詞 ${counts.lines}・鍵 ${counts.keys}`;
+  const inLang = (lang: string) => values.filter((v) => parseVideoKey(v.video).lang === lang).length;
+  const size = [
+    `動画 ${values.length} 本（${LANGS.map((l) => `${l} ${inLang(l)}`).join('・')}）`,
+    `台詞 ${values.reduce((n, v) => n + v.lines.length, 0)}`,
+    `鍵 ${new Set(values.flatMap((v) => v.lines.map((l) => l.key))).size}`,
+    `訳の指紋 ${values.filter((v) => v.fingerprint).length} 本`,
+  ].join('・');
   for (const l of lines) console.log(l);
   if (args.includes('--update')) {
     writeSnapshot(values);
-    console.log(`${lines.length ? '作り直した' : '変わっていない（書き直しただけ）'}: ${path.relative(ROOT, SNAPSHOT_DIR)}（${size}）`);
-    if (diff.resynth.length) console.log(`PR に「合成し直しが要る」と書く。鍵が変わった・増えた動画: ${diff.resynth.join(' ')}`);
+    console.log(`${lines.length ? '作り直した' : '変わっていない（書き直しただけ）'}: ${path.relative(ROOT, SNAPSHOT_DIR)}/videos（${size}）`);
+    if (diff.resynth.length) console.log(`PR に「合成し直しが要る」と書く。スナップショットに無い鍵がある動画（鍵の数）: ${diff.resynth.join(' ')}`);
   } else {
     console.log(lines.length ? `スナップショットと違う。わざと変えたなら bun scripts/snapshots.ts --update（${size}）` : `スナップショットと同じ（${size}）`);
     process.exit(lines.length ? 1 : 0);
