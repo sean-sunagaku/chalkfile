@@ -61,6 +61,10 @@ iOSもCache APIのブラウザ保存であり、「ファイル」アプリへ�
 
 公開後の単体MP4ダウンロードは、保存・再起動の検証に使った一時profileを消す前に行う。通信断のまま「動画ファイルをダウンロード」を1回押し、ダウンロード完了・ファイル名・サイズ・SHA-256を生成物と照合する。保存キャッシュを使えるかを確認し、全動画の重複取得を避ける。アプリ内保存やローカルでの単体ダウンロード成功を、公開サイトでボタンを操作した成功とは扱わない。
 
+## 本番を再確認するとき
+
+`bun tests/verify-production.ts offline` で認証情報のない専用profileへ保存し、別プロセスの `offline-restart` で通信を切った再起動・再生・シーク・字幕切替・単体DLのSHA-256を確認する。要求数は `bun tests/measure-production.ts` で自分の検証用ヘッダーだけをCloudflare側で抽出して数える。profileと生ログはpushしない。結果・実機の手順は [公開確認の記録](../../../../docs/workers-verification.md) に残す。Chrome/自動試験の成功をSafariやiPhone実機の成功と混同しない。
+
 ## 一次資料（2026-10-31確認）
 
 - [Service Workers仕様 / Cache.put](https://w3c.github.io/ServiceWorker/#cache-put): Cache APIは206応答をそのまま保存する用途ではない。完全な応答を明示的に保存する。

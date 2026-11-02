@@ -67,3 +67,5 @@ wwwも同じWorkerのCustom Domainで管理する。HTMLはassetsで返し、そ
 サイトの不具合はWorkersの以前のversionへrollbackできる。動画は旧hashを保持するため、戻したページも同じ動画を参照できる。旧Pagesを戻す必要がある場合はローカル復旧参照を確認し、他の更新と公開許可の範囲を照合する。保存cacheの全消去を復旧手段にしない。
 
 公式確認: [Workersの制限](https://developers.cloudflare.com/workers/platform/limits/)、[static assetsの料金](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)、[選択したパスのWorker優先](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/)、[Workersの権限](https://developers.cloudflare.com/workers/authorization/workers/)、[Releasesの制限](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)（2026-11-02）。
+
+本番での保存/移行/要求数、Actionsの実行結果と本人の残作業は [公開確認の記録](workers-verification.md) にまとめる。
