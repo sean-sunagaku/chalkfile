@@ -1,0 +1,545 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L01",
+      "kind": "standard",
+      "bytes": 11128834,
+      "sha256": "ddcf2ee4eaafe1609d675b5debd30ab575da60d4a26d1b0be3bb32e29ae47d83",
+      "filename": "L01.ddcf2ee4eaafe1609d675b5debd30ab575da60d4a26d1b0be3bb32e29ae47d83.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L02",
+      "kind": "standard",
+      "bytes": 11147346,
+      "sha256": "049fc3595581f9d8537b4e011f996be7008f8991de907e91d285a2c820296f14",
+      "filename": "L02.049fc3595581f9d8537b4e011f996be7008f8991de907e91d285a2c820296f14.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L03",
+      "kind": "standard",
+      "bytes": 14351800,
+      "sha256": "4ba26e30071b1b17dd057a6be9bdad5ce4f9f09b252565c4cc8fdd3708e54142",
+      "filename": "L03.4ba26e30071b1b17dd057a6be9bdad5ce4f9f09b252565c4cc8fdd3708e54142.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L04",
+      "kind": "standard",
+      "bytes": 12549582,
+      "sha256": "34a269d81548dfd3a15071ecbd110c8d1b95ebedc6766707daaf9bb93de85c4a",
+      "filename": "L04.34a269d81548dfd3a15071ecbd110c8d1b95ebedc6766707daaf9bb93de85c4a.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L05",
+      "kind": "standard",
+      "bytes": 13684834,
+      "sha256": "5f6f8a8dfd4d9691288af1904bbbd1320d261bee6fa9458047176498affc5870",
+      "filename": "L05.5f6f8a8dfd4d9691288af1904bbbd1320d261bee6fa9458047176498affc5870.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L06",
+      "kind": "standard",
+      "bytes": 13677279,
+      "sha256": "ff0bdf73846ce1c122debf16d35a66f00184bce5d437235ff2c4caf675a456ee",
+      "filename": "L06.ff0bdf73846ce1c122debf16d35a66f00184bce5d437235ff2c4caf675a456ee.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L07",
+      "kind": "standard",
+      "bytes": 14384219,
+      "sha256": "2d1ed08b4c2b99c12eacddb52b340a9997927d90c00715891764bf551651e0e0",
+      "filename": "L07.2d1ed08b4c2b99c12eacddb52b340a9997927d90c00715891764bf551651e0e0.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L08",
+      "kind": "standard",
+      "bytes": 13914258,
+      "sha256": "bae499781e13c447112b32df069ea82bf768ded73765a854b5a1d33570b1bd4c",
+      "filename": "L08.bae499781e13c447112b32df069ea82bf768ded73765a854b5a1d33570b1bd4c.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L09",
+      "kind": "standard",
+      "bytes": 13149015,
+      "sha256": "0155e82cba1c924cc05b4ab4ef2079bd64224d862c6641251119824c1e5b3297",
+      "filename": "L09.0155e82cba1c924cc05b4ab4ef2079bd64224d862c6641251119824c1e5b3297.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L10",
+      "kind": "standard",
+      "bytes": 11578652,
+      "sha256": "9e8d3a0a6c178a2467cf280784e2a8aef30a05878ff0ee9cd00d3d389518ba59",
+      "filename": "L10.9e8d3a0a6c178a2467cf280784e2a8aef30a05878ff0ee9cd00d3d389518ba59.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L11",
+      "kind": "standard",
+      "bytes": 14500048,
+      "sha256": "7fc20af11c009a3297f18d241ebd3ce4fed5201c646b4a27d784b4323a448259",
+      "filename": "L11.7fc20af11c009a3297f18d241ebd3ce4fed5201c646b4a27d784b4323a448259.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L12",
+      "kind": "standard",
+      "bytes": 7601409,
+      "sha256": "a8a87bd14ebea67b305a340e2e23e228a70f5aab7da43213a0b7c6120c3b7acb",
+      "filename": "L12.a8a87bd14ebea67b305a340e2e23e228a70f5aab7da43213a0b7c6120c3b7acb.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L13",
+      "kind": "standard",
+      "bytes": 10750024,
+      "sha256": "9a11907bc3ca8d52999695fb114f73ac513f91485a7e55c05c893cb8d6c149a6",
+      "filename": "L13.9a11907bc3ca8d52999695fb114f73ac513f91485a7e55c05c893cb8d6c149a6.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N01",
+      "kind": "standard",
+      "bytes": 15556816,
+      "sha256": "a75d63bafdb57005509b446e1dd9700e519845f66cdf8294261585ebd1769c94",
+      "filename": "N01.a75d63bafdb57005509b446e1dd9700e519845f66cdf8294261585ebd1769c94.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N02",
+      "kind": "standard",
+      "bytes": 15426054,
+      "sha256": "481686c5d9bcf521cb376167b085613e23b5fdb106b4e5552e1805cabb116ab8",
+      "filename": "N02.481686c5d9bcf521cb376167b085613e23b5fdb106b4e5552e1805cabb116ab8.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N03",
+      "kind": "standard",
+      "bytes": 15421714,
+      "sha256": "86fd018d92ac14cc7930d5310c4bb6a79f4f2e21879603be8d349f2cb9e3a793",
+      "filename": "N03.86fd018d92ac14cc7930d5310c4bb6a79f4f2e21879603be8d349f2cb9e3a793.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N04",
+      "kind": "standard",
+      "bytes": 15983063,
+      "sha256": "285fc7bd2a1734ca6e98cb441764b19dadde9cf7cdc6b2b5541d2d37ccc03b7b",
+      "filename": "N04.285fc7bd2a1734ca6e98cb441764b19dadde9cf7cdc6b2b5541d2d37ccc03b7b.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N05",
+      "kind": "standard",
+      "bytes": 14955799,
+      "sha256": "0474ef6f90fb8492de7f06f535b08bed05cc790912865016ca525f4a3872a04d",
+      "filename": "N05.0474ef6f90fb8492de7f06f535b08bed05cc790912865016ca525f4a3872a04d.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N06",
+      "kind": "standard",
+      "bytes": 16339823,
+      "sha256": "8cea57b926e1fa91468ee755e487ae629a1bfb2f6a56bb7d8c323c84bd365243",
+      "filename": "N06.8cea57b926e1fa91468ee755e487ae629a1bfb2f6a56bb7d8c323c84bd365243.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N07",
+      "kind": "standard",
+      "bytes": 17135277,
+      "sha256": "1ad242b935e35b73bafb48d76ca62e827dbd8de061c00c2da2856863843d9305",
+      "filename": "N07.1ad242b935e35b73bafb48d76ca62e827dbd8de061c00c2da2856863843d9305.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D01",
+      "kind": "standard",
+      "bytes": 14036566,
+      "sha256": "46252189e24f68935ca741f1a57749847230c8b12f5388c2d0c82ade88f061d9",
+      "filename": "D01.46252189e24f68935ca741f1a57749847230c8b12f5388c2d0c82ade88f061d9.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D02",
+      "kind": "standard",
+      "bytes": 15384431,
+      "sha256": "0e9616f1502cd33abbb0cf8c20df22e8425c82049e17b4e35aeabdc91ac93b46",
+      "filename": "D02.0e9616f1502cd33abbb0cf8c20df22e8425c82049e17b4e35aeabdc91ac93b46.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D03",
+      "kind": "standard",
+      "bytes": 13856440,
+      "sha256": "ea0b2ba7e0a671da9d653331a25200eec0de93a3dced6d249bdc94041b98aa67",
+      "filename": "D03.ea0b2ba7e0a671da9d653331a25200eec0de93a3dced6d249bdc94041b98aa67.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D04",
+      "kind": "standard",
+      "bytes": 14258455,
+      "sha256": "3256244433a45f4a347b527d3dd4baf8c1fd8ac06e2614b6d997405b0c8a8ea6",
+      "filename": "D04.3256244433a45f4a347b527d3dd4baf8c1fd8ac06e2614b6d997405b0c8a8ea6.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D05",
+      "kind": "standard",
+      "bytes": 16627700,
+      "sha256": "010bfce1b42bef37d0e75311fc7700fcc89fed2fc3cee678a8939b1ca13ffeea",
+      "filename": "D05.010bfce1b42bef37d0e75311fc7700fcc89fed2fc3cee678a8939b1ca13ffeea.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D06",
+      "kind": "standard",
+      "bytes": 17989170,
+      "sha256": "1438d2c2729f198b0152b86185b4ef4e1f220fa63b1c8406398027f12aef9329",
+      "filename": "D06.1438d2c2729f198b0152b86185b4ef4e1f220fa63b1c8406398027f12aef9329.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D07",
+      "kind": "standard",
+      "bytes": 18869961,
+      "sha256": "4ff63732942c24b8456aa21be1d78172ede9ea2b10fe110e3040d4eb0d19773b",
+      "filename": "D07.4ff63732942c24b8456aa21be1d78172ede9ea2b10fe110e3040d4eb0d19773b.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D08",
+      "kind": "standard",
+      "bytes": 17997060,
+      "sha256": "956d4b396abde8f655247fcb23cb7cfd6672fd71c958a5ee306aec3e214bdeed",
+      "filename": "D08.956d4b396abde8f655247fcb23cb7cfd6672fd71c958a5ee306aec3e214bdeed.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M01",
+      "kind": "standard",
+      "bytes": 16427060,
+      "sha256": "d0218d59c70d4f3fee1e576faf68710105ae0a9f1b9dc66d1bf3aaf06b66946a",
+      "filename": "M01.d0218d59c70d4f3fee1e576faf68710105ae0a9f1b9dc66d1bf3aaf06b66946a.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M02",
+      "kind": "standard",
+      "bytes": 17319219,
+      "sha256": "0adec22b649cf3f21d08ecae74256560a42e7415949f34ce28c3963243c9f585",
+      "filename": "M02.0adec22b649cf3f21d08ecae74256560a42e7415949f34ce28c3963243c9f585.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M03",
+      "kind": "standard",
+      "bytes": 16325168,
+      "sha256": "121001fd76b46395ae58e961016853c4a3e19c015a8b391df6ef074874c86bc5",
+      "filename": "M03.121001fd76b46395ae58e961016853c4a3e19c015a8b391df6ef074874c86bc5.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M04",
+      "kind": "standard",
+      "bytes": 17434781,
+      "sha256": "581ff12256ace9572ef630ef9e66ee640dd5f3755155c20ec8061278b38f6bde",
+      "filename": "M04.581ff12256ace9572ef630ef9e66ee640dd5f3755155c20ec8061278b38f6bde.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M05",
+      "kind": "standard",
+      "bytes": 17253921,
+      "sha256": "dc9d11101d2c12eba76a35b1cce010e48f8d54add30e35ee5932816ef2bd7fd5",
+      "filename": "M05.dc9d11101d2c12eba76a35b1cce010e48f8d54add30e35ee5932816ef2bd7fd5.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M06",
+      "kind": "standard",
+      "bytes": 16781759,
+      "sha256": "0d7f5656ea07f22a77a57006a47f74b4377b5fa31fb16dc25bcf4e53b0a198c7",
+      "filename": "M06.0d7f5656ea07f22a77a57006a47f74b4377b5fa31fb16dc25bcf4e53b0a198c7.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M07",
+      "kind": "standard",
+      "bytes": 16287342,
+      "sha256": "684243cc17df16ae5dd07cbc8264a3f962242fec587284dd2fc004349a1f214e",
+      "filename": "M07.684243cc17df16ae5dd07cbc8264a3f962242fec587284dd2fc004349a1f214e.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "indie-marketing",
+      "lecture": "M08",
+      "kind": "standard",
+      "bytes": 18537541,
+      "sha256": "a64dc39e0897b193adb58c62bb39d9c7ceab889a75ee7d2f465d4c0244237734",
+      "filename": "M08.a64dc39e0897b193adb58c62bb39d9c7ceab889a75ee7d2f465d4c0244237734.mp4",
+      "tag": "media-ja-indie-marketing"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-comedy",
+      "lecture": "W01",
+      "kind": "standard",
+      "bytes": 17009496,
+      "sha256": "04ae52122745da5b0808bc369911af670921cb75fca295376ecbfdbc00ba457a",
+      "filename": "W01.04ae52122745da5b0808bc369911af670921cb75fca295376ecbfdbc00ba457a.mp4",
+      "tag": "media-ja-nudge-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-comedy",
+      "lecture": "W01",
+      "kind": "captioned",
+      "bytes": 17953347,
+      "sha256": "d409d95c81ca27d58db7e0159d14064786597daed9d9da8fff877fc33ce5f474",
+      "filename": "W01.cc.d409d95c81ca27d58db7e0159d14064786597daed9d9da8fff877fc33ce5f474.mp4",
+      "tag": "media-ja-nudge-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "rive-comedy",
+      "lecture": "R01",
+      "kind": "standard",
+      "bytes": 11470413,
+      "sha256": "76697f1e9e816913f6524af7feb4e650ad5f23c6ee1a17b190594890f15f1e3f",
+      "filename": "R01.76697f1e9e816913f6524af7feb4e650ad5f23c6ee1a17b190594890f15f1e3f.mp4",
+      "tag": "media-ja-rive-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "rive-comedy",
+      "lecture": "R01",
+      "kind": "captioned",
+      "bytes": 11990846,
+      "sha256": "31cb0481c99a81112040cea7cfa6ab3ff464e0a9ea67bd3b5b86f6f3ce81fd64",
+      "filename": "R01.cc.31cb0481c99a81112040cea7cfa6ab3ff464e0a9ea67bd3b5b86f6f3ce81fd64.mp4",
+      "tag": "media-ja-rive-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "pstack-comedy",
+      "lecture": "P01",
+      "kind": "standard",
+      "bytes": 13677690,
+      "sha256": "63c34ded4d600ca9a19a19decc8b3697f8953b54a225b8533bbc7be395db5b89",
+      "filename": "P01.63c34ded4d600ca9a19a19decc8b3697f8953b54a225b8533bbc7be395db5b89.mp4",
+      "tag": "media-ja-pstack-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "pstack-comedy",
+      "lecture": "P01",
+      "kind": "captioned",
+      "bytes": 14398927,
+      "sha256": "fefc1993bf088554aa6499995528332084a5c5a8789ca7c657c58717f57af5d8",
+      "filename": "P01.cc.fefc1993bf088554aa6499995528332084a5c5a8789ca7c657c58717f57af5d8.mp4",
+      "tag": "media-ja-pstack-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S01",
+      "kind": "standard",
+      "bytes": 15294727,
+      "sha256": "0dcdb99ee3d7d3ed16f76cd194a53fa0e4136319d7c2c67e0c81fdcb5e8260b0",
+      "filename": "S01.0dcdb99ee3d7d3ed16f76cd194a53fa0e4136319d7c2c67e0c81fdcb5e8260b0.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S01",
+      "kind": "captioned",
+      "bytes": 16409733,
+      "sha256": "43585220551cea8c7a089411bc0dcadbb40d72b08e83d94674a2f71a9ee260b0",
+      "filename": "S01.cc.43585220551cea8c7a089411bc0dcadbb40d72b08e83d94674a2f71a9ee260b0.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S02",
+      "kind": "standard",
+      "bytes": 18129763,
+      "sha256": "1e67cf295fa648e201bdc06f433705f7552da94b8434410e5025b1bcb5773efe",
+      "filename": "S02.1e67cf295fa648e201bdc06f433705f7552da94b8434410e5025b1bcb5773efe.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S02",
+      "kind": "captioned",
+      "bytes": 19454031,
+      "sha256": "6231f22f862de35eaa8f9528b1b25ba108bd974407c1807330dd768d5ee55769",
+      "filename": "S02.cc.6231f22f862de35eaa8f9528b1b25ba108bd974407c1807330dd768d5ee55769.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S03",
+      "kind": "standard",
+      "bytes": 16007917,
+      "sha256": "60d72573c0a5dcfd259cbb68886853b851ff30f86732b0811cceaca75a33e922",
+      "filename": "S03.60d72573c0a5dcfd259cbb68886853b851ff30f86732b0811cceaca75a33e922.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S03",
+      "kind": "captioned",
+      "bytes": 16967160,
+      "sha256": "7eb433755aa9fab4bfd1600a79a23d0a8cfb35d4fb54ae37e63c50b77ea82532",
+      "filename": "S03.cc.7eb433755aa9fab4bfd1600a79a23d0a8cfb35d4fb54ae37e63c50b77ea82532.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S04",
+      "kind": "standard",
+      "bytes": 14943446,
+      "sha256": "6fc58f37a1c0c0a66d97114a49842908e092468630edd4b291dd63834adaad32",
+      "filename": "S04.6fc58f37a1c0c0a66d97114a49842908e092468630edd4b291dd63834adaad32.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S04",
+      "kind": "captioned",
+      "bytes": 16003798,
+      "sha256": "a7f1ce8ef9f107d2e43cf24d651d229c0885a440ca7c5d0a50f7763b90df9022",
+      "filename": "S04.cc.a7f1ce8ef9f107d2e43cf24d651d229c0885a440ca7c5d0a50f7763b90df9022.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S05",
+      "kind": "standard",
+      "bytes": 14302699,
+      "sha256": "79764e68f9efc2af81e537da662e6daaec64809291aa8b30781ac12b2ed83ebc",
+      "filename": "S05.79764e68f9efc2af81e537da662e6daaec64809291aa8b30781ac12b2ed83ebc.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S05",
+      "kind": "captioned",
+      "bytes": 13896055,
+      "sha256": "717ee649b1f2e72f397131f729216271186da13321f8ff7e9b24eeecb2278033",
+      "filename": "S05.cc.717ee649b1f2e72f397131f729216271186da13321f8ff7e9b24eeecb2278033.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S06",
+      "kind": "standard",
+      "bytes": 17865985,
+      "sha256": "77eb37ffae5a85ac8fb8dbe425f39889b5e6942fa73f5f946deda1ee6074698d",
+      "filename": "S06.77eb37ffae5a85ac8fb8dbe425f39889b5e6942fa73f5f946deda1ee6074698d.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S06",
+      "kind": "captioned",
+      "bytes": 19316362,
+      "sha256": "1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513",
+      "filename": "S06.cc.1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513.mp4",
+      "tag": "media-ja-superagent-comedy"
+    }
+  ]
+}
