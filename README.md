@@ -206,7 +206,7 @@ export const STRIPE_BILLING: Course = {
 
 ## 公開（Workers / Releases）
 
-動画を作り直したら、手元で `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に実行し、マニフェストとポスターをコミットします。mainへのpushまたはmainを選んだActionsの手動実行で、素材取得・キャッシュ済み音声からの講義データ生成・型/単体/安全点検・Releases照合・strict buildを行ってからWranglerで公開します。動画が不足していたら止まります。
+動画を作り直したら、手元で `bun scripts/check_content.ts --require-denylist` → `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に実行し、マニフェストとポスターをコミットします。mainへのpushまたはmainを選んだActionsの手動実行で、素材取得・キャッシュ済み音声からの講義データ生成・型/単体/安全点検・Releases照合・strict buildを行ってからWranglerで公開します。動画が不足していたら止まります。
 
 設定・最小権限token・production environment・復旧を含む手順は [docs/workers-delivery.md](docs/workers-delivery.md)、実公開の保存・移行・無料枠測定の結果と確認範囲・残作業は [検証記録](docs/workers-verification.md) にあります。API tokenはGitHubのproduction secretにだけ入力し、値を会話やリポジトリへ貼らないでください。
 
