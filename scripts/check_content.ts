@@ -64,6 +64,7 @@ const SECRETS: [RegExp, string][] = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, '秘密鍵'],
   [/\bAIza[0-9A-Za-z_-]{35}\b/, 'Google の API キーの形'],
   [/\bsk-(ant-|proj-)?[0-9A-Za-z_-]{24,}/, 'AI の API キーの形'],
+  [/\b(cfk|cfut|cfat|cfoat)_[A-Za-z0-9_-]{24,}\b/, 'Cloudflare の秘密鍵・API/OAuth tokenの形'],
   [/\b(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CF_API_KEY)["']?\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}/, 'Cloudflare の認証値の直書き'],
   [/https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/]{20,}/, 'Slack の Webhook URL'],
   [/\b(password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, 'パスワード・キーの直書き'],

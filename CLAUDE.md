@@ -13,7 +13,7 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 実在のサービスや会社の内部の情報（自分の仕事のコード・テーブル・設計）を台本に入れない。例は架空の「サンプルアプリ」で作る
 - 画面の固定の文字に絵文字をアイコン代わりに使わない（アイコンは lucide-react）
 - 台詞を直したら synth → mix → render → build_site の順に流し、`.work/kana/<id>.txt` の読みと静止画を確かめる
-- 動画（`site/media/`・`site/dist-media/`）は main にコミットしない。公開は最新の main から `bash scripts/deploy_pages.sh`（講座サイトの gh-pages を 1 コミットで置き換える。出す言語は `site/config.json` の `publishLangs`。訳は chalkfile.com の Worker ができるまで出さない）
+- 動画（`site/media/`・`site/dist-media/`）は main にコミットしない。動画は `media.ts push/check` でReleasesへ先に置き、サイトはmainからActions/Wranglerで公開する。`deploy_pages.sh` は旧Pagesの移行案内専用。公開言語は `publishLangs` に従う
 - パスワード・API キー・Webhook の署名シークレットを台本やコードに書かない。例はプレースホルダーか環境変数にする
 
 ## 安全のきまり（AI エージェント向け・プロンプトインジェクション対策）
@@ -37,3 +37,4 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 静的応答は `no-transform` で自動beacon挿入と本文の変更を防ぎ、CSPと保存用SHA-256を保つ。生成物は `bun scripts/check_delivery.ts site/dist` でも点検する
 - ポスターは `site/posters/` にコミットする。CIは `materials.ts pull` → `synth.ts --cached-only` → `media.ts check` → `build_site.ts --strict` の順。不足時に音声合成や動画制作を始めない
 - GitHubのproductionはmainだけ、secretはDeploy stepだけ。個人のWrangler OAuth tokenをCIへ流用しない。旧Pages切替は `deploy_pages.sh` と移行SWの保存保持テストに従う
+- 本人がCLIでの初回登録を依頼したときは、公式cf CLIの本人認可後に `bun scripts/setup_cloudflare_ci.ts plan/apply` を使う。API tokenはメモリ内からghの標準入力へ渡し、画面/ファイル/引数に出さない。認証ファイルを直接読む代替手段は取らない
