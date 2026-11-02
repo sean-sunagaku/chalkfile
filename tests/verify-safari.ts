@@ -75,8 +75,9 @@ try {
   await command('POST', '/timeouts', { implicit: 0, pageLoad: 15000, script: 30000 });
   for (const route of ['', ...COURSES.map((c) => `${c.id}/`)]) {
     await command('POST', '/url', { url: `https://chalkfile.com/${route}` });
-    await until('document.querySelector("h1")?.textContent.length>0', '講座を表示できません');
-    receipt.pages.push(route || '/');
+    const title = COURSES.find((c) => `${c.id}/` === route)?.title ?? 'Chalkfile';
+    await until(`location.pathname===${JSON.stringify(`/${route}`)} && document.title.includes(${JSON.stringify(title)}) && document.querySelector("h1")?.textContent.length>0`, '対象の講座を表示できません');
+    receipt.pages.push(await js('return {path:location.pathname,title:document.title,heading:document.querySelector("h1").textContent};'));
   }
   await command('POST', '/url', { url: 'https://chalkfile.com/rive-comedy/' });
   await until('navigator.serviceWorker.controller && document.querySelector("#offlineSave") && !document.querySelector("#offlineSave").disabled', 'SWと保存ボタンが有効になりません');
