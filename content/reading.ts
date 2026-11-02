@@ -232,3 +232,22 @@ export const toSpeech = (text: string): string => {
   s = s.replace(/[{}`]/g, '').replace(/ +/g, '');
   return s;
 };
+
+/* ───────────── 中国語の読みの直し ─────────────
+ * 中国語の台詞は Kokoro の misaki（jieba・pypinyin）が読みを決める。多音字で違う読みを選ぶ語を、同じ音の字に置き換えて読ませる。
+ * 見つけ方: uv run scripts/check_speech.py <key>（聞き取りの食い違いと、多音字の読みの一覧を出す）
+ */
+const ZH_PHRASES: [RegExp, string][] = [
+  // 数のあとの「行」はコードの行（háng）。pypinyin は xíng と読む
+  [/([0-9一二三四五六七八九十百千万两几]+) ?行/g, '$1杭'],
+  // 「走得快」の得（様子を言う de）を dé と読む。同じ音の「的」で読ませる
+  [/走得快/g, '走的快'],
+  // 2026-11-02 の Super-agent の見直しで見つけた読み違い（台詞の s でも直した。ここは次の訳のため）
+  // 长（cháng）を zhǎng と読む語
+  [/长时间/g, '常时间'],
+  [/(很|太)长/g, '$1常'],
+  // 地（dì）が軽声の de になる語。成本地・基本地・根本地（〜に。様子を言う de）は外す
+  [/(?<![成基根])(本|原|就)地/g, '$1帝'],
+];
+
+export const toSpeechZh = (text: string): string => ZH_PHRASES.reduce((s, [from, to]) => s.replace(from, to), text);

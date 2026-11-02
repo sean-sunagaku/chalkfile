@@ -1,5 +1,6 @@
 // 動画の素材（台詞の音声と読み・BGM とジングル・効果音）を、素材だけを置くブランチ `materials` と出し入れする。
-// 素材があれば、台詞を変えていない章は VOICEVOX なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せる。
+// 素材があれば、台詞を変えていない章は VOICEVOX・Kokoro なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せる。
+// 台詞の音声は、日本語（VOICEVOX）と訳の言語（Kokoro）のものを、講座ごとのフォルダにまとめて置く（名前は文と声から決まるので重ならない）。
 //   bun scripts/materials.ts pull [講座 ID …] [--videos]   # 素材を取り出す（--videos で、公開中のサイトの動画とポスターも）
 //   bun scripts/materials.ts check [講座 ID …]             # 台本の全部の台詞の音声が手元にあるか
 //   bun scripts/materials.ts push [--message 文]           # 手元の素材で `materials` ブランチを作り直して push する
@@ -10,9 +11,10 @@ import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { COURSES } from '../content';
+import { COURSES, coursesIn } from '../content';
+import { LANGS, type Lang } from '../content/i18n';
 import type { Course } from '../content/types';
-import { speechOf, ttsKey, VOICES } from './voices';
+import { KOKORO, speechIn, ttsKeyIn, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const BRANCH = 'materials';
@@ -70,12 +72,17 @@ const pickCourses = (ids: string[]): Course[] =>
       })
     : COURSES;
 
-/** 講座の台本の全部の台詞の、音声ファイルの名前（synth.ts と同じ決め方） */
+/** 講座の台本（全部の言語）の全部の台詞の、音声ファイルの名前（synth.ts と同じ決め方） */
 const keysOf = (course: Course): string[] => {
   const keys = new Set<string>();
-  for (const lec of course.lectures) for (const scene of lec.scenes) for (const line of scene.lines) keys.add(ttsKey(speechOf(line), line.v ?? 'narrator'));
+  for (const lang of LANGS) {
+    const c = coursesIn(lang).find((x) => x.id === course.id);
+    for (const lec of c?.lectures ?? []) for (const scene of lec.scenes) for (const line of scene.lines) keys.add(ttsKeyIn(speechIn(line, lang), line.v ?? 'narrator', lang));
+  }
   return [...keys].sort();
 };
+/** 講座の訳の言語（素材の README に出す） */
+const langsOf = (course: Course): Lang[] => LANGS.filter((l) => coursesIn(l).some((c) => c.id === course.id));
 
 const hasVoice = (key: string) => existsSync(path.join(ROOT, TTS, `${key}.wav`)) && existsSync(path.join(ROOT, TTS, `${key}.kana`));
 
@@ -84,7 +91,7 @@ const check = (courses: Course[]): boolean => {
   for (const c of courses) {
     const keys = keysOf(c);
     const missing = keys.filter((k) => !hasVoice(k));
-    console.log(`${c.id}: 台詞の音声 ${keys.length - missing.length}/${keys.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX で bun scripts/synth.ts）' : ''}`);
+    console.log(`${c.id}（${langsOf(c).join('・')}）: 台詞の音声 ${keys.length - missing.length}/${keys.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX・Kokoro で bun scripts/synth.ts）' : ''}`);
     if (missing.length) ok = false;
   }
   for (const [local] of AUDIO_DIRS) {
@@ -107,7 +114,7 @@ const readmeOf = (source: string, perCourse: { course: Course; clips: number; by
 
 | パス | 中身 | 数 | 大きさ |
 |---|---|---|---|
-${perCourse.map((p) => `| \`tts/${p.course.id}/\` | ${p.course.title}（${p.course.lectures.length} ${p.course.unitLabel === 'CHAPTER' ? '章' : 'レクチャー'}）の台詞の音声（VOICEVOX・48kHz・モノラル）と読み（カナ） | ${p.clips} 本 | ${mb(p.bytes)} |`).join('\n')}
+${perCourse.map((p) => `| \`tts/${p.course.id}/\` | ${p.course.title}（${p.course.lectures.length} ${p.course.unitLabel === 'CHAPTER' ? '章' : 'レクチャー'}・${langsOf(p.course).join('・')}）の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素） | ${p.clips} 本 | ${mb(p.bytes)} |`).join('\n')}
 | \`audio/music/\`・\`audio/sfx/\` | BGM・ジングル・効果音（\`scripts/build_music.py\` の合成） | ${audioCount} 個 | ${mb(audioBytes)} |
 | \`SHA256SUMS\` | 取り出して WAV に戻した後のファイルの sha256（パスはリポジトリの最上位から） | | |
 
@@ -121,7 +128,8 @@ bun scripts/materials.ts pull --videos           # 公開中のサイト（gh-pa
 
 ## クレジットと利用規約
 
-- 声: ${[...new Set(Object.values(VOICES).map((v) => v.credit))].join('、')}。音声を使うときは、VOICEVOX と各キャラクターの利用規約に従い、クレジットを書いてください
+- 声（日本語）: ${[...new Set(Object.values(VOICES).map((v) => v.credit))].join('、')}。音声を使うときは、VOICEVOX と各キャラクターの利用規約に従い、クレジットを書いてください
+- 声（英語・中国語）: Kokoro-82M（hexgrad、Apache-2.0）の ${[...new Set(Object.values(KOKORO).flatMap((t) => Object.values(t).map((v) => v.voice)))].join('・')}（英語は Kokoro-82M、中国語は Kokoro-82M-v1.1-zh）
 - BGM・ジングル・効果音: \`scripts/build_music.py\` が numpy で合成したオリジナル（外の音源は使っていません）
 `;
 
@@ -276,6 +284,24 @@ const pull = async (courses: Course[], videos: boolean) => {
         console.log(`${c.id}: 公開中のサイトから動画とポスター ${files.length} 個を site/media/ に取り出した`);
       }
       console.log(`（gh-pages @ ${git(['log', '-1', '--format=%h %s', PAGES])}）`);
+      // 訳の言語の動画は、言語ごとの動画のサイト（site/config.json の media の repo の gh-pages）から取り出す
+      const config = JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')) as { media?: Record<string, { repo: string }> };
+      for (const [lang, m] of Object.entries(config.media ?? {})) {
+        const ref = `refs/remotes/media-${lang}/gh-pages`;
+        try {
+          git(['fetch', '--quiet', m.repo, `+refs/heads/gh-pages:${ref}`], { quiet: true });
+        } catch {
+          console.warn(`${lang}: 動画のサイト（${m.repo}）の gh-pages を取れない（まだ公開していない）`);
+          continue;
+        }
+        for (const c of courses) {
+          if (!listIn(ref, c.id).length) continue;
+          extract(ref, [c.id], vtmp);
+          const files = readdirSync(path.join(vtmp, c.id));
+          for (const name of files) copyFileSync(path.join(vtmp, c.id, name), path.join(media, name));
+          console.log(`${lang}/${c.id}: 動画のサイトから動画とポスター ${files.length} 個を site/media/ に取り出した`);
+        }
+      }
     } finally {
       rmSync(vtmp, { recursive: true, force: true });
     }

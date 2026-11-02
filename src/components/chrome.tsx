@@ -1,9 +1,8 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { alpha, C, GRAD, H, MESH, MONO, PAD, SANS, THEME, tone, W } from '../theme';
-import { courseOf } from '../../content';
-import type { Evidence, IconName, Tone } from '../../content/types';
-import { dropY, useScene } from '../timing';
+import type { Course, Evidence, IconName, Tone } from '../../content/types';
+import { dropY, useScene, useText } from '../timing';
 import { Icon } from './ui';
 
 /** ゆっくり漂う小さな粒（暗い地では光、明るい地ではチョークの粉） */
@@ -117,7 +116,7 @@ export const Background: React.FC = () => {
 
 /** 右上の講座名（どの講座のレクチャーかで変わる）。帯の上に乗るテーマでは白い札にする */
 export const CourseMark: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
-  const { lecture } = useScene();
+  const { course } = useScene();
   const chip = THEME.decor === 'band';
   return (
     <div
@@ -129,21 +128,22 @@ export const CourseMark: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
       }}
     >
       <div style={{ width: 16 * scale, height: 16 * scale, borderRadius: 6 * scale, background: GRAD, boxShadow: C.glow }} />
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 22 * scale, color: chip ? C.ink : C.sub, letterSpacing: 1 }}>{courseOf(lecture.id).title}</div>
+      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 22 * scale, color: chip ? C.ink : C.sub, letterSpacing: 1 }}>{course.title}</div>
     </div>
   );
 };
 
-/** 根拠の種類の札（研究結果・公式や規格・実務の指針・説明用の仮の例）。講座サイトの教材タブと同じ言葉 */
-export const EVIDENCE: Record<Evidence, { label: string; tone: Tone; icon: IconName }> = {
-  research: { label: '研究・学術', tone: 'cyan', icon: 'flask' },
-  official: { label: '公式・法令・規格', tone: 'violet', icon: 'scale' },
-  practice: { label: '実務の指針', tone: 'amber', icon: 'list' },
-  example: { label: '説明用の仮の例', tone: 'slate', icon: 'file' },
+/** 根拠の種類の札（研究結果・公式や規格・実務の指針・説明用の仮の例）の色とアイコン。言葉は src/i18n.ts（講座サイトの教材タブと同じ言葉） */
+export const EVIDENCE: Record<Evidence, { tone: Tone; icon: IconName }> = {
+  research: { tone: 'cyan', icon: 'flask' },
+  official: { tone: 'violet', icon: 'scale' },
+  practice: { tone: 'amber', icon: 'list' },
+  example: { tone: 'slate', icon: 'file' },
 };
 
 const EvidenceChip: React.FC<{ kind: Evidence; p: number }> = ({ kind, p }) => {
   const e = EVIDENCE[kind];
+  const label = useText().evidence[kind];
   const t = tone(e.tone);
   return (
     <div
@@ -164,32 +164,29 @@ const EvidenceChip: React.FC<{ kind: Evidence; p: number }> = ({ kind, p }) => {
       }}
     >
       <Icon name={e.icon} size={22} color={t.main} />
-      {e.label}
+      {label}
     </div>
   );
 };
 
-/** 動画の呼び名（LECTURE か CHAPTER）と、講座の全体の本数（計画にある章も数える） */
-export const unitOf = (lectureId: string) => {
-  const course = courseOf(lectureId);
-  return { label: course.unitLabel ?? 'LECTURE', total: course.syllabus?.chapters.length ?? course.lectures.length };
-};
+/** 動画の呼び名（LECTURE か CHAPTER）と、講座の全体の本数（計画にある章も数える。訳の講座は訳したレクチャーの数） */
+export const unitOf = (course: Course) => ({ label: course.unitLabel ?? 'LECTURE', total: course.syllabus?.chapters.length ?? course.lectures.length });
 
 /** 場面の見出し（ヘッダー） */
 export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   const frame = useCurrentFrame();
-  const { lecture, scene } = useScene();
+  const { lecture, scene, course } = useScene();
   const p = interpolate(frame, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const bar = interpolate(frame, [6, 30], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const chip = interpolate(frame, [14, 30], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   return (
     <div style={{ position: 'absolute', left: PAD, right: PAD, top: 52, height: 150 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {courseOf(lecture.id).standalone ? (
+        {course.standalone ? (
           <div />
         ) : (
           <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 21, letterSpacing: 5, color: C.muted }}>
-            {unitOf(lecture.id).label} {String(lecture.no).padStart(2, '0')}
+            {unitOf(course).label} {String(lecture.no).padStart(2, '0')}
             <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>{lecture.title}</span>
           </div>
         )}
@@ -211,7 +208,8 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
         >
           {heading}
         </div>
-        {scene.evidence ? <EvidenceChip kind={scene.evidence} p={chip} /> : null}
+        {/* 1 本だけの動画（standalone）は、根拠の札を出さない（お笑い版は表示を少なく。comedy.md） */}
+        {scene.evidence && !course.standalone ? <EvidenceChip kind={scene.evidence} p={chip} /> : null}
       </div>
       <div style={{ marginTop: 12, height: 5, width: 180 * bar, borderRadius: 9, background: GRAD }} />
     </div>
@@ -219,9 +217,15 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
 };
 
 /** 左下に出す出典（研究や公式の数字を見せる場面） */
-export const Cite: React.FC<{ text: string }> = ({ text }) => (
-  <div style={{ position: 'absolute', left: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>出典: {text}</div>
-);
+export const Cite: React.FC<{ text: string }> = ({ text }) => {
+  const head = useText().cite;
+  return (
+    <div style={{ position: 'absolute', left: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>
+      {head}
+      {text}
+    </div>
+  );
+};
 
 /** レクチャー全体の進み具合（下端の細い線） */
 export const Progress: React.FC<{ total: number; marks: number[] }> = ({ total, marks }) => {

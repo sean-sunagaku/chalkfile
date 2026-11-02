@@ -6,6 +6,7 @@ public/audio/
 site/media/
 site/data/
 site/dist/
+site/dist-media/
 test-results/
 playwright-report/
 
