@@ -16,7 +16,7 @@ PR: [土台 #13](https://github.com/sean-sunagaku/chalkfile/pull/13)、[Releases
 
 | 対象 | 結果 |
 |---|---|
-| 型・単体・安全点検 | typecheck、単体63件、content自己検査/本検査に成功。秘密値は検出時も表示しない |
+| 型・単体・安全点検 | typecheck、単体67件（CLIの最小権限/秘密値の受け渡し/失敗時失効/現行token形式を含む）、content自己検査/本検査に成功。秘密値は検出時も表示しない |
 | ブラウザ回帰 | Chrome: 21成功、公開していない多言語4件skip。保存/更新/削除/不足/破損/Range/シーク/旧SW移行を含む |
 | wrangler dev | `/` の全ページとSW scope `/`、CSP、中継206/HEAD/416/ダウンロードを確認 |
 | 本番HTML | トップと8講座の200、h1表示、CSP/JSエラーなし、SW scope `/`、no-transformを確認 |
@@ -25,8 +25,13 @@ PR: [土台 #13](https://github.com/sean-sunagaku/chalkfile/pull/13)、[Releases
 | 字幕と単体DL | Riveお笑い版の字幕オン/オフ、90秒シーク、オフラインでの通常版DLに成功。DLしたMP4のSHA-256がマニフェストと一致 |
 | 旧保存の実移行 | 切替前の本物のgithub.ioでPstack講座を保存→移行SWへ更新→cache名一覧/ノート不変→オフライン再生/90秒シーク/128 bytesのRange一致→オンラインで同じpath/query/講義hashのapexに到達 |
 | 旧URLとwww | トップ/8講座/404から新URLへ自動移動。queryと有効な講義hashを保持。wwwのHTMLからも同じpath/query/hashのapexへ移動。`www/media/` は301 |
+| Mac Safari CLI | Safari 26.5.2 / macOS 26.5.2の実ブラウザで全9ページ、SW scope /、再生/シーク、Rive全4ファイルの保存、Wi-Fi断での新規タブ起動/再生/90秒シーク/字幕切替/Range206/ダウンロード応答のSHA-256一致に成功 |
 
 本番ブラウザはMacのGoogle Chrome `156.0.8078.48`、headless、1440×1000。音声はmutedで再生し、再生時刻とデコード済みフレームを確認した。音声の聴取、Mac Safari、iPhone実機の結果とは分ける。
+
+Mac Safariは本人のCLI実行指示を受け、Apple公式safaridriverをCLIで有効にして別途確認した。画面ロック中でもWebDriverの実セッションを作れるため、最初の「Macの手動解除待ち」は解消した。非表示documentではnative pointerのclickやcompositorのframe数が機能しなかったため、同じ保存/字幕ボタンのDOM clickを使い、実際の動画をCanvasへ取り出して非単色のデコード画像を確認した。Wi-Fiの電源オフ、独立した外部リクエストの失敗、Safariの未保存URLへのfetch失敗を照合して通信断を確認した。navigator.onLineはtrueのままだったため、これを通信の証拠には使っていない。
+
+オフラインの起動は同じ隔離Safariセッション内の新規タブで行った。Safariプロセス全体の再起動、画面ロックを解除したnative pointer操作、音声の聴取まで成功したとは主張しない。Wi-Fiはfinallyと45秒の独立watchdogで復旧し、終了後の通常HTTPS 200も確認した。全体のブラウザ終了/再起動は前記Chromeで確認済み。
 
 www作成直後は端末の負のDNSキャッシュが残ったため、公開DNSと一致するIPを明示してTLS検証を保った確認も行った。その後、通常DNSでのwww移行にも成功した。HTMLのwww移行は静的assets内のCSP hash付きJSで行うため、最初のHTTP状態は200（不明pathは404）。
 
@@ -48,10 +53,9 @@ www作成直後は端末の負のDNSキャッシュが残ったため、公開DN
 
 本人が行う作業:
 
-1. [配信手順](workers-delivery.md)の最小権限でCloudflare API tokenを作り、[GitHub production environment](https://github.com/sean-sunagaku/chalkfile/settings/environments)のsecret `CLOUDFLARE_API_TOKEN` へ直接登録する。値は会話/Issue/ファイルへ貼らない。account IDのvarとmain限定policyは設定済み。登録後、mainのdeployを実行して全動画の公開後検査まで成功を確認する。
-2. Macのロック解除とWorkのブラウザ接続を有効にし、Mac Safariで下の手順を実施する。今回のUI接続はロック/無効で実行できなかった。
-3. iPhone Safariで下の手順を実施する。Chromeの375px表示やWebKitの自動試験を実機成功として扱わない。
-4. ドメインの商標確認（SUN-1653）は本人が判断する。登録済み/自動更新オフの方針は変更していない。
+1. [配信手順](workers-delivery.md)の公式cf CLIの初回認可を本人が承認する。認可後のtoken作成/production secret登録/mainのdeploy開始は `setup_cloudflare_ci.ts apply` で進める。API tokenの値を会話やファイルへコピーする必要はない。初回の5分有効Device Grantは未承認で期限切れになり、token作成は未実施。Actions経由の実公開成功は引き続き未確認。
+2. iPhone実機をこのMacから利用できる状態にする。CoreDeviceにはpaired/unavailableのiPhone 11があり、利用可能なmobile inventoryにはシミュレータだけだった。Apple WebDriverの `platformName: iOS / safari:useSimulator: false` でも実機sessionを作れなかった。実機が接続されればCLIで確認を続ける。Chromeの375px表示やシミュレータを実機成功として扱わない。
+3. ドメインの商標確認（SUN-1653）は本人が判断する。登録済み/自動更新オフの方針は変更していない。
 
 Safari確認手順: `https://chalkfile.com/rive-comedy/` を開く→再生→90秒へシーク→字幕オン/オフ→アプリ内保存完了→ブラウザを閉じる→通信を切る（iPhoneは機内モード、Wi-Fiもオフ）→同じURL/ホーム画面のアプリから開く→再生/シーク/字幕切替→動画ファイルDL→通信を戻す→保存削除と再保存。OS/Safari版、成否、最初に止まった手順をSUN-1659へ残す。
 
@@ -64,8 +68,12 @@ bun tests/verify-production.ts offline
 bun tests/verify-production.ts offline-restart
 bun tests/verify-production.ts redirects
 bun tests/measure-production.ts
+bun tests/verify-safari.ts # Mac Safariのオンライン/保存。safaridriverを自動起動して終了時に停止
+bun tests/verify-safari.ts --disconnect-wifi=en1 # 明示したWi-Fiを短時間切り、復旧してオフラインを検証
 ```
 
 `offline` と `offline-restart` は別プロセスで起動する。検証用profileとJSON/スクリーンショットは `.work/evidence/` にだけ置き、pushしない。保存プロファイルは認証情報のない専用品。`legacy-before` は旧サイト切替前だけ、`legacy-after` はそこで保存したprofileを使う。本番の現行移行を破壊して旧サイトを戻すことはしない。
 
 ローカル証跡: `production-offline-restart.json`、`production-legacy-before.json`、`production-legacy-after.json`、`production-redirects.json`、`production-edge-measurement.json`、`site-smoke.json` と対応するスクリーンショット。公開できる要約だけを本書/Issueに残した。
+
+今回のSafariの証跡は `.work/evidence/safari/verification-offline.json`（オンラインの確認も含む）と動画から取り出したフレーム画像。通信断を省略した実行は `verification-online.json` に分けて保存する。初回有効化は `sudo /usr/bin/safaridriver --enable` を使えるが、管理者認可がなければ本人がその端末で行う。パスワードを会話やファイルへ貼る方法は使わない。[Apple公式のCLI設定](https://developer.apple.com/documentation/safari-developer-tools/macos-enabling-webdriver)
