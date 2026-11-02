@@ -540,6 +540,66 @@
       "sha256": "1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513",
       "filename": "S06.cc.1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513.mp4",
       "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G01",
+      "kind": "standard",
+      "bytes": 8053653,
+      "sha256": "1ec29f56d5440f5c6f07061e7f681c3494bc7f1c6b1cd19fa2f178169db8d6aa",
+      "filename": "G01.1ec29f56d5440f5c6f07061e7f681c3494bc7f1c6b1cd19fa2f178169db8d6aa.mp4",
+      "tag": "media-ja-ga4-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G01",
+      "kind": "captioned",
+      "bytes": 8347122,
+      "sha256": "ffa3dce527a0b785eb90f34690594fa0fe1015297536a2aab33df739e5343d54",
+      "filename": "G01.cc.ffa3dce527a0b785eb90f34690594fa0fe1015297536a2aab33df739e5343d54.mp4",
+      "tag": "media-ja-ga4-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G02",
+      "kind": "standard",
+      "bytes": 8754119,
+      "sha256": "e0a1b7e7375d2404520e8e8e0496ca80395d5c9d4a8f4eb93fa37cdf59084178",
+      "filename": "G02.e0a1b7e7375d2404520e8e8e0496ca80395d5c9d4a8f4eb93fa37cdf59084178.mp4",
+      "tag": "media-ja-ga4-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G02",
+      "kind": "captioned",
+      "bytes": 9228593,
+      "sha256": "c3de26448def4cd9f2c2cabf38a3d203c5c66287ee160b60cf82bcafa8a0fbd5",
+      "filename": "G02.cc.c3de26448def4cd9f2c2cabf38a3d203c5c66287ee160b60cf82bcafa8a0fbd5.mp4",
+      "tag": "media-ja-ga4-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G03",
+      "kind": "standard",
+      "bytes": 10395288,
+      "sha256": "b035d5aae4756933e9e16b57e12d133e079bbbd4c16db8899dfcf2be38272267",
+      "filename": "G03.b035d5aae4756933e9e16b57e12d133e079bbbd4c16db8899dfcf2be38272267.mp4",
+      "tag": "media-ja-ga4-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G03",
+      "kind": "captioned",
+      "bytes": 10782708,
+      "sha256": "ba09eb95a0d6fed78fa45ca151abe04ab0744a0ad5c59516818f81dfae2cffd6",
+      "filename": "G03.cc.ba09eb95a0d6fed78fa45ca151abe04ab0744a0ad5c59516818f81dfae2cffd6.mp4",
+      "tag": "media-ja-ga4-comedy"
     }
   ]
 }
