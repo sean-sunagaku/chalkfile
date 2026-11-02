@@ -16,13 +16,16 @@
 //   自分の仕事のサービス名・社内の言葉など、公開物に入ってはいけない語を書いておく。
 // わざと書いた例（指示文の例を見せる講座など）は scripts/content-allow.json に、その文字列をそのまま足して許す。
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
 type Level = 'error' | 'warn';
 type Finding = { level: Level; where: string; what: string; sample: string };
+export const checkSecrets = (text: string, where: string, out: Finding[]) => {
+  for (const [rx, what] of SECRETS) if (rx.test(text)) out.push({ level: 'error', where, what, sample: '（伏せる）' });
+};
 
 /* ───────────── 見つける形 ───────────── */
 
@@ -61,6 +64,7 @@ const SECRETS: [RegExp, string][] = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, '秘密鍵'],
   [/\bAIza[0-9A-Za-z_-]{35}\b/, 'Google の API キーの形'],
   [/\bsk-(ant-|proj-)?[0-9A-Za-z_-]{24,}/, 'AI の API キーの形'],
+  [/\b(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CF_API_KEY)["']?\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}/, 'Cloudflare の認証値の直書き'],
   [/https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/]{20,}/, 'Slack の Webhook URL'],
   [/\b(password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, 'パスワード・キーの直書き'],
 ];
@@ -151,11 +155,15 @@ const checkContent = async (out: Finding[]) => {
 const BINARY = /\.(jpe?g|png|gif|webp|ico|mp4|mov|wav|mp3|m4a|woff2?|ttf|otf|pdf|zip)$/i;
 
 const checkFiles = (out: Finding[]) => {
-  const files = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' }).split('\0').filter(Boolean);
+  const files = [...new Set(execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: ROOT, encoding: 'utf8' }).split('\0').filter(Boolean))];
   for (const f of files) {
+    if (/(^|\/)(\.env(?:\..*)?|\.dev\.vars(?:\..*)?|[^/]+\.(pem|key))$/.test(f)) {
+      out.push({ level: 'error', where: f, what: '認証ファイルを公開対象に入れない', sample: '（内容は読まない）' }); continue;
+    }
     if (BINARY.test(f)) continue;
     const full = path.join(ROOT, f);
     if (!existsSync(full)) continue;
+    if (lstatSync(full).isSymbolicLink()) { out.push({ level: 'error', where: f, what: '外部ファイルを指すsymlinkを公開対象に入れない', sample: '（内容は読まない）' }); continue; }
     const text = readFileSync(full, 'utf8');
     const inv = INVISIBLE.exec(text);
     if (inv) out.push({ level: 'error', where: f, what: `見えない文字 U+${inv[0].codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`, sample: short(text, inv.index) });

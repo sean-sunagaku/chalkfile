@@ -17,6 +17,7 @@ import type { Lecture, Scene, VoiceId } from '../content/types';
 import { creditsIn, KOKORO, SITE_CREDITS, speechIn, ttsKeyIn, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
+const CACHE_ONLY = process.argv.includes('--cached-only');
 const ENGINE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
 const FPS = 30;
 
@@ -65,6 +66,7 @@ const synth = async (text: string, voice: VoiceId): Promise<{ file: string; sec:
   if (existsSync(file) && existsSync(kanaFile)) {
     return { file, sec: wavSeconds(readFileSync(file)), kana: readFileSync(kanaFile, 'utf8') };
   }
+  if (CACHE_ONLY) throw new Error(`音声のキャッシュが足りません: ${key}。先に materials.ts pull で確認してください。`);
   const q = await fetch(`${ENGINE}/audio_query?speaker=${v.speaker}&text=${encodeURIComponent(text)}`, { method: 'POST' }).catch((e) => {
     throw new Error(`VOICEVOX（${ENGINE}）に届かない。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）: ${text}`, { cause: e });
   });
@@ -165,12 +167,13 @@ const buildLecture = async (lec: Lecture, lang: Lang, key: string) => {
   return { scenes, duration: t };
 };
 
-const wanted = process.argv.slice(2);
+const wanted = process.argv.slice(2).filter((a) => a !== '--cached-only');
 // L01（日本語）・L01.en（訳）・'L01.*'（全部の言語）・'*.en'（その言語の全部）
 const pick = (w: string, v: Video) => w === v.key || w === `${v.lecture.id}.*` || w === `*.${v.lang}`;
 for (const w of wanted) if (!VIDEOS.some((v) => pick(w, v))) throw new Error(`動画が無い: ${w}（例: L01、P01.en、'P01.*'、'*.zh'）`);
-const targets = wanted.length ? VIDEOS.filter((v) => wanted.some((w) => pick(w, v))) : VIDEOS;
-kokoroAll(targets);
+const published = JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')).publishLangs as string[];
+const targets = wanted.length ? VIDEOS.filter((v) => wanted.some((w) => pick(w, v))) : VIDEOS.filter((v) => published.includes(v.lang));
+if (!CACHE_ONLY) kokoroAll(targets);
 
 const timelinePath = path.join(GEN_DIR, 'timeline.json');
 const timeline: Record<string, unknown> = existsSync(timelinePath) ? JSON.parse(readFileSync(timelinePath, 'utf8')) : {};

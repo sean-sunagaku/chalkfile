@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Chalkfile のリポジトリ。台本（コード）から、ナレーション付きの講座動画（Remotion・VOICEVOX）と GitHub Pages の講座サイトを作る。
+Chalkfile のリポジトリ。台本（コード）から、ナレーション付きの講座動画（Remotion・VOICEVOX）と Workers の講座サイトを作る。
 
 - 講座を作る・直す・公開するときは、スキル `study-video-course`（`.claude/skills/study-video-course/SKILL.md`）の手順に従う
 - 手順の全体とコマンドは `README.md`
@@ -32,4 +32,8 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 公開先は `https://chalkfile.com/`。`wrangler.jsonc` の assets がサイトを配り、Worker を先に通すのは `/media/*` だけ。Workers Free のままにし、Paid へ変更しない
 - 機密情報を commit・push・公開物・ログへ含めない。認証ファイルや `.env` を読まず、API トークンは GitHub/Cloudflare の secret にだけ置く。push 前に差分と追跡ファイルを点検する
 - `npm ci --ignore-scripts` を守り、Wrangler は devDependency の固定版を使う。`npm run dev:worker` でルート `/` と SW scope `/` を確認する
-- 本番の Custom Domain は `chalkfile.com`。www は zone の Redirect Rule で apex へ移す（assets の `_redirects` はホスト条件非対応）。初回は `wrangler deploy --env preview` で確かめてから `wrangler deploy --env=""` で本番へ出す
+- 本番の Custom Domain は `chalkfile.com`。www も同じWorkerのCustom Domainで持ち、静的HTMLのCSPハッシュ付きlocation.replaceでapexへ移す（HTMLのHTTP応答は200）。/media/のwwwは301。初回は `wrangler deploy --env preview` で確かめてから `wrangler deploy --env=""` で本番へ出す
+
+- 静的応答は `no-transform` で自動beacon挿入と本文の変更を防ぎ、CSPと保存用SHA-256を保つ。生成物は `bun scripts/check_delivery.ts site/dist` でも点検する
+- ポスターは `site/posters/` にコミットする。CIは `materials.ts pull` → `synth.ts --cached-only` → `media.ts check` → `build_site.ts --strict` の順。不足時に音声合成や動画制作を始めない
+- GitHubのproductionはmainだけ、secretはDeploy stepだけ。個人のWrangler OAuth tokenをCIへ流用しない。旧Pages切替は `deploy_pages.sh` と移行SWの保存保持テストに従う

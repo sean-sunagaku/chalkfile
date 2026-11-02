@@ -36,6 +36,8 @@
 
 ## 5. 点検する
 
+Workersへの公開は `bun scripts/check_delivery.ts site/dist` でも生成物を点検する。認証ファイルは内容を読まず公開対象から拒否し、検出した機密値はログへ出さない。Actionsはmain/productionに限定し、Cloudflare secretを検証後のDeploy stepだけへ渡す。個人のWrangler OAuthをCIへ流用しない。`no-transform` で本文とCSP/hashを保つ。
+
 ```bash
 bun scripts/check_content.ts --self-test   # 点検そのものが効いているか
 bun scripts/check_content.ts               # 台本と Git に入れる全部のファイル

@@ -16,15 +16,15 @@ SWは `/media/` をページのURLより先に判定して講座を決める。�
 - `site/offline-shared.ts`: 保存対象の形式・範囲と、単一 bytes Range の解釈。
 - `tests/offline.test.ts` と `tests/browser/`: 境界値と実ブラウザの回帰テスト。通信などの障害は `tests/browser-server.ts` で注入する。
 
-## 多言語と、字幕を焼き込んだ版
+## 多言語と字幕版
 
-- 訳の講座は、保存の ID に言語が付く（`en/pstack-comedy`）。ページは `<scope>/en/<講座>/`、動画は `site/config.json` の `media` の向き先（同じ origin。いまは手元で確かめるための `/chalkfile-media-en/<講座>/S01.en.mp4`、公開先は chalkfile.com の `/media/` に移る）。worker の `mediaRoots` が、その場所の要求も受け持つ（[i18n.md](i18n.md)）
-- 保存できる動画は、講座の `media/` か、その言語の `media` の向き先の `<講座>/` の下の、その講座の言語の名前の動画だけ。どのレクチャーも動画とポスターがそろっていること。字幕を焼き込んだ版（`S01.cc.mp4`・`S01.en.cc.mp4`）はあってもなくてもよい（2026-11-02 まで、`.cc.mp4` のある講座（お笑い版）は保存の確かめで止まっていた）
-- 保存機能のエラーは、ページの言語（ページが `lang` を送る）で返す。通信の失敗と時間切れは「取得できない」「時間切れ」の文にする（保存場所の問題と取り違えない）
-- 起動用ファイル（worker の導入時に保持するもの）に、`media` の向き先のファイル（訳の講座のサムネイル）を入れない。1 つでも取れないと導入全体が失敗し、日本語の利用者にも新しい worker が入らなくなる。オフラインで、保存していない動画のサイトの URL には 503 を返す（一覧のページを返さない）
-- 学習の記録（localStorage の進捗・メモ・クイズ）は、訳の講座では言語ごとに分ける（鍵は `chalkfile:en/pstack-comedy:`。日本語は前と同じ `chalkfile:pstack-comedy:`）。動画の長さが言語で違うので、時刻を言語をまたいで使わない
-- 講座 ID に 2 文字の英小文字は使えない（worker が頭の 2 文字を言語のフォルダとして読む。`content/index.ts` が止める）
-- `SITE_LANGS=ja` で日本語だけのサイトを出し直すと、訳の講座の保存は、新しい worker が入ったときに片付けで消える（訳のページが無くなるため。全部の言語に戻したら保存し直す）
+公開対象は `publishLangs` にある言語だけ。訳の講座の保存IDは `en/pstack-comedy` の形。動画も同じoriginの `/media/en/<講座>/` を使い、ポスターは教材ページ側の静的assetsに置く。通常版と字幕焼込み版の両方を同じmanifestから保存する。ページの言語で保存エラーを案内し、学習の記録の鍵も言語ごとに分ける。公開から外れた講座の保存を自動消去しない。
+
+## GitHub Pages の保存版
+
+旧scope `/chalkfile/` の移行は `site/legacy-sw.ts`。install/activateで旧registry/course/shell cacheを削除しない。オンラインの次のページ移動で新サイトへ案内し、オフラインは完全な旧保存版からRange/シークを返して、保存し直しの案内を付ける。新originへの保存・メモ・進捗の自動転送はしない。旧UIの明示削除だけを受け付け、新規保存は新サイトで案内する。
+
+`tests/browser/migration.spec.ts` は本物の旧公開HTML/SWを使い、保存・記録・隣のアプリのcacheが残ることと、query/hashの移動を確認する。旧fixtureの出典は `site/legacy-config.json` と `docs/workers-delivery.md`。
 
 ## 保存と更新の約束
 

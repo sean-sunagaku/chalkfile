@@ -31,6 +31,9 @@ To report a vulnerability, please use GitHub's private vulnerability reporting (
   - Claude Code の設定と hooks（`.claude/settings*.json`・`.claude/hooks/`）を Git に入れない
   - npm のインストール時スクリプト（`postinstall` など）を置かない。CI は `npm ci --ignore-scripts` で依存のスクリプトも動かさない
 - GitHub Actions は読み取りだけの権限で動かし、使う Action はコミットの SHA で固定する
+- Workers の動画中継はマニフェストにある固定リポジトリの動画だけ。上流へRange/If-Rangeだけを渡し、Cookie/Authorization・任意URLを転送しない。署名付きredirect URLや例外本文をログへ出さない
+- Actionsのproduction environmentはmainだけ。Cloudflare secretは検証を終えたDeploy stepにだけ渡し、個人のOAuthをCIへ流用しない。生成した静的公開物も `scripts/check_delivery.ts` で点検する
+- 静的応答のno-transformでCSPと保存用SHA-256を保つ。旧Pagesの移行で保存cache・学習記録を自動消去しない
 - 公開物に秘密情報を入れない。コミットの作者のメールは GitHub の noreply を使う
 
 ## AI エージェントで作業する人へ

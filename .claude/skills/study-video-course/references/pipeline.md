@@ -79,22 +79,12 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 - **GitHub Pages は同じ持ち主のほかのサイトと localStorage を共有する**: 講座サイトは保存のキーに `chalkfile:<講座 ID>:` を付けている
 - **合成し直しの単位**: 声のキャッシュは「読み上げる文と声」で決まる。台詞の表示（`t`）だけ変えても、読み（`s` か `reading.ts` で開いた文）が同じなら作り直さない
 
-## 公開（GitHub Pages）
+## 公開（Workers / Releases）
 
-1. 変更をコミットする（`deploy_pages.sh` はコミットしていない変更があると止まる）
-2. `bash scripts/deploy_pages.sh`（`build_site.ts --strict` → `site/dist` を gh-pages に 1 コミットで強制 push）
-3. 初回だけ Pages を設定する
+運用の正本は [../../../../docs/workers-delivery.md](../../../../docs/workers-delivery.md)。動画はMacで `media.ts push/check` を先に行い、mainへ入れる。Actionsは `npm ci --ignore-scripts`、型/単体/安全点検、素材pull、`synth --cached-only`、動画check、strict build、生成物点検、Wrangler、公開後の全動画Range確認の順。Cloudflare secretはDeploy stepだけ。音声・動画が不足したら停止する。
 
-   ```bash
-   gh api -X POST repos/<owner>/<repo>/pages -f 'source[branch]=gh-pages' -f 'source[path]=/'
-   ```
+JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4はReleasesにだけ置き、`media.ts pull [講座ID…]` で戻す。従来の `materials.ts pull --videos` もReleasesから取得し、変更済みローカル動画は上書きしない。
 
-4. 1〜2 分待って確かめる: `curl -sI <baseUrl>` が 200、`<baseUrl><講座 ID>/media/L01.mp4` が `video/mp4`、ブラウザで再生と途中への移動
+手元は `npm run dev:worker` でroot/CSP/scopeを確認。初回試験公開は `wrangler deploy --env preview`、本番は `wrangler deploy --env=""`。Workers Freeを維持する。静的assetsはMP4なし・2万files/25MiB以内。`no-transform` で本文hashとCSPを保つ。
 
-- 公開は最新の main から行う。gh-pages は毎回丸ごと置き換わるので、古い main から公開すると、あとから足した講座が消える（`deploy_pages.sh` は HEAD が origin/main と違うと止まる）。公開の前後に `git log -1 origin/gh-pages` で「Deploy main <rev>」を見て、その rev に全講座が入っているかを確かめる
-- 訳はまだ公開しない（`publishLangs` が `["ja"]`。公開先は chalkfile.com の Worker に移る。[i18n.md](i18n.md) の「動画の置き場所と公開」）。どのサイトも 1GB を超えないように、`build_site.ts --strict` が 950MB で止める
-- 公開の前に `npm run typecheck`・`npm test`・`npm run test:browser`（実 Chrome。オフライン保存・再生。Service Worker はアプリ内のブラウザでは動かない）を流す
-- 台詞の声を作り直したら、公開と同じ時に `bun scripts/materials.ts push` で素材のブランチもそろえる
-- AI エージェントが公開するときは、マージの許可とは別に、公開（gh-pages への強制 push）の許可をユーザーにもらう
-
-制限の目安: 動画 1 本 15MB 以下（`render.sh` が画質を自動で下げる）、GitHub のファイルは 1 つ 100MB まで、Pages のサイトは 1GB まで、帯域は月 100GB。
+`deploy_pages.sh` は旧Pagesを移行案内だけへ置き換える専用手順。最新mainとcleanなcheckout、公開先のRange/CSP検証に通った後、明示した旧SHAに対するforce-with-leaseで置き換える。旧保存cacheは移行SWが保持する。公開と旧Pages切替は本人が依頼した範囲で実行し、許可済み操作を繰り返し確認しない。

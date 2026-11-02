@@ -12,7 +12,7 @@ import { localMediaPath } from '../scripts/media';
 const root = path.resolve(import.meta.dir, '../site/dist');
 const mediaEntries = new Map(validateMediaManifest(mediaManifest).entries.map((e) => [mediaPath(e), e]));
 // mediaDown: 訳の動画のサイトがまだ無い（公開の前・Pages の反映待ち）ときを作る
-let control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false };
+let control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false, legacyPhase: 'old' };
 let fullVideoDownloads = 0;
 let manifestRequests = 0;
 let manifestFailures = 0;
@@ -40,17 +40,39 @@ function variant() {
   return { m, page };
 }
 
+function legacyResponse(req: Request, relative: string): Response {
+  const u = new URL(req.url);
+  const folder = path.resolve(import.meta.dir, control.legacyPhase === 'old' ? 'fixtures/legacy-pages' : '../site/migration-dist');
+  let file = path.resolve(folder, relative || 'index.html');
+  if (!file.startsWith(folder + path.sep) && file !== folder) return new Response(null, { status: 403 });
+  const oldVideo = /^pstack-comedy\/media\/(P01(?:\.cc)?)\.mp4$/.exec(relative);
+  if (control.legacyPhase === 'old' && oldVideo) file = path.resolve(import.meta.dir, `../site/media/${oldVideo[1]}.mp4`);
+  if (existsSync(file) && statSync(file).isDirectory()) file = path.join(file, 'index.html');
+  if (!existsSync(file)) return new Response(null, { status: 404 });
+  const body = Bun.file(file);
+  const headers = { 'Content-Type': types[path.extname(file)] ?? 'application/octet-stream', 'Content-Length': String(body.size), 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' };
+  if (req.method === 'HEAD') return new Response(null, { headers });
+  const range = byteRange(req.headers.get('Range'), body.size);
+  if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${body.size}` } });
+  if (range.kind === 'partial') return new Response(body.slice(range.start, range.end + 1), { status: 206, headers: { ...headers, 'Content-Length': String(range.end - range.start + 1), 'Content-Range': `bytes ${range.start}-${range.end}/${body.size}` } });
+  return new Response(body, { headers });
+}
+
 Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
   const u = new URL(req.url);
   if (u.pathname === '/__test/health') return new Response('ok');
   if (u.pathname === '/__test/control' && req.method === 'POST') {
-    control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false, ...await req.json() };
+    control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false, legacyPhase: 'old', ...await req.json() };
     fullVideoDownloads = 0;
     manifestRequests = 0;
     manifestFailures = 0;
     return Response.json(control);
   }
   if (u.pathname === '/__test/stats') return Response.json({ fullVideoDownloads, manifestRequests, manifestFailures });
+  if (u.pathname.startsWith('/chalkfile/')) {
+    try { return legacyResponse(req, decodeURIComponent(u.pathname.slice('/chalkfile/'.length))); }
+    catch { return new Response(null, { status: 400 }); }
+  }
   // 訳の言語の動画のサイト（site/config.json の media）は、公開と同じパス（/chalkfile-media-en/ など）で site/dist-media/<言語>/ を配る
   const media = mediaEntries.get(u.pathname);
   if (u.pathname.startsWith('/media/') && !media) return new Response('not found', { status: 404 });
