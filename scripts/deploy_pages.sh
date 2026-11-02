@@ -13,7 +13,7 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
   exit 1
 fi
 # 切替前に公開先・全動画・CSP・SW scope を実際に確認する。
-bun scripts/check_content.ts
+bun scripts/check_content.ts --require-denylist
 bun scripts/verify_public.ts
 bun tests/worker-site-smoke.ts https://chalkfile.com/
 bun scripts/build_migration.ts

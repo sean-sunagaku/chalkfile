@@ -1,6 +1,7 @@
 // 公開の前に、台本と Git に入れるファイルを確かめる。問題があれば止まる（deploy_pages.sh と CI が使う）。
-//   bun scripts/check_content.ts              # 確かめる
-//   bun scripts/check_content.ts --self-test  # 見つけるべき例を見つけられるかを試す（この点検そのものの点検）
+//   bun scripts/check_content.ts                     # 確かめる
+//   bun scripts/check_content.ts --require-denylist  # ローカルの禁止語の一覧が無ければ止める（手元から公開物を出す前に使う）
+//   bun scripts/check_content.ts --self-test         # 見つけるべき例を見つけられるかを試す（この点検そのものの点検）
 //
 // 見るもの
 //   1. 台本（content/ の講座。訳の講座も）の全部の文字。訳の講座に残った日本語（訳し残し）も止める
@@ -12,11 +13,15 @@
 //   2. Git に入れる全部のテキストファイル: 見えない文字（Trojan Source）・秘密情報の形・ローカルの禁止語
 //   3. 他人の手元で勝手に動くもの: Claude Code の設定と hooks、npm のインストール時スクリプト
 //
-// ローカルの禁止語: リポジトリの直下に .denylist.local（Git に入れない）を置くと、1 行 1 語で全部のファイルと台本から探す。
-//   自分の仕事のサービス名・社内の言葉など、公開物に入ってはいけない語を書いておく。
+// ローカルの禁止語: 1 行 1 語の一覧（# で始まる行は注釈）を置くと、全部のファイルと台本から探す。一覧は Git に入れない。
+//   自分の仕事のサービス名・社内の言葉など、公開物に入ってはいけない語を書いておく。置き場所は 2 つで、両方あれば合わせて使う
+//   - <Git の共通のフォルダ>/info/chalkfile-denylist（git rev-parse --git-common-dir。ふつうの clone なら .git/info/）: 同じ clone の全部の worktree が読む
+//   - リポジトリの直下の .denylist.local: これまでの置き場所。その作業フォルダだけで効く
+//   どちらも無いときは、手元ではっきり警告し、CI（CI=true）では注意だけにする。--require-denylist を付けると止める
 // わざと書いた例（指示文の例を見せる講座など）は scripts/content-allow.json に、その文字列をそのまま足して許す。
 import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -78,21 +83,34 @@ const PHONE = /(?<![\d-])0\d{1,4}-\d{1,4}-\d{3,4}(?![\d-])/;
 
 const allowFile = path.join(ROOT, 'scripts/content-allow.json');
 const ALLOW: string[] = existsSync(allowFile) ? (JSON.parse(readFileSync(allowFile, 'utf8')) as string[]) : [];
-const denyFile = path.join(ROOT, '.denylist.local');
-const DENY: string[] = existsSync(denyFile)
-  ? readFileSync(denyFile, 'utf8')
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l && !l.startsWith('#'))
-  : [];
+/** ローカルの禁止語の一覧の置き場所。shared は全部の worktree で共有する場所（Git の外なら無い）、local はその作業フォルダだけの場所 */
+export const denylistPaths = (root = ROOT) => {
+  let shared: string | undefined;
+  try {
+    const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    shared = path.join(path.resolve(root, common), 'info/chalkfile-denylist');
+  } catch {
+    // Git の外（tarball で取ってきたなど）。共有の場所は無い
+  }
+  return { shared, local: path.join(root, '.denylist.local') };
+};
+/** ローカルの禁止語を読む。両方の場所にあれば合わせる */
+export const loadDenylist = (root = ROOT) => {
+  const { shared, local } = denylistPaths(root);
+  const files = [shared, local].filter((f): f is string => !!f && existsSync(f));
+  return [...new Set(files.flatMap((f) => readFileSync(f, 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))))];
+};
+// 一覧は最初に使うときに 1 回だけ読む（import しただけでは git を呼ばない）
+let denylist: string[] | undefined;
+const denylistTerms = () => (denylist ??= loadDenylist());
 
 const short = (s: string, i = 0) => {
   const t = s.slice(Math.max(0, i - 20), i + 40).replace(/\s+/g, ' ');
   return t.replace(INVISIBLE, '⟨見えない文字⟩');
 };
 
-/** 1 つの文字列を調べる。site=true はサイトに HTML として出る文字（HTML の点検をする） */
-export const checkText = (text: string, where: string, site: boolean, out: Finding[]) => {
+/** 1 つの文字列を調べる。site=true はサイトに HTML として出る文字（HTML の点検をする）。deny はローカルの禁止語（既定は一覧のファイルから読む） */
+export const checkText = (text: string, where: string, site: boolean, out: Finding[], deny = denylistTerms()) => {
   if (ALLOW.some((a) => text.includes(a))) return;
   for (const [rx, what] of INJECTION) {
     const m = rx.exec(text);
@@ -112,7 +130,7 @@ export const checkText = (text: string, where: string, site: boolean, out: Findi
     const m = rx.exec(text);
     if (m) out.push({ level: 'error', where, what, sample: '（伏せる）' });
   }
-  for (const term of DENY) {
+  for (const term of deny) {
     const i = text.toLowerCase().indexOf(term.toLowerCase());
     if (i >= 0) out.push({ level: 'error', where, what: 'ローカルの禁止語', sample: '（伏せる）' });
   }
@@ -157,6 +175,7 @@ const BINARY = /\.(jpe?g|png|gif|webp|ico|mp4|mov|wav|mp3|m4a|woff2?|ttf|otf|pdf
 
 const checkFiles = (out: Finding[]) => {
   const files = [...new Set(execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: ROOT, encoding: 'utf8' }).split('\0').filter(Boolean))];
+  const deny = denylistTerms();
   for (const f of files) {
     if (/(^|\/)(\.env(?:\..*)?|\.dev\.vars(?:\..*)?|[^/]+\.(pem|key))$/.test(f)) {
       out.push({ level: 'error', where: f, what: '認証ファイルを公開対象に入れない', sample: '（内容は読まない）' }); continue;
@@ -169,7 +188,7 @@ const checkFiles = (out: Finding[]) => {
     const inv = INVISIBLE.exec(text);
     if (inv) out.push({ level: 'error', where: f, what: `見えない文字 U+${inv[0].codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`, sample: short(text, inv.index) });
     for (const [rx, what] of SECRETS) if (rx.test(text)) out.push({ level: 'error', where: f, what, sample: '（伏せる）' });
-    for (const term of DENY) if (text.toLowerCase().includes(term.toLowerCase())) out.push({ level: 'error', where: f, what: 'ローカルの禁止語', sample: '（伏せる）' });
+    for (const term of deny) if (text.toLowerCase().includes(term.toLowerCase())) out.push({ level: 'error', where: f, what: 'ローカルの禁止語', sample: '（伏せる）' });
   }
   // 他人の手元で勝手に動くものを Git に入れない
   for (const f of files) {
@@ -217,10 +236,11 @@ const selfTest = () => {
     'stripe listen --forward-to localhost:8000/webhooks/stripe',
     '解約はいつでもプラン管理ページから。',
   ];
+  // ローカルの禁止語は手元ごとに違うので、ここでは使わない（一覧の読み方は下の selfTestDenylist で試す）
   let ok = true;
   for (const [s, expect] of must) {
     const out: Finding[] = [];
-    checkText(s, 'test', true, out);
+    checkText(s, 'test', true, out, []);
     const hit = out.some((f) => f.level === 'error');
     if (hit !== expect) {
       ok = false;
@@ -229,26 +249,84 @@ const selfTest = () => {
   }
   for (const s of mustNot) {
     const out: Finding[] = [];
-    checkText(s, 'test', true, out);
+    checkText(s, 'test', true, out, []);
     if (out.some((f) => f.level === 'error')) {
       ok = false;
       console.error(`誤検知: ${s} → ${out.map((f) => f.what).join('、')}`);
     }
   }
-  console.log(ok ? `点検の点検: 見つけるべき ${must.length} 例と、見逃すべき ${mustNot.length} 例が全部合った` : '点検の点検: 合わない例がある');
+  if (!selfTestDenylist()) ok = false;
+  console.log(ok ? `点検の点検: 見つけるべき ${must.length} 例と、見逃すべき ${mustNot.length} 例が全部合い、共有の禁止語の一覧を別の worktree から読めた` : '点検の点検: 合わない例がある');
   process.exit(ok ? 0 : 1);
+};
+
+/** 共有の場所（Git の共通のフォルダの info/chalkfile-denylist）に置いた一覧を、別の worktree から読めるか。一時の Git リポジトリで試す */
+const selfTestDenylist = () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-denylist-'));
+  // 手元の Git の hooks は動かさない
+  const git = (cwd: string, args: string[]) =>
+    execFileSync('git', ['-c', `core.hooksPath=${path.join(dir, 'no-hooks')}`, ...args], { cwd, encoding: 'utf8', input: '', stdio: 'pipe' }).trim();
+  try {
+    const repo = path.join(dir, 'repo');
+    const worktree = path.join(dir, 'worktree');
+    mkdirSync(repo);
+    git(repo, ['init', '-q']);
+    const commit = git(repo, ['-c', 'user.name=chalkfile', '-c', 'user.email=chalkfile@example.com', 'commit-tree', '--no-gpg-sign', '-m', '一時', git(repo, ['mktree'])]);
+    git(repo, ['worktree', 'add', '-q', '--detach', worktree, commit]);
+    const term = 'chalkfile-self-test-term';
+    const problems: string[] = [];
+    if (loadDenylist(worktree).length) problems.push('一覧を置く前から語を読んだ');
+    // 元の clone の .git/info/ に置く（README に書いた置き場所）
+    mkdirSync(path.join(repo, '.git/info'), { recursive: true });
+    writeFileSync(path.join(repo, '.git/info/chalkfile-denylist'), `# 一時の一覧\n${term}\n`);
+    const found: Finding[] = [];
+    checkText(`公開物に ${term.toUpperCase()} が入った`, 'test', true, found, loadDenylist(worktree));
+    if (!found.some((f) => f.what === 'ローカルの禁止語')) problems.push('共有の一覧を worktree から読めない');
+    writeFileSync(path.join(worktree, '.denylist.local'), `${term}-local\n`);
+    const both = loadDenylist(worktree);
+    if (!both.includes(term) || !both.includes(`${term}-local`)) problems.push('共有の一覧と .denylist.local を合わせて読めない');
+    for (const p of problems) console.error(`見落とし: 禁止語の一覧（${p}）`);
+    return !problems.length;
+  } catch (e) {
+    console.error(`見落とし: 禁止語の一覧を一時の Git リポジトリで試せない（${e instanceof Error ? e.message : String(e)}）`);
+    return false;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 };
 
 /* ───────────── 実行 ───────────── */
 
 if (import.meta.main) {
-  if (process.argv.includes('--self-test')) selfTest();
+  const args = process.argv.slice(2);
+  const unknown = args.filter((a) => a !== '--self-test' && a !== '--require-denylist');
+  if (unknown.length) {
+    console.error(`知らない引数です: ${unknown.join(' ')}（使えるのは --self-test と --require-denylist）`);
+    process.exit(2);
+  }
+  if (args.includes('--self-test')) selfTest();
+  // ローカルの禁止語の一覧が無いと、非公開の名前が入っても止まらない。手元でははっきり警告し、CI（一覧を置かない）では注意だけにする
+  const ci = process.env.CI === 'true';
+  const { shared, local } = denylistPaths();
+  const places = [...(shared ? [`    ${shared}（同じ clone の全部の worktree が読む）`] : []), `    ${local}（この作業フォルダだけ）`];
+  const terms = denylistTerms();
+  if (!terms.length && args.includes('--require-denylist')) {
+    console.error(['止める  ローカルの禁止語の一覧が無いので止めます（--require-denylist）。1 行 1 語の一覧を、次のどちらかに置いてください', ...places].join('\n'));
+    process.exit(1);
+  }
   const out: Finding[] = [];
   await checkContent(out);
   checkFiles(out);
+  if (!terms.length) out.push({ level: 'warn', where: '（禁止語の一覧）', what: `ローカルの禁止語の一覧が無いので、禁止語は見ていない${ci ? '（CI には一覧を置かない）' : ''}`, sample: '' });
   const errors = out.filter((f) => f.level === 'error');
   const warns = out.filter((f) => f.level === 'warn');
   for (const f of [...errors, ...warns]) console.log(`${f.level === 'error' ? '止める' : '注意  '}  ${f.where}  ${f.what}${f.sample ? `  「${f.sample}」` : ''}`);
-  console.log(`台本とファイルの点検: 止める ${errors.length} 件・注意 ${warns.length} 件${DENY.length ? `（ローカルの禁止語 ${DENY.length} 語も見た）` : ''}`);
+  console.log(`台本とファイルの点検: 止める ${errors.length} 件・注意 ${warns.length} 件${terms.length ? `（ローカルの禁止語 ${terms.length} 語も見た）` : ''}`);
+  if (!terms.length && !ci) {
+    const bar = '!'.repeat(72);
+    console.error([bar, '警告: ローカルの禁止語の一覧がありません。非公開の名前が入っていても、この点検では止まりません。',
+      '  1 行 1 語の一覧を、次のどちらかに置く（どちらも Git に入らない）', ...places,
+      '  一覧が無いときに止めるには --require-denylist を付ける（手元から公開物を出す前に使う）', bar].join('\n'));
+  }
   process.exit(errors.length ? 1 : 0);
 }

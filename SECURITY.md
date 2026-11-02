@@ -25,7 +25,7 @@ To report a vulnerability, please use GitHub's private vulnerability reporting (
   - 台本のデータはスクリプトとして動かない形（`type="application/json"`）で埋め込み、`<` を `<` に置き換える
 - 公開の前の点検（`bun scripts/check_content.ts`）
   - 台本の中の AI への指示文（プロンプトインジェクション）・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・秘密情報の形
-  - Git に入れる全部のテキストファイルの見えない文字・秘密情報の形・手元だけの禁止語（`.denylist.local`）
+  - Git に入れる全部のテキストファイルの見えない文字・秘密情報の形・手元だけの禁止語（`.git/info/chalkfile-denylist` か `.denylist.local`。どちらも Git に入れない）
   - `--self-test` で、見つけるべき例を見つけ、見逃すべき例を見逃すかを確かめる
 - clone した人の手元で勝手に動くものを置かない
   - Claude Code の設定と hooks（`.claude/settings*.json`・`.claude/hooks/`）を Git に入れない
