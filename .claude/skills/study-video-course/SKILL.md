@@ -49,7 +49,7 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 ### 3.5 英語・中国語にする（多言語）
 
-日本語の台本が正本。英語（en）と中国語（zh・簡体字）は、`content/<講座>/<言語>/<ID>.ts` に「訳の上書き」を書いて重ねる（場面と要素は日本語と同じ数・順、台詞は言語ごとに書き直す）。声は Kokoro（手元で動く・Apache-2.0）、動画は `S01.en` のような名前で作り、講座サイトは `/en/`・`/zh/` に出る。訳の動画は、言語ごとの別の GitHub Pages のサイト（同じ origin）に置く。お笑いは直訳せず、言語ごとに作り直す。書き方・声・確かめ方・置き場所は [references/i18n.md](references/i18n.md)。
+日本語の台本が正本。英語（en）と中国語（zh・簡体字）は、`content/<講座>/<言語>/<ID>.ts` に「訳の上書き」を書いて重ねる（場面と要素は日本語と同じ数・順、台詞は言語ごとに書き直す）。声は Kokoro（手元で動く・Apache-2.0）、動画は `S01.en` のような名前で作る。公開時はReleasesと同じoriginの `/media/<言語>/` を使い、講座サイトは `/en/`・`/zh/` に出る。`publishLangs` がjaだけの間は訳を公開しない。お笑いは直訳せず、言語ごとに作り直す。書き方・声・確かめ方・置き場所は [references/i18n.md](references/i18n.md)。
 
 ### 4. 声・音・動画を作る
 
@@ -82,6 +82,8 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 静的応答にno-transformを付け、CSPと保存用SHA-256を変える自動挿入を防ぐ。`bash scripts/deploy_pages.sh` は旧Pagesの案内だけを出す。移行SWのcache保持テストを通し、chalkfile.comの本番確認が済んでから切り替える。通常公開に旧Pages用スクリプトを使わない。
 
 台詞の声を作り直したら `bun scripts/materials.ts push` で素材もそろえる。MP4・作業profile・認証情報をmainへ入れない。権限や公開範囲は今回の本人依頼を確認し、許可済み操作はその範囲で進める。
+
+初回のAPI tokenをCLIで登録するときは `bun scripts/setup_cloudflare_ci.ts plan` で対象と3権限を確認し、公式cf CLIの本人認可後に `apply` を使う。認可はscope追加を伴うため既存Wrangler OAuthの流用で置き換えない。tokenはghの標準入力だけへ渡し、登録に失敗したらその場で発行したものだけを失効する。
 
 ## よくある直し
 
