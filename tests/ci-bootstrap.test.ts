@@ -3,10 +3,11 @@ import { registerGeneratedToken, tokenPolicies } from '../scripts/setup_cloudfla
 import { checkSecrets } from '../scripts/check_content';
 
 const groups = [
-  { id: 'a'.repeat(32), name: 'Workers Scripts Write', scopes: ['com.cloudflare.api.account'], is_selectable: true },
+  { id: 'a'.repeat(32), name: 'Workers Editor', scopes: ['com.cloudflare.api.account'], is_selectable: true },
   { id: 'b'.repeat(32), name: 'Workers Routes Write', scopes: ['com.cloudflare.api.account.zone'], is_selectable: true },
   { id: 'c'.repeat(32), name: 'Zone Read', scopes: ['com.cloudflare.api.account.zone'], is_selectable: true },
   { id: 'd'.repeat(32), name: 'Account API Tokens Write', scopes: ['com.cloudflare.api.account'], is_selectable: true },
+  { id: 'f'.repeat(32), name: 'Workers Scripts Write', scopes: ['com.cloudflare.api.account'], is_selectable: true },
 ];
 test('CIは対象account/zoneの3権限だけとし、token発行権限や全zoneを渡さない', () => {
   const policies = tokenPolicies(groups, 'e'.repeat(32));
@@ -14,6 +15,9 @@ test('CIは対象account/zoneの3権限だけとし、token発行権限や全zon
   expect(policies[1].resources).toEqual({ [`com.cloudflare.api.account.zone.${'e'.repeat(32)}`]: '*' });
   for (const source of [groups.slice(1), [...groups, groups[0]], groups.map((g) => ({ ...g, is_selectable: false }))]) expect(() => tokenPolicies(source, 'e'.repeat(32))).toThrow();
   expect(() => tokenPolicies(groups, '*')).toThrow();
+});
+test('Editorが発行不可ならlegacyのScripts Writeへ広げず、tokenを作らない', () => {
+  expect(() => tokenPolicies(groups.map((g) => g.name === 'Workers Editor' ? { ...g, is_selectable: false } : g), 'e'.repeat(32))).toThrow();
 });
 test('発行した秘密値はghの標準入力だけへ渡し、成功時は失効しない', async () => {
   const value = ['cfat', 'X'.repeat(44)].join('_'); let revoked = false;

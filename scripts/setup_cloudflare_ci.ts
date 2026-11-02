@@ -8,7 +8,7 @@ const SECRET_NAME = 'CLOUDFLARE_API_TOKEN';
 let stage = '引数確認';
 type Group = { id: string; name: string; scopes: string[]; is_selectable?: boolean };
 type Run = (args: string[], stdin?: string) => Promise<{ code: number; stdout: string }>;
-const required = ['Workers Scripts Write', 'Workers Routes Write', 'Zone Read'];
+const required = ['Workers Editor', 'Workers Routes Write', 'Zone Read'];
 
 export function tokenPolicies(groups: Group[], zoneId: string) {
   if (!/^[a-f0-9]{32}$/.test(zoneId)) throw new Error('対象zoneのIDが不正です');
@@ -55,7 +55,8 @@ async function main() {
   if (!['plan', 'apply'].includes(mode)) throw new Error('plan または apply を指定してください');
   const plan = { repository: REPOSITORY, environment: 'production', account: ACCOUNT, zone: 'chalkfile.com', permissions: required,
     secretName: SECRET_NAME, cfVersion: CF_VERSION, oauthProfile: PROFILE,
-    credentialTransport: 'cf stdout in memory -> gh secret set stdin; raw stdout/stderr/credential not logged or stored',
+    credentialTransport: 'supported cf grant: stdout in memory -> gh secret set stdin; otherwise provider UI -> GitHub production secret; no credential in logs, files or argv',
+    initialSetup: 'cf beta.26 cannot request workers-scripts.edit (Workers Editor); use the account-token dashboard with these exact permissions, never broaden to Workers Admin',
     deploy: 'main only; successful setup dispatches deploy.yml' };
   if (mode === 'plan') { console.log(JSON.stringify(plan, null, 2)); return; }
   if (process.env.CLOUDFLARE_API_TOKEN) throw new Error('既存tokenを流用せず、専用の認可profileから実行してください');
@@ -69,7 +70,7 @@ async function main() {
     stage = 'CloudflareのCLI認可と対象zone確認';
     const zones = await json(cf(['zones', 'list', '--name', 'chalkfile.com', '--account-id', ACCOUNT]));
     if (!Array.isArray(zones) || zones.length !== 1 || zones[0].name !== 'chalkfile.com' || zones[0].account?.id !== ACCOUNT || zones[0].status !== 'active') throw new Error('対象zoneを一意に確認できません');
-    stage = '最小権限の確認';
+    stage = '最小権限の確認。cf beta.26がWorkers Editorを発行できない場合はdocs/workers-delivery.mdの管理画面手順を使います';
     const groups = await json(cf(['accounts', 'tokens', 'permission-groups', 'list']));
     if (!Array.isArray(groups)) throw new Error('権限一覧の形式が不正です');
     const payload = { name: 'chalkfile-github-production', policies: tokenPolicies(groups, zones[0].id) };
