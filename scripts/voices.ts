@@ -1,7 +1,8 @@
-// 台詞を声にする設定（VOICEVOX の話者と話し方）と、台詞ごとの音声ファイルの名前。
+// 台詞を声にする設定（日本語は VOICEVOX、英語と中国語は Kokoro の話者と話し方）と、台詞ごとの音声ファイルの名前。
 // synth.ts（合成）と materials.ts（素材の出し入れ）が同じ名前を使う。
 import { createHash } from 'node:crypto';
-import { toSpeech } from '../content/reading';
+import type { Lang, TranslatedLang } from '../content/i18n';
+import { toSpeech, toSpeechZh } from '../content/reading';
 import type { Line, VoiceId } from '../content/types';
 
 export const VOICES: Record<VoiceId, { speaker: number; speed: number; intonation: number; pitch: number; credit: string }> = {
@@ -39,3 +40,73 @@ export const speechOf = (line: Line): string => {
 /** 台詞の音声ファイルの名前（.work/tts/<key>.wav）。同じ文・同じ声なら同じ名前になり、前に作った音声を使い回す */
 export const ttsKey = (text: string, voice: VoiceId): string =>
   createHash('sha1').update(JSON.stringify([text, VOICES[voice]])).digest('hex').slice(0, 16);
+
+/* ───────────── 英語と中国語の声（Kokoro） ─────────────
+ * Kokoro-82M（hexgrad・Apache-2.0）を手元で動かす（scripts/tts_kokoro.py）。英語は v1.0、中国語は v1.1-zh のモデル。
+ * v1.1-zh の中国語の声は、データ会社の LongMaoData が許諾したデータで学習したもの（モデルカード）。
+ * 声は 2026-11-02 に、同じ文を全部の候補で読ませて、Whisper（medium）の聞き取りと声の高さを比べて選んだ。
+ * 掛け合いの役が声で聞き分けられるように、先生・ボケ・天の声・呼び込みを違う話者にする。
+ */
+export type KokoroVoice = {
+  engine: 'kokoro';
+  /** Hugging Face のモデル（重みは Apache-2.0） */
+  repo: 'hexgrad/Kokoro-82M' | 'hexgrad/Kokoro-82M-v1.1-zh';
+  voice: string;
+  /** 読みの作り方（misaki）。a: アメリカ英語、b: イギリス英語、z: 中国語 */
+  g2p: 'a' | 'b' | 'z';
+  speed: number;
+};
+
+const EN = 'hexgrad/Kokoro-82M' as const;
+const ZH = 'hexgrad/Kokoro-82M-v1.1-zh' as const;
+export const KOKORO: Record<TranslatedLang, Record<VoiceId, KokoroVoice>> = {
+  en: {
+    // 先生: af_heart（候補で一番自然。ツッコミは少し速く）
+    narrator: { engine: 'kokoro', repo: EN, voice: 'af_heart', g2p: 'a', speed: 1.0 },
+    tsukkomi: { engine: 'kokoro', repo: EN, voice: 'af_heart', g2p: 'a', speed: 1.1 },
+    // ずんだもん: af_bella（高くて明るい声。先生と聞き分けられる）
+    zundamon: { engine: 'kokoro', repo: EN, voice: 'af_bella', g2p: 'a', speed: 1.08 },
+    'zundamon-cry': { engine: 'kokoro', repo: EN, voice: 'af_bella', g2p: 'a', speed: 0.9 },
+    // 天の声: bm_george（落ち着いたイギリス英語の男性。淡々とばらす）
+    tennokoe: { engine: 'kokoro', repo: EN, voice: 'bm_george', g2p: 'b', speed: 0.98 },
+    // 呼び込み: am_fenrir（低めの男性）
+    announcer: { engine: 'kokoro', repo: EN, voice: 'am_fenrir', g2p: 'a', speed: 1.0 },
+  },
+  zh: {
+    // 先生: zf_019（落ち着いた女性。句読点の間がはっきりしていた）
+    narrator: { engine: 'kokoro', repo: ZH, voice: 'zf_019', g2p: 'z', speed: 1.0 },
+    tsukkomi: { engine: 'kokoro', repo: ZH, voice: 'zf_019', g2p: 'z', speed: 1.1 },
+    // 俊达萌（ずんだもん）: zf_092（高くて明るい声）
+    zundamon: { engine: 'kokoro', repo: ZH, voice: 'zf_092', g2p: 'z', speed: 1.05 },
+    'zundamon-cry': { engine: 'kokoro', repo: ZH, voice: 'zf_092', g2p: 'z', speed: 0.9 },
+    // 旁白（天の声）: zm_031（落ち着いた男性。淡々とばらす）
+    tennokoe: { engine: 'kokoro', repo: ZH, voice: 'zm_031', g2p: 'z', speed: 0.98 },
+    // 呼び込み: zm_029（候補で一番低い男性）
+    announcer: { engine: 'kokoro', repo: ZH, voice: 'zm_029', g2p: 'z', speed: 1.0 },
+  },
+};
+
+/** 言語ごとの声のクレジット（使った声だけ）。Kokoro はモデルごとに 1 つにまとめる */
+export const creditsIn = (lang: Lang, voices: Iterable<VoiceId>): string[] => {
+  if (lang === 'ja') return creditsOf(voices);
+  const used = new Set(voices);
+  const list = (Object.keys(KOKORO[lang]) as VoiceId[]).filter((v) => used.has(v)).map((v) => KOKORO[lang][v]);
+  const byRepo = new Map<string, string[]>();
+  for (const v of list) byRepo.set(v.repo, [...new Set([...(byRepo.get(v.repo) ?? []), v.voice])]);
+  return [...byRepo].map(([repo, names]) => `Kokoro-82M${repo.endsWith('v1.1-zh') ? '-v1.1-zh' : ''} (${names.join(', ')})`);
+};
+
+/** 講座サイトのクレジット（その言語の全部の声） */
+export const siteCreditsIn = (lang: Lang): string[] => (lang === 'ja' ? SITE_CREDITS : creditsIn(lang, Object.keys(KOKORO[lang]) as VoiceId[]));
+
+/** 読み上げる文。日本語は英字をカナに開き（reading.ts）、英語と中国語は s か t を読む（強調の ** は外す。中国語は多音字を直す） */
+export const speechIn = (line: Line, lang: Lang): string => {
+  if (lang === 'ja') return speechOf(line);
+  const s = (line.s ?? line.t).replace(/\*\*/g, '').trim();
+  if (!s) throw new Error(`読み上げる文が空: ${line.t}`);
+  return lang === 'zh' ? toSpeechZh(s) : s;
+};
+
+/** 台詞の音声ファイルの名前。日本語は今までと同じ（ttsKey）。ほかは文と Kokoro の設定から作る（言語をまたいで重ならない） */
+export const ttsKeyIn = (text: string, voice: VoiceId, lang: Lang): string =>
+  lang === 'ja' ? ttsKey(text, voice) : createHash('sha1').update(JSON.stringify([text, KOKORO[lang][voice]])).digest('hex').slice(0, 16);

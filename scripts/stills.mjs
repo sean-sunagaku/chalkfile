@@ -4,6 +4,7 @@
 //   node scripts/stills.mjs L01@120 L03@900 --scale=1
 //   node scripts/stills.mjs L02:3 --theme=chalkfile   # 講座のテーマの代わりに別のテーマで描く（テーマを作るとき）
 //   node scripts/stills.mjs N01 --captions            # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で描く
+//   node scripts/stills.mjs P01.en:3 P01.zh --mid     # 訳の動画（レクチャー ID.言語）
 import { bundle } from '@remotion/bundler';
 import { renderStill, selectComposition } from '@remotion/renderer';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
@@ -36,7 +37,8 @@ for (const t of targets) {
   const { head, only } = parseTarget(t);
   const [id, at] = head.split('@');
   const inputProps = { id, audio: false, theme, captions };
-  const composition = await selectComposition({ serveUrl, id, inputProps });
+  // 訳の動画 P01.en のコンポジションは P01-en（content/i18n.ts の compositionId）
+  const composition = await selectComposition({ serveUrl, id: id.replace(/\./g, '-'), inputProps });
   const tl = timeline[id];
   const frames = at
     ? [{ f: Number(at), name: `f${at}` }]

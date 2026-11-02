@@ -7,7 +7,10 @@ import { byteRange } from '../site/offline-shared';
 import type { CourseManifest } from '../site/offline-shared';
 
 const root = path.resolve(import.meta.dir, '../site/dist');
-let control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal' };
+const siteConfig = JSON.parse(readFileSync(path.resolve(import.meta.dir, '../site/config.json'), 'utf8')) as { media?: Record<string, { url: string }> };
+const mediaMounts: [string, string][] = Object.entries(siteConfig.media ?? {}).map(([lang, m]) => [new URL(m.url).pathname, path.resolve(import.meta.dir, '../site/dist-media', lang)]);
+// mediaDown: 訳の動画のサイトがまだ無い（公開の前・Pages の反映待ち）ときを作る
+let control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false };
 let fullVideoDownloads = 0;
 let manifestRequests = 0;
 let manifestFailures = 0;
@@ -39,18 +42,22 @@ Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
   const u = new URL(req.url);
   if (u.pathname === '/__test/health') return new Response('ok');
   if (u.pathname === '/__test/control' && req.method === 'POST') {
-    control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', ...await req.json() };
+    control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false, ...await req.json() };
     fullVideoDownloads = 0;
     manifestRequests = 0;
     manifestFailures = 0;
     return Response.json(control);
   }
   if (u.pathname === '/__test/stats') return Response.json({ fullVideoDownloads, manifestRequests, manifestFailures });
-  if (!u.pathname.startsWith('/chalkfile/')) return new Response('not found', { status: 404 });
+  // 訳の言語の動画のサイト（site/config.json の media）は、公開と同じパス（/chalkfile-media-en/ など）で site/dist-media/<言語>/ を配る
+  const media = mediaMounts.find(([prefix]) => u.pathname.startsWith(prefix));
+  if (!u.pathname.startsWith('/chalkfile/') && !media) return new Response('not found', { status: 404 });
+  if (media && control.mediaDown) return new Response('not found', { status: 404 });
+  const [prefix, dir] = media ?? ['/chalkfile/', root];
   let relative: string;
-  try { relative = decodeURIComponent(u.pathname.slice('/chalkfile/'.length)); } catch { return new Response('bad request', { status: 400 }); }
-  let file = path.join(root, relative);
-  if (!file.startsWith(root + path.sep) && file !== root) return new Response('forbidden', { status: 403 });
+  try { relative = decodeURIComponent(u.pathname.slice(prefix.length)); } catch { return new Response('bad request', { status: 400 }); }
+  let file = path.join(dir, relative);
+  if (!file.startsWith(dir + path.sep) && file !== dir) return new Response('forbidden', { status: 403 });
   if (!existsSync(file)) return new Response('not found', { status: 404 });
   if (statSync(file).isDirectory()) {
     if (!u.pathname.endsWith('/')) return Response.redirect(`${u.pathname}/`, 301);

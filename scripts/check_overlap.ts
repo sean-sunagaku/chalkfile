@@ -3,6 +3,8 @@
  * 公式ドキュメントは事実を確かめるために読むもので、文章を写すものではない。写していないことを、公開の前に機械で確かめる。
  *
  *   bun scripts/check_overlap.ts <講座 ID> [--query=locale=ja-JP] [--min=16] [--refresh]
+ *   bun scripts/check_overlap.ts <講座 ID> --lang=en [--min-words=8]   # 英語の訳と、出典のページ（英語）を単語の並びで比べる
+ *   bun scripts/check_overlap.ts <講座 ID> --lang=zh                   # 中国語の訳と、出典のページを文字で比べる（日本語と同じ比べ方）
  *
  * - 空白を無視して、--min 文字以上続けて同じところを出す。日本語が 10 文字未満の一致（イベント名などの識別子）は数えない
  * - --query は各 URL の後ろに足す（英語の URL から日本語版を取るとき。Stripe は locale=ja-JP）
@@ -14,7 +16,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { COURSES } from '../content';
+import { coursesIn } from '../content';
+import { isLang } from '../content/i18n';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const CACHE = path.join(ROOT, '.work', 'docs');
@@ -25,9 +28,11 @@ const JA_PAGE_MIN = 300;
 
 const args = process.argv.slice(2);
 const opt = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
-const course = COURSES.find((c) => c.id === args.find((a) => !a.startsWith('--')));
+const lang = opt('lang') ?? 'ja';
+if (!isLang(lang)) throw new Error(`--lang は ja・en・zh: ${lang}`);
+const course = coursesIn(lang).find((c) => c.id === args.find((a) => !a.startsWith('--')));
 if (!course) {
-  console.error(`講座 ID を 1 つ渡してください: ${COURSES.map((c) => c.id).join(', ')}`);
+  console.error(`講座 ID を 1 つ渡してください（${lang} の講座）: ${coursesIn(lang).map((c) => c.id).join(', ')}`);
   process.exit(2);
 }
 const min = Number(opt('min') ?? 16);
@@ -116,6 +121,47 @@ await Promise.all(
     }
   }),
 );
+
+/* ───────────── 英語の訳: 単語の並びで比べる ───────────── */
+if (lang === 'en') {
+  const n = Number(opt('min-words') ?? 8);
+  const words = (x: string) => x.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const strings: { lecture: string; w: string[] }[] = [];
+  const collect = (v: unknown, lecture: string): void => {
+    if (typeof v === 'string') strings.push({ lecture, w: words(v) });
+    else if (Array.isArray(v)) v.forEach((x) => collect(x, lecture));
+    else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'docs' && k !== 'url') collect(x, lecture);
+  };
+  for (const l of course.lectures) collect(l, l.id);
+  const grams = new Map<string, [number, number][]>();
+  strings.forEach(({ w }, i) => {
+    for (let k = 0; k + n <= w.length; k++) {
+      const key = w.slice(k, k + n).join(' ');
+      grams.set(key, [...(grams.get(key) ?? []), [i, k]]);
+    }
+  });
+  const hits = new Map<string, { lecture: string; pages: Set<string> }>();
+  for (const [u, html] of pages) {
+    const d = words(html.replace(JSON_ESCAPE, (_, h: string) => String.fromCharCode(parseInt(h, 16))).replace(/<[^>]+>/g, ' ').replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, decodeEntity));
+    for (let k = 0; k + n <= d.length; k++) {
+      for (const [i, a] of grams.get(d.slice(k, k + n).join(' ')) ?? []) {
+        const w = strings[i].w;
+        let len = n;
+        while (a + len < w.length && k + len < d.length && w[a + len] === d[k + len]) len++;
+        const span = w.slice(a, a + len).join(' ');
+        const h = hits.get(span) ?? { lecture: strings[i].lecture, pages: new Set<string>() };
+        h.pages.add(u);
+        hits.set(span, h);
+      }
+    }
+  }
+  const spans = [...hits.keys()].sort((a, b) => b.length - a.length).filter((x, i, all) => !all.slice(0, i).some((y) => y.includes(x)));
+  console.log(`${course.title}: 英語の訳の文字列 ${strings.length} 個と、出典のページ ${pages.size}/${urls.length} 本を突き合わせた（${n} 語以上の同じ並び）`);
+  if (!spans.length) console.log('言い回しが続けて同じところは無い');
+  for (const x of spans) console.log(`- ${hits.get(x)!.lecture}（${x.split(' ').length} 語）: ${x}\n    ${[...hits.get(x)!.pages].join('\n    ')}`);
+  if (pages.size < urls.length) console.log(`取れなかったページ ${urls.length - pages.size} 本は比べていない（X の記事などログインが要るページ）。訳して写していないかを人が読んで確かめる`);
+  process.exit(spans.length ? 1 : 0);
+}
 
 const found = new Map<string, { lecture: string; pages: Set<string> }>();
 const englishOnly: string[] = [];

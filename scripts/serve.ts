@@ -1,14 +1,21 @@
 // 講座サイト（site/dist）を手元で見る。動画の早送りに要る Range（部分取得）にも答える。
 //   bun scripts/serve.ts            # http://127.0.0.1:8765/
 //   PORT=9000 bun scripts/serve.ts
+// 訳の言語の動画のサイト（site/config.json の media）は、公開と同じパス（/chalkfile-media-en/ など）で site/dist-media/<言語>/ を配る
 // python3 -m http.server は Range に答えないので、動画の途中へ飛べない
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { byteRange } from '../site/offline-shared';
 
-const ROOT = path.resolve(import.meta.dir, '..', 'site', 'dist');
+const SITE = path.resolve(import.meta.dir, '..', 'site');
 const PORT = Number(process.env.PORT ?? 8765);
 const BASE_PATH = process.env.BASE_PATH ?? '/';
+const config = JSON.parse(readFileSync(path.join(SITE, 'config.json'), 'utf8')) as { media?: Record<string, { url: string }> };
+/** 配るもの: [URL のパスの頭, フォルダ]。動画のサイトを先に見る */
+const MOUNTS: [string, string][] = [
+  ...Object.entries(config.media ?? {}).map(([lang, m]): [string, string] => [new URL(m.url).pathname, path.join(SITE, 'dist-media', lang)]),
+  [BASE_PATH, path.join(SITE, 'dist')],
+];
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.mp4': 'video/mp4',
@@ -25,9 +32,11 @@ Bun.serve({
   port: PORT,
   fetch(req) {
     const { pathname } = new URL(req.url);
-    if (!pathname.startsWith(BASE_PATH)) return new Response('not found', { status: 404 });
+    const mount = MOUNTS.find(([p]) => pathname.startsWith(p));
+    if (!mount) return new Response('not found', { status: 404 });
+    const [prefix, ROOT] = mount;
     let decoded: string;
-    try { decoded = decodeURIComponent(pathname.slice(BASE_PATH.length)); } catch { return new Response('bad request', { status: 400 }); }
+    try { decoded = decodeURIComponent(pathname.slice(prefix.length)); } catch { return new Response('bad request', { status: 400 }); }
     let file = path.join(ROOT, decoded);
     if (file !== ROOT && !file.startsWith(ROOT + path.sep)) return new Response('forbidden', { status: 403 });
     if (existsSync(file) && statSync(file).isDirectory()) {

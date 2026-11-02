@@ -1,10 +1,9 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { CodeScene, CompareScene, CompareSide, NumbersScene, PhoneScene, PhoneScreen, QuizScene, TableScene, TerminalScene, TimelineScene } from '../../content/types';
-import { courseOf } from '../../content';
 import { Glass, Icon, IconBadge, Pill, Smart } from '../components/ui';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, DISPLAY, GRAD, mix, MONO, PAD, SANS, SYNTAX, TONES, tone } from '../theme';
-import { dropY, lineEnd, lineStart, useActiveLine, useAppear, useFocus, useScene } from '../timing';
+import { dropY, lineEnd, lineStart, useActiveLine, useAppear, useFocus, useScene, useText } from '../timing';
 
 /* ───────────── コード ───────────── */
 
@@ -424,7 +423,8 @@ export const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
 export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { lines, lecture } = useScene();
+  const { lines, lecture, course } = useScene();
+  const text = useText();
   // 「1 / 3」の分母は、このレクチャーのクイズの場面の数（もとは 7 で固定だった）
   const quizTotal = lecture.scenes.filter((x) => x.kind === 'quiz').length;
   const q = useAppear(0);
@@ -441,11 +441,11 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
     <>
       <div style={{ position: 'absolute', left: PAD, top: CONTENT_TOP + 10, display: 'flex', alignItems: 'center', gap: 34, opacity: q }}>
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 150, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Q{s.no}</div>
-        {courseOf(lecture.id).standalone ? null : (
+        {course.standalone ? null : (
           <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>{s.no} / {quizTotal}</div>
         )}
         {/* 考える時間だけ出す札。大きな「Q1」の下に置くと、書体によって文字の下の端と重なるので、横に並べる */}
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: TONES.amber.text, opacity: thinkO }}>○ か × か？</div>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: TONES.amber.text, opacity: thinkO }}>{text.quizThink}</div>
       </div>
       <div style={{ position: 'absolute', left: PAD, right: PAD, top: 420, opacity: q, transform: `translateY(${dropY(q)}px)` }}>
         <Glass t="violet" active={stamp > 0.05 ? 0.4 : 1} style={{ padding: '40px 52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 40 }}>
@@ -498,7 +498,7 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
       <div style={{ position: 'absolute', left: PAD, right: PAD, top: 720, opacity: ex, transform: `translateY(${dropY(ex)}px)` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
           <Pill t={ok ? 'mint' : 'coral'} size={30}>
-            {ok ? '正しい' : '誤解'}
+            {ok ? text.quizTrue : text.quizFalse}
           </Pill>
           <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 40, color: C.ink, lineHeight: 1.45 }}>
             <Smart text={s.explain} t={ok ? 'mint' : 'coral'} />
@@ -512,11 +512,12 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
 /* ───────────── スマホの画面 ───────────── */
 
 const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
+  const text = useText();
   if (sc.kind === 'stripe') {
     return (
       <div style={{ position: 'absolute', inset: 0, background: '#FFFFFF', padding: '68px 26px 26px', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: SANS }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#5B6178', fontSize: 19, fontWeight: 700 }}>
-          <Icon name="lock" size={20} color="#5B6178" /> 支払いページ（Stripe がホスト）
+          <Icon name="lock" size={20} color="#5B6178" /> {text.payPage}
         </div>
         <div style={{ fontSize: 31, fontWeight: 900, color: '#1D2340' }}>{sc.lead}</div>
         <div style={{ borderRadius: 14, background: '#F4F5FA', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -530,7 +531,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
             {ph}
           </div>
         ))}
-        <div style={{ fontSize: 17, color: '#6B718C', lineHeight: 1.5 }}>{sc.note ?? '無料期間のあと毎月 1,000 円で自動更新。解約はいつでもプラン管理ページから。'}</div>
+        <div style={{ fontSize: 17, color: '#6B718C', lineHeight: 1.5 }}>{sc.note ?? text.payNote}</div>
         <div style={{ marginTop: 'auto', height: 62, borderRadius: 12, background: '#1D2340', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 23 }}>{sc.primary}</div>
       </div>
     );
@@ -538,8 +539,8 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
   const done = sc.kind === 'done';
   return (
     <div style={{ position: 'absolute', inset: 0, background: done ? '#F1FFF8' : '#FFF4F8', padding: '64px 22px 22px', display: 'flex', flexDirection: 'column', fontFamily: SANS }}>
-      <div style={{ fontWeight: 900, fontSize: 25, color: '#E2477F', letterSpacing: 1 }}>{sc.brand ?? 'サンプルアプリ'}</div>
-      <div style={{ fontSize: 17, color: '#9A6B7E', marginTop: 2 }}>{sc.brandSub ?? 'Pro プラン'}</div>
+      <div style={{ fontWeight: 900, fontSize: 25, color: '#E2477F', letterSpacing: 1 }}>{sc.brand ?? text.sampleApp}</div>
+      <div style={{ fontSize: 17, color: '#9A6B7E', marginTop: 2 }}>{sc.brandSub ?? text.samplePlan}</div>
       <div
         style={{
           marginTop: 22,

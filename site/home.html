@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="__LANG__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -39,6 +39,11 @@ img { max-width: 100%; }
 .top nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
 .top nav a { color: var(--fg-2); text-decoration: none; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 999px; }
 .top nav a:hover { background: var(--panel); color: var(--fg); }
+/* 言語の切り替え（今の言語は aria-current） */
+.top nav.langs { margin-left: 0; gap: 4px; }
+.top nav.langs a { font-size: 13px; padding: 3px 10px; border: 1px solid var(--line); background: var(--panel); }
+.top nav.langs a[aria-current="page"] { background: var(--violet-soft); border-color: var(--violet); color: var(--fg); }
+.lang-chip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--raise); color: var(--fg-2); font-size: 12px; font-weight: 700; vertical-align: middle; }
 
 /* ── 最初の画面：書いた台本と、できあがる動画 ── */
 .hero { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 56px; align-items: center; padding-block: 48px 72px; }
@@ -134,48 +139,50 @@ footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(-
 <div class="shell">
   <header class="top">
     <a class="mark" href="./"><i aria-hidden="true"></i>__SERIES__</a>
-    <nav aria-label="ページ内とリンク">
-      <a href="#courses">講座</a>
-      <a href="#offlineHeading">保存・アプリ</a>
-      <a href="#themes">テーマ</a>
+    <nav aria-label="{{homeNavLabel}}">
+      <a href="#courses">{{homeNavCourses}}</a>
+      <a href="#offlineHeading">{{homeNavOffline}}</a>
+      <a href="#themes">{{homeNavThemes}}</a>
       <a href="__REPO__" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
+    __LANG_NAV__
   </header>
 
   <main>
     <section class="hero" aria-labelledby="hero-title">
       <div>
         <h1 id="hero-title">__SERIES__</h1>
-        <p class="lead">台本をコードで書くと、ナレーション付きの講座動画と講座サイトができあがります。</p>
-        <p class="sub">TypeScript の台本から、VOICEVOX の声と Remotion の動画、動画・台本・字幕・確認クイズの講座サイトまでをコマンドで作ります。台本を直せば、何度でも作り直せます。</p>
+        <p class="lead">{{homeLead}}</p>
+        <p class="sub">{{homeSub}}</p>
         <div class="actions">
-          <a class="btn primary" href="__FIRST_COURSE__">作例の講座を見る</a>
-          <a class="btn" href="__REPO__" target="_blank" rel="noopener noreferrer">GitHub で見る</a>
+          <a class="btn primary" href="__FIRST_COURSE__">{{homeFirst}}</a>
+          <a class="btn" href="__REPO__" target="_blank" rel="noopener noreferrer">{{homeGithub}}</a>
         </div>
       </div>
-      <div class="pair" aria-label="台本と、そこから作られた動画の 1 場面">
+      <div class="pair" aria-label="{{homePairLabel}}">
         <div class="slate">
-          <div class="tab"><b>台本</b>__HERO_FILE__</div>
+          <div class="tab"><b>{{homeScript}}</b>__HERO_FILE__</div>
           <pre>__HERO_CODE__</pre>
         </div>
         <figure class="frame">
-          <img src="__HERO_IMAGE__" alt="台本から作られた動画の 1 場面。7 つのオブジェクトのカードが並ぶ" width="960" height="540">
-          <figcaption>できあがる動画の 1 場面</figcaption>
+          <img src="__HERO_IMAGE__" alt="{{homeHeroAlt}}" width="960" height="540">
+          <figcaption>{{homeHeroCap}}</figcaption>
         </figure>
       </div>
     </section>
 
     <section id="courses" aria-labelledby="courses-title">
-      <h2 id="courses-title">Chalkfile で作った講座</h2>
-      <p class="lede">講座ごとに、動画と講座サイトがひとそろいでできます。</p>
+      <h2 id="courses-title">{{homeCoursesTitle}}</h2>
+      <p class="lede">{{homeCoursesLede}}</p>
       <div class="courses">
 __COURSES__
       </div>
     </section>
+__OTHER_COURSES__
 
     <section id="themes" aria-labelledby="themes-title">
-      <h2 id="themes-title">講座ごとにトンマナを選べる</h2>
-      <p class="lede">色・書体・背景の飾りをテーマとしてまとめてあります。講座にテーマを 1 行書くと、動画もサイトもそのテーマで作られます。下は同じ場面を 3 つのテーマで描いたものです。</p>
+      <h2 id="themes-title">{{homeThemesTitle}}</h2>
+      <p class="lede">{{homeThemesLede}}</p>
       <div class="themes">
 __THEMES__
       </div>
@@ -188,25 +195,25 @@ export const STRIPE_BILLING: Course = {
     </section>
 
     <section aria-labelledby="steps-title">
-      <h2 id="steps-title">作り方</h2>
-      <p class="lede">調べ方、画面と話し方の決まり、テーマの作り方は Claude Code のスキルにまとめてあります。</p>
+      <h2 id="steps-title">{{homeStepsTitle}}</h2>
+      <p class="lede">{{homeStepsLede}}</p>
       <ol class="steps">
-        <li><b>調べる</b><span>公式ドキュメントと一次情報を読み、確かめた日と版を残す</span></li>
-        <li><b>台本と図を書く</b><span>場面ごとの台詞と、台詞に合わせて出す図を TypeScript で書く</span></li>
-        <li><b>声を付ける</b><span>VOICEVOX で読み上げ、読みのカナを全部確かめる</span></li>
-        <li><b>動画にする</b><span>Remotion で書き出し、BGM と効果音を合わせる</span></li>
-        <li><b>公開する</b><span>講座サイトを組み立てて GitHub Pages に出す</span></li>
+        <li><b>{{homeStep1}}</b><span>{{homeStep1Body}}</span></li>
+        <li><b>{{homeStep2}}</b><span>{{homeStep2Body}}</span></li>
+        <li><b>{{homeStep3}}</b><span>{{homeStep3Body}}</span></li>
+        <li><b>{{homeStep4}}</b><span>{{homeStep4Body}}</span></li>
+        <li><b>{{homeStep5}}</b><span>{{homeStep5Body}}</span></li>
       </ol>
       <div class="more">
-        <a class="btn" href="__REPO__#readme" target="_blank" rel="noopener noreferrer">README を読む</a>
-        <a class="btn" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener noreferrer">Claude Code のスキルを見る</a>
+        <a class="btn" href="__REPO__#readme" target="_blank" rel="noopener noreferrer">{{homeReadme}}</a>
+        <a class="btn" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener noreferrer">{{homeSkill}}</a>
       </div>
     </section>
   </main>
 
   <footer>
     <div>__CREDITS__</div>
-    <div>講座は、確かめた日の公式情報をもとにした個人の勉強用のものです。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律や税の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
+    <div>{{homeFoot}}</div>
   </footer>
 </div>
 <div class="shell">__OFFLINE_PANEL__</div>

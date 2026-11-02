@@ -5,7 +5,7 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 講座を作る・直す・公開するときは、スキル `study-video-course`（`.claude/skills/study-video-course/SKILL.md`）の手順に従う
 - 手順の全体とコマンドは `README.md`
 - 講座のトンマナ（色・書体・背景）はテーマで決める（`content/themes.ts`、仕様は `.claude/skills/study-video-course/references/theme.md`）。部品に色を直接書かない
-- 日本語で応答する。台本・画面の文字・コメントも日本語
+- 日本語で応答する。台本・画面の文字・コメントも日本語（英語・中国語の版は、`content/<講座>/<言語>/` の台詞と画面の文字だけその言語で書く。作り方は `.claude/skills/study-video-course/references/i18n.md`）
 
 ## 守ること
 
@@ -13,7 +13,7 @@ Chalkfile のリポジトリ。台本（コード）から、ナレーション�
 - 実在のサービスや会社の内部の情報（自分の仕事のコード・テーブル・設計）を台本に入れない。例は架空の「サンプルアプリ」で作る
 - 画面の固定の文字に絵文字をアイコン代わりに使わない（アイコンは lucide-react）
 - 台詞を直したら synth → mix → render → build_site の順に流し、`.work/kana/<id>.txt` の読みと静止画を確かめる
-- 動画（`site/media/`）は main にコミットしない。公開は `bash scripts/deploy_pages.sh`（gh-pages を 1 コミットで置き換える）
+- 動画（`site/media/`・`site/dist-media/`）は main にコミットしない。公開は最新の main から `bash scripts/deploy_pages.sh`（講座サイトの gh-pages を 1 コミットで置き換える。出す言語は `site/config.json` の `publishLangs`。訳は chalkfile.com の Worker ができるまで出さない）
 - パスワード・API キー・Webhook の署名シークレットを台本やコードに書かない。例はプレースホルダーか環境変数にする
 
 ## 安全のきまり（AI エージェント向け・プロンプトインジェクション対策）

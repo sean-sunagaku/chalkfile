@@ -1,11 +1,14 @@
 import React, { createContext, useContext } from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
-import type { Lecture, Scene } from '../content/types';
+import type { Lang } from '../content/i18n';
+import type { Course, Lecture, Scene } from '../content/types';
+import { VIDEO_TEXT, type VideoText } from './i18n';
 
 export type LineTiming = { start: number; end: number };
 export type SceneTiming = { start: number; duration: number; lines: LineTiming[] };
 
-type Ctx = SceneTiming & { scene: Scene; lecture: Lecture; index: number };
+/** course と lang は動画の言語のもの（訳の動画では、訳した講座と言語） */
+type Ctx = SceneTiming & { scene: Scene; lecture: Lecture; index: number; course: Course; lang: Lang };
 
 const SceneContext = createContext<Ctx | null>(null);
 
@@ -18,6 +21,9 @@ export const useScene = (): Ctx => {
   if (!ctx) throw new Error('SceneProvider の外で使われた');
   return ctx;
 };
+
+/** 動画の言語の、部品が出す決まった文字（src/i18n.ts） */
+export const useText = (): VideoText => VIDEO_TEXT[useScene().lang];
 
 /** at 番目の台詞が始まるフレーム（場面の頭からの相対） */
 export const lineStart = (lines: LineTiming[], at: number): number => {

@@ -1,30 +1,54 @@
 // 講座サイトを組み立てる。GitHub Pages にそのまま置ける静的なファイルを site/dist に書く。
-//   bun scripts/build_site.ts                  # 全講座と一覧ページ
+//   bun scripts/build_site.ts                  # 全講座（全部の言語）と一覧ページ
 //   bun scripts/build_site.ts stripe-billing   # 一部の講座だけ（一覧ページは毎回作る）
 //   bun scripts/build_site.ts --strict         # 動画かポスターが無いレクチャーがあれば止める（deploy_pages.sh が使う）
-// 入力: content/（台本とテーマ）、site/data/<id>.json（synth.ts の出力）、site/media/<id>.mp4|jpg（render.sh の出力）、
-//       site/template.html（講座のページ）、site/home.html（一覧のページ）、site/assets/（一覧ページの画像）、site/config.json
-// 出力: site/dist/index.html、site/dist/<講座>/index.html、site/dist/<講座>/media/・site/dist/assets/（ハードリンク）
+//   SITE_LANGS=ja bun scripts/build_site.ts    # その言語だけのサイトにする（訳の動画のサイトがまだ無いときに、日本語だけ出す）
+// 入力: content/（台本・訳・テーマ）、site/data/<key>.json（synth.ts の出力）、site/media/<key>.mp4|jpg（render.sh の出力）、
+//       site/template.html（講座のページ）、site/home.html（一覧のページ）、site/i18n.ts（サイトの決まった文字）、site/assets/、site/config.json
+// 出力: site/dist/index.html と site/dist/<講座>/（日本語）、site/dist/<言語>/ と site/dist/<言語>/<講座>/（訳）、
+//       site/dist-media/<言語>/<講座>/（訳の動画とポスター。config.json の media のサイトに出す）
+// 動画は、日本語は講座の media/ に置く。訳は、同じ origin の別の GitHub Pages のサイト（config.json の media）に置く
+// （Pages は 1 サイト 1GB まで。同じ origin なので、オフライン保存と途中への移動（Range）はそのまま動く）。
 // 色・書体・背景の飾りは講座のテーマ（content/themes.ts）から作る。一覧ページは既定のテーマ（Chalkfile）
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { COURSES } from '../content';
+import { COURSES, coursesIn } from '../content';
+import { isLang, LANG_INFO, LANGS, videoKey, type Lang } from '../content/i18n';
 import { THEMES, themeOf } from '../content/themes';
-import type { ChapterMaterial, Course, Source } from '../content/types';
+import type { ChapterMaterial, Course, Source, VoiceId } from '../content/types';
+import { fill, SITE_TEXT, THEME_SUMMARY, type SiteText } from '../site/i18n';
 import { fontLink, themeCss } from './site_theme';
 import { asset, buildPwa, bundle, hash } from './pwa';
+import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const SITE = path.join(ROOT, 'site');
 const DIST = path.join(SITE, 'dist');
+const DIST_MEDIA = path.join(SITE, 'dist-media');
 const MEDIA = path.join(SITE, 'media');
 const ASSETS = path.join(SITE, 'assets');
 
-type Config = { series: string; seriesSub: string; baseUrl: string; repoUrl: string };
+/** media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ） */
+type Config = { series: string; seriesSub: string; baseUrl: string; repoUrl: string; publishLangs: Lang[]; media?: Partial<Record<Lang, { url: string; repo: string }>> };
 const config = JSON.parse(readFileSync(path.join(SITE, 'config.json'), 'utf8')) as Config;
 const base = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
+/** サイトに出す言語（既定は全部）。SITE_LANGS=ja のように絞ると、外した言語のページ・切り替え・動画のサイトを作らない */
+const SITE_LANGS: Lang[] = (() => {
+  const v = process.env.SITE_LANGS?.trim() || config.publishLangs.join(',');
+  if (!v) return [...LANGS];
+  const ls = v.split(',').map((x) => x.trim());
+  for (const l of ls) if (!isLang(l)) throw new Error(`SITE_LANGS は ${LANGS.join(',')} から選ぶ: ${l}`);
+  for (const l of ls) if (!config.publishLangs.includes(l as Lang)) throw new Error(`未公開の言語はビルドしない: ${l}`);
+  if (!ls.includes('ja')) throw new Error('SITE_LANGS には ja（一覧と日本語の講座）を入れる');
+  return LANGS.filter((l) => ls.includes(l));
+})();
+/** 訳の言語の動画のサイトのパス（/chalkfile-media-en/ など。サイトと同じ origin なので、パスだけで指せる） */
+const mediaRoot = (lang: Lang): string | null => {
+  const m = lang === 'ja' ? undefined : config.media?.[lang];
+  return m ? new URL(m.url.endsWith('/') ? m.url : `${m.url}/`).pathname : null;
+};
 
 type SiteData = {
   duration: number;
@@ -34,6 +58,8 @@ type SiteData = {
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const plain = (s: string) => s.replace(/\*\*/g, '');
+/** テンプレートの {{key}} を、その言語の決まった文字（エスケープ済み）にする */
+const fillText = (html: string, T: SiteText) => html.replace(/\{\{(\w+)\}\}/g, (m, k: string) => (k in T ? esc(T[k as keyof SiteText]) : m));
 
 const credits = JSON.parse(readFileSync(path.join(ROOT, 'src/generated/credits.json'), 'utf8')) as string[];
 const template = readFileSync(path.join(SITE, 'template.html'), 'utf8');
@@ -43,32 +69,55 @@ const offlineCss = readFileSync(path.join(SITE, 'offline.css'), 'utf8');
 const offlineClient = await bundle(path.join(SITE, 'offline-client.ts'));
 const generatedManifests: CourseManifest[] = [];
 const shellAssets: Asset[] = [];
-const appParts = (root: string, course?: { id: string; title: string; pageVersion: string }) => ({
+/** ページの言語の、保存機能の画面（offline-client.ts）に渡す文字 */
+const LOCALE: Record<Lang, string> = { ja: 'ja-JP', en: 'en-US', zh: 'zh-CN' };
+const appParts = (lang: Lang, root: string, course?: { id: string; title: string; pageVersion: string }) => ({
   head: `<link rel="manifest" href="${root}manifest.webmanifest"><link rel="apple-touch-icon" href="${root}icons/icon-180.png"><meta name="theme-color" content="${themeOf().color.bg}"><meta name="apple-mobile-web-app-capable" content="yes">`,
-  panel: offlinePanel.replace('__COURSE_HIDDEN__', course ? '' : 'hidden').replace('__LIBRARY_OPEN__', course ? '' : 'open'),
-  script: `<script id="pwa-data" type="application/json">${JSON.stringify({ root, course, courses: COURSES.map((c) => ({ id: c.id, title: c.title })) }).replace(/</g, '\\u003c')}</script><script>${offlineClient}</script>`,
+  panel: fillText(offlinePanel.replace('__COURSE_HIDDEN__', course ? '' : 'hidden').replace('__LIBRARY_OPEN__', course ? '' : 'open'), SITE_TEXT[lang]),
+  script: `<script id="pwa-data" type="application/json">${JSON.stringify({
+    root,
+    course,
+    courses: coursesIn(lang).map((c) => ({ id: `${LANG_INFO[lang].path}${c.id}`, title: c.title })),
+    lang,
+    locale: LOCALE[lang],
+    text: SITE_TEXT[lang],
+  }).replace(/</g, '\\u003c')}</script><script>${offlineClient}</script>`,
 });
 
 const favicon = (ink: string, accent: string) =>
   'data:image/svg+xml,' +
   encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="3" y="7" width="26" height="18" rx="5" fill="${ink}"/><rect x="3" y="20" width="26" height="5" rx="2" fill="${accent}"/></svg>`);
 
-// 検索と SNS の共有で使う <head> の中身
-const headMeta = (o: { title: string; description: string; url: string; image?: string; icon: string }) =>
+const OG_LOCALE: Record<Lang, string> = { ja: 'ja_JP', en: 'en_US', zh: 'zh_CN' };
+// 検索と SNS の共有で使う <head> の中身。alternates は、同じページのほかの言語（hreflang）
+const headMeta = (o: { title: string; description: string; url: string; image?: string; icon: string; lang: Lang; alternates: { lang: Lang; url: string }[] }) =>
   [
     `<meta name="description" content="${esc(o.description)}">`,
     `<link rel="canonical" href="${esc(o.url)}">`,
+    ...o.alternates.map((a) => `<link rel="alternate" hreflang="${LANG_INFO[a.lang].html}" href="${esc(a.url)}">`),
+    ...o.alternates.filter((a) => a.lang === 'ja').map((a) => `<link rel="alternate" hreflang="x-default" href="${esc(a.url)}">`),
     `<link rel="icon" href="${o.icon}">`,
     '<meta property="og:type" content="website">',
     `<meta property="og:site_name" content="${esc(config.series)}">`,
     `<meta property="og:title" content="${esc(o.title)}">`,
     `<meta property="og:description" content="${esc(o.description)}">`,
     `<meta property="og:url" content="${esc(o.url)}">`,
+    `<meta property="og:locale" content="${OG_LOCALE[o.lang]}">`,
     o.image ? `<meta property="og:image" content="${esc(o.image)}">` : '',
     `<meta name="twitter:card" content="${o.image ? 'summary_large_image' : 'summary'}">`,
   ]
     .filter(Boolean)
     .join('\n');
+
+/** 言語の切り替え（今の言語に aria-current）。courseId があれば、その講座の訳へ。訳が無い言語は、その言語の一覧へ */
+const langNav = (lang: Lang, root: string, label: string, courseId?: string) => {
+  if (SITE_LANGS.length < 2) return '';
+  return `<nav class="langs" aria-label="${esc(label)}">${SITE_LANGS.map((l) => {
+    const has = courseId && coursesIn(l).some((c) => c.id === courseId);
+    const href = `${root}${LANG_INFO[l].path}${has ? `${courseId}/` : ''}`;
+    return `<a href="${esc(href)}" hreflang="${LANG_INFO[l].html}" lang="${LANG_INFO[l].html}"${l === lang ? ' aria-current="page"' : ''}>${esc(LANG_INFO[l].label)}</a>`;
+  }).join('')}</nav>`;
+};
 
 // 同じディスクならハードリンク（容量を食わない）、だめならコピー
 const place = (from: string, to: string) => {
@@ -100,11 +149,11 @@ const materialForSite = (course: Course, m: ChapterMaterial) => {
   };
 };
 
-const readData = (id: string): SiteData | null => {
-  const f = path.join(SITE, 'data', `${id}.json`);
+const readData = (key: string): SiteData | null => {
+  const f = path.join(SITE, 'data', `${key}.json`);
   return existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as SiteData) : null;
 };
-const minutesOf = (course: Course) => course.lectures.reduce((a, l) => a + (readData(l.id)?.duration ?? 0), 0) / 60;
+const minutesOf = (course: Course, lang: Lang) => course.lectures.reduce((a, l) => a + (readData(videoKey(l.id, lang))?.duration ?? 0), 0) / 60;
 
 /* ───────────── 安全のための確かめ ─────────────
  * ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（javascript: などを通さない）。
@@ -114,18 +163,34 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
 const problems: string[] = [];
 if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
-for (const c of COURSES) {
-  if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
-  for (const ln of c.links ?? []) if (!HTTPS.test(ln.url)) problems.push(`${c.id} のリンクが https:// でない: ${ln.url}`);
-  for (const lec of c.lectures) {
-    if (!ID.test(lec.id)) problems.push(`レクチャー ID が英数字でない: ${lec.id}`);
-    for (const d of lec.docs) if (!HTTPS.test(d.url)) problems.push(`${lec.id} の公式ドキュメントのリンクが https:// でない: ${d.url}`);
-    // 節 ID・図 ID はページの中の id 属性とリンク先になるので英数字だけ
-    const m = lec.material;
-    if (m) for (const id of [m.id, ...m.sections.map((x) => x.id), ...m.figures.map((x) => x.id), m.exercise.id]) if (!ID.test(id)) problems.push(`${lec.id} の教材の ID が英数字でない: ${id}`);
+for (const [lang, m] of Object.entries(config.media ?? {})) {
+  if (!m || !HTTPS.test(m.url) || !HTTPS.test(m.repo)) problems.push(`site/config.json の media.${lang} の url と repo は https:// で書く`);
+  // 動画のサイトは講座サイトと同じ origin（Service Worker が中身を確かめて保存でき、Range もそのまま動く）
+  else if (new URL(m.url).origin !== new URL(base).origin) problems.push(`site/config.json の media.${lang}.url は baseUrl と同じ origin にする: ${m.url}`);
+  else {
+    // 講座サイトを含むパスに置くと、ページと動画の区別（Service Worker）が崩れる。講座サイトの下に置くとき（chalkfile.com/media/ など）は、
+    // 頭のフォルダの名前を、講座 ID・言語のフォルダと重ねない
+    const mp = mediaRoot(lang as Lang)!;
+    const bp = new URL(base).pathname;
+    const head = mp.startsWith(bp) ? mp.slice(bp.length).split('/')[0] : '';
+    if (bp.startsWith(mp) || COURSES.some((c) => c.id === head) || LANGS.some((l) => LANG_INFO[l].path === `${head}/`)) {
+      problems.push(`site/config.json の media.${lang}.url は、講座サイトを含まず、講座 ID・言語のフォルダと重ならない場所にする: ${m.url}`);
+    }
   }
-  for (const x of c.sources ?? []) if (!HTTPS.test(x.url)) problems.push(`${c.id} の出典のリンクが https:// でない: ${x.url}`);
 }
+for (const lang of LANGS)
+  for (const c of coursesIn(lang)) {
+    if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
+    for (const ln of c.links ?? []) if (!HTTPS.test(ln.url)) problems.push(`${c.id} のリンクが https:// でない: ${ln.url}`);
+    for (const lec of c.lectures) {
+      if (!ID.test(lec.id)) problems.push(`レクチャー ID が英数字でない: ${lec.id}`);
+      for (const d of lec.docs) if (!HTTPS.test(d.url)) problems.push(`${lec.id} の公式ドキュメントのリンクが https:// でない: ${d.url}`);
+      // 節 ID・図 ID はページの中の id 属性とリンク先になるので英数字だけ
+      const m = lec.material;
+      if (m) for (const id of [m.id, ...m.sections.map((x) => x.id), ...m.figures.map((x) => x.id), m.exercise.id]) if (!ID.test(id)) problems.push(`${lec.id} の教材の ID が英数字でない: ${id}`);
+    }
+    for (const x of c.sources ?? []) if (!HTTPS.test(x.url)) problems.push(`${c.id} の出典のリンクが https:// でない: ${x.url}`);
+  }
 for (const t of Object.values(THEMES)) if (!ID.test(t.id)) problems.push(`テーマ ID が英数字でない: ${t.id}`);
 if (problems.length) {
   console.error(problems.join('\n'));
@@ -156,114 +221,146 @@ const strict = process.argv.includes('--strict');
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const missing: string[] = [];
 
-for (const course of COURSES.filter((c) => !wanted.length || wanted.includes(c.id))) {
-  const theme = themeOf(course.theme);
-  const lectures = course.lectures.map((lec) => {
-    const d = readData(lec.id);
-    if (!d) throw new Error(`site/data/${lec.id}.json がありません。先に bun scripts/synth.ts ${lec.id} を流す`);
-    return {
-      id: lec.id,
-      no: lec.no,
-      section: lec.section,
-      title: lec.title,
-      summary: lec.summary,
-      docs: lec.docs,
-      quiz: lec.quiz,
-      takeaways: lec.takeaways,
-      caution: lec.caution ?? '',
-      material: lec.material ? materialForSite(course, lec.material) : null,
-      duration: d.duration,
-      chapters: d.chapters.map((c) => ({
-        start: c.start,
-        heading: c.kind === 'opening' ? 'オープニング' : c.kind === 'ending' ? 'エンディング' : c.heading,
-      })),
-      cues: d.cues.map((c) => ({ start: c.start, end: c.end, text: c.text, scene: c.scene })),
-    };
-  });
-  const minutes = minutesOf(course);
-  const links = [...(course.links ?? []), { label: 'ソースと作り方（GitHub）', url: config.repoUrl }];
-  // 計画だけある章（まだ動画が無い）は、カリキュラムに「準備中」で出す
-  const made = new Set(course.lectures.map((l) => l.id));
-  const planned = (course.syllabus?.chapters ?? []).filter((ch) => !made.has(ch.lectureId)).map((ch) => ({ no: ch.no, section: ch.section, title: ch.title, minutes: ch.minutes }));
-  const meta = {
-    id: course.id,
-    title: course.title,
-    subtitle: course.subtitle,
-    sections: course.sections,
-    sourceNote: course.sourceNote,
-    disclaimer: course.disclaimer ?? '',
-    links,
-    unitLabel: course.unitLabel ?? 'LECTURE',
-    ui: course.ui ?? {},
-    planned,
-  };
-  const mediaFiles: { file: string; data: Buffer; type: string }[] = [];
-  for (const lec of course.lectures) for (const ext of ['mp4', 'jpg']) {
-    const file = `${lec.id}.${ext}`;
-    const from = path.join(MEDIA, file);
-    if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: ext === 'mp4' ? 'video/mp4' : 'image/jpeg' });
-    else missing.push(file);
-  }
-  // 字幕を焼き込んだ版（render.sh の CAPTIONS=1 が書く <id>.cc.mp4）。あるレクチャーは、字幕オンのときにこちらを流す（全画面でも字幕が見える）
-  const withCc = new Set(course.lectures.filter((lec) => existsSync(path.join(MEDIA, `${lec.id}.cc.mp4`))).map((lec) => lec.id));
-  for (const id of withCc) mediaFiles.push({ file: `${id}.cc.mp4`, data: readFileSync(path.join(MEDIA, `${id}.cc.mp4`)), type: 'video/mp4' });
-  // 版は教材・表示・動画の全入力で決まる。保存した HTML と MP4 を別の版に混ぜない。
-  const pageVersion = hash(JSON.stringify({ meta, credits, lectures, theme, template, offlinePanel, offlineCss, offlineClient,
-    builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]) }));
-  const json = JSON.stringify({ course: meta, credits, pageVersion, lectures: lectures.map((lec) => ({ ...lec,
-    video: `media/${lec.id}.mp4?v=${pageVersion}`, poster: `media/${lec.id}.jpg?v=${pageVersion}`,
-    videoCc: withCc.has(lec.id) ? `media/${lec.id}.cc.mp4?v=${pageVersion}` : '',
-  })) }).replace(/</g, '\\u003c');
-  const app = appParts('../', { id: course.id, title: course.title, pageVersion });
-  const url = `${base}${course.id}/`;
-  const html = template
-    .replace('__PWA_HEAD__', () => app.head)
-    .replace('__OFFLINE_CSS__', () => offlineCss)
-    .replace('__OFFLINE_PANEL__', () => app.panel)
-    .replace('__PWA_SCRIPT__', () => app.script)
-    .replace('__TITLE__', () => esc(`${course.title}｜${config.series}`))
-    .replace('__HEAD_META__', () =>
-      headMeta({
-        title: course.title,
-        description: `${plain(course.headline)}。${lectures.length} 本・約 ${Math.round(minutes)} 分の動画と、台本・確認クイズ${lectures.some((l) => l.material) ? '・読む教材・実践課題' : ''}。`,
-        url,
-        image: `${url}media/${course.lectures[0].id}.jpg`,
-        icon: favicon(theme.color.ink, theme.color.accent),
-      }),
-    )
-    .replace('__FONT_LINK__', () => fontLink(theme))
-    .replace('__THEME_CSS__', () => themeCss(theme))
-    .replace('__SERIES__', () => esc(config.series))
-    .replace('__BRAND_SUB__', () => esc(course.title))
-    .replace('__HEADLINE__', () => esc(plain(course.headline)))
-    .replace('__DOCS_NOTE__', () => esc(course.docsNote))
-    .replace('__COURSE_JSON__', () => json);
-  const out = path.join(DIST, course.id);
-  mkdirSync(out, { recursive: true });
-  const page = Buffer.from(csp(html));
-  writeFileSync(path.join(out, 'index.html'), page);
-  rmSync(path.join(out, 'media'), { recursive: true, force: true });
-  mkdirSync(path.join(out, 'media'));
-  for (const lec of course.lectures) {
-    for (const ext of ['mp4', 'jpg', 'cc.mp4']) {
-      const f = path.join(MEDIA, `${lec.id}.${ext}`);
-      if (existsSync(f)) place(f, path.join(out, 'media', `${lec.id}.${ext}`));
-    }
-  }
-  // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
-  const manifestPath = path.join(out, 'offline-manifest.json');
-  rmSync(manifestPath, { force: true });
-  if (mediaFiles.length === course.lectures.length * 2 + withCc.size) {
-    const files = [asset(`${course.id}/`, page, 'text/html'), ...mediaFiles.map((f) => asset(`${course.id}/media/${f.file}?v=${pageVersion}`, f.data, f.type))];
-    const manifest: CourseManifest = { schema: 1, id: course.id, title: course.title, pageVersion, revision: hash(JSON.stringify(files)),
-      bytes: files.reduce((sum, f) => sum + f.bytes, 0), files };
-    generatedManifests.push(manifest);
-    writeFileSync(manifestPath, JSON.stringify(manifest));
-  }
-  console.log(`site/dist/${course.id}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}`);
+/** 講座の動画で使った声のクレジット。日本語は全講座で共通（講師と呼び込み。ほかの声は講座の sourceNote） */
+const courseCredits = (course: Course, lang: Lang): string[] =>
+  lang === 'ja' ? credits : creditsIn(lang, course.lectures.flatMap((l) => l.scenes.flatMap((s) => s.lines.map((ln) => (ln.v ?? 'narrator') as VoiceId))));
+
+// 訳の言語の、前に作ったページと動画のサイトを消す（site/dist と site/dist-media は丸ごと公開するので、残っていると出てしまう）。
+// 外した言語（SITE_LANGS）は消すだけ。全部の講座を作るときは作り直す（訳をやめた講座を残さない）
+for (const l of LANGS) {
+  if (!LANG_INFO[l].path || (SITE_LANGS.includes(l) && wanted.length)) continue;
+  rmSync(path.join(DIST, LANG_INFO[l].path), { recursive: true, force: true });
+  rmSync(path.join(DIST_MEDIA, l), { recursive: true, force: true });
 }
 
-/* ───────────── 一覧のページ ───────────── */
+for (const lang of SITE_LANGS) {
+  const T = SITE_TEXT[lang];
+  const info = LANG_INFO[lang];
+  // ページから見たサイトの最上位（日本語の講座は ../、訳の講座は ../../）
+  const root = lang === 'ja' ? '../' : '../../';
+  const mRoot = mediaRoot(lang);
+  for (const course of coursesIn(lang).filter((c) => !wanted.length || wanted.includes(c.id))) {
+    const theme = themeOf(course.theme);
+    const cid = `${info.path}${course.id}`;
+    const lectures = course.lectures.map((lec) => {
+      const key = videoKey(lec.id, lang);
+      const d = readData(key);
+      if (!d) throw new Error(`site/data/${key}.json がありません。先に bun scripts/synth.ts ${key} を流す`);
+      return {
+        id: lec.id,
+        key,
+        no: lec.no,
+        section: lec.section,
+        title: lec.title,
+        summary: lec.summary,
+        docs: lec.docs,
+        quiz: lec.quiz,
+        takeaways: lec.takeaways,
+        caution: lec.caution ?? '',
+        material: lec.material ? materialForSite(course, lec.material) : null,
+        duration: d.duration,
+        chapters: d.chapters.map((c) => ({
+          start: c.start,
+          heading: c.kind === 'opening' ? T.opening : c.kind === 'ending' ? T.ending : c.heading,
+        })),
+        cues: d.cues.map((c) => ({ start: c.start, end: c.end, text: c.text, scene: c.scene })),
+      };
+    });
+    const minutes = minutesOf(course, lang);
+    const links = [...(course.links ?? []), { label: T.repoLink, url: config.repoUrl }];
+    // 計画だけある章（まだ動画が無い）は、カリキュラムに「準備中」で出す
+    const made = new Set(course.lectures.map((l) => l.id));
+    const planned = (course.syllabus?.chapters ?? []).filter((ch) => !made.has(ch.lectureId)).map((ch) => ({ no: ch.no, section: ch.section, title: ch.title, minutes: ch.minutes }));
+    const meta = {
+      id: course.id,
+      title: course.title,
+      subtitle: course.subtitle,
+      sections: course.sections,
+      sourceNote: course.sourceNote,
+      disclaimer: course.disclaimer ?? '',
+      links,
+      unitLabel: course.unitLabel ?? 'LECTURE',
+      ui: course.ui ?? {},
+      planned,
+    };
+    const mediaFiles: { file: string; data: Buffer; type: string }[] = [];
+    for (const lec of lectures) for (const ext of ['mp4', 'jpg']) {
+      const file = `${lec.key}.${ext}`;
+      const from = path.join(MEDIA, file);
+      if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: ext === 'mp4' ? 'video/mp4' : 'image/jpeg' });
+      else missing.push(file);
+    }
+    // 字幕を焼き込んだ版（render.sh の CAPTIONS=1 が書く <key>.cc.mp4）。あるレクチャーは、字幕オンのときにこちらを流す（全画面でも字幕が見える）
+    const withCc = new Set(lectures.filter((lec) => existsSync(path.join(MEDIA, `${lec.key}.cc.mp4`))).map((lec) => lec.key));
+    for (const key of withCc) mediaFiles.push({ file: `${key}.cc.mp4`, data: readFileSync(path.join(MEDIA, `${key}.cc.mp4`)), type: 'video/mp4' });
+    // 動画の場所。日本語（と動画のサイトが無い言語）は講座の media/、訳の言語は動画のサイトの <講座>/（同じ origin のパス）
+    const mediaUrl = mRoot ? `${mRoot}${course.id}/` : 'media/';
+    const manifestMedia = mRoot ? `${mRoot}${course.id}/` : `${cid}/media/`;
+    const courseCreditsList = courseCredits(course, lang);
+    // 版は教材・表示・動画の全入力で決まる。保存した HTML と MP4 を別の版に混ぜない。
+    const pageVersion = hash(JSON.stringify({ lang, meta, credits: courseCreditsList, lectures, theme, template, offlinePanel, offlineCss, offlineClient, text: T,
+      builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]), mediaUrl }));
+    const json = JSON.stringify({ course: meta, credits: courseCreditsList, pageVersion, lang: { code: lang, html: info.html, label: info.label }, text: T,
+      lectures: lectures.map(({ key, ...lec }) => ({ ...lec,
+        video: `${mediaUrl}${key}.mp4?v=${pageVersion}`, poster: `${mediaUrl}${key}.jpg?v=${pageVersion}`,
+        videoCc: withCc.has(key) ? `${mediaUrl}${key}.cc.mp4?v=${pageVersion}` : '',
+      })) }).replace(/</g, '\\u003c');
+    const app = appParts(lang, root, { id: cid, title: course.title, pageVersion });
+    const url = `${base}${cid}/`;
+    const firstPoster = mRoot ? `${new URL(base).origin}${mRoot}${course.id}/${lectures[0].key}.jpg` : `${url}media/${lectures[0].key}.jpg`;
+    const html = fillText(template, T)
+      .replace('__LANG__', () => info.html)
+      .replace('__HOME__', () => '../')
+      .replace('__LANG_NAV__', () => langNav(lang, root, T.langNav, course.id))
+      .replace('__EV_HINT_TAIL__', () => esc(T.evHintTail).replace('{id}', '<span class="mono">xx-01-s01</span>'))
+      .replace('__NOTE_AT_ZERO__', () => esc(fill(T.noteAt, { t: '00:00' })))
+      .replace('__PWA_HEAD__', () => app.head)
+      .replace('__OFFLINE_CSS__', () => offlineCss)
+      .replace('__OFFLINE_PANEL__', () => app.panel)
+      .replace('__PWA_SCRIPT__', () => app.script)
+      .replace('__TITLE__', () => esc(fill(T.pageTitle, { course: course.title, series: config.series })))
+      .replace('__HEAD_META__', () =>
+        headMeta({
+          title: course.title,
+          description: fill(T.metaCourse, { headline: plain(course.headline), n: lectures.length, min: Math.round(minutes), extra: lectures.some((l) => l.material) ? T.metaExtra : '' }),
+          url,
+          image: firstPoster,
+          icon: favicon(theme.color.ink, theme.color.accent),
+          lang,
+          alternates: SITE_LANGS.filter((l) => coursesIn(l).some((c) => c.id === course.id)).map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}${course.id}/` })),
+        }),
+      )
+      .replace('__FONT_LINK__', () => fontLink(theme, lang))
+      .replace('__THEME_CSS__', () => themeCss(theme, lang))
+      .replace('__SERIES__', () => esc(config.series))
+      .replace('__BRAND_SUB__', () => esc(course.title))
+      .replace('__HEADLINE__', () => esc(plain(course.headline)))
+      .replace('__DOCS_NOTE__', () => esc(course.docsNote))
+      .replace('__COURSE_JSON__', () => json);
+    const out = path.join(DIST, cid);
+    mkdirSync(out, { recursive: true });
+    const page = Buffer.from(csp(html));
+    writeFileSync(path.join(out, 'index.html'), page);
+    // 動画とポスターを置く（日本語は講座の media/、訳の言語は動画のサイトの <講座>/）
+    const mediaOut = mRoot ? path.join(DIST_MEDIA, lang, course.id) : path.join(out, 'media');
+    rmSync(mediaOut, { recursive: true, force: true });
+    mkdirSync(mediaOut, { recursive: true });
+    for (const f of mediaFiles) place(path.join(MEDIA, f.file), path.join(mediaOut, f.file));
+    // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
+    const manifestPath = path.join(out, 'offline-manifest.json');
+    rmSync(manifestPath, { force: true });
+    if (mediaFiles.length === lectures.length * 2 + withCc.size) {
+      const files = [asset(`${cid}/`, page, 'text/html'), ...mediaFiles.map((f) => asset(`${manifestMedia}${f.file}?v=${pageVersion}`, f.data, f.type))];
+      const manifest: CourseManifest = { schema: 1, id: cid, title: course.title, pageVersion, revision: hash(JSON.stringify(files)),
+        bytes: files.reduce((sum, f) => sum + f.bytes, 0), files };
+      generatedManifests.push(manifest);
+      writeFileSync(manifestPath, JSON.stringify(manifest));
+    }
+    console.log(`site/dist/${cid}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}${mRoot ? `  動画 ${mRoot}` : ''}`);
+  }
+}
+
+/* ───────────── 一覧のページ（言語ごと） ───────────── */
 
 const brand = themeOf();
 const S = brand.syntax;
@@ -286,67 +383,124 @@ const highlightTs = (line: string) =>
     `<span style="color:${str ? S.string : key ? S.fn : num ? S.number : S.comment}">${m}</span>`,
   );
 
-const courseCards = COURSES.map((c) => {
+/** 講座のカード。href・画像はその一覧ページからの場所。tags は事実の札に足すもの（言語など） */
+const courseCard = (c: Course, lang: Lang, o: { href: string; poster: string; tags: string[] }) => {
+  const T = SITE_TEXT[lang];
   const t = themeOf(c.theme);
-  const minutes = minutesOf(c);
+  const minutes = minutesOf(c, (c.lang ?? 'ja') as Lang);
   const style = `--card-grad: linear-gradient(100deg, ${t.gradient.join(', ')}); --card-soft: ${t.color.surface2}; --card-ink: ${t.tones.violet}`;
+  const count = c.unitLabel === 'CHAPTER' ? `${fill(T.cardChapters, { n: c.lectures.length })}${c.syllabus ? fill(T.cardPlanned, { n: c.syllabus.chapters.length }) : ''}` : fill(T.cardLectures, { n: c.lectures.length });
   return [
-    `<a class="course" href="${c.id}/" style="${esc(style)}">`,
-    `  <div class="poster"><img src="${c.id}/media/${c.lectures[0].id}.jpg" alt="" width="1280" height="720" loading="lazy"></div>`,
+    `<a class="course" href="${esc(o.href)}" style="${esc(style)}"${c.lang && c.lang !== lang ? ` lang="${LANG_INFO[c.lang].html}"` : !c.lang && lang !== 'ja' ? ' lang="ja"' : ''}>`,
+    `  <div class="poster"><img src="${esc(o.poster)}" alt="" width="1280" height="720" loading="lazy"></div>`,
     '  <div class="body">',
     `    <h3>${esc(c.title)}</h3>`,
     `    <p>${esc(plain(c.headline))}</p>`,
-    `    <ul class="facts"><li>${c.unitLabel === 'CHAPTER' ? `${c.lectures.length} 章${c.syllabus ? ` ／ 計画 ${c.syllabus.chapters.length} 章` : ''}` : `${c.lectures.length} レクチャー`}</li><li>約 ${Math.round(minutes)} 分</li><li class="is-theme">テーマ: ${esc(t.label)}</li></ul>`,
-    `    <span class="go">講座を開く</span>`,
+    `    <ul class="facts"><li>${esc(count)}</li><li>${esc(fill(T.cardMinutes, { min: Math.round(minutes) }))}</li><li class="is-theme">${esc(fill(T.cardTheme, { theme: t.label }))}</li>${o.tags.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>`,
+    `    <span class="go">${esc(T.cardOpen)}</span>`,
     '  </div>',
     '</a>',
   ].join('\n');
-}).join('\n');
+};
 
-const themeCards = Object.values(THEMES)
-  .map((t) => {
-    const img = `assets/themes/${t.id}.jpg`;
-    const sw = [t.color.bg, t.color.ink, t.color.accent, t.tones.pink, t.tones.cyan, t.tones.mint];
-    return [
-      '<article class="theme">',
-      existsSync(path.join(SITE, img)) ? `  <img src="${img}" alt="${esc(t.label)} のテーマで描いた動画の 1 場面" width="960" height="540" loading="lazy">` : '',
-      '  <div class="body">',
-      `    <h3>${esc(t.label)} <code>theme: '${esc(t.id)}'</code></h3>`,
-      `    <div class="swatches" aria-hidden="true">${sw.map((c) => `<span style="background:${c}"></span>`).join('')}</div>`,
-      `    <p>${esc(t.summary)}</p>`,
-      '  </div>',
-      '</article>',
-    ]
-      .filter(Boolean)
-      .join('\n');
-  })
-  .join('\n');
+/** 一覧ページから見た、講座の最初の動画のポスター */
+const posterOf = (c: Course, lang: Lang, root: string) => {
+  const l = (c.lang ?? 'ja') as Lang;
+  const key = videoKey(c.lectures[0].id, l);
+  const m = mediaRoot(l);
+  return m ? `${m}${c.id}/${key}.jpg` : `${root}${LANG_INFO[l].path}${c.id}/media/${key}.jpg`;
+};
 
-const first = COURSES[0];
-const homeHtml = home
-  .replace('__PWA_HEAD__', () => appParts('./').head)
-  .replace('__OFFLINE_CSS__', () => offlineCss)
-  .replace('__OFFLINE_PANEL__', () => appParts('./').panel)
-  .replace('__PWA_SCRIPT__', () => appParts('./').script)
-  .replace('__TITLE__', () => esc(`${config.series}：台本から講座動画を作る`))
-  .replace('__HEAD_META__', () =>
-    headMeta({ title: config.series, description: config.seriesSub, url: base, image: `${base}assets/hero.jpg`, icon: favicon(brand.color.ink, brand.color.accent) }),
-  )
-  .replace('__FONT_LINK__', () => fontLink(brand))
-  .replace('__THEME_CSS__', () => themeCss(brand))
-  .replaceAll('__SERIES__', () => esc(config.series))
-  .replace('__FIRST_COURSE__', () => `${first.id}/`)
-  .replace('__HERO_FILE__', () => esc(heroFile))
-  .replace('__HERO_CODE__', () => heroLines.map(highlightTs).join('\n'))
-  .replace('__HERO_IMAGE__', () => 'assets/hero.jpg')
-  .replace('__COURSES__', () => courseCards)
-  .replace('__THEMES__', () => themeCards)
-  .replaceAll('__REPO__', () => esc(config.repoUrl))
-  .replace('__CREDITS__', () => esc(`ナレーション ${credits.join('・')}　動画 Remotion　BGM・効果音はプログラムで合成したオリジナル`));
 mkdirSync(DIST, { recursive: true });
-const homePage = Buffer.from(csp(homeHtml));
-writeFileSync(path.join(DIST, 'index.html'), homePage);
-shellAssets.push(asset('./', homePage, 'text/html'));
+for (const lang of SITE_LANGS) {
+  const T = SITE_TEXT[lang];
+  const info = LANG_INFO[lang];
+  // 一覧ページから見たサイトの最上位（日本語は ./、訳は ../）
+  const root = lang === 'ja' ? './' : '../';
+  const courses = coursesIn(lang);
+  const cards = courses
+    .map((c) => {
+      // 日本語の一覧では、訳のある講座に言語の札を付ける
+      const tags = lang === 'ja' ? SITE_LANGS.filter((l) => l !== 'ja' && coursesIn(l).some((x) => x.id === c.id)).map((l) => LANG_INFO[l].label) : [];
+      return courseCard(c, lang, { href: `${c.id}/`, poster: posterOf(c, lang, root), tags: tags.length ? [tags.join('・')] : [] });
+    })
+    .join('\n');
+  // 訳の一覧では、まだ訳していない講座を「日本語だけ」として並べる
+  const others = lang === 'ja' ? [] : COURSES.filter((c) => !courses.some((x) => x.id === c.id));
+  const otherSection = others.length
+    ? [
+        '    <section id="more-courses" aria-labelledby="more-title">',
+        `      <h2 id="more-title">${esc(T.homeOtherTitle)}</h2>`,
+        `      <p class="lede">${esc(T.homeOtherLede)}</p>`,
+        '      <div class="courses">',
+        others.map((c) => courseCard(c, lang, { href: `${root}${c.id}/`, poster: posterOf(c, lang, root), tags: [T.cardLang] })).join('\n'),
+        '      </div>',
+        '    </section>',
+      ].join('\n')
+    : '';
+  const themeCards = Object.values(THEMES)
+    .map((t) => {
+      const img = `assets/themes/${t.id}.jpg`;
+      const sw = [t.color.bg, t.color.ink, t.color.accent, t.tones.pink, t.tones.cyan, t.tones.mint];
+      const summary = lang === 'ja' ? t.summary : (THEME_SUMMARY[lang][t.id] ?? t.summary);
+      return [
+        '<article class="theme">',
+        existsSync(path.join(SITE, img)) ? `  <img src="${root}${img}" alt="${esc(fill(T.themeAlt, { theme: t.label }))}" width="960" height="540" loading="lazy">` : '',
+        '  <div class="body">',
+        `    <h3>${esc(t.label)} <code>theme: '${esc(t.id)}'</code></h3>`,
+        `    <div class="swatches" aria-hidden="true">${sw.map((c) => `<span style="background:${c}"></span>`).join('')}</div>`,
+        `    <p>${esc(summary)}</p>`,
+        '  </div>',
+        '</article>',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    })
+    .join('\n');
+  const app = appParts(lang, root);
+  const url = `${base}${info.path}`;
+  const homeHtml = fillText(home, T)
+    .replace('__LANG__', () => info.html)
+    .replace('__LANG_NAV__', () => langNav(lang, root, T.langNav))
+    .replace('__PWA_HEAD__', () => app.head)
+    .replace('__OFFLINE_CSS__', () => offlineCss)
+    .replace('__OFFLINE_PANEL__', () => app.panel)
+    .replace('__PWA_SCRIPT__', () => app.script)
+    .replace('__TITLE__', () => esc(fill(T.homeDocTitle, { series: config.series })))
+    .replace('__HEAD_META__', () =>
+      headMeta({
+        title: config.series,
+        description: lang === 'ja' ? config.seriesSub : T.homeDesc,
+        url,
+        image: `${base}assets/hero.jpg`,
+        icon: favicon(brand.color.ink, brand.color.accent),
+        lang,
+        alternates: SITE_LANGS.map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}` })),
+      }),
+    )
+    .replace('__FONT_LINK__', () => fontLink(brand, lang))
+    .replace('__THEME_CSS__', () => themeCss(brand, lang))
+    .replaceAll('__SERIES__', () => esc(config.series))
+    .replace('__FIRST_COURSE__', () => (courses[0] ? `${courses[0].id}/` : `${root}${COURSES[0].id}/`))
+    .replace('__HERO_FILE__', () => esc(heroFile))
+    .replace('__HERO_CODE__', () => heroLines.map(highlightTs).join('\n'))
+    .replace('__HERO_IMAGE__', () => `${root}assets/hero.jpg`)
+    .replace('__COURSES__', () => cards)
+    .replace('__OTHER_COURSES__', () => otherSection)
+    .replace('__THEMES__', () => themeCards)
+    .replaceAll('__REPO__', () => esc(config.repoUrl))
+    .replace('__CREDITS__', () => esc(fill(T.homeCredits, { voices: (lang === 'ja' ? credits : courseCreditsAll(lang)).join(T.creditsSep) })));
+  const dir = path.join(DIST, info.path);
+  mkdirSync(dir, { recursive: true });
+  const homePage = Buffer.from(csp(homeHtml));
+  writeFileSync(path.join(dir, 'index.html'), homePage);
+  shellAssets.push(asset(info.path || './', homePage, 'text/html'));
+}
+
+/** その言語の全講座で使った声 */
+function courseCreditsAll(lang: Lang): string[] {
+  return creditsIn(lang, coursesIn(lang).flatMap((c) => c.lectures.flatMap((l) => l.scenes.flatMap((s) => s.lines.map((ln) => (ln.v ?? 'narrator') as VoiceId)))));
+}
 
 // 一覧ページの画像（site/assets）を写す
 const copyDir = (from: string, to: string) => {
@@ -366,20 +520,56 @@ const copyDir = (from: string, to: string) => {
 rmSync(path.join(DIST, 'assets'), { recursive: true, force: true });
 if (existsSync(ASSETS)) copyDir(ASSETS, path.join(DIST, 'assets'));
 // トップの講座サムネイルも小さな起動用ファイルとして保持。動画は選択した講座だけ取得する。
-for (const c of COURSES) {
-  const f = `${c.id}/media/${c.lectures[0].id}.jpg`;
-  if (existsSync(path.join(DIST, f))) shellAssets.push(asset(f, readFileSync(path.join(DIST, f)), 'image/jpeg'));
+// 訳の講座のサムネイル（動画のサイトにある）は入れない。起動用ファイルが 1 つでも取れないと Service Worker の install 全体が失敗するので、
+// 動画のサイトの反映が講座サイトより遅れたり、Pages が未設定だったりしても、講座サイトの更新が止まらないようにする
+for (const c of coursesIn('ja')) {
+  const f = posterOf(c, 'ja', '');
+  const local = path.join(DIST, f);
+  if (existsSync(local)) shellAssets.push(asset(f, readFileSync(local), 'image/jpeg'));
 }
-await buildPwa(SITE, DIST, brand, generatedManifests.map((m) => m.id), shellAssets);
+const mediaRoots = Object.fromEntries(SITE_LANGS.flatMap((l) => (mediaRoot(l) ? [[l, mediaRoot(l)!]] : [])));
+await buildPwa(SITE, DIST, brand, generatedManifests.map((m) => m.id), shellAssets, mediaRoots);
 // GitHub Pages に Jekyll を通させない（そのまま配る）
 writeFileSync(path.join(DIST, '.nojekyll'), '');
-// 動画は /media/ の Worker で配る。静的 assets に MP4 や手元の設定を混ぜない。
+// MP4 とローカル設定は静的 assets に送らない。
 writeFileSync(path.join(DIST, '.assetsignore'), '**/*.mp4\n.*\n');
-// www の転送は zone の Redirect Rule で行う。assets の _redirects はホスト条件を受け付けない。
 rmSync(path.join(DIST, '_redirects'), { force: true });
 writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/sw.js\n  Cache-Control: no-cache\n');
 writeFileSync(path.join(DIST, '404.html'), '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></html>');
-console.log(`site/dist/index.html  講座 ${COURSES.length} つ  テーマ ${Object.keys(THEMES).length} つ`);
+
+/* ───────────── 訳の言語の動画のサイト（site/dist-media/<言語>/） ───────────── */
+
+for (const lang of SITE_LANGS) {
+  const m = mediaRoot(lang);
+  if (!m) continue;
+  const dir = path.join(DIST_MEDIA, lang);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, '.nojekyll'), '');
+  const site = `${base}${LANG_INFO[lang].path}`;
+  // 動画だけのサイト。人が開いたときのために、講座サイトへの案内だけを置く（スクリプトなし）
+  writeFileSync(
+    path.join(dir, 'index.html'),
+    `<!doctype html>\n<html lang="${LANG_INFO[lang].html}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(config.series)} media (${lang})</title>\n<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">\n<meta name="robots" content="noindex"><style>body { font-family: system-ui,sans-serif; line-height: 1.8; margin: 10vh auto; padding: 24px; max-width: 36em; }</style></head>\n<body><h1>${esc(config.series)} media (${esc(LANG_INFO[lang].label)})</h1><p>This site only hosts the ${esc(LANG_INFO[lang].label)} videos of the ${esc(config.series)} course site. Watch them on the course site.</p><p><a href="${esc(site)}">${esc(site)}</a></p></body></html>\n`,
+  );
+  writeFileSync(
+    path.join(dir, 'README.md'),
+    `# ${config.series} media (${lang})\n\n${config.series}（${config.repoUrl}）の講座サイト ${site} の、${LANG_INFO[lang].label} の動画とポスターだけを置く GitHub Pages のサイトです。\n\`scripts/deploy_pages.sh\` が gh-pages を 1 コミットで置き換えます（手で編集しない）。\n\nThis site only hosts the ${LANG_INFO[lang].label} videos of the ${config.series} course site (${site}). The gh-pages branch is replaced on every deploy by \`scripts/deploy_pages.sh\` in ${config.repoUrl}.\n`,
+  );
+}
+
+const du = (dir: string): number => (existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).reduce((s, e) => s + (e.isDirectory() ? du(path.join(dir, e.name)) : statSync(path.join(dir, e.name)).size), 0) : 0);
+const sizes = [{ name: 'site/dist', bytes: du(DIST) }, ...SITE_LANGS.filter(mediaRoot).map((l) => ({ name: `site/dist-media/${l}`, bytes: du(path.join(DIST_MEDIA, l)) }))];
+console.log(`site/dist/ ほか  講座 ${SITE_LANGS.map((l) => `${l} ${coursesIn(l).length}`).join('・')}  テーマ ${Object.keys(THEMES).length} つ  大きさ ${sizes.map((s) => `${s.name} ${(s.bytes / 1e6).toFixed(0)}MB`).join('・')}`);
+// GitHub Pages は 1 サイト 1GB まで。超えそうなら公開しない（動画の置き場所を分ける。README の「公開」）
+const over = sizes.filter((s) => s.bytes > 950e6);
+if (over.length) {
+  const msg = `GitHub Pages の上限（1 サイト 1GB）に近い: ${over.map((s) => `${s.name} ${(s.bytes / 1e6).toFixed(0)}MB`).join('・')}`;
+  if (strict) {
+    console.error(msg);
+    process.exit(1);
+  }
+  console.warn(msg);
+}
 
 if (missing.length) {
   const msg = `まだ動画かポスターが無い: ${missing.join(' ')}（bash scripts/render.sh で作る）`;

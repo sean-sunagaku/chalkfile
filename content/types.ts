@@ -1,5 +1,6 @@
 // 講座の台本と画面構成のデータ型。
 // 画面の要素は `at`（その場面の何番目の台詞の頭で出すか、0 始まり）でナレーションに同期させる。
+import type { Lang } from './i18n';
 
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
 
@@ -565,6 +566,8 @@ export type Lecture = {
 /** 講座 1 つ分（講座サイト 1 枚と、動画の右上の講座名） */
 export type Course = {
   id: string; // 例: 'stripe-billing'。サイトの URL（/<id>/）になる
+  /** 講座の言語。日本語の台本では書かない（ja）。訳の講座は localizeCourse（content/i18n.ts）が付ける */
+  lang?: Lang;
   /** サイトの見出しと動画の右上に出す講座名 */
   title: string;
   subtitle: string;
@@ -603,8 +606,8 @@ export type Course = {
   };
 };
 
-/** 本文の書体。並べた順に使う（英字用の書体を先に置くと、英字だけその書体になる） */
-export type FontKey = 'zen-maru' | 'noto' | 'inter';
+/** 本文の書体。並べた順に使う（英字用の書体を先に置くと、英字だけその書体になる）。noto-sc は中国語（簡体字）の講座で日本語の書体の代わりに使う */
+export type FontKey = 'zen-maru' | 'noto' | 'inter' | 'noto-sc';
 
 /**
  * 講座のトンマナ（色・書体・背景の飾り）。動画と講座サイトの両方がこれで描かれる。
