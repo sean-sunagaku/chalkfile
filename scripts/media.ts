@@ -5,7 +5,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../content';
-import { MEDIA_REPOSITORY, mediaFilename, mediaKey, validateMediaManifest, type MediaEntry, type MediaManifest } from '../site/media-shared';
+import { MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, validateMediaManifest, type MediaEntry, type MediaManifest } from '../site/media-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const MANIFEST = path.join(ROOT, 'site/media-manifest.json');
@@ -44,17 +44,47 @@ export function verifyLocalMedia(entries: MediaEntry[], required = false): numbe
 }
 export function checkMedia(manifest = readMediaManifest()): void {
   validateMediaManifest(manifest);
-  for (const tag of new Set(manifest.entries.map((e) => e.tag))) {
-    const entries = manifest.entries.filter((e) => e.tag === tag);
+  const remote = allMediaEntries(manifest);
+  for (const tag of new Set(remote.map((e) => e.tag))) {
+    const entries = remote.filter((e) => e.tag === tag);
     verifyReleaseAssets(entries, assetsOf(tag));
     console.log(`${tag}: ${entries.length} 本の公開 asset・サイズ・提供された SHA-256 が一致`);
   }
   console.log(`動画 ${manifest.entries.length} 本を照合（手元の SHA-256 ${verifyLocalMedia(manifest.entries)} 本）。`);
 }
 
+export async function pullMedia(courses: string[] = []) {
+  for (const course of courses) if (!COURSES.some((c) => c.id === course)) throw new Error(`講座がありません: ${course}`);
+  const entries = readMediaManifest().entries.filter((e) => e.lang === 'ja' && (!courses.length || courses.includes(e.course)));
+  const missing: MediaEntry[] = [];
+  for (const e of entries) {
+    const file = localMediaPath(e);
+    if (!existsSync(file)) missing.push(e);
+    else if (statSync(file).size !== e.bytes || digest(file) !== e.sha256) throw new Error(`既存の動画を上書きしません: ${mediaKey(e)}。手元の変更を保管してから再試行してください。`);
+  }
+  const temp = mkdtempSync(path.join(tmpdir(), 'chalkfile-media-pull-'));
+  try {
+    for (const tag of new Set(missing.map((e) => e.tag))) {
+      const group = missing.filter((e) => e.tag === tag);
+      gh(['release', 'download', tag, '--repo', MEDIA_REPOSITORY, '--dir', temp, ...group.flatMap((e) => ['--pattern', e.filename])]);
+    }
+    for (const e of missing) {
+      const file = path.join(temp, e.filename);
+      if (statSync(file).size !== e.bytes || digest(file) !== e.sha256) throw new Error(`取得した動画が一致しません: ${mediaKey(e)}`);
+    }
+    for (const e of missing) { mkdirSync(path.dirname(localMediaPath(e)), { recursive: true }); copyFileSync(path.join(temp, e.filename), localMediaPath(e)); }
+    verifyLocalMedia(entries, true);
+    console.log(`Releases から ${missing.length} 本を取得、${entries.length} 本のSHA-256を確認。既存の変更は上書きしない。`);
+  } finally { rmSync(temp, { recursive: true, force: true }); }
+}
 async function pushMedia() {
   // 今回公開する日本語だけを扱う。翻訳の公開は別 milestone。
   const entries: MediaEntry[] = [];
+  mkdirSync(path.join(ROOT, 'site/posters'), { recursive: true });
+  for (const c of COURSES) for (const l of c.lectures) {
+    const poster = path.join(ROOT, 'site/media', `${l.id}.jpg`);
+    if (existsSync(poster)) copyFileSync(poster, path.join(ROOT, 'site/posters', `${l.id}.jpg`));
+  }
   for (const c of COURSES) for (const l of c.lectures) for (const kind of ['standard', 'captioned'] as const) {
     const partial = { lang: 'ja', course: c.id, lecture: l.id, kind };
     const file = localMediaPath(partial);
@@ -63,8 +93,11 @@ async function pushMedia() {
     entries.push({ ...partial, bytes: statSync(file).size, sha256, filename: mediaFilename({ ...partial, sha256 }), tag: `media-ja-${c.id}` });
   }
   // 他言語の既存一覧が将来増えても消さない。古いハッシュの Release asset も削除しない。
-  const previous = existsSync(MANIFEST) ? readMediaManifest().entries.filter((e) => e.lang !== 'ja') : [];
-  const manifest = validateMediaManifest({ schema: 1, entries: [...entries, ...previous] });
+  const previous = existsSync(MANIFEST) ? readMediaManifest() : null;
+  const active = [...entries, ...(previous?.entries.filter((e) => e.lang !== 'ja') ?? [])];
+  const currentPaths = new Set(active.map(mediaPath));
+  const retained = [...new Map((previous ? allMediaEntries(previous) : []).filter((e) => !currentPaths.has(mediaPath(e))).map((e) => [mediaPath(e), e])).values()];
+  const manifest = validateMediaManifest({ schema: 1, entries: active, ...(retained.length ? { retained } : {}) });
   verifyLocalMedia(entries, true);
   const target = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const temp = mkdtempSync(path.join(tmpdir(), 'chalkfile-media-'));
@@ -99,6 +132,7 @@ if (import.meta.main) {
   try {
     if (command === 'push') await pushMedia();
     else if (command === 'check') checkMedia();
-    else throw new Error('使い方: bun scripts/media.ts push | check');
+    else if (command === 'pull') await pullMedia(process.argv.slice(3));
+    else throw new Error('使い方: bun scripts/media.ts push | check | pull [講座ID…]');
   } catch (e) { console.error(e instanceof Error ? e.message : '動画の処理に失敗しました。'); process.exit(1); }
 }

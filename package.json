@@ -2,7 +2,7 @@
   "name": "chalkfile",
   "version": "1.0.0",
   "private": true,
-  "description": "台本（コード）から、ナレーション付きの講座動画と講座サイトを作る（Remotion・VOICEVOX・GitHub Pages）",
+  "description": "台本（コード）から、ナレーション付きの講座動画と講座サイトを作る（Remotion・VOICEVOX・Cloudflare Workers）",
   "scripts": {
     "studio": "remotion studio",
     "synth": "bun scripts/synth.ts",

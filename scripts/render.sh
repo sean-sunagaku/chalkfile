@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ids=("$@")
 if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { VIDEOS } from './content'; console.log(VIDEOS.map((v) => v.key).join(' '))")"; fi
-mkdir -p out/master site/media .work/render-public
+mkdir -p out/master site/media site/posters .work/render-public
 # 映像は無音で書き出すので public/（音声で 1GB 近い）は要らない。空のフォルダを渡して、一時フォルダへの複製を避ける
 LIMIT=$((14500 * 1024))
 # サイト用の MP4 にする（15MB 以下になるまで crf を上げる）。$1: 映像（無音）、$2: 出力、$3: レクチャー ID
@@ -59,7 +59,8 @@ for id in "${ids[@]}"; do
   fi
   if [ ! -s "out/master/$id.mp4" ]; then echo "$id: 映像の書き出しに失敗しました" >&2; exit 1; fi
   site_encode "out/master/$id.mp4" "site/media/$id.mp4" "$id"
-  ffmpeg -y -hide_banner -loglevel error -ss 4.2 -i "out/master/$id.mp4" -frames:v 1 -vf scale=1280:-2 -q:v 3 "site/media/$id.jpg"
+  ffmpeg -y -hide_banner -loglevel error -ss 4.2 -i "out/master/$id.mp4" -frames:v 1 -vf scale=1280:-2 -q:v 3 "site/posters/$id.jpg"
+  cp "site/posters/$id.jpg" "site/media/$id.jpg"
   echo "$id: $(( $(date +%s) - start )) 秒  crf=$crf  $(( size / 1024 / 1024 )) MB"
   if [ "${CAPTIONS:-0}" = "1" ]; then
     mkdir -p out/captioned

@@ -10,6 +10,7 @@ site/dist-media/
 test-results/
 playwright-report/
 .wrangler/
+site/migration-dist/
 .env
 .env.*
 .dev.vars

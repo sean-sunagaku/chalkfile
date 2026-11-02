@@ -4,7 +4,7 @@
 
 講座を TypeScript の台本として書くと、VOICEVOX の声、Remotion の動画、静的な講座サイト（動画・台本・字幕・確認クイズ）までをコマンドで作れます。台本は何度でも直して作り直せます。調べ方と書き方は Claude Code のスキルにまとめてあるので、Claude Code と一緒に講座を作れます。
 
-**移行先: https://chalkfile.com/**（移行完了までは https://sean-sunagaku.github.io/chalkfile/ も公開中。訳は未公開）
+**サイト: https://chalkfile.com/**（日本語を公開。英語・中国語の訳は未公開）
 
 Cloudflare Workers の設定は `wrangler.jsonc`、動画受付は `worker/src/index.ts` です。`npm ci --ignore-scripts` → 素材と教材の生成 → `bun scripts/build_site.ts --strict` → `npm run dev:worker` で、ルート `/` と SW scope `/` を確認します。サイトは静的 assets、動画は `/media/` に分け、MP4 は assets へアップロードしません。Workers は無料プランを維持します。
 
@@ -22,14 +22,14 @@ Worker の `/media/` はこの一覧だけを中継します。GET と HEAD を�
 
 | 講座 | 中身 | 長さ |
 |---|---|---|
-| [Stripe サブスク課金 基礎講座](https://sean-sunagaku.github.io/chalkfile/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
-| [ナッジ理論をプロダクト改善に活かす](https://sean-sunagaku.github.io/chalkfile/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
-| [エンジニアのための UI・UX デザイン](https://sean-sunagaku.github.io/chalkfile/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
-| [個人開発者のためのマーケティング](https://sean-sunagaku.github.io/chalkfile/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
-| [笑って覚えるナッジ理論](https://sean-sunagaku.github.io/chalkfile/nudge-comedy/)（`nudge-comedy`。英語・中国語の訳あり（未公開） | ナッジ講座のお笑い版。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、ナッジと強制・お金・ダークパターンの違い、良いナッジの 3 つの条件を覚える（中身と出典は真面目版と同じ） | 1 章（試作）・約 8 分 |
-| [笑ってわかる Rive アニメーション](https://sean-sunagaku.github.io/chalkfile/rive-comedy/)（`rive-comedy`。英語・中国語の訳あり（未公開） | Rive をざっくり知るお笑い版（ずんだもん・先生・天の声）。エディタとランタイム、.riv、ステートマシン、対応する環境と注意点 | 1 本・約 4 分 |
-| [笑ってわかる pstack](https://sean-sunagaku.github.io/chalkfile/pstack-comedy/)（`pstack-comedy`。英語・中国語の訳あり（未公開） | Cursor 向けのスキル集 pstack をざっくり知るお笑い版（ずんだもん・先生・天の声）。考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と使う前の注意 | 1 本・約 5 分 |
-| [笑ってわかる Super-agent](https://sean-sunagaku.github.io/chalkfile/superagent-comedy/)（`superagent-comedy`。英語・中国語の訳あり（未公開） | DeepSeek Harness チームの設計記事「Exploring Super-agent Design」を読み解くお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加するふるいゲームも）。会話（セッション）に縛られないエージェントの 4 つの性質と 5 つの部品（二層構造・イベント駆動・全二重とチャンネル・計算と状態と環境の分離・Watchdog）、記事の予備の実験、残る課題 | 6 章・約 47 分 |
+| [Stripe サブスク課金 基礎講座](https://chalkfile.com/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
+| [ナッジ理論をプロダクト改善に活かす](https://chalkfile.com/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
+| [エンジニアのための UI・UX デザイン](https://chalkfile.com/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
+| [個人開発者のためのマーケティング](https://chalkfile.com/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
+| [笑って覚えるナッジ理論](https://chalkfile.com/nudge-comedy/)（`nudge-comedy`。英語・中国語の訳あり（未公開） | ナッジ講座のお笑い版。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、ナッジと強制・お金・ダークパターンの違い、良いナッジの 3 つの条件を覚える（中身と出典は真面目版と同じ） | 1 章（試作）・約 8 分 |
+| [笑ってわかる Rive アニメーション](https://chalkfile.com/rive-comedy/)（`rive-comedy`。英語・中国語の訳あり（未公開） | Rive をざっくり知るお笑い版（ずんだもん・先生・天の声）。エディタとランタイム、.riv、ステートマシン、対応する環境と注意点 | 1 本・約 4 分 |
+| [笑ってわかる pstack](https://chalkfile.com/pstack-comedy/)（`pstack-comedy`。英語・中国語の訳あり（未公開） | Cursor 向けのスキル集 pstack をざっくり知るお笑い版（ずんだもん・先生・天の声）。考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と使う前の注意 | 1 本・約 5 分 |
+| [笑ってわかる Super-agent](https://chalkfile.com/superagent-comedy/)（`superagent-comedy`。英語・中国語の訳あり（未公開） | DeepSeek Harness チームの設計記事「Exploring Super-agent Design」を読み解くお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加するふるいゲームも）。会話（セッション）に縛られないエージェントの 4 つの性質と 5 つの部品（二層構造・イベント駆動・全二重とチャンネル・計算と状態と環境の分離・Watchdog）、記事の予備の実験、残る課題 | 6 章・約 47 分 |
 
 ナッジ・UI/UX・マーケティングの 3 講座は、動画に加えて、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例を持ちます（`docs/courses/`、作り方は [materials.md](.claude/skills/study-video-course/references/materials.md)）。
 
@@ -98,7 +98,7 @@ bun scripts/i18n.ts status                          # 訳の表（訳あり・�
 2. **台本と図を書く**: `content/<講座>/L01.ts` などに、場面ごとの台詞と、台詞に合わせて出す図を書く
 3. **声を付ける**: `scripts/synth.ts` が VOICEVOX で台詞を読み上げ、場面と台詞の時刻を決める
 4. **動画にする**: `scripts/render.sh` が Remotion で映像を書き出し、`scripts/mix.py` の音（ナレーション・BGM・効果音）と合わせる
-5. **公開する**: `scripts/build_site.ts` が講座サイトを組み立て、`scripts/deploy_pages.sh` が GitHub Pages に出す
+5. **公開する**: `scripts/build_site.ts` が講座サイトを組み立て、GitHub Actions と固定版 Wrangler が chalkfile.com に出す（動画は先に Releases へ置く）
 
 詳しい手順と、画面と話し方の決まり、調べ方、テーマの作り方は、Claude Code のスキル [`.claude/skills/study-video-course`](.claude/skills/study-video-course/SKILL.md) にまとめています。共通プロンプトにテーマ別の指示を付けて講座を丸ごと作る手順（章ごとのサブエージェントで並行して作る方法を含む）は [`.claude/skills/course-from-prompt`](.claude/skills/course-from-prompt/SKILL.md) です。このリポジトリを Claude Code で開くと、「新しい講座を作りたい」「L05 の台詞を直したい」のように頼めます。
 
@@ -107,7 +107,7 @@ bun scripts/i18n.ts status                          # 訳の表（訳あり・�
 前提: Node.js、[bun](https://bun.sh/)、ffmpeg、[uv](https://docs.astral.sh/uv/)、[VOICEVOX](https://voicevox.hiroshiba.jp/)（エンジンが `127.0.0.1:50021` で動いていること）。英語・中国語の声は uv が Kokoro を用意します（初回に Python の道具とモデルの重みを取ってくる）
 
 ```bash
-npm install
+npm ci --ignore-scripts
 uv run --with numpy --with scipy python scripts/build_music.py   # BGM・効果音（約 13 秒）
 bun scripts/synth.ts                                            # ナレーションと時刻（初回は数分、以後は変えた台詞だけ）
 uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス（1 本 10 秒ほど）
@@ -135,16 +135,16 @@ bun scripts/serve.ts                                            # 手元で見�
 前提: Node.js、bun、ffmpeg、uv（VOICEVOX は要りません）
 
 ```bash
-npm install
+npm ci --ignore-scripts
 bun scripts/materials.ts pull                                   # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
-bun scripts/synth.ts                                            # 時刻・字幕・ミックスの設計図（取り出した音声を使う）
+bun scripts/synth.ts --cached-only                              # 不足時は停止。VOICEVOX/Kokoroへ接続しない
 uv run --with numpy --with scipy python scripts/mix.py          # 音のミックス
 bash scripts/render.sh                                          # 動画（CAPTIONS=1 を付けると、字幕を焼き込んだ版も作る。サイト用の <id>.cc.mp4 も）
 bun scripts/build_materials.ts && bun scripts/build_site.ts     # 読む教材と講座サイト
 ```
 
 - `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめます。1 つの講座だけなら `bun scripts/materials.ts pull nudge-product`
-- 動画を書き出さずに講座サイトだけ組むとき: `bun scripts/materials.ts pull --videos`（公開中のサイト（`gh-pages`）の動画とポスターも `site/media/` に取り出す）→ `bun scripts/synth.ts` → `bun scripts/build_site.ts`
+- 動画を書き出さずに講座サイトだけ組むとき: `bun scripts/materials.ts pull --videos`（Releases の動画も SHA-256 を確かめて `site/media/` に取り出す。ポスターは `site/posters/`）→ `bun scripts/synth.ts` → `bun scripts/build_site.ts`
 - 手元の音声が台本に足りているか: `bun scripts/materials.ts check`（足りない台詞は、VOICEVOX を動かして `synth.ts` が作る）
 - 素材を新しくする（台詞を直した後）: 台本をコミットして synth まで流し、`bun scripts/materials.ts push`。`materials` ブランチを親の無い 1 コミットで置き換えます（前の版は残しません）
 - 素材と動画のブランチを持ってこないで clone するとき: `git clone --single-branch https://github.com/sean-sunagaku/chalkfile.git`
@@ -157,7 +157,7 @@ npm run typecheck                         # Remotion・台本と、PWA のブラ
 npm test                                  # Range の境界・保存対象の制約（動画なしで実行できる）
 bun scripts/check_content.ts --self-test
 bun scripts/check_content.ts
-bun scripts/build_site.ts --strict         # site/data と全 MP4/JPG の生成が必要
+bun scripts/build_site.ts --strict         # site/data・posters・Releases の一覧が必要。手元の MP4 は任意
 npm run test:browser                       # 実 Chrome と、Stripe 講座の生成済み 13 本の動画を使う
 ```
 
@@ -165,7 +165,7 @@ npm run test:browser                       # 実 Chrome と、Stripe 講座の�
 
 ブラウザテストは `127.0.0.1:8877/chalkfile/` に本物の build 出力を配り、オンライン/オフライン、全保存・削除、Range の応答とバイト一致、実動画の再生・停止・シーク・繰り返し、ブラウザ完全終了からの再起動、教材/worker 更新、保存欠損を確認します。容量不足は Cache API の例外、通信失敗・206・破損・途中データ・リダイレクト・キャンセルはテストサーバーで再現します。物理的なディスク枯渇や iOS 実機検証の代わりではありません。証跡は既定で `/tmp/chalkfile-pwa-evidence/` に置き、動画や証跡を main に入れません。`CHALKFILE_EVIDENCE_DIR` で保存先を変えられます。
 
-GitHub Pages と同じサブパスで手動確認する場合は `PORT=8876 BASE_PATH=/chalkfile/ bun scripts/serve.ts` を使い、`http://127.0.0.1:8876/chalkfile/` を開きます。localhost 以外の配信には HTTPS が必要です。
+通常の手元確認はルート `/` の `bun scripts/serve.ts` または `npm run dev:worker` を使います。旧scope `/chalkfile/` の互換性は移行テストで確認します。localhost以外はHTTPSが必要です。
 
 初期案内・進捗・通信エラーの表示を変えた場合は、strict build後に `npm run test:browser -- tests/browser/offline-status.spec.ts` で対象回帰を実行できます。全動画の保存は一時profile内で1回にまとめ、ブラウザ完全終了後のオフライン起動、保存欠損、遅い通信エラーと保存進捗の競合、操作結果の保持を確認します。既存の全体回帰は、変更の影響範囲に応じて追加します。
 
@@ -203,17 +203,15 @@ export const STRIPE_BILLING: Course = {
 3. 「作り直す」を、その講座のレクチャー ID で流す
 4. 一覧ページ（`site/dist/index.html`）にカードが増え、講座のページは `site/dist/<講座 ID>/` にできる
 
-## 公開（GitHub Pages）
+## 公開（Workers / Releases）
 
-```bash
-bash scripts/deploy_pages.sh
-```
+動画を作り直したら、手元で `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に実行し、マニフェストとポスターをコミットします。mainへのpushまたはmainを選んだActionsの手動実行で、素材取得・キャッシュ済み音声からの講義データ生成・型/単体/安全点検・Releases照合・strict buildを行ってからWranglerで公開します。動画が不足していたら止まります。
 
-`site/dist` を `gh-pages` ブランチに 1 コミットで強制 push します。動画を main の履歴に積まないためです。最新の main（`origin/main`）からでないと止まります。初回だけ、リポジトリの Settings → Pages で「Deploy from a branch」「gh-pages」「/ (root)」を選びます。出す言語は `site/config.json` の `publishLangs`（いまは日本語だけ。訳は chalkfile.com の Worker ができてから出す。上の「多言語」）。
+設定・最小権限token・production environment・復旧を含む手順は [docs/workers-delivery.md](docs/workers-delivery.md) にあります。API tokenはGitHubのproduction secretにだけ入力し、値を会話やリポジトリへ貼らないでください。
 
-- 公開先の URL とシリーズ名は `site/config.json`（共有用の画像（OGP）の URL にも使う）
-- 動画は 1 本 15MB 以下に収める（`render.sh` が画質を自動で下げる）。GitHub Pages はサイト全体で 1GB、帯域は月 100GB が目安。`build_site.ts --strict` は、どのサイトも 950MB を超えたら止まる
-- 訳の動画を GitHub Releases に置かないのは、ダウンロードの URL が別のホストに飛び、どちらも CORS に答えないので、アプリ内保存で中身を確かめられないから（2026-11-02 に確かめた）
+`bash scripts/deploy_pages.sh` は、旧 https://sean-sunagaku.github.io/chalkfile/ を移行案内だけに置き換える専用手順です。通常公開には使いません。旧保存cacheを残したまま、オンラインでは同じpath/query/hashの新サイトへ案内し、オフラインでは保存版を表示して保存し直しを案内します。保存と学習記録は異なるoriginへ自動移行しません。
+
+サイト・ポスターはWorkers assets、動画はReleasesから同じoriginのWorker経由で配ります。静的出力は2万ファイル/1ファイル25MiB以内を点検し、MP4を含めません。Workers Freeを維持し、広告・Terraform・有料の保存先を導入しません。
 
 ## フォルダ
 
@@ -227,10 +225,11 @@ bash scripts/deploy_pages.sh
 | `content/reading.ts` | 読み上げ用の読み（英字をカナに開く・誤読しやすい語） |
 | `src/` | Remotion の動画（`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描く。`theme.ts` がテーマの色と書体を差し込む） |
 | `scripts/` | 音楽・合成・ミックス・書き出し・サイト・公開のスクリプト |
-| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、言語ごとの決まった文字（`i18n.ts`）、設定（`config.json`。訳の動画のサイトは `media`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
+| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）、言語ごとの決まった文字（`i18n.ts`）、設定（`config.json`）、動画の一覧（`media-manifest.json`）、ポスター（`posters/`）、一覧ページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
+| `worker/`・`wrangler.jsonc` | `/media/` の中継とWorkers assets/Custom Domainの設定 |
 | `.claude/skills/study-video-course/` | 作り方・スタイル・調べ方・テーマの作り方をまとめた Claude Code のスキル |
 
-生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`・`site/dist-media/`）は main に入れません。台詞の音声と BGM・効果音は `materials` ブランチ（`bun scripts/materials.ts pull`）、公開中の講座サイトと動画は `gh-pages` ブランチにあります。
+生成物（`.work/`・`public/audio/`・`out/`・`site/media/`・`site/data/`・`site/dist/`・`site/dist-media/`）は main に入れません。台詞の音声と BGM・効果音は `materials` ブランチ（`bun scripts/materials.ts pull`）、公開サイトはWorkers、動画はReleasesにあります。ポスター（`site/posters/`）と小さなマニフェストはmainに入れます。`site/migration-dist/` は旧Pagesの案内用生成物です。
 
 ## 安全と公開のきまり
 

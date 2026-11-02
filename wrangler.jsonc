@@ -12,7 +12,8 @@
     "not_found_handling": "404-page"
   },
   "routes": [
-    { "pattern": "chalkfile.com", "custom_domain": true }
+    { "pattern": "chalkfile.com", "custom_domain": true },
+    { "pattern": "www.chalkfile.com", "custom_domain": true }
   ],
   "env": {
     "preview": {
