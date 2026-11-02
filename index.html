@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chalkfile：台本から講座動画を作る</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-tRreo5bb8busOCLdJKsbbUIMfIkP+VzRwE4siyU6Wmk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="台本（コード）から、ナレーション付きの講座動画と講座サイトを作る。動画・台本・確認クイズをブラウザで見られます。">
+<link rel="canonical" href="https://sean-sunagaku.github.io/chalkfile/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%227%22%20width%3D%2226%22%20height%3D%2218%22%20rx%3D%225%22%20fill%3D%22%2314312A%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2220%22%20width%3D%2226%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23FFC93C%22%2F%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Chalkfile">
+<meta property="og:title" content="Chalkfile">
+<meta property="og:description" content="台本（コード）から、ナレーション付きの講座動画と講座サイトを作る。動画・台本・確認クイズをブラウザで見られます。">
+<meta property="og:url" content="https://sean-sunagaku.github.io/chalkfile/">
+<meta property="og:image" content="https://sean-sunagaku.github.io/chalkfile/assets/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./icons/icon-180.png"><meta name="theme-color" content="#F2F7F4"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* 一覧のページ。色・書体・背景は Chalkfile のテーマ（build_site.ts が下に差し込む） */
+:root {
+  --ink: #F2F7F4;
+  --panel: #FFFFFF;
+  --raise: #F4F8F6;
+  --line: #D3E1DA;
+  --fg: #14312A;
+  --fg-2: #3D5A52;
+  --muted: #728C84;
+  --accent: #FFC93C;
+  --on-accent: #14312A;
+  --pink: #b3496c;
+  --violet: #5f4fb3;
+  --cyan: #167da4;
+  --mint: #197e5a;
+  --amber: #ad7709;
+  --coral: #b14b33;
+  --pink-soft: rgba(224,80,127,0.1);
+  --violet-soft: rgba(116,88,218,0.1);
+  --cyan-soft: rgba(22,147,198,0.1);
+  --mint-soft: rgba(27,148,104,0.1);
+  --coral-soft: rgba(221,82,54,0.1);
+  --mark: rgba(255,201,60,0.38);
+  --grad: linear-gradient(100deg, #FFC93C, #FF9E5E);
+  --shadow: 0 2px 0 rgba(20,49,42,0.06), 0 22px 44px -22px rgba(20,49,42,0.32);
+  --stage: #1E3A33;
+  --radius: 18px;
+  --font-body: "Zen Maru Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+body { background:
+  radial-gradient(rgba(20,49,42,0.085) 1.2px, transparent 1.2px) 0 0 / 28px 28px,
+  radial-gradient(900px 560px at 2% -6%, rgba(255,201,60,0.32), transparent 62%),
+  radial-gradient(760px 520px at 104% 4%, rgba(255,154,181,0.2), transparent 62%),
+  radial-gradient(900px 640px at 100% 104%, rgba(143,211,242,0.2), transparent 62%),
+  var(--ink);
+  background-attachment: fixed; }
+.decor { display: none; }
+/* 色と書体は既存の講座テーマを使う。 */
+[hidden] { display: none !important; }
+.offline-box { padding: 16px 18px; margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); font-size: 14px; }
+.offline-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; }
+.offline-box h2 { margin: 0; font-size: 18px; line-height: 1.6; }
+.offline-box p { margin: 8px 0; max-width: 90ch; color: var(--fg-2); }
+.offline-box .offline-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.offline-box .btn { font: inherit; font-weight: 700; min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--raise); color: var(--fg); white-space: normal; }
+.offline-box .btn.primary { background: var(--grad); color: var(--on-accent); border-color: transparent; }
+.offline-box .btn:disabled { opacity: 0.6; cursor: default; }
+.offline-box details { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.offline-box summary { cursor: pointer; font-weight: 700; }
+.offline-box ul { margin: 10px 0; padding-left: 20px; }
+.offline-box li { margin-block: 8px; }
+.offline-box li span { display: block; font-size: 13px; color: var(--muted); }
+.offline-box progress { width: 100%; margin-top: 10px; accent-color: var(--violet); }
+#networkState { font-size: 12px; color: var(--muted); }
+#offlineMessage { min-height: 1.7em; }
+#playbackStatus { font-size: 13px; color: var(--muted); margin: 8px 0; }
+
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.8;
+  word-break: auto-phrase;
+}
+a { color: var(--cyan); }
+:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 8px; }
+img { max-width: 100%; }
+
+.shell { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ── 上の帯 ── */
+.top { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-block: 18px; }
+.mark { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 900; font-size: 18px; }
+.mark i { width: 22px; height: 16px; border-radius: 4px; background: var(--stage); box-shadow: inset 0 -4px 0 var(--accent); }
+.top nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.top nav a { color: var(--fg-2); text-decoration: none; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 999px; }
+.top nav a:hover { background: var(--panel); color: var(--fg); }
+
+/* ── 最初の画面：書いた台本と、できあがる動画 ── */
+.hero { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 56px; align-items: center; padding-block: 48px 72px; }
+.hero h1 { position: relative; display: inline-block; margin: 0 0 22px; font-size: clamp(60px, 9vw, 112px); line-height: 1; font-weight: 900; letter-spacing: -0.02em; isolation: isolate; }
+/* チョークで引いた線（このページで一番目立たせるのはここだけ） */
+.hero h1::after {
+  content: "";
+  position: absolute;
+  left: -0.12em;
+  right: -0.18em;
+  bottom: -0.06em;
+  height: 0.46em;
+  z-index: -1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-30%25' width='110%25' height='160%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='12'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M10 44 C 140 22 330 18 592 30 L 584 92 C 390 84 190 92 18 104 Z' fill='%23FFC93C' filter='url(%23c)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.hero .lead { margin: 0 0 14px; font-size: clamp(19px, 2.1vw, 24px); font-weight: 700; line-height: 1.6; max-width: 30em; }
+.hero .sub { margin: 0 0 30px; color: var(--fg-2); max-width: 34em; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 14px; font-weight: 900; font-size: 16px; text-decoration: none; border: 2px solid var(--fg); color: var(--fg); background: var(--panel); }
+.btn.primary { background: var(--fg); color: var(--ink); }
+.btn:hover { transform: translateY(-1px); }
+
+.pair { position: relative; min-height: 440px; }
+.slate { position: relative; width: 78%; border-radius: 18px; background: var(--stage); color: #EEF5F1; box-shadow: var(--shadow); overflow: hidden; }
+.slate .tab { display: flex; align-items: center; gap: 10px; padding: 12px 18px; font-family: var(--font-mono); font-size: 13px; color: rgba(255,255,255,0.55); border-bottom: 1px solid rgba(255,255,255,0.1); }
+.slate .tab b { font-family: var(--font-body); font-weight: 700; color: var(--accent); }
+.slate pre { margin: 0; padding: 16px 18px 22px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.75; white-space: pre; overflow: hidden; }
+.frame { position: absolute; right: 0; bottom: 0; width: 66%; margin: 0; border-radius: 14px; background: var(--panel); padding: 8px; box-shadow: var(--shadow); border: 2px solid var(--fg); }
+.frame img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; }
+.frame figcaption { padding: 8px 6px 2px; font-size: 14px; font-weight: 700; color: var(--fg-2); }
+
+/* ── 見出し ── */
+h2 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 32px); font-weight: 900; line-height: 1.35; }
+.lede { margin: 0 0 26px; color: var(--fg-2); max-width: 44em; }
+section { padding-block: 40px; }
+
+/* ── 講座 ── */
+.courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 22px; }
+.course { display: flex; flex-direction: column; color: inherit; text-decoration: none; background: var(--panel); border-radius: 18px; overflow: hidden; border: 2px solid var(--line); }
+.course:hover { border-color: var(--fg); }
+.course .poster { position: relative; aspect-ratio: 16 / 9; background: var(--stage); }
+.course .poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.course .poster::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--card-grad); }
+.course .body { display: flex; flex-direction: column; gap: 10px; padding: 20px 22px 22px; flex: 1; }
+.course h3 { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 900; }
+.course p { margin: 0; color: var(--fg-2); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; padding: 0; list-style: none; font-size: 14px; color: var(--fg-2); }
+.facts li { padding: 2px 10px; border-radius: 999px; background: var(--raise); }
+.facts li.is-theme { background: var(--card-soft); color: var(--card-ink); font-weight: 700; }
+.course .go { margin-top: auto; padding-top: 6px; font-weight: 900; color: var(--fg); }
+@media (min-width: 900px) {
+  .course:only-child { grid-column: 1 / -1; flex-direction: row; }
+  .course:only-child .poster { flex: 0 0 56%; align-self: center; }
+  .course:only-child .body { justify-content: center; padding: 30px 34px; gap: 12px; }
+  .course:only-child h3 { font-size: 28px; }
+}
+
+/* ── テーマ ── */
+.themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+.theme { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; overflow: hidden; }
+.theme img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-bottom: 2px solid var(--line); }
+.theme .body { padding: 16px 18px 18px; display: grid; gap: 8px; }
+.theme h3 { margin: 0; font-size: 19px; font-weight: 900; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.theme h3 code { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--fg-2); }
+.theme p { margin: 0; font-size: 14.5px; color: var(--fg-2); line-height: 1.7; }
+.swatches { display: flex; gap: 6px; }
+.swatches span { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--line); }
+.howto-code { margin-top: 18px; display: inline-block; padding: 12px 16px; border-radius: 12px; background: var(--stage); color: #EEF5F1; font-family: var(--font-mono); font-size: 14px; white-space: pre; max-width: 100%; overflow-x: auto; }
+
+/* ── 作り方（順番がある手順） ── */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { padding: 18px 18px 20px; border-radius: 16px; background: var(--panel); border: 2px solid var(--line); }
+.steps b { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 16px; }
+.steps b::before { counter-increment: step; content: counter(step); display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--stage); color: var(--accent); font-family: var(--font-mono); font-size: 14px; }
+.steps span { color: var(--fg-2); font-size: 14.5px; }
+.more { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(--line); color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-top: 24px; }
+  .pair { min-height: 0; display: grid; gap: 14px; }
+  .slate { width: 100%; }
+  .frame { position: static; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="decor" aria-hidden="true"></div>
+<div class="shell">
+  <header class="top">
+    <a class="mark" href="./"><i aria-hidden="true"></i>Chalkfile</a>
+    <nav aria-label="ページ内とリンク">
+      <a href="#courses">講座</a>
+      <a href="#offlineHeading">保存・アプリ</a>
+      <a href="#themes">テーマ</a>
+      <a href="https://github.com/sean-sunagaku/chalkfile" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <h1 id="hero-title">Chalkfile</h1>
+        <p class="lead">台本をコードで書くと、ナレーション付きの講座動画と講座サイトができあがります。</p>
+        <p class="sub">TypeScript の台本から、VOICEVOX の声と Remotion の動画、動画・台本・字幕・確認クイズの講座サイトまでをコマンドで作ります。台本を直せば、何度でも作り直せます。</p>
+        <div class="actions">
+          <a class="btn primary" href="stripe-billing/">作例の講座を見る</a>
+          <a class="btn" href="https://github.com/sean-sunagaku/chalkfile" target="_blank" rel="noopener noreferrer">GitHub で見る</a>
+        </div>
+      </div>
+      <div class="pair" aria-label="台本と、そこから作られた動画の 1 場面">
+        <div class="slate">
+          <div class="tab"><b>台本</b>content/stripe-billing/L02.ts</div>
+          <pre>{
+  <span style="color:#A3DCF7">kind</span>: <span style="color:#C4EE8C">'concepts'</span>,
+  <span style="color:#A3DCF7">heading</span>: <span style="color:#C4EE8C">'覚える 7 つのオブジェクト'</span>,
+  <span style="color:#A3DCF7">columns</span>: <span style="color:#FFE07A">4</span>,
+  <span style="color:#A3DCF7">cards</span>: [
+    { <span style="color:#A3DCF7">key</span>: <span style="color:#C4EE8C">'customer'</span>, <span style="color:#A3DCF7">en</span>: <span style="color:#C4EE8C">'Customer'</span>, <span style="color:#A3DCF7">ja</span>: <span style="color:#C4EE8C">'顧客'</span>, <span style="color:#8FAEA3">…</span> },
+    { <span style="color:#A3DCF7">key</span>: <span style="color:#C4EE8C">'product'</span>, <span style="color:#A3DCF7">en</span>: <span style="color:#C4EE8C">'Product'</span>, <span style="color:#A3DCF7">ja</span>: <span style="color:#C4EE8C">'商品'</span>, <span style="color:#8FAEA3">…</span> },
+    { <span style="color:#A3DCF7">key</span>: <span style="color:#C4EE8C">'price'</span>, <span style="color:#A3DCF7">en</span>: <span style="color:#C4EE8C">'Price'</span>, <span style="color:#A3DCF7">ja</span>: <span style="color:#C4EE8C">'価格'</span>, <span style="color:#8FAEA3">…</span> },
+    { <span style="color:#A3DCF7">key</span>: <span style="color:#C4EE8C">'subscription'</span>, <span style="color:#A3DCF7">en</span>: <span style="color:#C4EE8C">'Subscription'</span>, <span style="color:#A3DCF7">ja</span>: <span style="color:#C4EE8C">'契約'</span>, <span style="color:#8FAEA3">…</span> },</pre>
+        </div>
+        <figure class="frame">
+          <img src="assets/hero.jpg" alt="台本から作られた動画の 1 場面。7 つのオブジェクトのカードが並ぶ" width="960" height="540">
+          <figcaption>できあがる動画の 1 場面</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="courses" aria-labelledby="courses-title">
+      <h2 id="courses-title">Chalkfile で作った講座</h2>
+      <p class="lede">講座ごとに、動画と講座サイトがひとそろいでできます。</p>
+      <div class="courses">
+<a class="course" href="stripe-billing/" style="--card-grad: linear-gradient(100deg, #635BFF, #A960EE); --card-soft: #F6F9FC; --card-ink: #635BFF">
+  <div class="poster"><img src="stripe-billing/media/L01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>Stripe サブスク課金 基礎講座</h3>
+    <p>Stripe のサブスク課金を、概念からサンプル実装まで</p>
+    <ul class="facts"><li>13 レクチャー</li><li>約 56 分</li><li class="is-theme">テーマ: Indigo</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="nudge-product/" style="--card-grad: linear-gradient(100deg, #FFC93C, #FF9E5E); --card-soft: #F4F8F6; --card-ink: #7458DA">
+  <div class="poster"><img src="nudge-product/media/N01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>ナッジ理論をプロダクト改善に活かす</h3>
+    <p>選ぶ自由を守る 行動デザインを、自分のサービスで</p>
+    <ul class="facts"><li>7 章 ／ 計画 7 章</li><li>約 51 分</li><li class="is-theme">テーマ: Chalkfile</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="uiux-engineers/" style="--card-grad: linear-gradient(100deg, #D9481F, #F0A030); --card-soft: #F7F3ED; --card-ink: #6A4FD0">
+  <div class="poster"><img src="uiux-engineers/media/D01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>エンジニアのための UI・UX デザイン</h3>
+    <p>目的と流れ から、画面を直せるエンジニアになる</p>
+    <ul class="facts"><li>8 章 ／ 計画 8 章</li><li>約 59 分</li><li class="is-theme">テーマ: Paper</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="indie-marketing/" style="--card-grad: linear-gradient(100deg, #FF6FA3, #9C8CFF, #45D3F4); --card-soft: #121838; --card-ink: #9C8CFF">
+  <div class="poster"><img src="indie-marketing/media/M01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>個人開発者のためのマーケティング</h3>
+    <p>広告の前に、誰の何の課題かから始める</p>
+    <ul class="facts"><li>8 章 ／ 計画 8 章</li><li>約 60 分</li><li class="is-theme">テーマ: Night</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="nudge-comedy/" style="--card-grad: linear-gradient(100deg, #D9342A, #FFB020); --card-soft: #FFF6E2; --card-ink: #6F4FD2">
+  <div class="poster"><img src="nudge-comedy/media/W01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>笑って覚えるナッジ理論</h3>
+    <p>笑った瞬間が、わかった瞬間</p>
+    <ul class="facts"><li>1 章</li><li>約 9 分</li><li class="is-theme">テーマ: Stage</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="rive-comedy/" style="--card-grad: linear-gradient(100deg, #D9342A, #FFB020); --card-soft: #FFF6E2; --card-ink: #6F4FD2">
+  <div class="poster"><img src="rive-comedy/media/R01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>笑ってわかる Rive アニメーション</h3>
+    <p>動きを作って、そのまま動かす道具を、ざっくり</p>
+    <ul class="facts"><li>1 レクチャー</li><li>約 4 分</li><li class="is-theme">テーマ: Stage</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="pstack-comedy/" style="--card-grad: linear-gradient(100deg, #D9342A, #FFB020); --card-soft: #FFF6E2; --card-ink: #6F4FD2">
+  <div class="poster"><img src="pstack-comedy/media/P01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>笑ってわかる pstack</h3>
+    <p>速く進みたいなら、まず深くのスキル集</p>
+    <ul class="facts"><li>1 レクチャー</li><li>約 5 分</li><li class="is-theme">テーマ: Stage</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+<a class="course" href="superagent-comedy/" style="--card-grad: linear-gradient(100deg, #D9342A, #FFB020); --card-soft: #FFF6E2; --card-ink: #6F4FD2">
+  <div class="poster"><img src="superagent-comedy/media/S01.jpg" alt="" width="1280" height="720" loading="lazy"></div>
+  <div class="body">
+    <h3>笑ってわかる Super-agent</h3>
+    <p>人の注意を、ボトルネックにしないエージェントの設計</p>
+    <ul class="facts"><li>6 章</li><li>約 47 分</li><li class="is-theme">テーマ: Stage</li></ul>
+    <span class="go">講座を開く</span>
+  </div>
+</a>
+      </div>
+    </section>
+
+    <section id="themes" aria-labelledby="themes-title">
+      <h2 id="themes-title">講座ごとにトンマナを選べる</h2>
+      <p class="lede">色・書体・背景の飾りをテーマとしてまとめてあります。講座にテーマを 1 行書くと、動画もサイトもそのテーマで作られます。下は同じ場面を 3 つのテーマで描いたものです。</p>
+      <div class="themes">
+<article class="theme">
+  <img src="assets/themes/chalkfile.jpg" alt="Chalkfile のテーマで描いた動画の 1 場面" width="960" height="540" loading="lazy">
+  <div class="body">
+    <h3>Chalkfile <code>theme: 'chalkfile'</code></h3>
+    <div class="swatches" aria-hidden="true"><span style="background:#F2F7F4"></span><span style="background:#14312A"></span><span style="background:#FFC93C"></span><span style="background:#E0507F"></span><span style="background:#1693C6"></span><span style="background:#1B9468"></span></div>
+    <p>明るい教室の黒板を裏返した配色。文字は黒板の緑、色はチョーク、コードだけ黒板の面に書く。角の丸いゴシック。</p>
+  </div>
+</article>
+<article class="theme">
+  <img src="assets/themes/indigo.jpg" alt="Indigo のテーマで描いた動画の 1 場面" width="960" height="540" loading="lazy">
+  <div class="body">
+    <h3>Indigo <code>theme: 'indigo'</code></h3>
+    <div class="swatches" aria-hidden="true"><span style="background:#F6F9FC"></span><span style="background:#0A2540"></span><span style="background:#635BFF"></span><span style="background:#E3367E"></span><span style="background:#0A93D6"></span><span style="background:#0E9F70"></span></div>
+    <p>白い地に紺の文字、紫の主役の色、角を斜めに切るグラデーションの帯。英字は Inter。</p>
+  </div>
+</article>
+<article class="theme">
+  <img src="assets/themes/night.jpg" alt="Night のテーマで描いた動画の 1 場面" width="960" height="540" loading="lazy">
+  <div class="body">
+    <h3>Night <code>theme: 'night'</code></h3>
+    <div class="swatches" aria-hidden="true"><span style="background:#090D22"></span><span style="background:#F4F6FF"></span><span style="background:#9C8CFF"></span><span style="background:#FF6FA3"></span><span style="background:#45D3F4"></span><span style="background:#4CE2B2"></span></div>
+    <p>最初の版の暗いテーマ。濃紺の地に、ピンクから水色のグラデーションと光の粒。</p>
+  </div>
+</article>
+<article class="theme">
+  <div class="body">
+    <h3>Paper <code>theme: 'paper'</code></h3>
+    <div class="swatches" aria-hidden="true"><span style="background:#FAF7F2"></span><span style="background:#1E1B18"></span><span style="background:#D9481F"></span><span style="background:#C93A6E"></span><span style="background:#1679B8"></span><span style="background:#1A8A5F"></span></div>
+    <p>生成りの紙のような地に、黒に近い文字と朱色の主役の色。方眼の点。英字は Inter。</p>
+  </div>
+</article>
+<article class="theme">
+  <img src="assets/themes/stage.jpg" alt="Stage のテーマで描いた動画の 1 場面" width="960" height="540" loading="lazy">
+  <div class="body">
+    <h3>Stage <code>theme: 'stage'</code></h3>
+    <div class="swatches" aria-hidden="true"><span style="background:#FFF8E8"></span><span style="background:#241A16"></span><span style="background:#D9342A"></span><span style="background:#D13C74"></span><span style="background:#157FB5"></span><span style="background:#168A63"></span></div>
+    <p>お笑いの舞台のような配色。クリームの地に黒に近い文字、幕の赤と照明の黄色の帯。角の丸いゴシック。</p>
+  </div>
+</article>
+      </div>
+      <div class="howto-code">// content/index.ts
+export const STRIPE_BILLING: Course = {
+  id: 'stripe-billing',
+  theme: 'indigo',
+  …
+};</div>
+    </section>
+
+    <section aria-labelledby="steps-title">
+      <h2 id="steps-title">作り方</h2>
+      <p class="lede">調べ方、画面と話し方の決まり、テーマの作り方は Claude Code のスキルにまとめてあります。</p>
+      <ol class="steps">
+        <li><b>調べる</b><span>公式ドキュメントと一次情報を読み、確かめた日と版を残す</span></li>
+        <li><b>台本と図を書く</b><span>場面ごとの台詞と、台詞に合わせて出す図を TypeScript で書く</span></li>
+        <li><b>声を付ける</b><span>VOICEVOX で読み上げ、読みのカナを全部確かめる</span></li>
+        <li><b>動画にする</b><span>Remotion で書き出し、BGM と効果音を合わせる</span></li>
+        <li><b>公開する</b><span>講座サイトを組み立てて GitHub Pages に出す</span></li>
+      </ol>
+      <div class="more">
+        <a class="btn" href="https://github.com/sean-sunagaku/chalkfile#readme" target="_blank" rel="noopener noreferrer">README を読む</a>
+        <a class="btn" href="https://github.com/sean-sunagaku/chalkfile/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener noreferrer">Claude Code のスキルを見る</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>ナレーション VOICEVOX:No.7・VOICEVOX:青山龍星　動画 Remotion　BGM・効果音はプログラムで合成したオリジナル</div>
+    <div>講座は、確かめた日の公式情報をもとにした個人の勉強用のものです。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律や税の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
+  </footer>
+</div>
+<div class="shell"><section class="offline-box" aria-labelledby="offlineHeading">
+  <div class="offline-top"><h2 id="offlineHeading">オフラインで学ぶ</h2><span id="networkState" role="status"></span></div>
+  <div id="courseOffline" hidden>
+    <p id="savedState">保存状態を確認しています…</p>
+    <p id="downloadSize">保存サイズを確認しています…</p>
+    <div class="offline-actions">
+      <button class="btn primary" id="offlineSave" type="button" disabled>この講座をアプリ内に保存</button>
+      <button class="btn" id="offlineCancel" type="button" hidden>保存をキャンセル</button>
+      <button class="btn" id="offlineCheck" type="button" disabled>更新を確認</button>
+      <button class="btn" id="offlineDelete" type="button" disabled>保存を削除</button>
+      <button class="btn" id="offlineReload" type="button" hidden>保存した版を開く</button>
+    </div>
+  </div>
+  <progress id="offlineProgress" aria-label="講座の保存進捗" max="1" value="0" hidden></progress>
+  <p id="offlineMessage" role="status" aria-live="polite">保存機能を準備しています…</p>
+  <details open><summary>講座ごとの保存状態</summary><ul id="savedCourses"></ul><p>講座を開き、保存ボタンで選んでください。表示するだけでは動画を保存しません。</p></details>
+  <details><summary>保存容量と使い方</summary>
+    <p id="storageState">保存容量を確認しています…</p>
+    <button class="btn" id="offlinePersist" type="button">保存を保持するようブラウザに要求</button>
+    <p>アプリ内保存には、台本・字幕・クイズ・全動画を含みます。公式ドキュメントなど外部リンクには通信が必要です。オンライン再生や「動画ファイルをダウンロード」はアプリ内保存にはなりません。</p>
+    <p>保存中は画面を開いておいてください。通信やアプリが途切れた場合は、保存状態を確認して再試行できます。更新は手動です。更新失敗時は前の完全な版を維持し、成功時は直前の版も1つ保持します。更新には新しい版の分の空き容量が必要です。</p>
+    <p>iPhone・iPadでもブラウザの保存領域を使います。「ファイル」アプリの動画をこのアプリに取り込む機能はありません。ブラウザとホーム画面のアプリで保存が共有されるとは限らないため、使う方で保存し、機内モードで起動・再生を確かめてください。空き容量、長期間の未使用、サイトデータの削除などで保存が消える場合があります。実機での保存維持やバックグラウンド保存は保証しません。</p>
+  </details>
+  <details id="installHelp"><summary>アプリをインストールする</summary>
+    <p id="installState">対応ブラウザではインストールボタン、またはブラウザのメニューから追加できます。インストールだけでは動画は保存されません。</p>
+    <button class="btn" id="pwaInstall" type="button" hidden>Chalkfile をインストール</button>
+    <p>iPhone・iPad：Safari の共有メニューで「ホーム画面に追加」を選びます。表示される場合は「Webアプリとして開く」を有効にして追加してください。</p>
+  </details>
+  <p id="appUpdate" hidden>アプリの更新があります。保存が終わってから、このサイトのタブをすべて閉じて開き直してください。完全な講座の保存は維持します。</p>
+</section>
+</div>
+<script id="pwa-data" type="application/json">{"root":"./","courses":[{"id":"stripe-billing","title":"Stripe サブスク課金 基礎講座"},{"id":"nudge-product","title":"ナッジ理論をプロダクト改善に活かす"},{"id":"uiux-engineers","title":"エンジニアのための UI・UX デザイン"},{"id":"indie-marketing","title":"個人開発者のためのマーケティング"},{"id":"nudge-comedy","title":"笑って覚えるナッジ理論"},{"id":"rive-comedy","title":"笑ってわかる Rive アニメーション"},{"id":"pstack-comedy","title":"笑ってわかる pstack"},{"id":"superagent-comedy","title":"笑ってわかる Super-agent"}]}</script><script>// site/offline-client.ts
+var app = JSON.parse(document.getElementById("pwa-data").textContent);
+var root = new URL(app.root, location.href);
+var $ = (id) => document.getElementById(id);
+var mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+var registration;
+var latest;
+var states = [];
+var busy = false;
+var workingId;
+var refreshInProgress = false;
+var installPrompt = null;
+var locallyDownloading = false;
+var localSaveRequest = false;
+var messageRevision = 0;
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  $("pwaInstall").hidden = false;
+});
+function installed() {
+  $("pwaInstall").hidden = true;
+  $("installState").textContent = "アプリとして起動中、またはインストール済みです。講座は別途選んで保存してください。";
+}
+window.addEventListener("appinstalled", installed);
+if (matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+  installed();
+$("pwaInstall").addEventListener("click", async () => {
+  if (!installPrompt)
+    return;
+  const prompt = installPrompt;
+  installPrompt = null;
+  $("pwaInstall").hidden = true;
+  try {
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    $("installState").textContent = choice.outcome === "accepted" ? "インストール操作を受け付けました。講座も選んで保存してください。" : "インストールを見送りました。ブラウザでも保存して学べます。";
+  } catch {
+    $("installState").textContent = "ブラウザのメニューからインストールしてください。";
+  }
+});
+function request(type, id, progress) {
+  return new Promise((resolve, reject) => {
+    const worker = navigator.serviceWorker.controller ?? registration?.active;
+    if (!worker) {
+      reject(new Error("保存機能を準備できません。オンラインで再読み込みしてください。"));
+      return;
+    }
+    const channel = new MessageChannel;
+    let timer;
+    const finish = (error, value) => {
+      clearTimeout(timer);
+      channel.port1.close();
+      if (error)
+        reject(error);
+      else
+        resolve(value);
+    };
+    const extend = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error("保存機能からの応答が途切れました。保存状態を確認して再試行してください。")), 150000);
+    };
+    channel.port1.onmessage = (event) => {
+      extend();
+      if (event.data.progress)
+        progress?.(event.data.progress);
+      else if (event.data.ok)
+        finish(undefined, event.data);
+      else
+        finish(new Error(event.data.error ?? "保存機能を利用できません。"));
+    };
+    extend();
+    worker.postMessage({ protocol: 1, type, id }, [channel.port2]);
+  });
+}
+function network() {
+  $("networkState").textContent = navigator.onLine ? "オンライン（通信状態は取得時に確認）" : "オフライン：保存済みの講座で学べます";
+}
+function message(text) {
+  messageRevision++;
+  $("offlineMessage").textContent = text;
+}
+function storageMessage() {
+  if (!app.course)
+    return "保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。";
+  const status = states.find((s) => s.id === app.course.id);
+  if (status?.incomplete)
+    return status.saved ? "一部の保存が不完全です。前の完全な保存版を利用できます。オンラインで保存し直してください。" : "保存が不完全です。オンラインで保存し直してください。";
+  return status?.saved ? "保存済みの教材と全動画を利用できます。通信なしで起動・再生できます。" : "この講座は未保存です。動画の再生とアプリ内保存には通信が必要です。オンラインで保存してください。";
+}
+function canShowStatus() {
+  return !busy && !locallyDownloading && !states.some((s) => s.progress);
+}
+function drawProgress(p) {
+  const bar = $("offlineProgress");
+  bar.hidden = !p;
+  if (!p)
+    return;
+  bar.max = p.total || 1;
+  bar.value = p.loaded;
+  message(p.total ? `保存中 ${Math.floor(p.loaded / p.total * 100)}%・${mb(p.loaded)} / ${mb(p.total)}（${p.file} / ${p.count} ファイル）。完了までこの画面を開いておいてください。` : "教材情報を確認しています…");
+}
+function render() {
+  network();
+  const status = states.find((s) => s.id === app.course?.id);
+  const anyProgress = states.find((s) => s.progress)?.progress;
+  const wasWorking = !!workingId;
+  workingId = anyProgress?.id;
+  const processing = busy || !!anyProgress;
+  if (app.course) {
+    const saved = status?.saved;
+    $("savedState").textContent = saved ? `保存済み・教材と全動画 ${mb(saved.manifest.bytes)}・${new Date(saved.savedAt).toLocaleString("ja-JP")}${status?.incomplete ? "（前の完全な版を利用中）" : ""}` : status?.incomplete ? "保存が不完全です。オンラインで保存し直してください。" : "未保存・動画はオンラインで再生します";
+    const same = saved?.manifest.revision === latest?.revision;
+    const save = $("offlineSave");
+    save.textContent = saved && latest && !same ? "新しい版に更新して保存" : status?.incomplete ? "保存し直す" : "この講座をアプリ内に保存";
+    save.disabled = !registration || !navigator.onLine || processing || !latest || !!same && !status?.incomplete;
+    $("offlineDelete").disabled = !registration || processing || !saved && !status?.incomplete;
+    $("offlineCancel").hidden = !anyProgress && !locallyDownloading;
+    $("offlineCancel").disabled = !workingId && !locallyDownloading;
+    $("offlineCheck").disabled = !registration || !navigator.onLine || processing;
+    $("downloadSize").textContent = latest ? `保存対象：台本・字幕・クイズ・全動画とポスター、合計 ${mb(latest.bytes)}。` : "オンラインで保存サイズと更新を確認できます。";
+    const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
+    $("offlineReload").hidden = !changed;
+    if (changed)
+      message("保存版が切り替わりました。「保存した版を開く」で教材と動画をそろえてください。");
+    window.dispatchEvent(new CustomEvent("chalkfile:offline-state", { detail: {
+      saved: !!saved,
+      pageVersion: saved?.manifest.pageVersion,
+      incomplete: status?.incomplete,
+      online: navigator.onLine
+    } }));
+  }
+  const list = $("savedCourses");
+  list.replaceChildren();
+  const courses = [...app.courses];
+  for (const s of states)
+    if (s.saved && !courses.some((c) => c.id === s.id))
+      courses.push({ id: s.id, title: s.saved.manifest.title });
+  for (const course of courses) {
+    const s = states.find((v) => v.id === course.id);
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = new URL(`${course.id}/`, root).href;
+    a.textContent = course.title;
+    const label = document.createElement("span");
+    label.textContent = s?.progress ? "保存中・完了前" : s?.saved ? `保存済み ${mb(s.saved.manifest.bytes)}` : s?.incomplete ? "不完全・要再保存" : "未保存・オンラインで開く";
+    li.append(a, label);
+    list.append(li);
+  }
+  if (!locallyDownloading && !localSaveRequest) {
+    drawProgress(anyProgress);
+    if (wasWorking && !anyProgress && !localSaveRequest)
+      message("別のタブでの保存処理が終了しました。現在の保存状態を確認してください。");
+  }
+  if (localSaveRequest && !busy && !locallyDownloading && !anyProgress)
+    localSaveRequest = false;
+}
+async function capacity() {
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    const persistent = await navigator.storage?.persisted?.();
+    $("storageState").textContent = `${estimate?.quota ? `同一サイト全体の使用量（推定）${mb(estimate.usage ?? 0)} / ${mb(estimate.quota)}。` : "保存容量はブラウザによって異なります。"}${persistent ? "保存の保持が許可されています。" : "保存の保持は未許可です。ブラウザが保存を削除する場合があります。"}`;
+    $("offlinePersist").disabled = !navigator.storage?.persist || !!persistent;
+  } catch {
+    $("storageState").textContent = "保存容量を取得できません。空き容量は保証されません。";
+  }
+}
+async function refresh() {
+  if (!registration || refreshInProgress)
+    return false;
+  refreshInProgress = true;
+  try {
+    states = (await request("STATUS")).courses ?? [];
+    render();
+    await capacity();
+    if (messageRevision === 0 && canShowStatus())
+      message(storageMessage());
+    return true;
+  } catch (error) {
+    message(error.message);
+    return false;
+  } finally {
+    refreshInProgress = false;
+  }
+}
+async function check() {
+  if (!app.course || !navigator.onLine)
+    return;
+  $("offlineCheck").disabled = true;
+  const before = messageRevision;
+  try {
+    latest = (await request("CHECK", app.course.id)).manifest;
+    const status = states.find((s) => s.id === app.course.id);
+    const saved = status?.saved;
+    if (status && before === messageRevision && canShowStatus())
+      message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? "新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。" : saved ? "公開中の版と保存版は同じです。" : storageMessage());
+  } catch (error) {
+    if (before === messageRevision && canShowStatus()) {
+      latest = undefined;
+      message(`${error.message} 保存済みの版は引き続き利用できます。`);
+    }
+  }
+  render();
+}
+$("offlineSave").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  locallyDownloading = true;
+  localSaveRequest = true;
+  render();
+  drawProgress({ id: app.course.id, loaded: 0, total: 0, file: 0, count: 0 });
+  try {
+    await request("SAVE", app.course.id, drawProgress);
+    message("教材と全動画の保存が完了しました。通信を切って再生を確認してください。");
+  } catch (error) {
+    message(`${error.message} 以前の完全な保存があれば維持します。再試行は保存ボタンから行えます。`);
+  } finally {
+    busy = false;
+    locallyDownloading = false;
+    drawProgress();
+    await refresh();
+  }
+});
+$("offlineCancel").addEventListener("click", async () => {
+  try {
+    await request("CANCEL", workingId ?? app.course?.id);
+    message("キャンセルを受け付けました。処理が終わるまでお待ちください。");
+  } catch (error) {
+    message(error.message);
+  }
+});
+$("offlineDelete").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  render();
+  try {
+    await request("DELETE", app.course.id);
+    message("この講座の教材・動画と以前の保存版を削除しました。ノートと学習進捗は残ります。");
+  } catch (error) {
+    message(error.message);
+  } finally {
+    busy = false;
+    await refresh();
+  }
+});
+$("offlineCheck").addEventListener("click", () => {
+  check();
+});
+$("offlineReload").addEventListener("click", () => location.reload());
+$("offlinePersist").addEventListener("click", async () => {
+  try {
+    const granted = await navigator.storage.persist();
+    message(granted ? "ブラウザが保存の保持を許可しました。サイトデータを消すと保存も消えます。" : "ブラウザは保存の保持を許可しませんでした。保存は利用できますが、削除される場合があります。");
+    await capacity();
+  } catch {
+    message("保存の保持を要求できませんでした。ブラウザの設定を確認してください。");
+  }
+});
+window.addEventListener("online", () => {
+  render();
+  check();
+});
+window.addEventListener("offline", () => {
+  render();
+});
+window.addEventListener("pageshow", () => {
+  refresh();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden)
+    refresh();
+});
+network();
+async function init() {
+  if (!("serviceWorker" in navigator) || !isSecureContext || !("caches" in window)) {
+    message("このブラウザではアプリ内保存を利用できません。HTTPS 対応のブラウザで開いてください。オンライン再生は利用できます。");
+    return;
+  }
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.protocol === 1 && event.data?.type === "CHANGED")
+      refresh();
+  });
+  try {
+    registration = await navigator.serviceWorker.register(new URL("sw.js", root), { scope: root.pathname, updateViaCache: "none" });
+    await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error("保存機能の準備が時間切れになりました。")), 30000))]);
+    const updateNotice = () => {
+      if (registration?.waiting)
+        $("appUpdate").hidden = false;
+    };
+    updateNotice();
+    registration.addEventListener("updatefound", () => registration?.installing?.addEventListener("statechange", updateNotice));
+    await refresh();
+    await check();
+    setInterval(() => {
+      if (!document.hidden && (workingId || busy))
+        refresh();
+    }, 2000);
+  } catch {
+    message("保存機能を準備できません。通信とブラウザの保存設定を確認し、オンラインで再読み込みしてください。");
+  }
+}
+init();
+</script>
+</body>
+</html>

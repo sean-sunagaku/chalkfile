@@ -1,0 +1,1636 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>笑ってわかる Super-agent｜Chalkfile</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wh4j927jGyRq+appts9maV7fyEeQIhIrUbI9FzBJi/A=' 'sha256-tRreo5bb8busOCLdJKsbbUIMfIkP+VzRwE4siyU6Wmk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="人の注意を、ボトルネックにしないエージェントの設計。6 本・約 47 分の動画と、台本・確認クイズ。">
+<link rel="canonical" href="https://sean-sunagaku.github.io/chalkfile/superagent-comedy/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%227%22%20width%3D%2226%22%20height%3D%2218%22%20rx%3D%225%22%20fill%3D%22%23241A16%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2220%22%20width%3D%2226%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23D9342A%22%2F%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Chalkfile">
+<meta property="og:title" content="笑ってわかる Super-agent">
+<meta property="og:description" content="人の注意を、ボトルネックにしないエージェントの設計。6 本・約 47 分の動画と、台本・確認クイズ。">
+<meta property="og:url" content="https://sean-sunagaku.github.io/chalkfile/superagent-comedy/">
+<meta property="og:image" content="https://sean-sunagaku.github.io/chalkfile/superagent-comedy/media/S01.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="../manifest.webmanifest"><link rel="apple-touch-icon" href="../icons/icon-180.png"><meta name="theme-color" content="#F2F7F4"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* レイアウト: 左に講義シアター（動画・操作・タブ）、右にカリキュラム。900px 未満では縦に積む。色・書体・背景の飾りは講座のテーマで決まる（build_site.ts が下に差し込む） */
+:root {
+  --ink: #FFF8E8;
+  --panel: #FFFFFF;
+  --raise: #FFF6E2;
+  --line: #F0E0C2;
+  --fg: #241A16;
+  --fg-2: #4A3C34;
+  --muted: #7E6F64;
+  --accent: #D9342A;
+  --on-accent: #FFFFFF;
+  --pink: #ab355f;
+  --violet: #5f43a9;
+  --cyan: #186992;
+  --mint: #197152;
+  --amber: #985f05;
+  --coral: #af3826;
+  --pink-soft: rgba(209,60,116,0.1);
+  --violet-soft: rgba(111,79,210,0.1);
+  --cyan-soft: rgba(21,127,181,0.1);
+  --mint-soft: rgba(22,138,99,0.1);
+  --coral-soft: rgba(214,64,43,0.1);
+  --mark: rgba(217,52,42,0.38);
+  --grad: linear-gradient(100deg, #D9342A, #FFB020);
+  --shadow: 0 2px 0 rgba(36,26,22,0.06), 0 22px 44px -22px rgba(36,26,22,0.34);
+  --stage: #2B201C;
+  --radius: 18px;
+  --font-body: "Zen Maru Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+body { background: var(--ink); }
+.decor { position: absolute; top: 0; right: 0; width: min(820px, 64vw); height: 340px; pointer-events: none; z-index: 0;
+  clip-path: polygon(30% 0, 100% 0, 100% 100%);
+  background: radial-gradient(420px 240px at 92% 6%, rgba(124,200,240,0.9), transparent 70%), linear-gradient(118deg, #FFB020 46%, #FF7A59 66%, #FF9AB5 88%); }
+@media (max-width: 900px) { .decor { height: 150px; width: 64vw; } }
+/* 色と書体は既存の講座テーマを使う。 */
+[hidden] { display: none !important; }
+.offline-box { padding: 16px 18px; margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); font-size: 14px; }
+.offline-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; }
+.offline-box h2 { margin: 0; font-size: 18px; line-height: 1.6; }
+.offline-box p { margin: 8px 0; max-width: 90ch; color: var(--fg-2); }
+.offline-box .offline-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.offline-box .btn { font: inherit; font-weight: 700; min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--raise); color: var(--fg); white-space: normal; }
+.offline-box .btn.primary { background: var(--grad); color: var(--on-accent); border-color: transparent; }
+.offline-box .btn:disabled { opacity: 0.6; cursor: default; }
+.offline-box details { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.offline-box summary { cursor: pointer; font-weight: 700; }
+.offline-box ul { margin: 10px 0; padding-left: 20px; }
+.offline-box li { margin-block: 8px; }
+.offline-box li span { display: block; font-size: 13px; color: var(--muted); }
+.offline-box progress { width: 100%; margin-top: 10px; accent-color: var(--violet); }
+#networkState { font-size: 12px; color: var(--muted); }
+#offlineMessage { min-height: 1.7em; }
+#playbackStatus { font-size: 13px; color: var(--muted); margin: 8px 0; }
+
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: auto-phrase;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--panel);
+}
+a { color: var(--cyan); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ── 上の帯 ── */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.topbar-inner { max-width: 1480px; margin: 0 auto; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 360px; }
+.brand-home { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; flex: none; }
+.brand-home:hover .brand-title { text-decoration: underline; text-underline-offset: 4px; }
+.brand-mark { width: 14px; height: 14px; border-radius: 5px; background: var(--grad); flex: none; }
+.brand-title { font-weight: 900; font-size: 17px; letter-spacing: 0.02em; white-space: nowrap; }
+.brand-sub { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-progress { display: flex; align-items: center; gap: 12px; flex: 0 1 340px; min-width: 220px; }
+.course-progress .bar { flex: 1; height: 6px; border-radius: 9px; background: var(--raise); overflow: hidden; }
+.course-progress .bar > i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 9px; transition: width 0.4s; }
+.course-progress .label { font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+
+/* ── 本体 ── */
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding-block: 22px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 26px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.intro { display: flex; gap: 14px 22px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+.intro-text { display: grid; gap: 2px; }
+.intro .note { font-size: 13px; color: var(--muted); }
+.caution { margin: -4px 0 14px; padding-left: 10px; border-left: 3px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.intro h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; line-height: 1.3; text-wrap: balance; }
+.intro .meta { color: var(--muted); font-size: 14px; }
+.intro .links { display: flex; gap: 8px; flex-wrap: wrap; }
+.intro .links a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-size: 14px; font-weight: 700; text-decoration: none; box-shadow: var(--shadow); }
+.intro .links a:hover { border-color: var(--violet); }
+.intro .links svg { width: 16px; height: 16px; flex: none; }
+
+/* プレーヤー（字幕をオンにすると、動画を少し縮めて、プレーヤーの中の下に字幕の帯を空ける。図は字幕で隠さない） */
+.theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); container-type: inline-size; }
+.player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); font-size: clamp(12px, 2.1cqw, 26px); --ccband: max(13%, 2.9em); }
+.player video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--stage); }
+.player.cc-on video { height: calc(100% - var(--ccband)); }
+.ccbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: var(--ccband);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em 4%;
+  box-sizing: border-box;
+  text-align: center;
+  color: #F1F3FF;
+  background: var(--stage);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.theater:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; background: #000; }
+.theater:fullscreen .player { flex: 1; aspect-ratio: auto; font-size: clamp(18px, 2cqw, 34px); }
+.nextup {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--stage) 88%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.nextup-card { text-align: center; color: #F4F6FF; max-width: 520px; }
+.nextup-card .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.24em; color: #9AA3CF; }
+.nextup-card h3 { margin: 8px 0 18px; font-size: clamp(18px, 2.4vw, 26px); line-height: 1.4; text-wrap: balance; }
+.nextup-card .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--violet); }
+.btn.primary { background: var(--grad); border-color: transparent; color: var(--on-accent); }
+.btn.ghost-dark { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); color: #F4F6FF; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn[aria-pressed="true"] { border-color: var(--violet); background: var(--violet-soft); }
+
+/* 動画の下の操作 */
+.now { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-top: 16px; }
+.now-title { min-width: 0; flex: 1 1 320px; }
+.now-title .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em; color: var(--muted); }
+.now-title h2 { margin: 2px 0 0; font-size: clamp(19px, 2.2vw, 24px); font-weight: 900; line-height: 1.4; text-wrap: balance; }
+.now-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.speed { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.speed button { border: 0; background: transparent; padding: 7px 10px; font-family: var(--font-mono); font-size: 13px; cursor: pointer; color: var(--fg-2); }
+.speed button[aria-pressed="true"] { background: var(--violet-soft); color: var(--fg); font-weight: 700; }
+
+/* タブ */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 20px; overflow-x: auto; scrollbar-width: none; }
+.tabs button {
+  border: 0;
+  background: transparent;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--pink); }
+.panel { padding-top: 18px; }
+.panel[hidden] { display: none; }
+.panel h3 { font-size: 16px; margin: 0 0 10px; }
+.panel p { margin: 0 0 12px; color: var(--fg-2); max-width: 70ch; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 700px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.takeaways { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.takeaways li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; color: var(--fg-2); }
+.takeaways li::before { content: ""; width: 8px; height: 8px; border-radius: 9px; background: var(--mint); margin-top: 9px; justify-self: center; }
+.chapters { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.chapters button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.chapters button:hover { background: var(--raise); }
+.chapters button.on { background: var(--violet-soft); color: var(--fg); }
+.chapters .t { font-family: var(--font-mono); font-size: 13px; color: var(--muted); padding-top: 2px; }
+
+/* 台本 */
+.tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.search { flex: 1 1 260px; min-width: 0; position: relative; }
+.search input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 9px 12px 9px 36px;
+  font: inherit;
+}
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg-2); cursor: pointer; }
+.transcript { max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 8px; scroll-behavior: smooth; }
+.transcript h4 { margin: 14px 10px 4px; font-size: 13px; letter-spacing: 0.06em; color: var(--muted); }
+.transcript h4:first-child { margin-top: 6px; }
+.cue {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--fg-2);
+  line-height: 1.75;
+}
+.cue:hover { background: var(--raise); }
+.cue .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 3px; }
+.cue.on { background: var(--pink-soft); color: var(--fg); }
+.cue.on .t { color: var(--pink); }
+.cue mark { background: var(--mark); color: var(--fg); border-radius: 3px; padding: 0 2px; }
+.hit-lec { font-family: var(--font-mono); font-size: 12px; color: var(--violet); }
+
+/* ノート */
+.note-new { display: grid; gap: 10px; }
+.note-new textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  line-height: 1.7;
+}
+.notes { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.notes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.notes .stamp { font-family: var(--font-mono); font-size: 13px; border: 1px solid var(--line); background: var(--raise); border-radius: 8px; padding: 2px 8px; cursor: pointer; color: var(--cyan); }
+.notes .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
+.notes .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.notes .del:hover { color: var(--coral); }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* ドキュメント */
+.docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.docs a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.docs a:hover { border-color: var(--cyan); }
+.docs .host { font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: block; overflow-wrap: anywhere; }
+.docs svg { width: 16px; height: 16px; color: var(--muted); }
+
+/* クイズ */
+.quiz { display: grid; gap: 16px; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.q .qt { font-weight: 700; margin-bottom: 10px; }
+.q .qt .n { font-family: var(--font-mono); color: var(--pink); margin-right: 8px; }
+.choices { display: grid; gap: 8px; }
+.choice {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--fg);
+  line-height: 1.6;
+}
+.choice:hover:not(:disabled) { border-color: var(--violet); }
+.choice:disabled { cursor: default; }
+.choice.right { border-color: var(--mint); background: var(--mint-soft); }
+.choice.wrong { border-color: var(--coral); background: var(--coral-soft); }
+.explain { margin-top: 10px; font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--mint); padding-left: 10px; }
+.explain.bad { border-left-color: var(--coral); }
+.score { font-size: 14px; color: var(--fg-2); }
+
+/* カリキュラム */
+.curriculum { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); max-height: calc(100vh - 92px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+@media (max-width: 900px) { .curriculum { position: static; max-height: none; } }
+.cur-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cur-head h2 { margin: 0; font-size: 15px; font-weight: 900; }
+.cur-head .sum { font-size: 12.5px; color: var(--muted); }
+.sec { border-bottom: 1px solid var(--line); }
+.sec:last-child { border-bottom: 0; }
+.sec-head { padding: 12px 16px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.sec-head .name { font-weight: 700; font-size: 13.5px; }
+.sec-head .name .no { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; color: var(--muted); display: block; }
+.sec-head .cnt { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lec {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 9px 16px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.lec:hover { background: var(--raise); }
+.lec[aria-current="true"] { background: var(--violet-soft); color: var(--fg); }
+.lec .ttl { font-size: 14px; line-height: 1.5; font-weight: 500; }
+.lec[aria-current="true"] .ttl { font-weight: 700; }
+.lec .dur { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ring { width: 24px; height: 24px; display: block; }
+.ring .bg { stroke: var(--line); }
+.ring .fg { stroke: var(--violet); }
+.ring.done .disc { fill: var(--mint); }
+.ring .tick { stroke: var(--on-accent); }
+.ring .num { fill: var(--muted); font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
+
+/* 教材・実践課題・AI に聞く（教材を持つ講座だけ） */
+.mat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-bottom: 16px; }
+@media (max-width: 700px) { .mat-grid { grid-template-columns: minmax(0, 1fr); } }
+.mat-list { margin: 0; padding-left: 1.2em; color: var(--fg-2); display: grid; gap: 6px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 18px; }
+.toc a { font-size: 13px; text-decoration: none; color: var(--fg-2); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 10px; }
+.toc a:hover { border-color: var(--violet); color: var(--fg); }
+.msec { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; scroll-margin-top: 90px; }
+.msec h3 { font-size: 17px; margin: 0 0 8px; line-height: 1.5; }
+.msec p, .msec li { color: var(--fg-2); line-height: 1.85; max-width: 72ch; }
+.msec ul { margin: 0 0 12px; padding-left: 1.3em; }
+.sid { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-weight: 500; letter-spacing: 0.02em; display: block; }
+.evs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.ev { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--line); }
+.ev.research { background: var(--cyan-soft); border-color: var(--cyan); }
+.ev.official { background: var(--violet-soft); border-color: var(--violet); }
+.ev.practice { background: var(--pink-soft); border-color: var(--amber); }
+.ev.example { background: var(--raise); border-color: var(--line); color: var(--muted); }
+.msrc { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.msrc a { color: var(--fg-2); }
+.fig { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; overflow-x: auto; }
+.fig h4 { margin: 0 0 4px; font-size: 15px; }
+.fig .cap { font-size: 13.5px; color: var(--fg-2); margin: 0 0 10px; }
+.mtable { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+.mtable th, .mtable td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; line-height: 1.6; }
+.mtable th { background: var(--raise); font-weight: 700; }
+.flowline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flowline .st { border: 1px solid var(--line); background: var(--raise); border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.flowline .ar { color: var(--muted); }
+.fig pre { margin: 0; background: var(--stage); color: #F1F4F8; border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; }
+.ask { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ask li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.ask .qq { font-weight: 700; line-height: 1.7; }
+.ask .refs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.ask .refs button { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); background: var(--raise); color: var(--fg-2); border-radius: 8px; padding: 1px 8px; cursor: pointer; }
+.lec.planned { cursor: default; opacity: 0.62; }
+.lec.planned:hover { background: transparent; }
+.lec .soon { font-size: 11.5px; color: var(--muted); border: 1px dashed var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+
+.foot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+.kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; background: var(--panel); color: var(--fg-2); }
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 40;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<div class="decor" aria-hidden="true"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <a class="brand-home" href="../" title="講座の一覧へ">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-title">Chalkfile</span>
+      </a>
+      <span class="brand-sub">笑ってわかる Super-agent</span>
+    </div>
+    <div class="course-progress" title="完了したレクチャーの数">
+      <div class="bar" aria-hidden="true"><i id="cpBar"></i></div>
+      <span class="label" id="cpLabel"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="intro">
+    <div class="intro-text">
+      <h1>人の注意を、ボトルネックにしないエージェントの設計</h1>
+      <span class="meta" id="courseMeta"></span>
+      <span class="note" id="courseNote" hidden></span>
+    </div>
+    <span class="links" id="links" hidden></span>
+  </div>
+
+  <section class="offline-box" aria-labelledby="offlineHeading">
+  <div class="offline-top"><h2 id="offlineHeading">オフラインで学ぶ</h2><span id="networkState" role="status"></span></div>
+  <div id="courseOffline" >
+    <p id="savedState">保存状態を確認しています…</p>
+    <p id="downloadSize">保存サイズを確認しています…</p>
+    <div class="offline-actions">
+      <button class="btn primary" id="offlineSave" type="button" disabled>この講座をアプリ内に保存</button>
+      <button class="btn" id="offlineCancel" type="button" hidden>保存をキャンセル</button>
+      <button class="btn" id="offlineCheck" type="button" disabled>更新を確認</button>
+      <button class="btn" id="offlineDelete" type="button" disabled>保存を削除</button>
+      <button class="btn" id="offlineReload" type="button" hidden>保存した版を開く</button>
+    </div>
+  </div>
+  <progress id="offlineProgress" aria-label="講座の保存進捗" max="1" value="0" hidden></progress>
+  <p id="offlineMessage" role="status" aria-live="polite">保存機能を準備しています…</p>
+  <details ><summary>講座ごとの保存状態</summary><ul id="savedCourses"></ul><p>講座を開き、保存ボタンで選んでください。表示するだけでは動画を保存しません。</p></details>
+  <details><summary>保存容量と使い方</summary>
+    <p id="storageState">保存容量を確認しています…</p>
+    <button class="btn" id="offlinePersist" type="button">保存を保持するようブラウザに要求</button>
+    <p>アプリ内保存には、台本・字幕・クイズ・全動画を含みます。公式ドキュメントなど外部リンクには通信が必要です。オンライン再生や「動画ファイルをダウンロード」はアプリ内保存にはなりません。</p>
+    <p>保存中は画面を開いておいてください。通信やアプリが途切れた場合は、保存状態を確認して再試行できます。更新は手動です。更新失敗時は前の完全な版を維持し、成功時は直前の版も1つ保持します。更新には新しい版の分の空き容量が必要です。</p>
+    <p>iPhone・iPadでもブラウザの保存領域を使います。「ファイル」アプリの動画をこのアプリに取り込む機能はありません。ブラウザとホーム画面のアプリで保存が共有されるとは限らないため、使う方で保存し、機内モードで起動・再生を確かめてください。空き容量、長期間の未使用、サイトデータの削除などで保存が消える場合があります。実機での保存維持やバックグラウンド保存は保証しません。</p>
+  </details>
+  <details id="installHelp"><summary>アプリをインストールする</summary>
+    <p id="installState">対応ブラウザではインストールボタン、またはブラウザのメニューから追加できます。インストールだけでは動画は保存されません。</p>
+    <button class="btn" id="pwaInstall" type="button" hidden>Chalkfile をインストール</button>
+    <p>iPhone・iPad：Safari の共有メニューで「ホーム画面に追加」を選びます。表示される場合は「Webアプリとして開く」を有効にして追加してください。</p>
+  </details>
+  <p id="appUpdate" hidden>アプリの更新があります。保存が終わってから、このサイトのタブをすべて閉じて開き直してください。完全な講座の保存は維持します。</p>
+</section>
+
+  <div class="layout">
+    <section aria-label="講義">
+      <div class="theater" id="theater">
+      <div class="player" id="player">
+        <video id="video" playsinline preload="metadata" controls></video>
+        <div class="ccbar" id="cc" aria-live="off"></div>
+        <div class="nextup" id="nextup" hidden>
+          <div class="nextup-card">
+            <div class="eyebrow">NEXT LECTURE</div>
+            <h3 id="nextTitle"></h3>
+            <div class="row">
+              <button class="btn primary" id="nextGo" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span id="nextGoLabel">次へ</span>
+              </button>
+              <button class="btn ghost-dark" id="nextStay" type="button">ここで止める</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <p id="playbackStatus" role="status">オンライン再生を準備しています。</p>
+      <div class="now">
+        <div class="now-title">
+          <div class="eyebrow" id="nowEyebrow">LECTURE 01</div>
+          <h2 id="nowTitle">このコースで作るもの</h2>
+        </div>
+        <div class="now-actions">
+          <button class="btn" id="loopToggle" type="button" aria-pressed="false">この動画を繰り返す</button>
+          <a class="btn" id="fileDownload" download>動画ファイルをダウンロード</a>
+          <div class="speed" role="group" aria-label="再生速度" id="speed">
+            <button type="button" data-rate="1">1.0×</button>
+            <button type="button" data-rate="1.25">1.25×</button>
+            <button type="button" data-rate="1.5">1.5×</button>
+            <button type="button" data-rate="1.75">1.75×</button>
+          </div>
+          <button class="btn" id="ccToggle" type="button" aria-pressed="true" title="字幕（C）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 10.5a2 2 0 1 0 0 3M16 10.5a2 2 0 1 0 0 3"/></svg>
+            字幕
+          </button>
+          <button class="btn" id="doneToggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <span>完了にする</span>
+          </button>
+          <button class="btn" id="prevBtn" type="button" aria-label="前のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button class="btn" id="nextBtn" type="button" aria-label="次のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="レクチャーの資料">
+        <button role="tab" type="button" id="tab-overview" aria-controls="p-overview" aria-selected="true">概要</button>
+        <button role="tab" type="button" id="tab-material" aria-controls="p-material" aria-selected="false" hidden>教材</button>
+        <button role="tab" type="button" id="tab-transcript" aria-controls="p-transcript" aria-selected="false">台本</button>
+        <button role="tab" type="button" id="tab-notes" aria-controls="p-notes" aria-selected="false">ノート</button>
+        <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">公式ドキュメント</button>
+        <button role="tab" type="button" id="tab-quiz" aria-controls="p-quiz" aria-selected="false">確認クイズ</button>
+        <button role="tab" type="button" id="tab-exercise" aria-controls="p-exercise" aria-selected="false" hidden>実践課題</button>
+        <button role="tab" type="button" id="tab-ask" aria-controls="p-ask" aria-selected="false" hidden>AI に聞く</button>
+      </div>
+
+      <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <p id="summary"></p>
+        <p class="caution" id="caution" hidden></p>
+        <div class="two">
+          <div class="box">
+            <h3 id="takeawaysTitle">実装に効くメモ</h3>
+            <ul class="takeaways" id="takeaways"></ul>
+          </div>
+          <div class="box">
+            <h3>チャプター</h3>
+            <ol class="chapters" id="chapters"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="p-material" role="tabpanel" aria-labelledby="tab-material" hidden>
+        <div class="mat-grid">
+          <div class="box"><h3>この章の学習目標</h3><ul class="mat-list" id="matGoals"></ul></div>
+          <div class="box"><h3>前提知識</h3><ul class="mat-list" id="matPre"></ul></div>
+        </div>
+        <p class="hint">根拠の札: <span class="ev research">研究・学術</span> <span class="ev official">公式・法令・規格</span> <span class="ev practice">実務の指針</span> <span class="ev example">説明用の仮の例</span>　節の上の小さな ID（例: <span class="mono">xx-01-s01</span>）は、あとで質問チャットが根拠の場所を示すための番号です。</p>
+        <nav class="toc" id="matToc" aria-label="教材の節"></nav>
+        <div id="matBody"></div>
+        <h3 style="margin-top:22px">図解・比較例</h3>
+        <div id="matFigs"></div>
+        <div class="box"><h3>要点まとめ</h3><ul class="mat-list" id="matSummary"></ul></div>
+      </div>
+
+      <div class="panel" id="p-exercise" role="tabpanel" aria-labelledby="tab-exercise" hidden>
+        <div id="exBody"></div>
+      </div>
+
+      <div class="panel" id="p-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+        <p>学習画面の右側に置く AI チャットに、こんな質問ができます（チャットはまだありません）。質問ごとに、答えの根拠にする教材の節を付けています。押すと教材のその節へ移ります。</p>
+        <ul class="ask" id="askList"></ul>
+      </div>
+
+      <div class="panel" id="p-transcript" role="tabpanel" aria-labelledby="tab-transcript" hidden>
+        <div class="tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input id="q" type="search" placeholder="全レクチャーの台本から探す（例: past_due、署名）" autocomplete="off">
+          </label>
+          <label class="check"><input id="follow" type="checkbox" checked> 再生に合わせてスクロール</label>
+        </div>
+        <div class="transcript" id="transcript"></div>
+      </div>
+
+      <div class="panel" id="p-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+        <div class="note-new">
+          <textarea id="noteText" placeholder="気づいたこと、実装のときに確かめたいことを書く"></textarea>
+          <div class="tools" style="margin:0">
+            <button class="btn primary" id="noteAdd" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span id="noteAddLabel">00:00 にメモ</span>
+            </button>
+            <button class="btn" id="noteCopy" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+              全ノートをコピー
+            </button>
+            <span class="hint">ノートはこの端末のブラウザに保存されます。</span>
+          </div>
+        </div>
+        <ul class="notes" id="notes"></ul>
+      </div>
+
+      <div class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+        <p>動画の内容は、DeepSeek Harness のチームが 2026 年 11 月 1 日に X で公開した記事「Exploring Super-agent Design: Towards a More Autonomous Agent System」の英語版（原文は中国語で、英語版は機械翻訳と記事に書かれている）を、2026 年 11 月 2 日に読んでまとめたものです。記事は設計の考え方の提案で、DeepSeek Harness の今の機能の紹介ではありません。実験の数字は、記事の著者が作った負荷と簡単にした環境で測った参考の値です。ずんだもん（ボケ）の台詞は、わざと間違えています。</p>
+        <p>外部の公式ドキュメントを開くには通信が必要です。</p>
+        <ul class="docs" id="docs"></ul>
+      </div>
+
+      <div class="panel" id="p-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+        <div class="quiz" id="quiz"></div>
+      </div>
+    </section>
+
+    <aside class="curriculum" aria-label="カリキュラム">
+      <div class="cur-head">
+        <h2>カリキュラム</h2>
+        <span class="sum" id="curSum"></span>
+      </div>
+      <div id="sections"></div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div>ショートカット: <span class="kbd">Space</span> 再生と停止 ・ <span class="kbd">←</span><span class="kbd">→</span> 5 秒 ・ <span class="kbd">J</span><span class="kbd">L</span> 10 秒 ・ <span class="kbd">C</span> 字幕 ・ <span class="kbd">F</span> 全画面 ・ <span class="kbd">N</span> 次のレクチャー</div>
+    <div id="credits"></div>
+    <div>講座は一般的な説明です。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律・税・契約の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
+  </div>
+</div>
+
+<script id="course-data" type="application/json">{"course":{"id":"superagent-comedy","title":"笑ってわかる Super-agent","subtitle":"セッションに縛られないエージェントの設計を、ずんだもんと読み解くお笑い版","sections":[{"no":1,"title":"はじめに"},{"no":2,"title":"二層構造"},{"no":3,"title":"イベント駆動"},{"no":4,"title":"止まらない仕組み"}],"sourceNote":"ボケの声は VOICEVOX:ずんだもん、天の声は VOICEVOX:玄野武宏。台本と図は、DeepSeek Harness のチームの記事（2026 年 11 月 1 日公開、11 月 2 日確認）と、試作のリポジトリ・Anthropic の記事をもとに、自分の言葉と自分の図で作成。DeepSeek とは関係のない、個人の勉強用の非公式の動画です","disclaimer":"DeepSeek・DeepSeek Harness のチームとは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています","links":[{"label":"ソースと作り方（GitHub）","url":"https://github.com/sean-sunagaku/chalkfile"}],"unitLabel":"CHAPTER","ui":{"takeaways":"要点メモ","docs":"出典・参考資料","searchHint":"Router、パススルー、Watchdog"},"planned":[]},"credits":["VOICEVOX:No.7","VOICEVOX:青山龍星"],"pageVersion":"d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","lectures":[{"id":"S01","no":1,"section":{"no":1,"title":"はじめに"},"title":"Super-agent ってなに？","summary":"AI のエージェントを、会話（セッション）ごとに人が見張る今の形の限界と、それを越える Super-agent の考え方。4 つの性質と、それを支える 5 つの部品の地図を、ずんだもんの掛け合いで知る。","docs":[{"title":"DeepSeek Harness チーム（X の記事。実装と執筆は Yujia Qiao）（2026（11 月 1 日公開））Exploring Super-agent Design: Towards a More Autonomous Agent System","url":"https://x.com/DeepSeekHarness/article/2116857257245987236"},{"title":"deepseek-ai（GitHub）（2026）dsh-superagent-prototype","url":"https://github.com/deepseek-ai/dsh-superagent-prototype"},{"title":"deepseek-ai（GitHub）（2026）DeepSeek Harness（README）","url":"https://github.com/deepseek-ai/deepseek-harness"}],"quiz":[{"q":"記事が「たくさんの仕事を同時に回すときの限界」としたものは？","choices":["モデルの賢さ","人の注意","パソコンの速さ","ずんだ餅の数"],"answer":1,"explain":"1 つの仕事の限界はモデルの力、たくさんの仕事を同時に回す限界は人の注意。記事のチームの経験では、人が同時に追える会話は 3〜5 つほど。"},{"q":"Super-agent の 4 つの性質に入っていないものは？","choices":["続いている（Continuous）","速くて質が高い（Productive）","先回りする（Proactive）","仕事を全部、自分でやる"],"answer":3,"explain":"4 つは Continuous・Productive・Proactive・Persistent（止まらない）。受付の Router は仕事を自分でやらずに、作業の Worker に配る（第 2 章の二層構造）。"},{"q":"この記事の位置づけとして正しいものは？","choices":["DeepSeek Harness の今の機能の説明書","設計の考え方の提案。一部を研究用の試作で公開している","すでに公式の製品として配っている機能の紹介","査読を通った論文"],"answer":1,"explain":"冒頭に、設計の考え方の記事で、今の機能の紹介ではないとある。試作（dsh-superagent-prototype）は、公式の製品ではないと README に書かれている。"}],"takeaways":["1 つの仕事の限界はモデルの力。たくさんの仕事を同時に回す限界は、人の注意（記事のチームの経験では、人が追える会話は 3〜5 つ）","Super-agent = 1 つの会話から切り離した、ずっと続く 1 人のエージェント。会話をまたいで文脈を持ち、いくつもの仕事を混ぜずに進める","4 つの性質: 続いている・速くて質が高い・先回りする・止まらない。1 つの ReAct ループではなく、まわりのシステムで作る","5 つの部品: 二層構造・イベント駆動・全二重とマルチチャンネル・計算と状態と環境の分離・Watchdog","記事は設計の考え方の提案（2026-11 時点）。製品の今の機能の紹介ではない"],"caution":"","material":null,"duration":467.6,"chapters":[{"start":0,"heading":"オープニング"},{"start":32.43,"heading":"この章のゴール"},{"start":55.03,"heading":"困りごと: 人の注意が、足りない"},{"start":119,"heading":"つなぎ足しても、残る 3 つの壁"},{"start":167.7,"heading":"Super-agent とは"},{"start":199.13,"heading":"Super-agent の 4 つの性質"},{"start":277.3,"heading":"クイズ"},{"start":308.97,"heading":"4 つの性質を支える、5 つの部品"},{"start":381.33,"heading":"記事を読むときの注意"},{"start":423.13,"heading":"振り返り"},{"start":455.9,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.11,"text":"第1章。Super-agent ってなに？","scene":0},{"start":5.7,"end":12.07,"text":"ずんだもん：スーパーエージェント！　スーパーで、ずんだ餅を買ってきてくれる、エージェントなのだ！","scene":0},{"start":12.23,"end":13.1,"text":"先生：買ってきません。","scene":0},{"start":13.4,"end":20.65,"text":"先生：Super-agent は、一つの会話に縛られず、いくつもの仕事を、ずっと動かし続けるエージェントの設計です。","scene":0},{"start":20.97,"end":27.8,"text":"先生：この講座では、DeepSeek Harness のチームが公開した設計の記事を、六つの章で読み解きます。","scene":0},{"start":28.1,"end":31.68,"text":"天の声：なお、天の声は、外から、ずっと見ている。","scene":0},{"start":32.9,"end":35.07,"text":"先生：この章のゴールは、三つです。","scene":1},{"start":35.37,"end":38.07,"text":"ずんだもん：ぼくも、スーパーに、なるのだ！","scene":1},{"start":38.2,"end":39.98,"text":"先生：なるのは、エージェントです。","scene":1},{"start":40.27,"end":45.27,"text":"先生：一つ目。一つの会話で仕事を回す、今の形の限界がわかること。","scene":1},{"start":45.57,"end":49.66,"text":"先生：二つ目。Super-agent の、四つの性質を言えること。","scene":1},{"start":49.97,"end":54.29,"text":"先生：三つ目。それを支える、五つの部品の地図がわかることです。","scene":1},{"start":55.5,"end":62,"text":"先生：AI のエージェントは、一つの仕事なら、人がずっと見ていなくても、進められるようになってきました。","scene":2},{"start":62.3,"end":70.79,"text":"ずんだもん：だから、ぼくは、AI の会話のタブを、三十七個、開いたのだ。全部、同時に走らせるのだ！","scene":2},{"start":71.1,"end":72.07,"text":"先生：開きすぎです。","scene":2},{"start":72.37,"end":77.92,"text":"ずんだもん：……どのタブに、何を頼んだか、覚えていないのだ。","scene":2},{"start":78.73,"end":82.45,"text":"天の声：三十七個のうち、覚えているのは、ゼロであった。","scene":2},{"start":82.73,"end":85.81,"text":"天の声：なお、先生のタブは、五十二個である。","scene":2},{"start":86.1,"end":87.22,"text":"先生：……言わないでください。","scene":2},{"start":87.83,"end":89.59,"text":"ずんだもん：先生も、なのだ！","scene":2},{"start":89.9,"end":97.49,"text":"先生：今のエージェントは、一つの会話、つまりセッションが、仕事の単位です。会話どうしは、切り離されています。","scene":2},{"start":97.8,"end":103.2,"text":"先生：記事のチームの経験では、人が同時に追えるのは、三つから五つほどの会話です。","scene":2},{"start":103.5,"end":111.06,"text":"先生：一つの仕事の限界は、モデルの力。でも、たくさんの仕事を同時に回すときの限界は、人の注意です。","scene":2},{"start":111.37,"end":116.27,"text":"ずんだもん：ぼくの注意は、ずんだ餅に、全部、使っているのだ。","scene":2},{"start":116.43,"end":118.26,"text":"先生：仕事に、使ってください。","scene":2},{"start":119.47,"end":126.99,"text":"ずんだもん：じゃあ、チャットも、メールも、GitHub も、全部、ぼくの一つのタブに、つなぐのだ！","scene":3},{"start":127.13,"end":128.23,"text":"先生：詰め込みすぎです。","scene":3},{"start":128.53,"end":137.93,"text":"先生：実際、手元で動く一つの会話のエージェントでも、CLI や MCP、外のサービスへのつなぎを足せば、外からの知らせは受け取れます。","scene":3},{"start":138.23,"end":144.42,"text":"先生：でも、壁が三つ残ります。一つ目。長い作業の間、会話が止まって待つこと。","scene":3},{"start":144.73,"end":149.04,"text":"先生：二つ目。別々の仕事の話が、一つの会話に混ざること。","scene":3},{"start":149.33,"end":154.29,"text":"先生：三つ目。手元の機械が眠ったり、切れたりすると、全部止まること。","scene":3},{"start":154.6,"end":158.43,"text":"ずんだもん：ぼくが、お昼ごはんで、ノートパソコンを閉じたら……","scene":3},{"start":159.13,"end":161.54,"text":"天の声：エージェントも、お昼休みであった。","scene":3},{"start":161.83,"end":166.95,"text":"先生：しかも、この形を動かし続けるには、人の手間が、たくさんかかります。","scene":3},{"start":168.13,"end":173.83,"text":"先生：記事の答えは、エージェントを、人が手で動かす一つの会話から、切り離すことです。","scene":4},{"start":174.13,"end":177.67,"text":"先生：エージェントを、ずっと続く、一人の存在にする。","scene":4},{"start":177.97,"end":185.55,"text":"先生：どの会話から話しかけても、前の文脈を覚えていて、いくつもの難しい仕事を、混ぜずに並行して進めます。","scene":4},{"start":185.87,"end":191.37,"text":"先生：このエージェントと、それを動かす仕組みを、記事は、Super-agent と呼んでいます。","scene":4},{"start":191.67,"end":195.02,"text":"ずんだもん：ずっと続く一人……つまり、ぼくなのだ！","scene":4},{"start":195.17,"end":198.38,"text":"先生：あなたは、タブを三十七個、開いた人です。","scene":4},{"start":199.57,"end":203.28,"text":"先生：記事は、Super-agent の性質を、四つ挙げます。","scene":5},{"start":203.57,"end":210.87,"text":"先生：一つ目は、続いていること。チャットでも、GitHub のコメントでも、いつも同じ一人と話している感じがします。","scene":5},{"start":211.17,"end":220.6,"text":"先生：例えば、チャットで A 案を頼み、あとで GitHub のコメントで、やっぱり B 案、と書いても、変わったことを分かって、やり方を変えます。","scene":5},{"start":220.9,"end":226.14,"text":"ずんだもん：ぼくなら、A 案と B 案を、両方作って、両方出すのだ！","scene":5},{"start":226.3,"end":228.15,"text":"先生：両方は、頼んでいません。","scene":5},{"start":228.43,"end":237.77,"text":"先生：二つ目は、速くて、質が高いこと。いくつもの難しい仕事を同時に進め、前の仕事が終わる前でも、次の頼みを受けられます。","scene":5},{"start":238.07,"end":245.91,"text":"先生：三つ目は、先回りすること。一歩ずつの指示を待たず、まわりの出来事を見て、手を出すべきことにだけ動きます。","scene":5},{"start":246.2,"end":255.89,"text":"先生：記事のチームの Super-agent は、グループのチャットを見ていて、誰にも呼ばれていなくても、バグの原因を見つけて、直す PR を出すことがあるそうです。","scene":5},{"start":256.2,"end":262.35,"text":"ずんだもん：先回りなら、得意なのだ！　頼まれる前に、全部、やっておくのだ！","scene":5},{"start":262.5,"end":263.52,"text":"先生：要るときだけです。","scene":5},{"start":263.83,"end":271.81,"text":"先生：四つ目は、止まらないこと。ずっとオンラインで、本物の仕事場につながり、おかしくなっても、自分で立ち直ります。","scene":5},{"start":272.1,"end":275.56,"text":"ずんだもん：ぼくも、ずっとオンラインなのだ。寝ないのだ！","scene":5},{"start":275.7,"end":276.55,"text":"先生：寝てください。","scene":5},{"start":277.77,"end":286.53,"text":"先生：クイズです。Super-agent では、使う人が、どの会話に何を頼んだかを、覚えておく必要がある。マルか、バツか。","scene":6},{"start":290.03,"end":295.13,"text":"ずんだもん：マルなのだ！　ぼくは、三十七個、全部、覚えるのだ！","scene":6},{"start":295.27,"end":297.09,"text":"先生：さっき、ゼロでしたよね。","scene":6},{"start":297.4,"end":304.88,"text":"先生：答えは、バツ。会話の管理は、システムが引き受けます。使う人は、いつも同じ一人と話すだけです。","scene":6},{"start":305.17,"end":308.23,"text":"天の声：ずんだもん、講座が変わっても、負ける。","scene":6},{"start":309.4,"end":315.55,"text":"先生：四つの性質は、一つの ReAct ループの工夫だけでは、同時に作れない、と記事は言います。","scene":7},{"start":315.87,"end":318.42,"text":"ずんだもん：リアクト……リアクション芸なのだ！","scene":7},{"start":318.57,"end":320.06,"text":"先生：芸では、ありません。","scene":7},{"start":320.37,"end":331.12,"text":"先生：ReAct は、考える、道具を使う、結果を見る、を繰り返す、エージェントの基本の動き方です。四つの性質は、そのまわりのシステムで作ります。","scene":7},{"start":331.43,"end":339.49,"text":"先生：一つ目の部品は、二層構造。受付と作業を分けて、続くことと速さを、両方取ります。第2章です。","scene":7},{"start":339.8,"end":346.73,"text":"先生：二つ目は、イベント駆動。出来事で動いて、先回りします。第3章と、第4章。","scene":7},{"start":347.03,"end":354.25,"text":"先生：三つ目は、全二重のマルチチャンネル。待たせずに話し、場所に合わせて話し方を変えます。第5章。","scene":7},{"start":354.57,"end":360.56,"text":"先生：四つ目は、計算と状態と環境の分離。手元の機械が止まっても、動き続けます。","scene":7},{"start":360.87,"end":368.27,"text":"先生：五つ目は、外から見張る Watchdog。おかしくなっても、立ち直らせます。この二つが、第6章です。","scene":7},{"start":368.57,"end":371.77,"text":"ずんだもん：五つも、覚えられないのだ……。","scene":7},{"start":372.07,"end":373.9,"text":"先生：一章に、一つずつです。","scene":7},{"start":374.2,"end":380.6,"text":"先生：しかも、その多くは、コンピューターの世界で昔からある設計の考え方を、借りてきたものです。","scene":7},{"start":381.8,"end":392.89,"text":"先生：最後に、この記事を読むときの注意です。記事は、設計の考え方の話で、DeepSeek Harness の今の機能の紹介ではない、と冒頭に書いてあります。","scene":8},{"start":393.2,"end":397.15,"text":"ずんだもん：じゃあ、明日から、全部、使えるのだ！","scene":8},{"start":397.3,"end":398.12,"text":"先生：使えません。","scene":8},{"start":398.43,"end":404.23,"text":"先生：記事の実験も、作った負荷と、簡単にした環境で測った、参考の値です。","scene":8},{"start":404.53,"end":414.76,"text":"先生：設計の一部を試した試作は、GitHub で公開されています。ただし、研究用の試作で、DeepSeek の公式の製品ではない、と書かれています。","scene":8},{"start":415.07,"end":422.39,"text":"先生：この講座は、記事の考え方を学ぶものです。真似するときは、自分の仕事に合うかを、確かめてください。","scene":8},{"start":423.6,"end":431.42,"text":"先生：振り返りです。一つの仕事の限界は、モデルの力。たくさんの仕事を同時に回す限界は、人の注意です。","scene":9},{"start":431.73,"end":437.06,"text":"先生：Super-agent は、一つの会話から切り離した、ずっと続く一人のエージェント。","scene":9},{"start":437.37,"end":444.14,"text":"先生：続いている、速い、先回りする、止まらない。この四つを、五つの部品で支えます。","scene":9},{"start":444.43,"end":449.36,"text":"ずんだもん：わかったのだ。もう、三十八個目のタブは、開かないのだ！","scene":9},{"start":449.5,"end":451.62,"text":"先生：三十七個も、閉じてください。","scene":9},{"start":451.93,"end":455.15,"text":"天の声：ずんだもんのタブは、まだ、三十七個ある。","scene":9},{"start":456.33,"end":461.06,"text":"天の声：次回。ずんだもん、受付なのに、自分で、全部やる。","scene":10},{"start":461.37,"end":463.6,"text":"ずんだもん：まだ、受付してないのだ！","scene":10}],"video":"media/S01.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","poster":"media/S01.jpg?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","videoCc":"media/S01.cc.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"},{"id":"S02","no":2,"section":{"no":2,"title":"二層構造"},"title":"受付と作業を分ける（二層構造）","summary":"会話を 1 つにまとめる形と、出来事ごとにばらす形の弱点から、Router 層（受付）と Worker 層（作業）に分ける二層構造を知る。Router が仕事をしない理由、Agent Team との違い、まとめて処理（バッチ）で受付が詰まりにくい理由と、記事の予備の実験。","docs":[{"title":"DeepSeek Harness チーム（X の記事。実装と執筆は Yujia Qiao）（2026（11 月 1 日公開））Exploring Super-agent Design: Towards a More Autonomous Agent System","url":"https://x.com/DeepSeekHarness/article/2116857257245987236"},{"title":"deepseek-ai（GitHub）（2026）dsh-superagent-prototype","url":"https://github.com/deepseek-ai/dsh-superagent-prototype"}],"quiz":[{"q":"記事の二層構造で、人とのやり取りを受け持つのは？","choices":["Router 層","Worker 層","それぞれの Worker が、自分で返事をする","Wi-Fi のルーター"],"answer":0,"explain":"Router 層が、どの入口から来た話も受け、人への返事もまとめる。Worker は人と直接話さず、Router に報告する。"},{"q":"記事の実験で、1 つの会話にサブエージェントの道具を持たせた設計が遅くなった主な理由は？","choices":["モデルが小さかったから","任せるかどうかをその場のモデルが決め、自分で仕事をして、新しい話に止められたから","ネットワークが遅かったから","サブエージェントを作りすぎたから"],"answer":1,"explain":"ふつうの指示では 5 回とも任せず、任せる指示でも 5 回のうち 1 回は「小さい仕事」として自分でやり、長い尻尾ができた。二層構造は、受付が仕事をしないと仕組みで決める。"},{"q":"Router 層の「まとめて処理（バッチ）」について、記事に書かれていることは？","choices":["出来事が増えるほど、判断 1 つあたりの時間は必ず伸びる","考えているあいだに届いた出来事を、次の 1 回でまとめて渡す。1 回の時間は、件数ほどには伸びない","Worker が、出来事をまとめて人に返事をする","1 回にさばける件数に、限りは無い"],"answer":1,"explain":"予備の実験で、1 分に約 1 件から約 40 件に増やすと、1 回の時間は 2.5 秒から 3.9 秒、判断 1 つあたりは 6.4 秒から 1.6 秒になった。ただし文脈の長さと、1 回に正しくさばける件数には限りがある。"}],"takeaways":["会話を 1 つにまとめると遅くて混ざる。出来事ごとにばらすと、つながらず、いくつもの会話が別々に返事をする。続くことと速さは引っ張り合う","Router 層 = ずっと続く受付。人と話し、仕事を配り、全体を覚える。自分では仕事をしない（Bash が無くても動く）。軽いモデルで足りることが多い（記事のチームの経験）","Worker 層 = 仕事ごとに文脈を分けた会話。ふつうはいちばん賢いモデルを使い、1 つの仕事に専念して、人とは直接話さず Router に報告する","セッションは仕組みの中の話。使う人に手で管理させない","受付が 1 つでも、まとめて処理（バッチ）で詰まりにくい。足りなくなったら、ふるいを何段かにするか Router を分ける（分けるほど、共有できる記憶は減る）"],"caution":"","material":null,"duration":553,"chapters":[{"start":0,"heading":"オープニング"},{"start":26.53,"heading":"この章のゴール"},{"start":51.3,"heading":"会話の分け方: 両極端"},{"start":126.87,"heading":"二層構造: Router 層と Worker 層"},{"start":183.57,"heading":"Router 層の約束"},{"start":238.23,"heading":"Worker 層の約束"},{"start":284.5,"heading":"よくある Agent Team との違い"},{"start":329.4,"heading":"記事の予備の実験: 仕事が終わるまで"},{"start":401.63,"heading":"受付が詰まりにくい理由: まとめて処理"},{"start":439.43,"heading":"記事の予備の実験: 受付の速さ"},{"start":474.1,"heading":"クイズ"},{"start":503.03,"heading":"振り返り"},{"start":540.37,"heading":"エンディング"}],"cues":[{"start":2.03,"end":4.68,"text":"第2章。受付と作業を分ける。","scene":0},{"start":5.27,"end":13.02,"text":"ずんだもん：受付のずんだもんなのだ！　注文を聞いて、作って、届けて、片付けるのも、全部ぼくなのだ！","scene":0},{"start":13.17,"end":14.99,"text":"先生：受付だけ、してください。","scene":0},{"start":15.3,"end":17.67,"text":"天の声：前回の予告どおり、全部やる。","scene":0},{"start":17.97,"end":25.79,"text":"先生：この章では、Super-agent の土台、二層構造を見ます。仕事の受付と、仕事そのものを、分けます。","scene":0},{"start":27,"end":29.17,"text":"先生：この章のゴールは、三つです。","scene":1},{"start":29.47,"end":32.67,"text":"ずんだもん：ぼくが、全部できるように、なるのだ！","scene":1},{"start":32.8,"end":34.89,"text":"先生：全部、やらないための章です。","scene":1},{"start":35.2,"end":41.51,"text":"先生：一つ目。会話を一つにまとめる形と、全部ばらす形、両方の弱点がわかること。","scene":1},{"start":41.8,"end":45.93,"text":"先生：二つ目。Router 層と、Worker 層の役割を言えること。","scene":1},{"start":46.23,"end":50.55,"text":"先生：三つ目。受付が一つでも、詰まりにくい理由がわかることです。","scene":1},{"start":51.77,"end":57.4,"text":"先生：まず、会話の分け方です。両極端を、ずんだもんに、やってもらいましょう。","scene":2},{"start":57.7,"end":62.78,"text":"ずんだもん：まずは、全部の出来事を、ぼくの一つの会話に、入れるのだ！","scene":2},{"start":63.07,"end":72.51,"text":"先生：すべてを見ているので、文脈は、いちばん続きます。でも、ReAct のループは一歩ずつ。一つの会話の速さには、上限があります。","scene":2},{"start":72.8,"end":79.38,"text":"先生：しかも、別々の仕事の途中の細かい話が、一つの文脈に混ざって、結果が悪くなります。","scene":2},{"start":79.67,"end":85.81,"text":"ずんだもん：バグの直し方に、ずんだ餅のレシピが、混ざったのだ……。","scene":2},{"start":86.5,"end":89.26,"text":"天の声：コードの中に、砂糖、大さじ二。","scene":2},{"start":89.57,"end":95.35,"text":"ずんだもん：じゃあ、逆なのだ！　出来事ごとに、新しい会話を、作るのだ！","scene":2},{"start":95.63,"end":104.47,"text":"先生：こんどは、同時にたくさん進みます。でも、仕事どうしが関係していると、全体の文脈が無いので、結果がばらばらになります。","scene":2},{"start":104.77,"end":109.23,"text":"先生：そして、いくつもの会話が、それぞれ人に返事をします。","scene":2},{"start":109.53,"end":115.21,"text":"ずんだもん：グループのチャットで、ずんだもんが、三十七人、返事をしているのだ！","scene":2},{"start":115.37,"end":116.16,"text":"先生：うるさいです。","scene":2},{"start":116.47,"end":120.3,"text":"天の声：三十七人とも、少しずつ、言っていることが違う。","scene":2},{"start":120.6,"end":126.1,"text":"先生：続くことと、速さ。会話の分け方では、この二つが、引っ張り合います。","scene":2},{"start":127.33,"end":130.77,"text":"先生：そこで記事は、仕事を、二つの層に分けます。","scene":3},{"start":131.07,"end":140.13,"text":"先生：一つ目は、ずっと続く Router 層。どの入口から来た話も、ここに集まり、人とのやり取りと、全体のまとめ役を受け持ちます。","scene":3},{"start":140.43,"end":146.36,"text":"先生：二つ目は、Worker 層。仕事ごとに、文脈を分けた会話が、同時に動きます。","scene":3},{"start":146.67,"end":149.75,"text":"先生：Router は、仕事を、Worker に配ります。","scene":3},{"start":150.03,"end":154.58,"text":"ずんだもん：ルーター……Wi-Fi なのだ！　電波で、仕事を配るのだ！","scene":3},{"start":154.73,"end":156.25,"text":"先生：電波は、出しません。","scene":3},{"start":156.53,"end":162.91,"text":"先生：Worker は、終わったら、Router に報告します。人への返事は、Router がまとめて出します。","scene":3},{"start":163.2,"end":172.36,"text":"先生：こうすると、会話の管理は、システムが引き受けます。使う人は、セッションをほとんど気にせず、いつも同じ Super-agent と話せます。","scene":3},{"start":172.67,"end":182.82,"text":"先生：セッションを人に手で管理させるのは、主に、モデルの API の作りから引き継いだ習慣。セッションは、仕組みの中の話にすべきだ、と記事は言います。","scene":3},{"start":184.03,"end":186.77,"text":"先生：Router 層の約束を、もう少し見ます。","scene":4},{"start":187.07,"end":194.3,"text":"先生：人と話すのは、Router だけ。全部の話が集まるので、全体の記憶と、調整の場所にもなります。","scene":4},{"start":194.6,"end":202.57,"text":"先生：そして、いちばん大事な約束。Router は、自分では仕事をしません。Bash の道具が無くても、動くそうです。","scene":4},{"start":202.87,"end":208.06,"text":"ずんだもん：でも、小さい仕事なら、受付のぼくがやった方が、速いのだ！","scene":4},{"start":208.2,"end":210.31,"text":"先生：その間、受付が止まります。","scene":4},{"start":210.6,"end":213.05,"text":"天の声：受付が止まると、全員が待つ。","scene":4},{"start":213.37,"end":218.97,"text":"天の声：ちなみに、この講座は、先生が、説明もツッコミも、一人でやっている。","scene":4},{"start":219.27,"end":223.25,"text":"ずんだもん：先生が、いちばん、受付で仕事してるのだ！","scene":4},{"start":223.4,"end":225.44,"text":"先生：……私は、受付ではありません。","scene":4},{"start":225.73,"end":237.49,"text":"先生：Router の仕事は、配って、仕事どうしの関係を大まかに追うだけ。記事のチームの経験では、思ったより簡単なことが多く、たいてい軽いモデルで、速さも質も足ります。","scene":4},{"start":238.67,"end":241.07,"text":"先生：次に、Worker 層の約束です。","scene":5},{"start":241.37,"end":248.92,"text":"先生：Worker は、一つの仕事に専念します。文脈は仕事ごとに分かれ、仕事に要る道具は、全部持っています。","scene":5},{"start":249.23,"end":256.97,"text":"先生：仕事の出来と、コードの質を、直接決めるのは Worker。だから、ふつうは、いちばん賢いモデルを使います。","scene":5},{"start":257.27,"end":260.71,"text":"先生：そして、Worker は、人とは直接話しません。","scene":5},{"start":261,"end":267.88,"text":"ずんだもん：ぼくは、考えている途中も、全部、グループのチャットに流すのだ！　実況なのだ！","scene":5},{"start":268.03,"end":269.26,"text":"先生：流さないでください。","scene":5},{"start":269.57,"end":274.73,"text":"天の声：グループの全員が、ずんだもんの道具の記録を、二百行、読まされた。","scene":5},{"start":275.03,"end":283.74,"text":"先生：Worker は Router に報告し、人への返事は、Router がまとめます。速さと、返事が一人からであること。両方が取れます。","scene":5},{"start":284.97,"end":291.06,"text":"先生：中心が一つで、まわりに何人もいる。この形は、よくある Agent Team に似ています。","scene":6},{"start":291.37,"end":295.47,"text":"ずんだもん：チーム！　ずんだもん十一人で、サッカーなのだ！","scene":6},{"start":295.63,"end":296.36,"text":"先生：蹴りません。","scene":6},{"start":296.67,"end":301.72,"text":"先生：Agent Team は、ふつう、一つの大きな仕事を、手分けして進めます。","scene":6},{"start":302.03,"end":310.49,"text":"先生：手順どうしが強くつながりやすいので、リーダーは、仕事を深く理解して分け、何度も調整することが多い。重い役です。","scene":6},{"start":310.8,"end":315.11,"text":"先生：Super-agent の Router は、別々の仕事を、配るだけです。","scene":6},{"start":315.4,"end":320.38,"text":"先生：一つの仕事の中身は分けず、仕事どうしの関係を、大まかに追います。","scene":6},{"start":320.67,"end":328.63,"text":"先生：それに、層の中の作りは自由です。Worker が、サブエージェントや Agent Team を使っても、Router からは見えません。","scene":6},{"start":329.83,"end":334.3,"text":"先生：本当に速くなるのか。記事のチームは、予備の実験をしています。","scene":7},{"start":334.6,"end":345.33,"text":"先生：チャットと CI の知らせを約三百件流し、そのうち約二十件が仕事の依頼。作業は、時間を使うだけの道具で置き換え、設計ごとに五回ずつ試しました。","scene":7},{"start":345.63,"end":351.66,"text":"先生：表の p50 は真ん中の値、p95 は、百件のうち九十五件が終わる時間です。","scene":7},{"start":351.97,"end":358.68,"text":"先生：Super-agent は、p50 が十二・四分、p95 が十五・七分でした。","scene":7},{"start":358.97,"end":367.43,"text":"先生：ふつうの指示の一つの会話は、五回とも、一度も任せず、全部を自分でやって、p95 は二十九・五分。","scene":7},{"start":367.73,"end":376.43,"text":"先生：任せる指示では、五回のうち四回は任せました。でも一回は、小さい仕事だと判断して自分でやり、長い尻尾ができました。","scene":7},{"start":376.73,"end":379.81,"text":"ずんだもん：小さい仕事だから、自分でやったのだ！","scene":7},{"start":379.97,"end":381.75,"text":"先生：それが、長い尻尾です。","scene":7},{"start":382.03,"end":384.17,"text":"天の声：長い尻尾は、こうして生まれた。","scene":7},{"start":384.47,"end":393.7,"text":"先生：一つの会話では、任せるかどうかが、その場のモデルの判断しだい。二層構造なら、受付は仕事をしない、と仕組みで決められます。","scene":7},{"start":394,"end":400.88,"text":"先生：ただし、会話が増えるぶん、トークンは多く使います。トークンで、速さと安定を買う交換です。","scene":7},{"start":402.1,"end":408.3,"text":"先生：受付が一つで、詰まらないのか。ここで効くのが、バッチ。まとめて処理する仕組みです。","scene":8},{"start":408.6,"end":412.26,"text":"ずんだもん：バッチ！　ずんだ餅を、まとめて焼くのだ！","scene":8},{"start":412.4,"end":413.95,"text":"先生：……それは、合っています。","scene":8},{"start":414.63,"end":415.89,"text":"ずんだもん：合ってたのだ！？","scene":8},{"start":416.2,"end":419.95,"text":"天の声：ずんだもん、この講座で、初めて、合っていた。","scene":8},{"start":420.27,"end":427.27,"text":"先生：Router が一回考えているあいだに届いた出来事は、並んで待ち、次の一回で、まとめて渡されます。","scene":8},{"start":427.57,"end":438.69,"text":"先生：Router の一回は、ふつう、読むものが長く、答えは短い。読む段階は、まとめて並べて計算できるので、一回の時間は、件数ほどには伸びません。","scene":8},{"start":439.9,"end":446.72,"text":"先生：判断が要る出来事が、一分に約一件のとき、判断一つあたりの時間は、六・四秒でした。","scene":9},{"start":447,"end":456.71,"text":"先生：約四十件に増やすと、一回にまとめる件数は、平均二・八件に。一回の時間は、二・五秒から、三・九秒にしか伸びません。","scene":9},{"start":457,"end":461.79,"text":"先生：その結果、判断一つあたりの時間は、一・六秒に下がりました。","scene":9},{"start":462.1,"end":473.35,"text":"先生：ただし、一回にさばける件数には、限りがあります。足りなくなったら、ふるいを何段かにするか、Router を分けます。分けるほど、共有できる記憶は減ります。","scene":9},{"start":474.57,"end":481.22,"text":"先生：クイズです。Router 層は、小さい仕事なら、自分でやったほうがよい。マルか、バツか。","scene":10},{"start":484.73,"end":489.38,"text":"ずんだもん：マルなのだ！　小さい仕事は、受付のぼくが、ささっと……","scene":10},{"start":489.53,"end":491.72,"text":"先生：長い尻尾、もう忘れましたか。","scene":10},{"start":492.03,"end":500.1,"text":"先生：答えは、バツ。Router は、人と話すことと、仕事を配ることだけ。自分でやると、受付が止まります。","scene":10},{"start":500.4,"end":502.27,"text":"天の声：ずんだもん、二連敗。","scene":10},{"start":503.5,"end":510.58,"text":"先生：振り返りです。会話を一つにまとめると、遅くて混ざる。全部ばらすと、つながらず、うるさい。","scene":11},{"start":510.87,"end":520.06,"text":"先生：だから、二層に分けます。Router は、人と話して配るだけ。Worker は、一つの仕事に専念して、人とは直接話しません。","scene":11},{"start":520.37,"end":527.02,"text":"先生：受付が一つでも、まとめて処理するので、詰まりにくい。実験の数字は、参考の値です。","scene":11},{"start":527.33,"end":532.12,"text":"ずんだもん：わかったのだ。受付のぼくは、もう、何も作らないのだ！","scene":11},{"start":532.27,"end":533.76,"text":"先生：それで、いいんです。","scene":11},{"start":534.07,"end":539.6,"text":"天の声：ずんだもんは、少しだけ、受付らしくなった。タブは、まだ三十七個ある。","scene":11},{"start":540.83,"end":546.64,"text":"天の声：次回。ずんだもん、グループの、おはようにも、全部、返事をする。","scene":12},{"start":546.93,"end":549,"text":"ずんだもん：あいさつは、大事なのだ！","scene":12}],"video":"media/S02.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","poster":"media/S02.jpg?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","videoCc":"media/S02.cc.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"},{"id":"S03","no":3,"section":{"no":3,"title":"イベント駆動"},"title":"出来事で動く（イベント駆動）","summary":"Super-agent を動かす Trigger（まわりの出来事）と、うるさい出来事の流れを落とす二段のふるい（コードの Fast Path とモデルの Slow Path）。同じ PR や話題のひと続き（Thread）を担当の Worker が購読し、続きをそのまま渡すパススルーで、受付の負担を減らす。","docs":[{"title":"DeepSeek Harness チーム（X の記事。実装と執筆は Yujia Qiao）（2026（11 月 1 日公開））Exploring Super-agent Design: Towards a More Autonomous Agent System","url":"https://x.com/DeepSeekHarness/article/2116857257245987236"},{"title":"deepseek-ai（GitHub）（2026）dsh-superagent-prototype","url":"https://github.com/deepseek-ai/dsh-superagent-prototype"}],"quiz":[{"q":"記事の「二段のふるい」の 1 段目（Fast Path）でするのは？","choices":["モデルが文脈を読んで、動くかを判断する","出どころ・グループ・許可の一覧などで、コードが速く決める","全部の出来事に返事をする","人が手で 1 つずつ決める"],"answer":1,"explain":"1 段目は、はっきり決められる条件でコードが速く落とす（モデルを呼ぶ前に大半を落とす）。意味を読む必要がある候補だけを、2 段目でモデルが判断する。"},{"q":"同じ PR の続きの出来事（Thread の続き）について、記事の設計で正しいものは？","choices":["毎回 Router が読み直して、誰に配るかを決める","購読している Worker に、コードがそのまま渡す（パススルー）","Worker どうしが、1 対 1 で連絡して知らせ合う","続きの出来事は捨てる"],"answer":1,"explain":"最初の出来事で Router が Worker を作り、その Worker が Thread を購読する。続きはコードが購読者へ直接渡す。Router は全部を見てはいるが、判断して配るのは購読者のいない新しい出来事だけ。"},{"q":"記事の予備の実験で、パススルーを外したときに大きく増えたものは？","choices":["仕事が終わるまでの時間","Router の判断の数と、キャッシュから読んだトークン","Worker の数","ずんだ餅の消費"],"answer":1,"explain":"終わるまでの時間はほぼ同じ（p50 12.4 → 12.6 分）。Router の判断は約 3 割、キャッシュから読んだトークンは 2,320 万から 3,180 万へ約 37% 増えた。"}],"takeaways":["Trigger = まわりの出来事（チャットの発言・メール・予定の知らせ・レビューのコメント・CI の結果）。一歩ずつの指示を待たずに動く","出来事の大半は動かなくていいもの。二段のふるい: 1 段目はコード（Fast Path。出どころ・グループ・許可の一覧）、2 段目はモデル（Slow Path。文脈と文章の方針）","2 段目は、人が文章で方針を足したり外したりできる場所","Thread = 同じ PR・話題・メールのひと続き。最初の出来事で Router が Worker を作り、続きは購読している Worker へ直行（パススルー）","購読は多対多。同じ Thread を見る Worker どうしは、1 対 1 の連絡なしでも、ぶつかりに気づいて自分たちで直す機会がある。パススルーは時間より、受付の負担とトークンを減らした（記事の予備の実験）"],"caution":"","material":null,"duration":482.97,"chapters":[{"start":0,"heading":"オープニング"},{"start":24.17,"heading":"この章のゴール"},{"start":44.2,"heading":"Trigger: エージェントを動かす出来事"},{"start":72.33,"heading":"困りごと: 出来事は、ほとんどがノイズ"},{"start":107.3,"heading":"二段のふるい: Fast Path と Slow Path"},{"start":160.13,"heading":"2 段目は、言葉で広げられる"},{"start":184.97,"heading":"ふるいゲーム: あなたが受付なら？"},{"start":218.3,"heading":"ふるいゲーム: 答えの例"},{"start":254.87,"heading":"Thread の購読と、パススルー"},{"start":314.2,"heading":"購読は、多対多"},{"start":354.17,"heading":"記事の予備の実験: パススルーの効果"},{"start":405.63,"heading":"クイズ"},{"start":438.37,"heading":"振り返り"},{"start":471.63,"heading":"エンディング"}],"cues":[{"start":2.03,"end":4.39,"text":"第3章。出来事で動く。","scene":0},{"start":5,"end":10.98,"text":"ずんだもん：おはようございます！　おはようございます！　グループの全員に、返事をしたのだ！","scene":0},{"start":11.13,"end":13.12,"text":"先生：おはように、返事は要りません。","scene":0},{"start":13.43,"end":17.18,"text":"天の声：前回の予告どおり、四十八人に、返事をした。","scene":0},{"start":17.47,"end":23.42,"text":"先生：この章では、人の指示ではなく、まわりの出来事で動く仕組み、イベント駆動を見ます。","scene":0},{"start":24.63,"end":26.8,"text":"先生：この章のゴールは、三つです。","scene":1},{"start":27.1,"end":29.59,"text":"ずんだもん：あいさつの、達人になるのだ！","scene":1},{"start":29.73,"end":30.46,"text":"先生：なりません。","scene":1},{"start":30.77,"end":35.18,"text":"先生：一つ目。出来事、つまり Trigger で動く考え方がわかること。","scene":1},{"start":35.47,"end":37.96,"text":"先生：二つ目。二段のふるいを言えること。","scene":1},{"start":38.27,"end":43.45,"text":"先生：三つ目。Thread の購読とパススルーで、受付を空ける理由がわかることです。","scene":1},{"start":44.67,"end":51.44,"text":"先生：Super-agent を動かすのは、人が一つずつ打ち込む指示ではありません。まわりで起きる、出来事です。","scene":2},{"start":51.73,"end":52.81,"text":"先生：チャットの発言。","scene":2},{"start":53.1,"end":53.7,"text":"先生：メール。","scene":2},{"start":54,"end":55.1,"text":"先生：予定の知らせ。","scene":2},{"start":55.4,"end":58.25,"text":"先生：コードレビューのコメントや、CI の結果。","scene":2},{"start":58.53,"end":61.72,"text":"先生：こうした出来事を、記事は、Trigger と呼びます。","scene":2},{"start":62.03,"end":65.27,"text":"ずんだもん：トリガー……とりがら……鶏ガラスープなのだ！","scene":2},{"start":65.4,"end":66.25,"text":"先生：煮込みません。","scene":2},{"start":66.57,"end":71.57,"text":"先生：Trigger を聞いて動くので、一回ごとに、人の指示を待たなくてよくなります。","scene":2},{"start":72.8,"end":77.34,"text":"先生：でも、本物のチャットやコードの場所につなぐと、困ったことが起きます。","scene":3},{"start":77.63,"end":86.05,"text":"先生：出来事の流れは、うるさいのに、動くべきものは少ない。毎日のメッセージの大半は、エージェントが何もしなくていいものです。","scene":3},{"start":86.33,"end":93.17,"text":"ずんだもん：だから、ぼくは、全部の発言を、いちばん賢いモデルで、じっくり考えるのだ！","scene":3},{"start":93.33,"end":96.52,"text":"先生：おはように、いちばん賢いモデルは、要りません。","scene":3},{"start":96.83,"end":101.1,"text":"天の声：ずんだもん、おはようの意味を、三十秒、考えた。","scene":3},{"start":101.4,"end":106.55,"text":"先生：全部を大きなモデルで一から判断すると、遅くなり、計算も使いすぎます。","scene":3},{"start":107.77,"end":112.73,"text":"先生：そこで記事は、コンピューターの、Fast Path と Slow Path の考え方を借ります。","scene":4},{"start":113.03,"end":121.26,"text":"先生：よく起きて、はっきり決められる判断は、速くて安いコードにする。意味を読まないと決められないものだけ、モデルに回します。","scene":4},{"start":121.57,"end":128.96,"text":"先生：一段目は、コードのふるい。出来事の出どころ、グループ、人やボットの許可の一覧で、さっと決めます。","scene":4},{"start":129.27,"end":133.92,"text":"先生：ここで、関係ないメッセージの大半を、モデルを呼ぶ前に落とします。","scene":4},{"start":134.23,"end":140.29,"text":"先生：出どころごとに、頼まれたときだけ応える、候補にする、無視する、と決めておけます。","scene":4},{"start":140.6,"end":148.29,"text":"先生：二段目は、モデルのふるい。残った候補だけを、モデルが、文脈と、文章で書いた方針で判断します。","scene":4},{"start":148.6,"end":152.54,"text":"ずんだもん：スロー……ゆっくり……ぼくの、得意分野なのだ！","scene":4},{"start":152.7,"end":153.98,"text":"先生：自慢しないでください。","scene":4},{"start":154.27,"end":157.27,"text":"先生：要る、と判断したものだけ、動きます。","scene":4},{"start":157.57,"end":159.39,"text":"先生：要らなければ、黙ります。","scene":4},{"start":160.57,"end":169.1,"text":"先生：二段目には、もう一つ良いところがあります。方針を文章で書くので、人が、いつでも、足したり、外したりできます。","scene":5},{"start":169.4,"end":174.81,"text":"ずんだもん：じゃあ、ずんだ餅の話には、必ず返事をする、を足すのだ！","scene":5},{"start":174.97,"end":176.11,"text":"先生：足さないでください。","scene":5},{"start":176.4,"end":179.24,"text":"天の声：その方針は、三秒で、外された。","scene":5},{"start":179.53,"end":184.22,"text":"先生：言葉で広げられる場所があると、新しい決まりを、すぐに試せます。","scene":5},{"start":185.43,"end":192.64,"text":"先生：では、ゲームです。あなたが、サンプルアプリのチームの受付なら、この四つを、どう扱いますか。","scene":6},{"start":192.93,"end":195.01,"text":"先生：一つ目。おはようございます。","scene":6},{"start":195.3,"end":198.49,"text":"先生：二つ目。CI が落ちてる、誰か見て。","scene":6},{"start":198.8,"end":201.68,"text":"先生：三つ目。ずんだ餅、差し入れです。","scene":6},{"start":201.97,"end":207.98,"text":"先生：四つ目。担当の Worker がいる PR に、この関数の名前を変えて、というコメント。","scene":6},{"start":208.27,"end":210.29,"text":"ずんだもん：全部、返事なのだ！","scene":6},{"start":210.43,"end":212.2,"text":"先生：あなたには、聞いていません。","scene":6},{"start":212.5,"end":215.04,"text":"先生：動画を止めて、考えてみてください。","scene":6},{"start":218.77,"end":223.67,"text":"先生：答えの例です。設定によって変わりますが、たとえば、こうなります。","scene":7},{"start":223.97,"end":227.54,"text":"先生：おはようは、一段目のコードのふるいで、落とします。","scene":7},{"start":227.83,"end":233.86,"text":"先生：CI が落ちた知らせは、仕事の候補。二段目で、モデルが、動くかを決めます。","scene":7},{"start":234.17,"end":236.9,"text":"ずんだもん：ずんだ餅は、ぼくが、全部……","scene":7},{"start":237.03,"end":241.79,"text":"先生：差し入れは、二段目で、要らない、と判断して、黙ります。","scene":7},{"start":242.1,"end":244.22,"text":"天の声：ずんだ餅は、人間が食べた。","scene":7},{"start":244.53,"end":254.11,"text":"先生：そして、担当がいる PR のコメントは、ふるいの後、受付を通さず、担当にそのまま渡します。これが、次のパススルーです。","scene":7},{"start":255.33,"end":257.78,"text":"先生：続いて、出来事の配り方です。","scene":8},{"start":258.07,"end":265.03,"text":"先生：同じ PR、同じ話題、同じメールのやり取り。ひと続きの出来事を、記事は Thread と呼びます。","scene":8},{"start":265.33,"end":269.76,"text":"ずんだもん：スレッド……糸なのだ！　ずんだ餅を、糸で切るのだ！","scene":8},{"start":269.9,"end":270.63,"text":"先生：切りません。","scene":8},{"start":270.93,"end":275.8,"text":"先生：Thread の最初の出来事は、まだ担当がいないので、Router に回ります。","scene":8},{"start":276.1,"end":280.46,"text":"先生：Router は Worker を作り、その Worker が、Thread を購読します。","scene":8},{"start":280.77,"end":290.17,"text":"先生：ここからが、近道。同じ Thread の続きは、コードが、購読している Worker に、そのまま渡します。これが、パススルーです。","scene":8},{"start":290.47,"end":294.25,"text":"先生：Router は、もう一度、配る判断をしなくて済みます。","scene":8},{"start":294.57,"end":303.13,"text":"先生：Router は、全部の出来事を見てはいます。でも、判断して配るのは、購読している人がいない、新しい出来事だけです。","scene":8},{"start":303.43,"end":307.47,"text":"先生：Worker は、大事な結論だけを、Router に報告します。","scene":8},{"start":307.77,"end":313.46,"text":"先生：続きが今の仕事と関係なければ、Worker は購読をやめるか、Router に戻せます。","scene":8},{"start":314.67,"end":316.5,"text":"先生：購読は、多対多です。","scene":9},{"start":316.8,"end":320.81,"text":"先生：一人の Worker が、関係するいくつもの Thread を購読できます。","scene":9},{"start":321.1,"end":328.59,"text":"先生：一つの Thread を、何人もの Worker が購読することもできます。新しい出来事は、全員に同時に届きます。","scene":9},{"start":328.9,"end":337.53,"text":"先生：同じ PR を触る Worker どうしは、同じ出来事を見るので、ほかの Worker の動きに気づいて、ぶつかりを自分たちで直す機会があります。","scene":9},{"start":337.83,"end":342.45,"text":"ずんだもん：じゃあ、Worker どうしで、毎回、電話するのだ！","scene":9},{"start":342.6,"end":343.5,"text":"先生：電話しません。","scene":9},{"start":343.8,"end":353.43,"text":"先生：一対一で連絡しなくても、同じものを見ていれば、気づくきっかけがあります。仕事をまたぐ調整が要る、まれなときだけ、Router がつなぎます。","scene":9},{"start":354.63,"end":361.27,"text":"先生：パススルーは、どれくらい効くのか。前の章の実験では、パススルーを外した設計も比べています。","scene":10},{"start":361.57,"end":367.7,"text":"先生：パススルーありは、p50 が十二・四分、p95 が十五・七分。","scene":10},{"start":368,"end":375.19,"text":"先生：パススルーを外しても、十二・六分と、十五・五分。終わるまでの時間は、ほとんど同じでした。","scene":10},{"start":375.5,"end":379.17,"text":"ずんだもん：速くならないなら、パススルーは、要らないのだ。","scene":10},{"start":379.33,"end":379.96,"text":"先生：要ります。","scene":10},{"start":380.27,"end":389.93,"text":"先生：Router の判断は約三割増え、キャッシュから読んだトークンは、二千三百二十万から三千百八十万へ。約三十七パーセント増えました。","scene":10},{"start":390.23,"end":397.71,"text":"先生：この実験の負荷では、パススルーは、速さではなく、受付の負担と、トークンを、大きく減らしました。","scene":10},{"start":398,"end":404.87,"text":"先生：しかも、パススルーが無くても、Router は、まとめて処理のおかげで、まだ限界に届いていませんでした。","scene":10},{"start":406.1,"end":414.67,"text":"先生：クイズです。同じ PR の続きのコメントも、毎回、Router が読んで、誰に渡すかを決める。マルか、バツか。","scene":11},{"start":418.17,"end":422.53,"text":"ずんだもん：マルなのだ！　受付は、全部、自分で読むのだ！","scene":11},{"start":422.67,"end":424.77,"text":"先生：また、受付が全部やってます。","scene":11},{"start":425.07,"end":435.4,"text":"先生：答えは、バツ。購読している Worker に、コードがそのまま渡します。Router が判断するのは、購読している人がいない、新しい出来事だけです。","scene":11},{"start":435.7,"end":437.62,"text":"天の声：ずんだもん、三連敗。","scene":11},{"start":438.83,"end":444.16,"text":"先生：振り返りです。Super-agent は、まわりの出来事、Trigger で動きます。","scene":12},{"start":444.47,"end":451.63,"text":"先生：二段のふるいで、コードが速く落とし、残りだけをモデルが判断します。方針は、文章で足せます。","scene":12},{"start":451.93,"end":458.19,"text":"先生：同じ Thread の続きは、購読している Worker へ直行。受付の負担と、トークンが減ります。","scene":12},{"start":458.5,"end":462.95,"text":"ずんだもん：わかったのだ。おはようには、もう、返事をしないのだ！","scene":12},{"start":463.1,"end":465.02,"text":"先生：人としては、返してください。","scene":12},{"start":465.33,"end":470.87,"text":"天の声：ずんだもんは、少しだけ、ふるい分けを覚えた。タブは、まだ三十七個ある。","scene":12},{"start":472.1,"end":476.64,"text":"天の声：次回。ずんだもん、ログを、一万行、貼る。","scene":13},{"start":476.93,"end":478.96,"text":"ずんだもん：全部、大事なのだ！","scene":13}],"video":"media/S03.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","poster":"media/S03.jpg?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","videoCc":"media/S03.cc.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"},{"id":"S04","no":4,"section":{"no":3,"title":"イベント駆動"},"title":"文脈の詰め方と先回り","summary":"モデルの文脈の窓を、キャッシュとして扱う考え方。すぐ要りそうなものを入れる Inline と、入りきらないものを外に置く Spill、ID をたどって昔の文脈を戻す Chain of Recall。使うかわからないうちに裏で始める先回り（投機的実行）と、確かなときだけ出す使い方。","docs":[{"title":"DeepSeek Harness チーム（X の記事。実装と執筆は Yujia Qiao）（2026（11 月 1 日公開））Exploring Super-agent Design: Towards a More Autonomous Agent System","url":"https://x.com/DeepSeekHarness/article/2116857257245987236"}],"quiz":[{"q":"記事が勧める、モデルの文脈の窓の扱い方は？","choices":["いつも、手に入る情報を全部入れる","キャッシュとして扱い、Inline と Spill で詰める","ID だけを入れ、あとは毎回読みに行かせる","窓は使わない"],"answer":1,"explain":"入れすぎると注意が薄まり、少なすぎると道具を何度も呼ぶ。窓をキャッシュとして扱い、近いものから入れ（Inline）、入りきらないものは外に置く（Spill）。"},{"q":"Spill の説明として正しいものは？","choices":["入りきらない情報を外に置き、窓には要約か、続きの場所だけを残す","情報を捨てて、二度と読まない","ずんだ餅をこぼす","すぐ要りそうな情報を、先に窓に入れる"],"answer":0,"explain":"すぐ要りそうな情報を先に入れるのは Inline。Spill は外に置いて、要るときに道具で続きを読めるようにする。"},{"q":"記事のチームの「黙って再現して直す」方針で、グループに結果を出すのはいつ？","choices":["問題の報告が来たら、すぐ","問題を確かめられて、簡単な直し方が見つかったときだけ","毎朝、決まった時間に","直せなかったときだけ"],"answer":1,"explain":"裏で再現と直し方を試し、問題を確かめられて、簡単な直し方が見つかったときだけ出す。それ以外は黙っている。外れても、人の注意を使わずにすむ。"}],"takeaways":["窓に入れすぎると注意が薄まり、少なすぎると道具を何度も呼ぶ。窓のむだづかいは、モデルの賢さのむだづかい","窓はキャッシュ。Inline = すぐ要りそうなものを先に入れる。Spill = 入りきらないものは外に置き、要約か続きの場所だけ残す","局所性で少しずつ: 最初は ID と要約 → 近いものから足す（関係する ID・前後の発言・返信先・近くのコメント・本文の頭の 50 文字）→ 長いものは切って続きの場所を残す","Chain of Recall: 出来事・Thread・Worker の会話に ID を付け、要約と次の ID をたどって、必要なだけ昔の文脈を戻す","先回り（投機的実行）: 使うかわからないうちに裏で始め、役に立った結果だけ出す。記事のチームの「黙って再現して直す」方針では、問題を確かめられて、簡単な直し方が見つかったときだけ出す"],"caution":"","material":null,"duration":457.23,"chapters":[{"start":0,"heading":"オープニング"},{"start":26.2,"heading":"この章のゴール"},{"start":50.27,"heading":"困りごと: 入れすぎと、少なすぎ"},{"start":98.1,"heading":"窓は、キャッシュ: Inline と Spill"},{"start":152.93,"heading":"近いものから、少しずつ入れる"},{"start":197.2,"heading":"Chain of Recall: ID をたどって思い出す"},{"start":276.77,"heading":"クイズ"},{"start":308.33,"heading":"先回り: 投機的実行"},{"start":349.1,"heading":"先回りの例と、出し方"},{"start":408.67,"heading":"振り返り"},{"start":446.7,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.65,"text":"第4章。文脈の詰め方と、先回り。","scene":0},{"start":6.23,"end":11.33,"text":"ずんだもん：ログを、一万行、貼ったのだ！　全部、大事なのだ！","scene":0},{"start":11.47,"end":12.98,"text":"先生：窓が、あふれます。","scene":0},{"start":13.27,"end":16.66,"text":"天の声：前回の予告どおり、一万行、貼った。","scene":0},{"start":16.97,"end":25.46,"text":"先生：この章では、モデルの文脈の窓に、何を、どれだけ入れるか。そして、頼まれる前に動く、先回りを見ます。","scene":0},{"start":26.67,"end":28.83,"text":"先生：この章のゴールは、三つです。","scene":1},{"start":29.13,"end":32.01,"text":"ずんだもん：窓なら、ぼくの家にも、あるのだ！","scene":1},{"start":32.17,"end":33.94,"text":"先生：その窓では、ありません。","scene":1},{"start":34.23,"end":38.05,"text":"先生：一つ目。文脈の窓を、キャッシュとして考えられること。","scene":1},{"start":38.37,"end":44.7,"text":"先生：二つ目。Inline と Spill、そして Chain of Recall を、説明できること。","scene":1},{"start":45,"end":49.52,"text":"先生：三つ目。先回りの使い方と、結果の出し方がわかることです。","scene":1},{"start":50.73,"end":58.62,"text":"先生：出来事は、ふるいを通り、担当の会話に届きました。次は、モデルの文脈の窓に、どれだけ入れるかです。","scene":2},{"start":58.9,"end":63,"text":"ずんだもん：だから、ぼくは、一万行、全部入れたのだ！","scene":2},{"start":63.3,"end":65.87,"text":"先生：入れすぎると、窓がいっぱいになります。","scene":2},{"start":66.17,"end":70.95,"text":"先生：そして、モデルの注意が薄まり、大事なところを見落としやすくなります。","scene":2},{"start":71.23,"end":76.31,"text":"天の声：ずんだもんのモデル、一万行目の、ずんだ餅の話だけ、覚えていた。","scene":2},{"start":76.6,"end":80,"text":"ずんだもん：じゃあ、逆に、ID だけ渡すのだ！","scene":2},{"start":80.3,"end":84.92,"text":"先生：少なすぎると、モデルは、道具を何度も呼んで、読みに行きます。","scene":2},{"start":85.23,"end":87.48,"text":"先生：手順が増えて、遅くなります。","scene":2},{"start":87.8,"end":92.07,"text":"天の声：ずんだもんのモデル、同じファイルを、五十回、開いた。","scene":2},{"start":92.37,"end":97.36,"text":"先生：記事は言います。窓のむだづかいは、モデルの賢さのむだづかいだ、と。","scene":2},{"start":98.57,"end":102.84,"text":"先生：そこで記事は、限られた文脈の窓を、キャッシュとして扱います。","scene":3},{"start":103.13,"end":107.53,"text":"ずんだもん：キャッシュ！　現金なのだ！　ずんだ餅が、買えるのだ！","scene":3},{"start":107.67,"end":108.38,"text":"先生：買えません。","scene":3},{"start":108.67,"end":114.04,"text":"先生：キャッシュは、限られた、速い置き場所のことです。使う操作は、二つ。","scene":3},{"start":114.33,"end":120.39,"text":"先生：Inline は、すぐ要りそうなものを、先に窓に入れておくこと。道具を呼ぶ往復が減ります。","scene":3},{"start":120.7,"end":128.72,"text":"先生：Spill は、入りきらないものや、めったに使わないものを外に置き、窓には、要約か、場所だけを残すことです。","scene":3},{"start":129.03,"end":140.44,"text":"先生：なつかしいですね。先生が学生のころ、コンパイラの授業で、レジスターが足りなくなって、値をメモリに逃がす話がありまして。あれは、たしか、雨の日の……","scene":3},{"start":140.73,"end":145.54,"text":"天の声：先生の昔話は、ここで切った。続きの場所だけ、残しておく。","scene":3},{"start":145.83,"end":147.73,"text":"ずんだもん：それが、Spill なのだ！","scene":3},{"start":147.87,"end":148.82,"text":"先生：……そのとおりです。","scene":3},{"start":149.1,"end":152.18,"text":"天の声：続きの場所は、誰も、読みに行かなかった。","scene":3},{"start":153.4,"end":159.27,"text":"先生：では、どう詰めるか。使うのは、コンピューターの古典的な考え、局所性です。","scene":4},{"start":159.57,"end":165.44,"text":"先生：近くにあるもの、最近のものほど、すぐ要りやすい。だから、少しずつ入れます。","scene":4},{"start":165.73,"end":169.67,"text":"先生：最初は、いま扱う出来事の、ID と要約だけ。","scene":4},{"start":169.97,"end":181.9,"text":"先生：次に、すぐ要りそうなものを、近いものから足します。関係するものの ID、前後の発言、返信先、同じレビューの近くのコメント、本文の頭の五十文字。","scene":4},{"start":182.2,"end":185.51,"text":"天の声：ずんだもんの一万行は、頭の五十文字になった。","scene":4},{"start":185.8,"end":193.93,"text":"先生：長くて入りきらないものは、短く切って、続きの場所を残します。モデルは、要るときに、道具で続きを読みます。","scene":4},{"start":194.23,"end":196.44,"text":"先生：これが、Inline と Spill です。","scene":4},{"start":197.63,"end":205.13,"text":"先生：もう一つの困りごと。Router は、長く動くうちに、昔の仕事の記録を、全部は窓に入れておけません。","scene":5},{"start":205.43,"end":210.04,"text":"先生：でも、人は、別の場所で、昔の話を急に持ち出します。","scene":5},{"start":210.33,"end":214.67,"text":"ずんだもん：事件なのだ！　名探偵ずんだもんが、解決するのだ！","scene":5},{"start":214.97,"end":219.3,"text":"先生：例えば、チャットで、先週のログインの件、どうなった？","scene":5},{"start":219.6,"end":226.25,"text":"ずんだもん：まず、この発言の Thread を見るのだ。……要約と、次の ID が、書いてあるのだ！","scene":5},{"start":226.53,"end":232.51,"text":"ずんだもん：その ID をたどると、担当の Worker。ここにも、次の ID があるのだ！","scene":5},{"start":232.8,"end":239.83,"text":"ずんだもん：たどった先は、レビューの Thread。B 案で直して、確認待ちなのだ！　解決なのだ！","scene":5},{"start":240.13,"end":241.66,"text":"先生：……今日は、合っています。","scene":5},{"start":242.27,"end":246.39,"text":"天の声：ずんだもん、この講座で、二回目の、正解であった。","scene":5},{"start":246.7,"end":258.32,"text":"先生：出来事にも、Thread にも、Worker の会話にも、ID を付けます。そして、近いものの ID を、一緒に入れておく。すると、ID でつながった地図ができます。","scene":5},{"start":258.6,"end":269.78,"text":"先生：呼び出した先も、同じように要約と次の ID を返すので、必要なだけ、一歩ずつたどれます。これを、記事は、Chain of Recall と呼びます。","scene":5},{"start":270.07,"end":273.54,"text":"ずんだもん：リコール……ずんだ餅の、回収なのだ！？","scene":5},{"start":273.7,"end":276,"text":"先生：回収しません。思い出すんです。","scene":5},{"start":277.23,"end":286.75,"text":"先生：クイズです。Chain of Recall では、昔の仕事の記録を、最初から全部、窓に入れておく。マルか、バツか。","scene":6},{"start":290.23,"end":293.51,"text":"ずんだもん：マルなのだ！　一万行、入れるのだ！","scene":6},{"start":293.67,"end":295.94,"text":"先生：名探偵は、どこへ行ったんですか。","scene":6},{"start":296.23,"end":302.74,"text":"先生：答えは、バツ。窓には、要約と次の ID だけ。要るときに、たどって読みます。","scene":6},{"start":303.03,"end":307.6,"text":"天の声：ずんだもん、四連敗。名探偵は、一回きりであった。","scene":6},{"start":308.8,"end":315.2,"text":"先生：最後は、先回りです。記事は、コンピューターの、投機的実行という考えも借ります。","scene":7},{"start":315.5,"end":323.22,"text":"ずんだもん：先回りなら、得意なのだ！　注文が来る前に、ずんだ餅を、百個、焼いておいたのだ！","scene":7},{"start":323.37,"end":325.09,"text":"先生：注文は、一個でした。","scene":7},{"start":325.4,"end":327.45,"text":"天の声：九十九個は、捨てられた。","scene":7},{"start":327.73,"end":330.63,"text":"先生：……でも、実は、それに近い考えです。","scene":7},{"start":330.93,"end":331.48,"text":"ずんだもん：えっ。","scene":7},{"start":332.07,"end":340.73,"text":"先生：まわりの知らせを見て、使うかどうか、まだわからないうちに、裏で仕事を始めておく。役に立てば出し、外れたら捨てます。","scene":7},{"start":341.03,"end":348.35,"text":"先生：余分に計算して、人の待ち時間と、手を出す回数を減らす。外れた分の計算は、その代わりです。","scene":7},{"start":349.57,"end":350.47,"text":"先生：例を見ます。","scene":8},{"start":350.77,"end":361.13,"text":"先生：個人のエージェントなら、会議の招待が届いた時点で、予定のぶつかりを見て、資料を集め、返事の下書きまで作ります。人は、見て送るだけ。","scene":8},{"start":361.43,"end":373.03,"text":"先生：開発では、記事のチームは、黙って再現して直す、という方針を使っています。問題の報告や、直し方の相談が出ると、裏で再現と直し方を試します。","scene":8},{"start":373.33,"end":380.7,"text":"先生：出すのは、問題を確かめられて、簡単な直し方が見つかったときだけ。それ以外は、ずっと黙っています。","scene":8},{"start":381,"end":387.08,"text":"ずんだもん：ぼくなら、見つけた瞬間に、グループで発表するのだ！　バグかもしれないのだ！","scene":8},{"start":387.23,"end":389.22,"text":"先生：確かめてから、にしてください。","scene":8},{"start":389.53,"end":393.21,"text":"天の声：ずんだもんの発表、三回とも、バグではなかった。","scene":8},{"start":393.5,"end":399.13,"text":"先生：黙って試して、確かなときだけ出す。外れても、人の注意を使わずにすみます。","scene":8},{"start":399.43,"end":407.9,"text":"先生：記事には、グループがまだ直し方を話しているうちに、Super-agent が、裏で直した PR を、もう出していた例が載っています。","scene":8},{"start":409.13,"end":416.03,"text":"先生：振り返りです。文脈の窓は、キャッシュ。入れすぎも、少なすぎも、賢さのむだづかいです。","scene":9},{"start":416.33,"end":425.24,"text":"先生：Inline で近いものから足し、Spill で長いものは外へ。ID をたどる Chain of Recall で、昔の話も戻せます。","scene":9},{"start":425.53,"end":431.58,"text":"先生：先回りは、裏で始めて、確かな結果だけを出す。外れたら、捨てて黙ります。","scene":9},{"start":431.87,"end":437.14,"text":"ずんだもん：わかったのだ。ずんだ餅も、ちゃんと、注文の一個だけ焼くのだ！","scene":9},{"start":437.3,"end":439.86,"text":"先生：……それは、先回りでは、ありません。","scene":9},{"start":440.17,"end":445.95,"text":"天の声：ずんだもんは、少しだけ、窓の使い方を覚えた。タブは、まだ三十七個ある。","scene":9},{"start":447.17,"end":451.4,"text":"天の声：次回。ずんだもん、テストが終わるまで、返事をしない。","scene":10},{"start":451.7,"end":453.25,"text":"ずんだもん：集中しているのだ！","scene":10}],"video":"media/S04.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","poster":"media/S04.jpg?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","videoCc":"media/S04.cc.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"},{"id":"S05","no":5,"section":{"no":4,"title":"止まらない仕組み"},"title":"待たせない・場所で話し方を変える","summary":"道具を待つあいだ止まるふつうの ReAct ループ（半二重）と、start() ですぐ返り、結果を新しい出来事として受け取る非同期の ReAct ループ（全二重）。グループのチャットでは短く、GitHub やメールでは詰めて整える、チャンネルごとの話し方。","docs":[{"title":"DeepSeek Harness チーム（X の記事。実装と執筆は Yujia Qiao）（2026（11 月 1 日公開））Exploring Super-agent Design: Towards a More Autonomous Agent System","url":"https://x.com/DeepSeekHarness/article/2116857257245987236"},{"title":"deepseek-ai（GitHub）（2026）DeepSeek Harness（README）","url":"https://github.com/deepseek-ai/deepseek-harness"}],"quiz":[{"q":"ふつうの ReAct ループで、時間のかかる道具を run() で呼ぶと、どうなる？","choices":["すぐに「Started」が返る","道具が終わるまでループが止まり、新しい話に応えられない","道具が自動で止まる","人の話を先に聞いてから、道具を動かす"],"answer":1,"explain":"同期の呼び出しでは、道具が終わって結果が返るまでループが止まる。話は交代でしか進まない（半二重）。"},{"q":"記事の非同期の ReAct ループで、時間のかかる道具の結果は、どう届く？","choices":["start() の戻り値として、終わるまで待って受け取る","道具が終わると、新しい出来事として会話に届く","人が手で貼りつける","結果は届かない"],"answer":1,"explain":"start() はすぐ「Started」を返し、ループは待たない。道具が終わると、結果は新しい出来事のメッセージとして届く。長すぎれば stop() で止められる。"},{"q":"記事が勧める、グループのチャットでの返事の仕方は？","choices":["考えの途中と、道具の記録を全部流す","決めてほしいときだけ知らせ、まっすぐ聞き、結論は短く（記事の例は 1 回 100 語まで）","PR の説明と同じ量を書く","返事をしない"],"answer":1,"explain":"チャットは軽く、人の手をなるべく止めない。GitHub やメールのように、あとで読む場所では、逆に情報を詰めて形を整える。"}],"takeaways":["ふつうの ReAct ループは、run() で道具を呼ぶと終わるまで止まり、新しい話に応えられない（半二重）","非同期の ReAct ループ: start() はすぐ「Started」を返し、結果は新しい出来事として届く。長すぎたら stop()。新しい話は、今の考えのひと区切りで扱える（全二重）","記事によると、DeepSeek Harness はこの非同期の仕組みを持っているが、まだ既定ではオフ（2026-11-01 の記事の時点）","チャットは軽く短く、決めてほしいときだけ知らせる（記事のチームの固いきまりの例: 1 回の返事は 100 語まで。英語版の記事の表記）","GitHub・メール・文書は、情報を詰めて形を整える（PR は、背景・変えたこと・確かめた結果を、プロジェクトの決まりどおりに）"],"caution":"","material":null,"duration":338.63,"chapters":[{"start":0,"heading":"オープニング"},{"start":24.93,"heading":"この章のゴール"},{"start":46.93,"heading":"ふつうの ReAct ループ: 半二重"},{"start":84.5,"heading":"非同期の ReAct ループ: 全二重"},{"start":137.27,"heading":"クイズ"},{"start":165.9,"heading":"チャンネルの話し方: グループのチャット"},{"start":237.93,"heading":"あとで読む場所は、詰めて整える"},{"start":291.3,"heading":"振り返り"},{"start":326.33,"heading":"エンディング"}],"cues":[{"start":2.03,"end":6.29,"text":"第5章。待たせない。場所で、話し方を変える。","scene":0},{"start":6.9,"end":12.34,"text":"ずんだもん：いま、テストを流しているのだ。終わるまで、話しかけないでほしいのだ。","scene":0},{"start":12.5,"end":14.47,"text":"先生：二十分、返事がありません。","scene":0},{"start":14.77,"end":17.26,"text":"天の声：前回の予告どおり、返事をしない。","scene":0},{"start":17.57,"end":24.19,"text":"先生：この章では、時間のかかる仕事をしながらでも、人に応える仕組みと、場所ごとの話し方を見ます。","scene":0},{"start":25.4,"end":27.57,"text":"先生：この章のゴールは、三つです。","scene":1},{"start":27.87,"end":30.23,"text":"ずんだもん：テスト、あと十八分なのだ。","scene":1},{"start":30.4,"end":31.98,"text":"先生：……誰も、待っていません。","scene":1},{"start":32.27,"end":36.27,"text":"先生：一つ目。ふつうの ReAct ループが、止まる理由がわかること。","scene":1},{"start":36.57,"end":41.35,"text":"先生：二つ目。start と stop で動く、非同期のループを説明できること。","scene":1},{"start":41.63,"end":46.17,"text":"先生：三つ目。チャンネルごとに、返事の長さと形を変えられることです。","scene":1},{"start":47.4,"end":49.69,"text":"先生：まず、ふつうの ReAct ループです。","scene":2},{"start":50,"end":53.49,"text":"先生：人が頼むと、エージェントは、道具を使います。","scene":2},{"start":53.8,"end":59.05,"text":"先生：このとき、道具を run で呼ぶと、ループは、道具が終わるまで止まって待ちます。","scene":2},{"start":59.33,"end":61.66,"text":"先生：そのあいだに、人が話しかけても……","scene":2},{"start":62.57,"end":66.09,"text":"天の声：返事は、ない。エージェントは、待っている。","scene":2},{"start":66.4,"end":73.82,"text":"先生：道具が終わって、やっと返事ができます。話は、交代でしか進まない。これを、半二重と言います。","scene":2},{"start":74.13,"end":77.62,"text":"ずんだもん：半二重……半分の、二重跳びなのだ！","scene":2},{"start":77.77,"end":78.5,"text":"先生：跳びません。","scene":2},{"start":78.8,"end":83.74,"text":"先生：トランシーバーのように、片方が話すあいだ、もう片方は待つしかありません。","scene":2},{"start":84.97,"end":89.43,"text":"先生：記事は、時間のかかる道具の呼び方を、start と stop に替えます。","scene":3},{"start":89.73,"end":96.24,"text":"先生：start を呼ぶと、すぐに、始めました、と返ってきます。ループは、道具を待ちません。","scene":3},{"start":96.53,"end":99.55,"text":"先生：道具が動いているあいだも、人に応えられます。","scene":3},{"start":99.87,"end":104.91,"text":"先生：道具が終わると、結果は、新しい出来事として、会話に届きます。","scene":3},{"start":105.2,"end":109.16,"text":"先生：長すぎるときは、モデルが、stop で止めることもできます。","scene":3},{"start":109.47,"end":117.54,"text":"先生：新しい話は、道具を待たず、今の考えのひと区切りが終わりしだい、扱われます。これが、全二重です。","scene":3},{"start":117.83,"end":121.36,"text":"ずんだもん：全二重……全部、二重跳びなのだ！","scene":3},{"start":121.5,"end":122.92,"text":"先生：だから、跳びません。","scene":3},{"start":123.23,"end":126.54,"text":"先生：電話のように、両方が、いつでも話せます。","scene":3},{"start":126.83,"end":136.53,"text":"先生：記事によると、DeepSeek Harness は、この非同期の仕組みを、もう持っています。ただ、初期設定では、まだオンになっていないそうです。","scene":3},{"start":137.73,"end":146.61,"text":"先生：クイズです。非同期の ReAct ループでは、start を呼ぶと、道具が終わるまで、ほかの話に答えられない。マルか、バツか。","scene":4},{"start":150.1,"end":153.23,"text":"ずんだもん：マルなのだ！　集中は、大事なのだ！","scene":4},{"start":153.37,"end":155.93,"text":"先生：二十分黙っていた人の、意見ですね。","scene":4},{"start":156.23,"end":162.99,"text":"先生：答えは、バツ。start は、すぐ返ります。道具が動いているあいだも、人に応えられます。","scene":4},{"start":163.3,"end":165.13,"text":"天の声：ずんだもん、五連敗。","scene":4},{"start":166.37,"end":173.82,"text":"先生：もう一つは、話す場所です。人は、グループのチャット、メール、GitHub で、話し方を変えます。","scene":5},{"start":174.13,"end":177.94,"text":"先生：先生も、グループのチャットに、返事を書いてみました。","scene":5},{"start":178.23,"end":182.79,"text":"ずんだもん：先生、長すぎるのだ！　スクロールが、終わらないのだ！","scene":5},{"start":183.1,"end":183.87,"text":"先生：……すみません。","scene":5},{"start":184.47,"end":188.16,"text":"天の声：ずんだもん、この講座で、初めて、ツッコんだ。","scene":5},{"start":188.47,"end":198.9,"text":"先生：一人で使う端末なら、考えの途中や道具の記録も、役に立つことがあります。でも、グループにそのまま流すと、みんなが、情報に埋もれがちです。","scene":5},{"start":199.2,"end":201.8,"text":"先生：何を決めてほしいのかも、わかりません。","scene":5},{"start":202.1,"end":204.09,"text":"ずんだもん：ぼくは、こう書いたのだ。","scene":5},{"start":204.4,"end":210.73,"text":"先生：決めてほしいことだけを、まっすぐ、短く聞く。詳しい話は、PR に書いておく。","scene":5},{"start":211.03,"end":212.76,"text":"先生：……私より、上手です。","scene":5},{"start":213.07,"end":215.62,"text":"天の声：先生、ずんだもんに、負けた。","scene":5},{"start":215.9,"end":232.42,"text":"先生：チャットでは、軽く、人の手を、なるべく止めない。知らせるのは、決めてほしいときだけ。聞くことはまっすぐ、結論は短く。記事のチームでは、一回の返事を百語までにする、という固いきまりが、簡単で、よく効いたそうです。","scene":5},{"start":232.73,"end":235.72,"text":"ずんだもん：先生の返事は、何語だったのだ？","scene":5},{"start":236.03,"end":237.19,"text":"天の声：三百語であった。","scene":5},{"start":238.4,"end":240.92,"text":"先生：では、ほかの場所は、どうでしょう。","scene":6},{"start":241.23,"end":243.64,"text":"先生：チャットは、軽く、短く。","scene":6},{"start":243.93,"end":251.75,"text":"先生：GitHub や、メール、文書のように、あとで読む場所では、逆に、情報を詰めて、形を整えます。","scene":6},{"start":252.07,"end":260.11,"text":"先生：例えば PR なら、問題の背景、変えたこと、確かめた結果を、プロジェクトの決まりどおりに、きちんと書きます。","scene":6},{"start":260.4,"end":264.89,"text":"ずんだもん：ぼくの PR の説明は、直したのだ、の一言なのだ！","scene":6},{"start":265.03,"end":266.97,"text":"先生：そこは、長く書いてください。","scene":6},{"start":267.27,"end":271.9,"text":"天の声：ずんだもん、短くする場所と、長くする場所を、逆にした。","scene":6},{"start":272.2,"end":284.31,"text":"先生：二層構造のおかげで、考えの途中や道具の記録は、Worker の中にとどまり、外とのやり取りは Router がします。そのうえで、チャンネルごとの話し方を、プロンプトで決めておきます。","scene":6},{"start":284.6,"end":290.55,"text":"先生：個人のエージェントなら、整ったメールの下書きや、文書の要約を、そのまま作ります。","scene":6},{"start":291.77,"end":296.77,"text":"先生：振り返りです。ふつうの ReAct ループは、道具を待つあいだ、止まります。","scene":7},{"start":297.07,"end":305.61,"text":"先生：start ですぐ返り、結果は、新しい出来事として届く。長すぎたら、stop。これで、待たせずに話せます。","scene":7},{"start":305.9,"end":311.38,"text":"先生：チャットは短く、決めてほしいことだけ。GitHub やメールは、詰めて整えます。","scene":7},{"start":311.67,"end":317.55,"text":"ずんだもん：わかったのだ。テストを流しながら、先生の長い返事に、ツッコめるのだ！","scene":7},{"start":317.7,"end":319.9,"text":"先生：……ツッコむのは、私の担当です。","scene":7},{"start":320.2,"end":325.6,"text":"天の声：ずんだもんは、少しだけ、全二重になった。タブは、まだ三十七個ある。","scene":7},{"start":326.8,"end":332.89,"text":"天の声：次回、最終章。ずんだもん、ノートパソコンを閉じて、全部、止まる。","scene":8},{"start":333.2,"end":334.63,"text":"ずんだもん：お昼ごはんなのだ！","scene":8}],"video":"media/S05.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","poster":"media/S05.jpg?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","videoCc":"media/S05.cc.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"},{"id":"S06","no":6,"section":{"no":4,"title":"止まらない仕組み"},"title":"止まらない仕組みと、残る課題","summary":"計算・状態・環境を 2 段階で分け、ループはクラウド、状態はデータベース、環境はその場のデーモンでつなぐ。外から見張る Watchdog が、故障だけでなく「進んでいるか」を見る。記事が残した 4 つの課題（広げ方・セッションの無い使い方・文脈の境目と A2A・安全）と、講座のまとめ。","docs":[{"title":"DeepSeek Harness チーム（X の記事。実装と執筆は Yujia Qiao）（2026（11 月 1 日公開））Exploring Super-agent Design: Towards a More Autonomous Agent System","url":"https://x.com/DeepSeekHarness/article/2116857257245987236"},{"title":"Anthropic（Lance Martin・Gabe Cemaj・Michael Cohen）（2026（4 月 8 日））Scaling Managed Agents: Decoupling the brain from the hands","url":"https://www.anthropic.com/research/managed-agents"},{"title":"deepseek-ai（GitHub）（2026）dsh-superagent-prototype","url":"https://github.com/deepseek-ai/dsh-superagent-prototype"}],"quiz":[{"q":"記事の「計算・状態・環境の分離」の 1 段目は？","choices":["ループを動かす計算を、状態を持たないクラウドの入れ物で動かし、状態はデータベースに置く","手元のパソコンを、ずっと起こしておく","実行の環境を、まるごとクラウドに作り直す","会話の記録を、毎回消す"],"answer":0,"explain":"入れ物は増やしても、起動し直しても、取り替えてもよく、続きはデータベースが覚えている。2 段目で、環境はその場に置いたまま、デーモンでつなぐ。"},{"q":"記事の Watchdog が見るものとして、正しいものは？","choices":["プロセスが生きているかどうかだけ","API のエラーなどの故障に加えて、Worker が本当に進んでいるか・目標からずれていないか","人の勤務時間","ずんだ餅の在庫"],"answer":1,"explain":"多くのおかしなことは、止まることではない。プロセスは動いているのに、同じ所を回ったり、目標からずれたりする。だから進み具合をモデルで判断する。"},{"q":"記事が「安全とプライバシー」の課題として挙げたことは？","choices":["クラウドのループが乗っ取られると、つないだ機械すべてが危ない。鍵を見ずに使える仕組みが要る","モデルの賢さが足りない","画面の色が見にくい","タブの数が多すぎる"],"answer":0,"explain":"イベント駆動では信用できない入力が増える。侵入やプロンプトインジェクションでループが乗っ取られると、つないだ機械が危ない。乗っ取られなくても、鍵が窓に入ると漏れうる。"}],"takeaways":["手元のエージェントは、計算・状態・環境を 1 台に結びつけるので、機械が眠ると全部止まり、ほかの機械の環境にも届かない","1 段目: ループは状態を持たないクラウドの入れ物で動かし、状態はデータベースへ（計算と保存の分離）","2 段目: 環境はその場に置いたまま、命令を動かして結果を返すだけのデーモンでつなぐ。自分の機械（BYOM）も、クラウドの機械も、その場で作る環境も","Watchdog: 外の別の会話が、決まった時間のメッセージで見張る。故障を直し、Worker が本当に進んでいるか・目標からずれていないかを判断する","残る課題: 広げ方（Router の分け方・長い記憶）・セッションの無い使い方・文脈の境目と A2A（エージェントどうしのやり取り全般のこと。特定のプロトコルの名前ではない）・安全とプライバシー（鍵を見ずに使う）"],"caution":"","material":null,"duration":534.97,"chapters":[{"start":0,"heading":"オープニング"},{"start":27.13,"heading":"この章のゴール"},{"start":51.07,"heading":"計算・状態・環境: 1 台に結びつけない"},{"start":103.27,"heading":"2 段目: 環境は、その場でつなぐ"},{"start":191.77,"heading":"Watchdog: 外から見張る"},{"start":247.33,"heading":"Watchdog が見る、本当の困りごと"},{"start":301.07,"heading":"クイズ"},{"start":333.2,"heading":"記事が残した課題"},{"start":391.13,"heading":"安全: 鍵を、見ずに使う"},{"start":448.4,"heading":"振り返り"},{"start":472.57,"heading":"この講座のまとめ"},{"start":520.7,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.38,"text":"第6章。止まらない仕組みと、残る課題。","scene":0},{"start":5.97,"end":12.19,"text":"ずんだもん：お昼ごはんで、ノートパソコンを閉じたら、エージェントも、全部、止まったのだ。","scene":0},{"start":12.33,"end":14.45,"text":"先生：第1章でも、止まってましたね。","scene":0},{"start":14.73,"end":19.15,"text":"天の声：前回の予告どおり、そして、第1章どおり、止まった。","scene":0},{"start":19.43,"end":26.39,"text":"先生：最終章では、ずっと動き続けるための、分け方と見張り。そして、記事が残した課題を見ます。","scene":0},{"start":27.6,"end":29.77,"text":"先生：この章のゴールは、三つです。","scene":1},{"start":30.07,"end":34.27,"text":"ずんだもん：最終章なのだ！　ぼくも、ついに、止まらないのだ！","scene":1},{"start":34.43,"end":36.11,"text":"先生：……お昼は、食べてください。","scene":1},{"start":36.4,"end":41.29,"text":"先生：一つ目。計算と、状態と、環境を分ける理由がわかること。","scene":1},{"start":41.6,"end":44.96,"text":"先生：二つ目。Watchdog が見るものを、言えること。","scene":1},{"start":45.27,"end":50.32,"text":"先生：三つ目。記事が残した課題、特に、安全の話がわかることです。","scene":1},{"start":51.53,"end":57.33,"text":"先生：ふつう、手元で動くエージェントは、三つのものを、一台の機械に結びつけています。","scene":2},{"start":57.63,"end":59.56,"text":"先生：ループを動かす、計算。","scene":2},{"start":59.87,"end":62.33,"text":"先生：残しておくべき、会話の状態。","scene":2},{"start":62.63,"end":66.1,"text":"先生：そして、コードや道具がある、実行の環境。","scene":2},{"start":66.4,"end":72.86,"text":"先生：だから、機械が眠ったり、切れたりすると止まり、ほかの機械の環境にも、手が届きません。","scene":2},{"start":73.17,"end":77.09,"text":"ずんだもん：ぼくのお昼休みは、エージェントのお昼休みなのだ。","scene":2},{"start":77.4,"end":79.65,"text":"天の声：第1章からの、天丼である。","scene":2},{"start":79.97,"end":86.26,"text":"先生：そこで記事は、コンピューターの、計算と保存を分ける考え方を借りて、二段階で分けます。","scene":2},{"start":86.57,"end":95.15,"text":"先生：一段目。ループを動かす計算は、状態を持たないクラウドの入れ物で動かし、会話などの状態は、データベースに置きます。","scene":2},{"start":95.47,"end":102.51,"text":"先生：入れ物は、増やしても、起動し直しても、取り替えてもいい。続きは、データベースが覚えています。","scene":2},{"start":103.73,"end":107.95,"text":"先生：では、二段目。ループと状態は、クラウドに置きました。","scene":3},{"start":108.23,"end":121.25,"text":"先生：でも、本物の仕事場には、まだコミットしていない変更や、手元の鍵、社内のサービス、特別な機械が、よくあります。クラウドに全部そろえ直すのは大変で、漏れも出がちです。","scene":3},{"start":121.53,"end":126.51,"text":"先生：そこで、環境は、動かさずに、その場に置いたまま、つなぎます。","scene":3},{"start":126.8,"end":131.54,"text":"先生：それぞれの機械には、小さな常駐プログラム、デーモンだけを入れます。","scene":3},{"start":131.83,"end":135.58,"text":"ずんだもん：デーモン……悪魔を、パソコンに住まわせるのだ！？","scene":3},{"start":135.73,"end":138.13,"text":"先生：住まわせますけど、悪魔ではありません。","scene":3},{"start":138.43,"end":149.87,"text":"先生：デーモンは、会話の状態を持たず、命令を動かして、結果を返すだけ。自分のパソコンも、クラウドの機械も、その場で作る環境も、同じようにつなげます。","scene":3},{"start":150.17,"end":157.6,"text":"先生：自分の機械をつなぐことを、記事は、BYOM、Bring Your Own Machine と呼びます。","scene":3},{"start":157.9,"end":164.18,"text":"ずんだもん：ブリング・ユア・オウン・もち！　自分のおもちを、持ってくるのだ！","scene":3},{"start":164.33,"end":165.07,"text":"先生：マシンです。","scene":3},{"start":165.37,"end":167.33,"text":"天の声：おもちは、持ってこなくていい。","scene":3},{"start":167.63,"end":176.12,"text":"先生：ときどきしかつながらない機械でも、つながったときに、その機械でやるべき仕事を、クラウドのエージェントが自動で始めて、仕上げます。","scene":3},{"start":176.43,"end":191.01,"text":"先生：Anthropic の記事、Decoupling the brain from the hands も、同じ方向だと紹介されています。違うのは、記事のチームが、まず、毎日使う個人のパソコンをつなぎたいことです。","scene":3},{"start":192.23,"end":199.53,"text":"先生：ずっと動くには、もう一つ要ります。長く動くうちに起きる、おかしなことから、自分で立ち直る仕組みです。","scene":4},{"start":199.83,"end":209.35,"text":"先生：ずっと動く仕組みは、中の作りだけに頼ると、なかなか長くは安定しません。外に、独立した、もう一つの見直しのループが要ります。","scene":4},{"start":209.63,"end":217.86,"text":"先生：記事のチームは、それを、別の会話、Watchdog として、外に置きました。決まった時間に届くメッセージで動きます。","scene":4},{"start":218.17,"end":228.35,"text":"先生：Watchdog は、API のエラーや、状態の戻しの失敗のような、基盤の故障を直します。一時的な外の故障は、直るまで見直し続けます。","scene":4},{"start":228.67,"end":233.13,"text":"ずんだもん：ウォッチドッグ……番犬なのだ！　ずんだもんを、かむのだ！","scene":4},{"start":233.27,"end":233.99,"text":"先生：かみません。","scene":4},{"start":234.3,"end":246.6,"text":"先生：Watchdog も、道具を全部持った会話です。だから人は、なぜ失敗したのかを、言葉で聞けます。動いたまま、プロンプトを足したり外したり、出来事のきまりを直したりもできます。","scene":4},{"start":247.8,"end":251.84,"text":"先生：でも、エージェントのおかしなことは、止まることだけではありません。","scene":5},{"start":252.13,"end":255.92,"text":"ずんだもん：ぼくは、ずっと動いているのだ！　止まってないのだ！","scene":5},{"start":256.07,"end":258.93,"text":"先生：同じ所を、三時間、回っています。","scene":5},{"start":259.23,"end":264.01,"text":"天の声：ずんだもんの Worker は、同じテストを、四百回、流していた。","scene":5},{"start":264.3,"end":267.54,"text":"先生：動いていることと、進んでいることは、違う。","scene":5},{"start":267.83,"end":277.07,"text":"先生：だから Watchdog は、モデルを使って、それぞれの Worker が、本当に進んでいるか、全体の目標からずれていないかも、判断します。","scene":5},{"start":277.37,"end":282.56,"text":"ずんだもん：……ずっと外から見ていて、ぼくの失敗を、毎回、数えていて……","scene":5},{"start":283.27,"end":285.28,"text":"ずんだもん：それ、天の声なのだ！","scene":5},{"start":285.57,"end":289.19,"text":"天の声：……そう。天の声は、外から、ずっと見ていた。","scene":5},{"start":289.9,"end":297.51,"text":"天の声：連敗の数も、タブの数も、先生の昔話も。天の声こそ、この講座の、Watchdog である。","scene":5},{"start":297.8,"end":300.33,"text":"先生：……昔話まで、見張られていたんですね。","scene":5},{"start":301.53,"end":308.31,"text":"先生：クイズです。Watchdog は、プロセスが生きているかどうかだけを、見ればよい。マルか、バツか。","scene":6},{"start":311.8,"end":316.43,"text":"ずんだもん：……バツなのだ。動いていても、進んでいないことが、あるのだ。","scene":6},{"start":317.03,"end":323.19,"text":"先生：答えは、バツ。仕事が本当に進んでいるか、目標からずれていないかも、見ます。","scene":6},{"start":323.5,"end":324.35,"text":"先生：……正解です。","scene":6},{"start":324.67,"end":326.06,"text":"ずんだもん：正解なのだ！？","scene":6},{"start":326.37,"end":332.45,"text":"天の声：ずんだもん、講座をまたいで、初めて、クイズに勝った。連敗は、五で止まった。","scene":6},{"start":333.67,"end":337.24,"text":"先生：最後に、記事が残した課題です。四つあります。","scene":7},{"start":337.53,"end":348.77,"text":"先生：一つ目は、広げ方。Router をいつ、どれくらい分けるか。Worker どうしが、いつ直接話すべきか。そして、何か月も動いた後の、長い記憶です。","scene":7},{"start":349.07,"end":362.2,"text":"先生：二つ目は、セッションの無い使い方。仕事を、どう見せるか。チャットの窓が真ん中になったのは、これまでの成り行きのせいもある、と記事は考えています。途中で人がどう手を出すかも、課題です。","scene":7},{"start":362.5,"end":365.96,"text":"ずんだもん：セッションが無いなら、タブも、要らないのだ……？","scene":7},{"start":366.27,"end":380.01,"text":"先生：三つ目は、文脈の境目と、A2A。組織が大きくなると、どこまで文脈を共有し、どこを分けるかを、決めることになります。分かれたエージェントどうしが、安全に話す方法も要ります。","scene":7},{"start":380.3,"end":384.72,"text":"ずんだもん：エージェントどうしが話す……ぼくと、ぼくが、話すのだ！","scene":7},{"start":384.87,"end":387.49,"text":"先生：三十七人のあなたは、もう結構です。","scene":7},{"start":387.8,"end":390.38,"text":"先生：四つ目は、安全とプライバシーです。","scene":7},{"start":391.6,"end":399.16,"text":"先生：イベント駆動にすると、いろいろな場所の文章が、エージェントを動かします。信用できない入力も、増えます。","scene":8},{"start":399.47,"end":409.85,"text":"先生：クラウドのループと手元のデーモンは、お互いを信じる前提でつながっています。でも、手元の機械には、非公開のコード、大事なデータ、鍵があります。","scene":8},{"start":410.13,"end":418.79,"text":"先生：もし、サーバーへの侵入や、プロンプトインジェクションで、ループが乗っ取られたら、つないだ機械が、全部、危なくなります。","scene":8},{"start":419.1,"end":423.01,"text":"ずんだもん：鍵なら、チャットに貼っておけば、すぐ使えるのだ！","scene":8},{"start":423.17,"end":424.96,"text":"先生：絶対に、やめてください。","scene":8},{"start":425.27,"end":428.48,"text":"天の声：この講座で、いちばん、まずいボケであった。","scene":8},{"start":428.77,"end":439.09,"text":"先生：乗っ取られなくても、手元の鍵がモデルの窓に入るだけで、ふつうに動くうちに漏れることがあります。だから、鍵を見ずに使える仕組みが要る、と記事は言います。","scene":8},{"start":439.4,"end":447.65,"text":"先生：この講座では、外から読んだ文章の中の指示に従わないこと、秘密を窓に入れないことを、今日からできる第一歩と考えます。","scene":8},{"start":448.83,"end":458.72,"text":"先生：振り返りです。計算、状態、環境を分けます。ループはクラウド、状態はデータベース、環境はその場で、デーモンがつなぎます。","scene":9},{"start":459.03,"end":464.42,"text":"先生：Watchdog は、外から見張り、動いているかだけでなく、進んでいるかを見ます。","scene":9},{"start":464.73,"end":471.81,"text":"先生：残る課題は、広げ方、セッションの無い使い方、文脈の境目と A2A、そして安全です。","scene":9},{"start":473.03,"end":482.07,"text":"先生：記事のまとめです。これは新しい理論ではなく、コンピューターの古典的な設計の考えを、エージェントに当てはめたものだ、と記事は言います。","scene":10},{"start":482.37,"end":493.8,"text":"先生：モデルが、一つの仕事で人の手を必要としなくなっていくほど、詰まりは、人の注意に移ります。五つの部品が、セッションの管理と、文脈合わせの手間を引き受けます。","scene":10},{"start":494.1,"end":500.19,"text":"先生：そうすれば、人は、実行の細かい所から、判断と承認へ、上がっていけます。","scene":10},{"start":500.5,"end":508.97,"text":"先生：エージェントは、指示を待つだけのチャットの窓ではなく、人の仕事場にずっといる、協力者になる。記事は、そう結んでいます。","scene":10},{"start":509.27,"end":514.58,"text":"ずんだもん：わかったのだ。だから、ぼくは、タブを、全部、閉じたのだ！","scene":10},{"start":515.17,"end":516.66,"text":"先生：……それで、いいんです。","scene":10},{"start":516.97,"end":519.96,"text":"天の声：ずんだもんは、少しだけ、スーパーになった。","scene":10},{"start":521.17,"end":525.21,"text":"天の声：なお、ずんだもんの Super-agent は、まだ、無い。","scene":11},{"start":525.5,"end":528.45,"text":"ずんだもん：作るのだ！　まずは、タブを開いて……","scene":11},{"start":528.77,"end":530.96,"text":"天の声：タブが、一つ、増えた。","scene":11}],"video":"media/S06.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","poster":"media/S06.jpg?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390","videoCc":"media/S06.cc.mp4?v=d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"}]}</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("course-data").textContent);
+  var L = DATA.lectures;
+  var $ = function (id) { return document.getElementById(id); };
+  var video = $("video");
+  var player = $("player");
+  var theater = $("theater");
+  var offlineState = { saved: false, online: navigator.onLine };
+  function playbackStatus() {
+    $("playbackStatus").textContent = offlineState.saved ? "アプリ内の保存版を再生します。動画ファイルのダウンロードとは別の保存です。" : offlineState.online ? "オンライン再生です。オフラインで使うには上の保存ボタンを選んでください。" : "この講座は未保存です。動画の再生には通信が必要です。";
+  }
+  window.addEventListener("chalkfile:offline-state", function (event) {
+    offlineState = event.detail;
+    if (offlineState.saved && offlineState.pageVersion !== DATA.pageVersion) {
+      video.pause();
+      $("playbackStatus").textContent = "保存版が更新されました。上の「保存した版を開く」で開き直してください。";
+    } else playbackStatus();
+  });
+  video.addEventListener("error", function () { $("playbackStatus").textContent = "動画を再生できません。通信と保存状態を確認し、再読み込みまたは保存を再試行してください。"; });
+  $("loopToggle").addEventListener("click", function () {
+    video.loop = !video.loop;
+    $("loopToggle").setAttribute("aria-pressed", String(video.loop));
+    clearNext();
+  });
+
+  // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
+  var KEY = "chalkfile:" + DATA.course.id + ":";
+  var store = {
+    get: function (k, d) {
+      try { var v = localStorage.getItem(KEY + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) { /* 保存できなくても続ける */ }
+    }
+  };
+  var progress = store.get("progress", {}); // { L01: { t: 秒, max: 0..1, done: bool } }
+  var notes = store.get("notes", {});       // { L01: [{ t, text, at }] }
+  var quizState = store.get("quiz", {});    // { L01: { 0: 選んだ番号 } }
+  var prefs = store.get("prefs", { rate: 1, cc: true, follow: true });
+
+  var fmt = function (s) {
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60);
+    return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+  };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  };
+  // リンクは https:// と http:// だけ通す（javascript: や data: は # にする）
+  var safeUrl = function (u) {
+    try { var x = new URL(String(u), location.href); return x.protocol === "https:" || x.protocol === "http:" ? x.href : "#"; } catch (e) { return "#"; }
+  };
+  var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
+
+  var UNIT = DATA.course.unitLabel || "LECTURE";
+  var UI = DATA.course.ui || {};
+  var PLANNED = DATA.course.planned || [];
+  var current = 0;
+  var cueIdx = -1;
+  var nextTimer = null;
+  var dirtyProgress = false;
+
+  // ── 全体の進み具合 ──
+  function renderCourseProgress() {
+    var done = L.filter(function (l) { return progress[l.id] && progress[l.id].done; }).length;
+    $("cpBar").style.width = (done / L.length * 100) + "%";
+    $("cpLabel").textContent = done + " / " + L.length + " 完了";
+    var total = L.reduce(function (a, l) { return a + l.duration; }, 0);
+    var word = UNIT === "CHAPTER" ? " 章" : " レクチャー";
+    var plan = PLANNED.length ? "（計画 " + (L.length + PLANNED.length) + word + "）" : "";
+    $("curSum").textContent = L.length + word + "・" + Math.round(total / 60) + " 分" + plan;
+    $("courseMeta").textContent = DATA.course.sections.length + " セクション・" + L.length + word + "・約 " + Math.round(total / 60) + " 分" + plan;
+  }
+
+  // ── カリキュラム ──
+  function ring(id, i) {
+    var p = progress[id] || {};
+    if (p.done) {
+      return '<svg class="ring done" viewBox="0 0 24 24" aria-label="完了"><circle class="disc" cx="12" cy="12" r="11"/><path class="tick" d="M7 12.4l3.3 3.3L17 9" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    var max = Math.min(1, p.max || 0);
+    var c = 2 * Math.PI * 10;
+    return '<svg class="ring" viewBox="0 0 24 24" aria-label="' + Math.round(max * 100) + '% 視聴"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5"/>' +
+      (max > 0 ? '<circle class="fg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="' + (c * max).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 12 12)"/>' : "") +
+      '<text class="num" x="12" y="15.2" text-anchor="middle">' + (i + 1) + "</text></svg>";
+  }
+  function renderCurriculum() {
+    var html = "";
+    DATA.course.sections.forEach(function (sec) {
+      var lecs = L.map(function (l, i) { return { l: l, i: i }; }).filter(function (x) { return x.l.section.no === sec.no; });
+      var done = lecs.filter(function (x) { return progress[x.l.id] && progress[x.l.id].done; }).length;
+      html += '<div class="sec"><div class="sec-head"><div class="name"><span class="no">SECTION ' + sec.no + "</span>" + esc(sec.title) + '</div><span class="cnt">' + done + " / " + lecs.length + "</span></div>";
+      lecs.forEach(function (x) {
+        html += '<button type="button" class="lec" data-i="' + x.i + '"' + (x.i === current ? ' aria-current="true"' : "") + ">" + ring(x.l.id, x.i) +
+          '<span class="ttl">' + esc(x.l.title) + '</span><span class="dur">' + fmt(x.l.duration) + "</span></button>";
+      });
+      // まだ作っていない章（講座の計画だけあるもの）
+      PLANNED.filter(function (p) { return p.section === sec.no; }).forEach(function (p) {
+        html += '<div class="lec planned" aria-disabled="true"><svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-dasharray="3 3"/><text class="num" x="12" y="15.2" text-anchor="middle">' + p.no + "</text></svg>" +
+          '<span class="ttl">' + esc(p.title) + '</span><span class="soon">準備中・約 ' + p.minutes + " 分</span></div>";
+      });
+      html += "</div>";
+    });
+    $("sections").innerHTML = html;
+  }
+  $("sections").addEventListener("click", function (e) {
+    var b = e.target.closest(".lec");
+    if (b) load(Number(b.dataset.i), true);
+  });
+
+  // ── レクチャーを開く ──
+  function load(i, play) {
+    if (i < 0 || i >= L.length) return;
+    saveProgress();
+    current = i;
+    var lec = L[i];
+    clearNext();
+    cueIdx = -1;
+    video.pause();
+    video.innerHTML = "";
+    video.removeAttribute("src");
+    video.poster = lec.poster;
+    var src = document.createElement("source");
+    src.src = srcFor(lec);
+    src.type = "video/mp4";
+    // 全画面（iPhone など）用の字幕は、埋め込んだ台本からその場で WebVTT を作る
+    var tr = document.createElement("track");
+    tr.kind = "subtitles";
+    tr.srclang = "ja";
+    tr.label = "日本語";
+    tr.src = vttUrl(lec);
+    video.appendChild(src);
+    video.appendChild(tr);
+    video.load();
+    applyCc();
+    playbackStatus();
+    var resume = progress[lec.id] && !progress[lec.id].done ? progress[lec.id].t || 0 : 0;
+    video.onloadedmetadata = function () {
+      if (resume > 3 && resume < lec.duration - 5) video.currentTime = resume;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    if (play) video.play().catch(function () {});
+    $("nowEyebrow").textContent = UNIT + " " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
+    $("nowTitle").textContent = lec.title;
+    $("summary").textContent = lec.summary;
+    $("caution").textContent = lec.caution || "";
+    $("caution").hidden = !lec.caution;
+    $("takeaways").innerHTML = lec.takeaways.map(function (t) { return "<li><span>" + esc(t) + "</span></li>"; }).join("");
+    $("chapters").innerHTML = lec.chapters.map(function (c, k) {
+      return '<li><button type="button" data-t="' + c.start + '" data-k="' + k + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.heading) + "</span></button></li>";
+    }).join("");
+    $("docs").innerHTML = lec.docs.map(function (d) {
+      var host = "";
+      try { host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, ""); } catch (e) { host = d.url; }
+      return '<li><a href="' + esc(safeUrl(d.url)) + '" target="_blank" rel="noopener noreferrer"><span><span>' + esc(d.title) + '</span><span class="host">' + esc(host) + '</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></li>';
+    }).join("");
+    renderTranscript();
+    renderNotes();
+    renderQuiz();
+    renderMaterial();
+    renderDone();
+    renderCurriculum();
+    $("prevBtn").disabled = i === 0;
+    $("nextBtn").disabled = i === L.length - 1;
+    $("cc").textContent = "";
+    try { history.replaceState(null, "", "#" + lec.id); } catch (e) {}
+    store.set("last", lec.id);
+  }
+
+  var vttCache = {};
+  function vttUrl(lec) {
+    if (vttCache[lec.id]) return vttCache[lec.id];
+    var ts = function (x) {
+      var h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), sec = (x % 60).toFixed(3);
+      return pad2(h) + ":" + pad2(m) + ":" + (sec.length < 6 ? "0" : "") + sec;
+    };
+    var body = "WEBVTT\n\n" + lec.cues.map(function (c, i) {
+      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + String(c.text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/-->/g, "→") + "\n";
+    }).join("\n");
+    try {
+      vttCache[lec.id] = URL.createObjectURL(new Blob([body], { type: "text/vtt" }));
+    } catch (e) {
+      vttCache[lec.id] = "";
+    }
+    return vttCache[lec.id];
+  }
+
+  // ネイティブ字幕は全画面（iPhone など）のときだけ使う。ふだんは自前の字幕を出す
+  function hideNativeTrack() {
+    for (var k = 0; k < video.textTracks.length; k++) video.textTracks[k].mode = "hidden";
+  }
+  video.addEventListener("webkitbeginfullscreen", function () {
+    if (prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+  });
+  video.addEventListener("webkitendfullscreen", hideNativeTrack);
+  // 動画だけの全画面（標準のコントロールの全画面ボタン）でも、字幕を焼き込んだ版が無いときはネイティブ字幕を出す
+  document.addEventListener("fullscreenchange", function () {
+    if (document.fullscreenElement === video && prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+    else hideNativeTrack();
+  });
+
+  // ── 字幕・台本の追従 ──
+  function findCue(t) {
+    var cues = L[current].cues;
+    var lo = 0, hi = cues.length - 1, ans = -1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      if (cues[mid].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    return ans;
+  }
+  video.addEventListener("timeupdate", function () {
+    var lec = L[current];
+    var t = video.currentTime;
+    var k = findCue(t);
+    var c = k >= 0 ? lec.cues[k] : null;
+    var showing = c && t <= c.end + 0.7; // 短い間で字幕がちらつかないように残す
+    $("cc").textContent = showing ? c.text : "";
+    if (k !== cueIdx) {
+      cueIdx = k;
+      var prev = document.querySelector(".cue.on");
+      if (prev) prev.classList.remove("on");
+      var el = document.querySelector('.cue[data-k="' + k + '"]');
+      if (el) {
+        el.classList.add("on");
+        if (prefs.follow && !$("p-transcript").hidden && !$("q").value) {
+          var box = $("transcript");
+          box.scrollTop = el.offsetTop - box.offsetTop - box.clientHeight / 3;
+        }
+      }
+      var ch = lec.chapters.reduce(function (a, cc, idx) { return cc.start <= t + 0.2 ? idx : a; }, 0);
+      Array.prototype.forEach.call(document.querySelectorAll("#chapters button"), function (b) {
+        b.classList.toggle("on", Number(b.dataset.k) === ch);
+      });
+    }
+    var p = progress[lec.id] || (progress[lec.id] = { t: 0, max: 0, done: false });
+    p.t = t;
+    if (lec.duration) p.max = Math.max(p.max || 0, t / lec.duration);
+    if (!p.done && p.max > 0.94) { p.done = true; renderDone(); renderCurriculum(); renderCourseProgress(); }
+    dirtyProgress = true;
+    $("noteAddLabel").textContent = fmt(t) + " にメモ";
+  });
+  setInterval(saveProgress, 4000);
+  function saveProgress() {
+    if (!dirtyProgress) return;
+    dirtyProgress = false;
+    store.set("progress", progress);
+    renderCurriculum();
+  }
+  window.addEventListener("pagehide", saveProgress);
+
+  // ── 次のレクチャーへ ──
+  video.addEventListener("ended", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = {});
+    p.done = true;
+    p.t = 0;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+    if (current >= L.length - 1) return;
+    var nx = L[current + 1];
+    $("nextTitle").textContent = "L" + pad2(nx.no) + "　" + nx.title;
+    $("nextup").hidden = false;
+    var left = 6;
+    $("nextGoLabel").textContent = left + " 秒後に再生";
+    nextTimer = setInterval(function () {
+      left -= 1;
+      $("nextGoLabel").textContent = left > 0 ? left + " 秒後に再生" : "再生";
+      if (left <= 0) { clearNext(); load(current + 1, true); }
+    }, 1000);
+  });
+  function clearNext() {
+    if (nextTimer) clearInterval(nextTimer);
+    nextTimer = null;
+    $("nextup").hidden = true;
+  }
+  $("nextGo").addEventListener("click", function () { clearNext(); load(current + 1, true); });
+  $("nextStay").addEventListener("click", clearNext);
+  $("prevBtn").addEventListener("click", function () { load(current - 1, true); });
+  $("nextBtn").addEventListener("click", function () { load(current + 1, true); });
+
+  // ── 完了 ──
+  function renderDone() {
+    var p = progress[L[current].id] || {};
+    var b = $("doneToggle");
+    b.setAttribute("aria-pressed", p.done ? "true" : "false");
+    b.querySelector("span").textContent = p.done ? "完了済み" : "完了にする";
+  }
+  $("doneToggle").addEventListener("click", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = { t: 0, max: 0 });
+    p.done = !p.done;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+  });
+
+  // ── 速度・字幕 ──
+  function renderSpeed() {
+    Array.prototype.forEach.call(document.querySelectorAll("#speed button"), function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.rate) === prefs.rate ? "true" : "false");
+    });
+  }
+  $("speed").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    prefs.rate = Number(b.dataset.rate);
+    video.playbackRate = prefs.rate;
+    store.set("prefs", prefs);
+    renderSpeed();
+  });
+  // 字幕を焼き込んだ版（videoCc）があるレクチャーは、字幕オンのとき動画ごと差し替える（どの全画面でも字幕が見える）。
+  // 無いレクチャーは、動画を少し縮めて、プレーヤーの中の下に字幕の帯を出す
+  function srcFor(lec) { return prefs.cc && lec.videoCc ? lec.videoCc : lec.video; }
+  function applyCc() {
+    var lec = L[current];
+    var burned = !!lec.videoCc;
+    $("cc").hidden = !prefs.cc || burned;
+    $("player").classList.toggle("cc-on", prefs.cc && !burned);
+    var want = srcFor(lec);
+    $("fileDownload").href = want;
+    $("fileDownload").download = lec.id + (want === lec.video ? "" : ".captioned") + ".mp4";
+  }
+  function swapSource() {
+    var s = video.querySelector("source");
+    var want = srcFor(L[current]);
+    if (!s || s.getAttribute("src") === want) return;
+    var t = video.currentTime, paused = video.paused;
+    s.setAttribute("src", want);
+    video.onloadedmetadata = function () {
+      video.currentTime = t;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    video.load();
+    if (!paused) video.play().catch(function () {});
+  }
+  function setCC(on) {
+    prefs.cc = on;
+    store.set("prefs", prefs);
+    $("ccToggle").setAttribute("aria-pressed", on ? "true" : "false");
+    applyCc();
+    swapSource();
+  }
+  $("ccToggle").addEventListener("click", function () { setCC(!prefs.cc); });
+
+  // ── タブ ──
+  var tabs = ["overview", "material", "transcript", "notes", "docs", "quiz", "exercise", "ask"];
+  function showTab(name) {
+    if ($("tab-" + name).hidden) name = "overview";
+    tabs.forEach(function (t) {
+      $("tab-" + t).setAttribute("aria-selected", t === name ? "true" : "false");
+      $("p-" + t).hidden = t !== name;
+    });
+    store.set("tab", name);
+  }
+  tabs.forEach(function (t) { $("tab-" + t).addEventListener("click", function () { showTab(t); }); });
+
+  // ── チャプター ──
+  $("chapters").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    video.currentTime = Number(b.dataset.t);
+    video.play().catch(function () {});
+  });
+
+  // ── 台本と検索 ──
+  function renderTranscript() {
+    var lec = L[current];
+    var html = "";
+    var last = -1;
+    lec.cues.forEach(function (c, k) {
+      if (c.scene !== last) {
+        last = c.scene;
+        html += "<h4>" + esc(lec.chapters[c.scene] ? lec.chapters[c.scene].heading : "") + "</h4>";
+      }
+      html += '<button type="button" class="cue" data-k="' + k + '" data-t="' + c.start + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.text) + "</span></button>";
+    });
+    $("transcript").innerHTML = html;
+  }
+  function renderSearch(q) {
+    var words = q.trim().toLowerCase();
+    if (!words) { renderTranscript(); return; }
+    var html = "";
+    var hits = 0;
+    L.forEach(function (lec, li) {
+      lec.cues.forEach(function (c) {
+        if (c.text.toLowerCase().indexOf(words) === -1) return;
+        hits += 1;
+        if (hits > 200) return;
+        var i0 = c.text.toLowerCase().indexOf(words);
+        var shown = esc(c.text.slice(0, i0)) + "<mark>" + esc(c.text.slice(i0, i0 + words.length)) + "</mark>" + esc(c.text.slice(i0 + words.length));
+        html += '<button type="button" class="cue" data-li="' + li + '" data-t="' + c.start + '"><span class="t"><span class="hit-lec">L' + pad2(lec.no) + "</span><br>" + fmt(c.start) + "</span><span>" + shown + "</span></button>";
+      });
+    });
+    $("transcript").innerHTML = html || '<p class="hint" style="padding:10px">「' + esc(q) + "」を含む台詞は見つかりませんでした。</p>";
+  }
+  $("q").addEventListener("input", function () { renderSearch(this.value); });
+  $("transcript").addEventListener("click", function (e) {
+    var b = e.target.closest(".cue");
+    if (!b) return;
+    var t = Number(b.dataset.t);
+    if (b.dataset.li !== undefined && Number(b.dataset.li) !== current) {
+      load(Number(b.dataset.li), false);
+      video.addEventListener("loadedmetadata", function go() {
+        video.removeEventListener("loadedmetadata", go);
+        video.currentTime = t;
+        video.play().catch(function () {});
+      });
+      return;
+    }
+    video.currentTime = t + 0.01;
+    video.play().catch(function () {});
+  });
+  $("follow").addEventListener("change", function () { prefs.follow = this.checked; store.set("prefs", prefs); });
+
+  // ── ノート ──
+  function renderNotes() {
+    var list = notes[L[current].id] || [];
+    $("notes").innerHTML = list.map(function (n, k) {
+      return '<li><button type="button" class="stamp" data-t="' + n.t + '">' + fmt(n.t) + '</button><div class="body">' + esc(n.text) +
+        '</div><button type="button" class="del" data-k="' + k + '" aria-label="このメモを消す">消す</button></li>';
+    }).join("") || '<li style="display:block"><span class="hint">まだメモはありません。気になった場面で一時停止して書いてみてください。</span></li>';
+  }
+  $("noteAdd").addEventListener("click", function () {
+    var text = $("noteText").value.trim();
+    if (!text) { $("noteText").focus(); return; }
+    var id = L[current].id;
+    (notes[id] = notes[id] || []).push({ t: Math.floor(video.currentTime), text: text, at: Date.now() });
+    notes[id].sort(function (a, b) { return a.t - b.t; });
+    store.set("notes", notes);
+    $("noteText").value = "";
+    renderNotes();
+    toast("メモを残しました");
+  });
+  $("notes").addEventListener("click", function (e) {
+    var s = e.target.closest(".stamp");
+    if (s) { video.currentTime = Number(s.dataset.t); video.play().catch(function () {}); return; }
+    var d = e.target.closest(".del");
+    if (d) {
+      notes[L[current].id].splice(Number(d.dataset.k), 1);
+      store.set("notes", notes);
+      renderNotes();
+    }
+  });
+  $("noteCopy").addEventListener("click", function () {
+    var out = [];
+    L.forEach(function (lec) {
+      var list = notes[lec.id] || [];
+      if (!list.length) return;
+      out.push("## L" + pad2(lec.no) + " " + lec.title);
+      list.forEach(function (n) { out.push("- [" + fmt(n.t) + "] " + n.text.replace(/\n/g, " ")); });
+      out.push("");
+    });
+    var text = out.join("\n") || "（ノートはまだありません）";
+    var fallback = function () {
+      $("noteText").value = text;
+      $("noteText").select();
+      toast("下の欄に書き出しました。選択してコピーしてください");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("全ノートをコピーしました"); }, fallback);
+    } else fallback();
+  });
+
+  // ── 教材・実践課題・AI に聞く（教材を持つレクチャーだけ）──
+  var EV = { research: "研究・学術", official: "公式・法令・規格", practice: "実務の指針", example: "説明用の仮の例" };
+  // 教材の文字はエスケープしてから、**強調** と「- 」の箇条書きだけを HTML にする
+  function inline(s) { return esc(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+  function paras(list) {
+    var html = "", inList = false;
+    list.forEach(function (b) {
+      String(b).split("\n").forEach(function (line) {
+        if (/^- /.test(line)) {
+          if (!inList) { html += "<ul>"; inList = true; }
+          html += "<li>" + inline(line.slice(2)) + "</li>";
+        } else {
+          if (inList) { html += "</ul>"; inList = false; }
+          if (line.trim()) html += "<p>" + inline(line) + "</p>";
+        }
+      });
+    });
+    if (inList) html += "</ul>";
+    return html;
+  }
+  function evChips(list) { return '<div class="evs">' + list.map(function (e) { return '<span class="ev ' + esc(e) + '">' + esc(EV[e] || e) + "</span>"; }).join("") + "</div>"; }
+  function srcLinks(list) {
+    if (!list || !list.length) return "";
+    return '<p class="msrc">出典: ' + list.map(function (s) {
+      return '<a href="' + esc(safeUrl(s.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher + "（" + s.year + "）") + "</a>";
+    }).join("、") + "</p>";
+  }
+  function figHtml(f) {
+    var h = '<div class="fig" id="' + esc(f.id) + '"><span class="sid">' + esc(f.id) + "</span><h4>" + esc(f.title) + "</h4>" + evChips([f.evidence]) + '<p class="cap">' + inline(f.caption) + "</p>";
+    if (f.table) {
+      h += '<table class="mtable"><thead><tr>' + f.table[0].map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        f.table.slice(1).map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inline(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    }
+    if (f.flow) h += '<div class="flowline">' + f.flow.map(function (x, i) { return (i ? '<span class="ar" aria-hidden="true">→</span>' : "") + '<span class="st">' + inline(x) + "</span>"; }).join("") + "</div>";
+    if (f.code) h += "<pre><code>" + esc(f.code) + "</code></pre>";
+    return h + "</div>";
+  }
+  function renderMaterial() {
+    var m = L[current].material;
+    ["material", "exercise", "ask"].forEach(function (t) { $("tab-" + t).hidden = !m; });
+    if (!m) {
+      if (["material", "exercise", "ask"].indexOf(store.get("tab", "overview")) >= 0) showTab("overview");
+      return;
+    }
+    $("matGoals").innerHTML = m.goals.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matPre").innerHTML = m.prerequisites.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matToc").innerHTML = m.sections.map(function (s, i) { return '<a href="#' + esc(s.id) + '" data-sec="' + esc(s.id) + '">' + (i + 1) + ". " + esc(s.title) + "</a>"; }).join("");
+    $("matBody").innerHTML = m.sections.map(function (s) {
+      return '<section class="msec" id="' + esc(s.id) + '"><span class="sid">' + esc(s.id) + "</span><h3>" + esc(s.title) + "</h3>" + evChips(s.evidence) + paras(s.body) + srcLinks(s.sources) + "</section>";
+    }).join("");
+    $("matFigs").innerHTML = m.figures.map(figHtml).join("");
+    $("matSummary").innerHTML = m.summary.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    var ex = m.exercise;
+    $("exBody").innerHTML =
+      '<div class="msec" id="' + esc(ex.id) + '"><span class="sid">' + esc(ex.id) + "</span><h3>" + esc(ex.title) + "</h3>" +
+      "<p><strong>ねらい</strong>　" + inline(ex.goal) + "</p><p><strong>目安の時間</strong>　" + esc(ex.timebox) + "</p><p><strong>出すもの</strong>　" + inline(ex.deliverable) + "</p>" +
+      '<h3 style="margin-top:14px">手順</h3><ol class="mat-list">' + ex.steps.map(function (x) { return "<li>" + inline(x) + "</li>"; }).join("") + "</ol></div>" +
+      '<div class="msec"><h3>回答例: ' + esc(ex.example.title) + "</h3>" + evChips(["example"]) + paras(ex.example.body) + "</div>" +
+      '<div class="fig"><h4>評価基準</h4><table class="mtable"><thead><tr><th>観点</th><th>できている</th><th>もう一歩</th><th>やり直し</th></tr></thead><tbody>' +
+      ex.rubric.map(function (r) { return "<tr><td><strong>" + inline(r.criterion) + "</strong></td><td>" + inline(r.good) + "</td><td>" + inline(r.fair) + "</td><td>" + inline(r.poor) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+    $("askList").innerHTML = m.askExamples.map(function (a) {
+      return '<li><div class="qq">' + esc(a.q) + '</div><div class="refs">根拠にする節: ' + a.refs.map(function (r) { return '<button type="button" data-sec="' + esc(r) + '">' + esc(r) + "</button>"; }).join("") + "</div></li>";
+    }).join("");
+  }
+  // 節へ移る（目次と、質問例の参照）
+  function gotoSection(id) {
+    showTab("material");
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("matToc").addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-sec]");
+    if (!a) return;
+    e.preventDefault();
+    gotoSection(a.dataset.sec);
+  });
+  $("askList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sec]");
+    if (b) gotoSection(b.dataset.sec);
+  });
+
+  // ── クイズ ──
+  function renderQuiz() {
+    var lec = L[current];
+    var st = quizState[lec.id] || {};
+    var right = 0, answered = 0;
+    var html = lec.quiz.map(function (q, qi) {
+      var picked = st[qi];
+      var done = picked !== undefined;
+      if (done) { answered += 1; if (picked === q.answer) right += 1; }
+      return '<div class="q"><div class="qt"><span class="n">Q' + (qi + 1) + "</span>" + esc(q.q) + '</div><div class="choices">' +
+        q.choices.map(function (c, ci) {
+          var cls = done ? (ci === q.answer ? " right" : ci === picked ? " wrong" : "") : "";
+          return '<button type="button" class="choice' + cls + '" data-q="' + qi + '" data-c="' + ci + '"' + (done ? " disabled" : "") + ">" + esc(c) + "</button>";
+        }).join("") + "</div>" +
+        (done ? '<div class="explain' + (picked === q.answer ? "" : " bad") + '">' + (picked === q.answer ? "正解。" : "答えは「" + esc(q.choices[q.answer]) + "」。") + esc(q.explain) + "</div>" : "") +
+        "</div>";
+    }).join("");
+    html += '<div class="tools"><span class="score">' + (answered ? lec.quiz.length + " 問中 " + right + " 問正解" : "選ぶとすぐ答えと解説が出ます。") + "</span>" +
+      (answered ? '<button type="button" class="btn" id="quizReset">もう一度</button>' : "") + "</div>";
+    $("quiz").innerHTML = html;
+  }
+  $("quiz").addEventListener("click", function (e) {
+    var b = e.target.closest(".choice");
+    if (b && !b.disabled) {
+      var id = L[current].id;
+      (quizState[id] = quizState[id] || {})[b.dataset.q] = Number(b.dataset.c);
+      store.set("quiz", quizState);
+      renderQuiz();
+      return;
+    }
+    if (e.target.closest("#quizReset")) {
+      delete quizState[L[current].id];
+      store.set("quiz", quizState);
+      renderQuiz();
+    }
+  });
+
+  // ── 全画面（自前の字幕ごと） ──
+  function toggleFull() {
+    var doc = document;
+    if (doc.fullscreenElement) { doc.exitFullscreen().catch(function () {}); return; }
+    if (theater.requestFullscreen) theater.requestFullscreen().catch(function () {
+      if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    });
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  }
+  player.addEventListener("dblclick", function (e) { if (e.target === video) { e.preventDefault(); toggleFull(); } });
+
+  // ── キーボード ──
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (["input", "textarea", "select", "button", "a", "summary"].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === " " || k === "k") { e.preventDefault(); if (video.paused) video.play().catch(function () {}); else video.pause(); }
+    else if (k === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); }
+    else if (k === "ArrowRight") { video.currentTime = video.currentTime + 5; }
+    else if (k === "j") { video.currentTime = Math.max(0, video.currentTime - 10); }
+    else if (k === "l") { video.currentTime = video.currentTime + 10; }
+    else if (k === "c") { setCC(!prefs.cc); }
+    else if (k === "f") { toggleFull(); }
+    else if (k === "n") { load(current + 1, true); }
+  });
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.querySelector(".toast");
+    if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  // ── はじめに開く ──
+  $("credits").textContent = "ナレーション " + DATA.credits.join("・") + "　BGM・効果音はプログラムで合成したオリジナル　" + DATA.course.sourceNote;
+  if (DATA.course.disclaimer) { $("courseNote").textContent = DATA.course.disclaimer; $("courseNote").hidden = false; }
+  if (DATA.course.links && DATA.course.links.length) {
+    var box = $("links");
+    box.innerHTML = DATA.course.links.map(function (ln) {
+      return '<a href="' + esc(safeUrl(ln.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(ln.label) +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
+    }).join("");
+    box.hidden = false;
+  }
+  if (UI.takeaways) $("takeawaysTitle").textContent = UI.takeaways;
+  if (UI.docs) $("tab-docs").textContent = UI.docs;
+  if (UI.searchHint) $("q").placeholder = "全" + (UNIT === "CHAPTER" ? "章" : "レクチャー") + "の台本から探す（例: " + UI.searchHint + "）";
+  $("follow").checked = prefs.follow !== false;
+  renderSpeed();
+  setCC(prefs.cc !== false);
+  renderCourseProgress();
+  var fromHash = (location.hash || "").replace("#", "");
+  var startId = L.some(function (l) { return l.id === fromHash; }) ? fromHash : store.get("last", L[0].id);
+  var startIdx = Math.max(0, L.findIndex(function (l) { return l.id === startId; }));
+  load(startIdx, false);
+  showTab(store.get("tab", "overview"));
+})();
+</script>
+<script id="pwa-data" type="application/json">{"root":"../","course":{"id":"superagent-comedy","title":"笑ってわかる Super-agent","pageVersion":"d7dc9ae22182bdd844b794d7a5d91caa0d026761969fb11d08606e0c8a4e6390"},"courses":[{"id":"stripe-billing","title":"Stripe サブスク課金 基礎講座"},{"id":"nudge-product","title":"ナッジ理論をプロダクト改善に活かす"},{"id":"uiux-engineers","title":"エンジニアのための UI・UX デザイン"},{"id":"indie-marketing","title":"個人開発者のためのマーケティング"},{"id":"nudge-comedy","title":"笑って覚えるナッジ理論"},{"id":"rive-comedy","title":"笑ってわかる Rive アニメーション"},{"id":"pstack-comedy","title":"笑ってわかる pstack"},{"id":"superagent-comedy","title":"笑ってわかる Super-agent"}]}</script><script>// site/offline-client.ts
+var app = JSON.parse(document.getElementById("pwa-data").textContent);
+var root = new URL(app.root, location.href);
+var $ = (id) => document.getElementById(id);
+var mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+var registration;
+var latest;
+var states = [];
+var busy = false;
+var workingId;
+var refreshInProgress = false;
+var installPrompt = null;
+var locallyDownloading = false;
+var localSaveRequest = false;
+var messageRevision = 0;
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  $("pwaInstall").hidden = false;
+});
+function installed() {
+  $("pwaInstall").hidden = true;
+  $("installState").textContent = "アプリとして起動中、またはインストール済みです。講座は別途選んで保存してください。";
+}
+window.addEventListener("appinstalled", installed);
+if (matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+  installed();
+$("pwaInstall").addEventListener("click", async () => {
+  if (!installPrompt)
+    return;
+  const prompt = installPrompt;
+  installPrompt = null;
+  $("pwaInstall").hidden = true;
+  try {
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    $("installState").textContent = choice.outcome === "accepted" ? "インストール操作を受け付けました。講座も選んで保存してください。" : "インストールを見送りました。ブラウザでも保存して学べます。";
+  } catch {
+    $("installState").textContent = "ブラウザのメニューからインストールしてください。";
+  }
+});
+function request(type, id, progress) {
+  return new Promise((resolve, reject) => {
+    const worker = navigator.serviceWorker.controller ?? registration?.active;
+    if (!worker) {
+      reject(new Error("保存機能を準備できません。オンラインで再読み込みしてください。"));
+      return;
+    }
+    const channel = new MessageChannel;
+    let timer;
+    const finish = (error, value) => {
+      clearTimeout(timer);
+      channel.port1.close();
+      if (error)
+        reject(error);
+      else
+        resolve(value);
+    };
+    const extend = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error("保存機能からの応答が途切れました。保存状態を確認して再試行してください。")), 150000);
+    };
+    channel.port1.onmessage = (event) => {
+      extend();
+      if (event.data.progress)
+        progress?.(event.data.progress);
+      else if (event.data.ok)
+        finish(undefined, event.data);
+      else
+        finish(new Error(event.data.error ?? "保存機能を利用できません。"));
+    };
+    extend();
+    worker.postMessage({ protocol: 1, type, id }, [channel.port2]);
+  });
+}
+function network() {
+  $("networkState").textContent = navigator.onLine ? "オンライン（通信状態は取得時に確認）" : "オフライン：保存済みの講座で学べます";
+}
+function message(text) {
+  messageRevision++;
+  $("offlineMessage").textContent = text;
+}
+function storageMessage() {
+  if (!app.course)
+    return "保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。";
+  const status = states.find((s) => s.id === app.course.id);
+  if (status?.incomplete)
+    return status.saved ? "一部の保存が不完全です。前の完全な保存版を利用できます。オンラインで保存し直してください。" : "保存が不完全です。オンラインで保存し直してください。";
+  return status?.saved ? "保存済みの教材と全動画を利用できます。通信なしで起動・再生できます。" : "この講座は未保存です。動画の再生とアプリ内保存には通信が必要です。オンラインで保存してください。";
+}
+function canShowStatus() {
+  return !busy && !locallyDownloading && !states.some((s) => s.progress);
+}
+function drawProgress(p) {
+  const bar = $("offlineProgress");
+  bar.hidden = !p;
+  if (!p)
+    return;
+  bar.max = p.total || 1;
+  bar.value = p.loaded;
+  message(p.total ? `保存中 ${Math.floor(p.loaded / p.total * 100)}%・${mb(p.loaded)} / ${mb(p.total)}（${p.file} / ${p.count} ファイル）。完了までこの画面を開いておいてください。` : "教材情報を確認しています…");
+}
+function render() {
+  network();
+  const status = states.find((s) => s.id === app.course?.id);
+  const anyProgress = states.find((s) => s.progress)?.progress;
+  const wasWorking = !!workingId;
+  workingId = anyProgress?.id;
+  const processing = busy || !!anyProgress;
+  if (app.course) {
+    const saved = status?.saved;
+    $("savedState").textContent = saved ? `保存済み・教材と全動画 ${mb(saved.manifest.bytes)}・${new Date(saved.savedAt).toLocaleString("ja-JP")}${status?.incomplete ? "（前の完全な版を利用中）" : ""}` : status?.incomplete ? "保存が不完全です。オンラインで保存し直してください。" : "未保存・動画はオンラインで再生します";
+    const same = saved?.manifest.revision === latest?.revision;
+    const save = $("offlineSave");
+    save.textContent = saved && latest && !same ? "新しい版に更新して保存" : status?.incomplete ? "保存し直す" : "この講座をアプリ内に保存";
+    save.disabled = !registration || !navigator.onLine || processing || !latest || !!same && !status?.incomplete;
+    $("offlineDelete").disabled = !registration || processing || !saved && !status?.incomplete;
+    $("offlineCancel").hidden = !anyProgress && !locallyDownloading;
+    $("offlineCancel").disabled = !workingId && !locallyDownloading;
+    $("offlineCheck").disabled = !registration || !navigator.onLine || processing;
+    $("downloadSize").textContent = latest ? `保存対象：台本・字幕・クイズ・全動画とポスター、合計 ${mb(latest.bytes)}。` : "オンラインで保存サイズと更新を確認できます。";
+    const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
+    $("offlineReload").hidden = !changed;
+    if (changed)
+      message("保存版が切り替わりました。「保存した版を開く」で教材と動画をそろえてください。");
+    window.dispatchEvent(new CustomEvent("chalkfile:offline-state", { detail: {
+      saved: !!saved,
+      pageVersion: saved?.manifest.pageVersion,
+      incomplete: status?.incomplete,
+      online: navigator.onLine
+    } }));
+  }
+  const list = $("savedCourses");
+  list.replaceChildren();
+  const courses = [...app.courses];
+  for (const s of states)
+    if (s.saved && !courses.some((c) => c.id === s.id))
+      courses.push({ id: s.id, title: s.saved.manifest.title });
+  for (const course of courses) {
+    const s = states.find((v) => v.id === course.id);
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = new URL(`${course.id}/`, root).href;
+    a.textContent = course.title;
+    const label = document.createElement("span");
+    label.textContent = s?.progress ? "保存中・完了前" : s?.saved ? `保存済み ${mb(s.saved.manifest.bytes)}` : s?.incomplete ? "不完全・要再保存" : "未保存・オンラインで開く";
+    li.append(a, label);
+    list.append(li);
+  }
+  if (!locallyDownloading && !localSaveRequest) {
+    drawProgress(anyProgress);
+    if (wasWorking && !anyProgress && !localSaveRequest)
+      message("別のタブでの保存処理が終了しました。現在の保存状態を確認してください。");
+  }
+  if (localSaveRequest && !busy && !locallyDownloading && !anyProgress)
+    localSaveRequest = false;
+}
+async function capacity() {
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    const persistent = await navigator.storage?.persisted?.();
+    $("storageState").textContent = `${estimate?.quota ? `同一サイト全体の使用量（推定）${mb(estimate.usage ?? 0)} / ${mb(estimate.quota)}。` : "保存容量はブラウザによって異なります。"}${persistent ? "保存の保持が許可されています。" : "保存の保持は未許可です。ブラウザが保存を削除する場合があります。"}`;
+    $("offlinePersist").disabled = !navigator.storage?.persist || !!persistent;
+  } catch {
+    $("storageState").textContent = "保存容量を取得できません。空き容量は保証されません。";
+  }
+}
+async function refresh() {
+  if (!registration || refreshInProgress)
+    return false;
+  refreshInProgress = true;
+  try {
+    states = (await request("STATUS")).courses ?? [];
+    render();
+    await capacity();
+    if (messageRevision === 0 && canShowStatus())
+      message(storageMessage());
+    return true;
+  } catch (error) {
+    message(error.message);
+    return false;
+  } finally {
+    refreshInProgress = false;
+  }
+}
+async function check() {
+  if (!app.course || !navigator.onLine)
+    return;
+  $("offlineCheck").disabled = true;
+  const before = messageRevision;
+  try {
+    latest = (await request("CHECK", app.course.id)).manifest;
+    const status = states.find((s) => s.id === app.course.id);
+    const saved = status?.saved;
+    if (status && before === messageRevision && canShowStatus())
+      message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? "新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。" : saved ? "公開中の版と保存版は同じです。" : storageMessage());
+  } catch (error) {
+    if (before === messageRevision && canShowStatus()) {
+      latest = undefined;
+      message(`${error.message} 保存済みの版は引き続き利用できます。`);
+    }
+  }
+  render();
+}
+$("offlineSave").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  locallyDownloading = true;
+  localSaveRequest = true;
+  render();
+  drawProgress({ id: app.course.id, loaded: 0, total: 0, file: 0, count: 0 });
+  try {
+    await request("SAVE", app.course.id, drawProgress);
+    message("教材と全動画の保存が完了しました。通信を切って再生を確認してください。");
+  } catch (error) {
+    message(`${error.message} 以前の完全な保存があれば維持します。再試行は保存ボタンから行えます。`);
+  } finally {
+    busy = false;
+    locallyDownloading = false;
+    drawProgress();
+    await refresh();
+  }
+});
+$("offlineCancel").addEventListener("click", async () => {
+  try {
+    await request("CANCEL", workingId ?? app.course?.id);
+    message("キャンセルを受け付けました。処理が終わるまでお待ちください。");
+  } catch (error) {
+    message(error.message);
+  }
+});
+$("offlineDelete").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  render();
+  try {
+    await request("DELETE", app.course.id);
+    message("この講座の教材・動画と以前の保存版を削除しました。ノートと学習進捗は残ります。");
+  } catch (error) {
+    message(error.message);
+  } finally {
+    busy = false;
+    await refresh();
+  }
+});
+$("offlineCheck").addEventListener("click", () => {
+  check();
+});
+$("offlineReload").addEventListener("click", () => location.reload());
+$("offlinePersist").addEventListener("click", async () => {
+  try {
+    const granted = await navigator.storage.persist();
+    message(granted ? "ブラウザが保存の保持を許可しました。サイトデータを消すと保存も消えます。" : "ブラウザは保存の保持を許可しませんでした。保存は利用できますが、削除される場合があります。");
+    await capacity();
+  } catch {
+    message("保存の保持を要求できませんでした。ブラウザの設定を確認してください。");
+  }
+});
+window.addEventListener("online", () => {
+  render();
+  check();
+});
+window.addEventListener("offline", () => {
+  render();
+});
+window.addEventListener("pageshow", () => {
+  refresh();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden)
+    refresh();
+});
+network();
+async function init() {
+  if (!("serviceWorker" in navigator) || !isSecureContext || !("caches" in window)) {
+    message("このブラウザではアプリ内保存を利用できません。HTTPS 対応のブラウザで開いてください。オンライン再生は利用できます。");
+    return;
+  }
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.protocol === 1 && event.data?.type === "CHANGED")
+      refresh();
+  });
+  try {
+    registration = await navigator.serviceWorker.register(new URL("sw.js", root), { scope: root.pathname, updateViaCache: "none" });
+    await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error("保存機能の準備が時間切れになりました。")), 30000))]);
+    const updateNotice = () => {
+      if (registration?.waiting)
+        $("appUpdate").hidden = false;
+    };
+    updateNotice();
+    registration.addEventListener("updatefound", () => registration?.installing?.addEventListener("statechange", updateNotice));
+    await refresh();
+    await check();
+    setInterval(() => {
+      if (!document.hidden && (workingId || busy))
+        refresh();
+    }, 2000);
+  } catch {
+    message("保存機能を準備できません。通信とブラウザの保存設定を確認し、オンラインで再読み込みしてください。");
+  }
+}
+init();
+</script>
+</body>
+</html>

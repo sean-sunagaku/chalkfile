@@ -1,0 +1,1636 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>笑ってわかる Rive アニメーション｜Chalkfile</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wh4j927jGyRq+appts9maV7fyEeQIhIrUbI9FzBJi/A=' 'sha256-tRreo5bb8busOCLdJKsbbUIMfIkP+VzRwE4siyU6Wmk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="動きを作って、そのまま動かす道具を、ざっくり。1 本・約 4 分の動画と、台本・確認クイズ。">
+<link rel="canonical" href="https://sean-sunagaku.github.io/chalkfile/rive-comedy/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%227%22%20width%3D%2226%22%20height%3D%2218%22%20rx%3D%225%22%20fill%3D%22%23241A16%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2220%22%20width%3D%2226%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23D9342A%22%2F%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Chalkfile">
+<meta property="og:title" content="笑ってわかる Rive アニメーション">
+<meta property="og:description" content="動きを作って、そのまま動かす道具を、ざっくり。1 本・約 4 分の動画と、台本・確認クイズ。">
+<meta property="og:url" content="https://sean-sunagaku.github.io/chalkfile/rive-comedy/">
+<meta property="og:image" content="https://sean-sunagaku.github.io/chalkfile/rive-comedy/media/R01.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="../manifest.webmanifest"><link rel="apple-touch-icon" href="../icons/icon-180.png"><meta name="theme-color" content="#F2F7F4"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* レイアウト: 左に講義シアター（動画・操作・タブ）、右にカリキュラム。900px 未満では縦に積む。色・書体・背景の飾りは講座のテーマで決まる（build_site.ts が下に差し込む） */
+:root {
+  --ink: #FFF8E8;
+  --panel: #FFFFFF;
+  --raise: #FFF6E2;
+  --line: #F0E0C2;
+  --fg: #241A16;
+  --fg-2: #4A3C34;
+  --muted: #7E6F64;
+  --accent: #D9342A;
+  --on-accent: #FFFFFF;
+  --pink: #ab355f;
+  --violet: #5f43a9;
+  --cyan: #186992;
+  --mint: #197152;
+  --amber: #985f05;
+  --coral: #af3826;
+  --pink-soft: rgba(209,60,116,0.1);
+  --violet-soft: rgba(111,79,210,0.1);
+  --cyan-soft: rgba(21,127,181,0.1);
+  --mint-soft: rgba(22,138,99,0.1);
+  --coral-soft: rgba(214,64,43,0.1);
+  --mark: rgba(217,52,42,0.38);
+  --grad: linear-gradient(100deg, #D9342A, #FFB020);
+  --shadow: 0 2px 0 rgba(36,26,22,0.06), 0 22px 44px -22px rgba(36,26,22,0.34);
+  --stage: #2B201C;
+  --radius: 18px;
+  --font-body: "Zen Maru Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+body { background: var(--ink); }
+.decor { position: absolute; top: 0; right: 0; width: min(820px, 64vw); height: 340px; pointer-events: none; z-index: 0;
+  clip-path: polygon(30% 0, 100% 0, 100% 100%);
+  background: radial-gradient(420px 240px at 92% 6%, rgba(124,200,240,0.9), transparent 70%), linear-gradient(118deg, #FFB020 46%, #FF7A59 66%, #FF9AB5 88%); }
+@media (max-width: 900px) { .decor { height: 150px; width: 64vw; } }
+/* 色と書体は既存の講座テーマを使う。 */
+[hidden] { display: none !important; }
+.offline-box { padding: 16px 18px; margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); font-size: 14px; }
+.offline-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; }
+.offline-box h2 { margin: 0; font-size: 18px; line-height: 1.6; }
+.offline-box p { margin: 8px 0; max-width: 90ch; color: var(--fg-2); }
+.offline-box .offline-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.offline-box .btn { font: inherit; font-weight: 700; min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--raise); color: var(--fg); white-space: normal; }
+.offline-box .btn.primary { background: var(--grad); color: var(--on-accent); border-color: transparent; }
+.offline-box .btn:disabled { opacity: 0.6; cursor: default; }
+.offline-box details { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.offline-box summary { cursor: pointer; font-weight: 700; }
+.offline-box ul { margin: 10px 0; padding-left: 20px; }
+.offline-box li { margin-block: 8px; }
+.offline-box li span { display: block; font-size: 13px; color: var(--muted); }
+.offline-box progress { width: 100%; margin-top: 10px; accent-color: var(--violet); }
+#networkState { font-size: 12px; color: var(--muted); }
+#offlineMessage { min-height: 1.7em; }
+#playbackStatus { font-size: 13px; color: var(--muted); margin: 8px 0; }
+
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: auto-phrase;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--panel);
+}
+a { color: var(--cyan); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ── 上の帯 ── */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.topbar-inner { max-width: 1480px; margin: 0 auto; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 360px; }
+.brand-home { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; flex: none; }
+.brand-home:hover .brand-title { text-decoration: underline; text-underline-offset: 4px; }
+.brand-mark { width: 14px; height: 14px; border-radius: 5px; background: var(--grad); flex: none; }
+.brand-title { font-weight: 900; font-size: 17px; letter-spacing: 0.02em; white-space: nowrap; }
+.brand-sub { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-progress { display: flex; align-items: center; gap: 12px; flex: 0 1 340px; min-width: 220px; }
+.course-progress .bar { flex: 1; height: 6px; border-radius: 9px; background: var(--raise); overflow: hidden; }
+.course-progress .bar > i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 9px; transition: width 0.4s; }
+.course-progress .label { font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+
+/* ── 本体 ── */
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding-block: 22px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 26px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.intro { display: flex; gap: 14px 22px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+.intro-text { display: grid; gap: 2px; }
+.intro .note { font-size: 13px; color: var(--muted); }
+.caution { margin: -4px 0 14px; padding-left: 10px; border-left: 3px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.intro h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; line-height: 1.3; text-wrap: balance; }
+.intro .meta { color: var(--muted); font-size: 14px; }
+.intro .links { display: flex; gap: 8px; flex-wrap: wrap; }
+.intro .links a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-size: 14px; font-weight: 700; text-decoration: none; box-shadow: var(--shadow); }
+.intro .links a:hover { border-color: var(--violet); }
+.intro .links svg { width: 16px; height: 16px; flex: none; }
+
+/* プレーヤー（字幕をオンにすると、動画を少し縮めて、プレーヤーの中の下に字幕の帯を空ける。図は字幕で隠さない） */
+.theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); container-type: inline-size; }
+.player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); font-size: clamp(12px, 2.1cqw, 26px); --ccband: max(13%, 2.9em); }
+.player video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--stage); }
+.player.cc-on video { height: calc(100% - var(--ccband)); }
+.ccbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: var(--ccband);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em 4%;
+  box-sizing: border-box;
+  text-align: center;
+  color: #F1F3FF;
+  background: var(--stage);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.theater:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; background: #000; }
+.theater:fullscreen .player { flex: 1; aspect-ratio: auto; font-size: clamp(18px, 2cqw, 34px); }
+.nextup {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--stage) 88%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.nextup-card { text-align: center; color: #F4F6FF; max-width: 520px; }
+.nextup-card .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.24em; color: #9AA3CF; }
+.nextup-card h3 { margin: 8px 0 18px; font-size: clamp(18px, 2.4vw, 26px); line-height: 1.4; text-wrap: balance; }
+.nextup-card .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--violet); }
+.btn.primary { background: var(--grad); border-color: transparent; color: var(--on-accent); }
+.btn.ghost-dark { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); color: #F4F6FF; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn[aria-pressed="true"] { border-color: var(--violet); background: var(--violet-soft); }
+
+/* 動画の下の操作 */
+.now { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-top: 16px; }
+.now-title { min-width: 0; flex: 1 1 320px; }
+.now-title .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em; color: var(--muted); }
+.now-title h2 { margin: 2px 0 0; font-size: clamp(19px, 2.2vw, 24px); font-weight: 900; line-height: 1.4; text-wrap: balance; }
+.now-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.speed { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.speed button { border: 0; background: transparent; padding: 7px 10px; font-family: var(--font-mono); font-size: 13px; cursor: pointer; color: var(--fg-2); }
+.speed button[aria-pressed="true"] { background: var(--violet-soft); color: var(--fg); font-weight: 700; }
+
+/* タブ */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 20px; overflow-x: auto; scrollbar-width: none; }
+.tabs button {
+  border: 0;
+  background: transparent;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--pink); }
+.panel { padding-top: 18px; }
+.panel[hidden] { display: none; }
+.panel h3 { font-size: 16px; margin: 0 0 10px; }
+.panel p { margin: 0 0 12px; color: var(--fg-2); max-width: 70ch; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 700px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.takeaways { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.takeaways li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; color: var(--fg-2); }
+.takeaways li::before { content: ""; width: 8px; height: 8px; border-radius: 9px; background: var(--mint); margin-top: 9px; justify-self: center; }
+.chapters { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.chapters button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.chapters button:hover { background: var(--raise); }
+.chapters button.on { background: var(--violet-soft); color: var(--fg); }
+.chapters .t { font-family: var(--font-mono); font-size: 13px; color: var(--muted); padding-top: 2px; }
+
+/* 台本 */
+.tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.search { flex: 1 1 260px; min-width: 0; position: relative; }
+.search input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 9px 12px 9px 36px;
+  font: inherit;
+}
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg-2); cursor: pointer; }
+.transcript { max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 8px; scroll-behavior: smooth; }
+.transcript h4 { margin: 14px 10px 4px; font-size: 13px; letter-spacing: 0.06em; color: var(--muted); }
+.transcript h4:first-child { margin-top: 6px; }
+.cue {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--fg-2);
+  line-height: 1.75;
+}
+.cue:hover { background: var(--raise); }
+.cue .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 3px; }
+.cue.on { background: var(--pink-soft); color: var(--fg); }
+.cue.on .t { color: var(--pink); }
+.cue mark { background: var(--mark); color: var(--fg); border-radius: 3px; padding: 0 2px; }
+.hit-lec { font-family: var(--font-mono); font-size: 12px; color: var(--violet); }
+
+/* ノート */
+.note-new { display: grid; gap: 10px; }
+.note-new textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  line-height: 1.7;
+}
+.notes { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.notes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.notes .stamp { font-family: var(--font-mono); font-size: 13px; border: 1px solid var(--line); background: var(--raise); border-radius: 8px; padding: 2px 8px; cursor: pointer; color: var(--cyan); }
+.notes .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
+.notes .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.notes .del:hover { color: var(--coral); }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* ドキュメント */
+.docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.docs a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.docs a:hover { border-color: var(--cyan); }
+.docs .host { font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: block; overflow-wrap: anywhere; }
+.docs svg { width: 16px; height: 16px; color: var(--muted); }
+
+/* クイズ */
+.quiz { display: grid; gap: 16px; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.q .qt { font-weight: 700; margin-bottom: 10px; }
+.q .qt .n { font-family: var(--font-mono); color: var(--pink); margin-right: 8px; }
+.choices { display: grid; gap: 8px; }
+.choice {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--fg);
+  line-height: 1.6;
+}
+.choice:hover:not(:disabled) { border-color: var(--violet); }
+.choice:disabled { cursor: default; }
+.choice.right { border-color: var(--mint); background: var(--mint-soft); }
+.choice.wrong { border-color: var(--coral); background: var(--coral-soft); }
+.explain { margin-top: 10px; font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--mint); padding-left: 10px; }
+.explain.bad { border-left-color: var(--coral); }
+.score { font-size: 14px; color: var(--fg-2); }
+
+/* カリキュラム */
+.curriculum { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); max-height: calc(100vh - 92px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+@media (max-width: 900px) { .curriculum { position: static; max-height: none; } }
+.cur-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cur-head h2 { margin: 0; font-size: 15px; font-weight: 900; }
+.cur-head .sum { font-size: 12.5px; color: var(--muted); }
+.sec { border-bottom: 1px solid var(--line); }
+.sec:last-child { border-bottom: 0; }
+.sec-head { padding: 12px 16px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.sec-head .name { font-weight: 700; font-size: 13.5px; }
+.sec-head .name .no { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; color: var(--muted); display: block; }
+.sec-head .cnt { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lec {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 9px 16px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.lec:hover { background: var(--raise); }
+.lec[aria-current="true"] { background: var(--violet-soft); color: var(--fg); }
+.lec .ttl { font-size: 14px; line-height: 1.5; font-weight: 500; }
+.lec[aria-current="true"] .ttl { font-weight: 700; }
+.lec .dur { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ring { width: 24px; height: 24px; display: block; }
+.ring .bg { stroke: var(--line); }
+.ring .fg { stroke: var(--violet); }
+.ring.done .disc { fill: var(--mint); }
+.ring .tick { stroke: var(--on-accent); }
+.ring .num { fill: var(--muted); font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
+
+/* 教材・実践課題・AI に聞く（教材を持つ講座だけ） */
+.mat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-bottom: 16px; }
+@media (max-width: 700px) { .mat-grid { grid-template-columns: minmax(0, 1fr); } }
+.mat-list { margin: 0; padding-left: 1.2em; color: var(--fg-2); display: grid; gap: 6px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 18px; }
+.toc a { font-size: 13px; text-decoration: none; color: var(--fg-2); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 10px; }
+.toc a:hover { border-color: var(--violet); color: var(--fg); }
+.msec { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; scroll-margin-top: 90px; }
+.msec h3 { font-size: 17px; margin: 0 0 8px; line-height: 1.5; }
+.msec p, .msec li { color: var(--fg-2); line-height: 1.85; max-width: 72ch; }
+.msec ul { margin: 0 0 12px; padding-left: 1.3em; }
+.sid { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-weight: 500; letter-spacing: 0.02em; display: block; }
+.evs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.ev { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--line); }
+.ev.research { background: var(--cyan-soft); border-color: var(--cyan); }
+.ev.official { background: var(--violet-soft); border-color: var(--violet); }
+.ev.practice { background: var(--pink-soft); border-color: var(--amber); }
+.ev.example { background: var(--raise); border-color: var(--line); color: var(--muted); }
+.msrc { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.msrc a { color: var(--fg-2); }
+.fig { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; overflow-x: auto; }
+.fig h4 { margin: 0 0 4px; font-size: 15px; }
+.fig .cap { font-size: 13.5px; color: var(--fg-2); margin: 0 0 10px; }
+.mtable { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+.mtable th, .mtable td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; line-height: 1.6; }
+.mtable th { background: var(--raise); font-weight: 700; }
+.flowline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flowline .st { border: 1px solid var(--line); background: var(--raise); border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.flowline .ar { color: var(--muted); }
+.fig pre { margin: 0; background: var(--stage); color: #F1F4F8; border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; }
+.ask { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ask li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.ask .qq { font-weight: 700; line-height: 1.7; }
+.ask .refs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.ask .refs button { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); background: var(--raise); color: var(--fg-2); border-radius: 8px; padding: 1px 8px; cursor: pointer; }
+.lec.planned { cursor: default; opacity: 0.62; }
+.lec.planned:hover { background: transparent; }
+.lec .soon { font-size: 11.5px; color: var(--muted); border: 1px dashed var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+
+.foot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+.kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; background: var(--panel); color: var(--fg-2); }
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 40;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<div class="decor" aria-hidden="true"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <a class="brand-home" href="../" title="講座の一覧へ">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-title">Chalkfile</span>
+      </a>
+      <span class="brand-sub">笑ってわかる Rive アニメーション</span>
+    </div>
+    <div class="course-progress" title="完了したレクチャーの数">
+      <div class="bar" aria-hidden="true"><i id="cpBar"></i></div>
+      <span class="label" id="cpLabel"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="intro">
+    <div class="intro-text">
+      <h1>動きを作って、そのまま動かす道具を、ざっくり</h1>
+      <span class="meta" id="courseMeta"></span>
+      <span class="note" id="courseNote" hidden></span>
+    </div>
+    <span class="links" id="links" hidden></span>
+  </div>
+
+  <section class="offline-box" aria-labelledby="offlineHeading">
+  <div class="offline-top"><h2 id="offlineHeading">オフラインで学ぶ</h2><span id="networkState" role="status"></span></div>
+  <div id="courseOffline" >
+    <p id="savedState">保存状態を確認しています…</p>
+    <p id="downloadSize">保存サイズを確認しています…</p>
+    <div class="offline-actions">
+      <button class="btn primary" id="offlineSave" type="button" disabled>この講座をアプリ内に保存</button>
+      <button class="btn" id="offlineCancel" type="button" hidden>保存をキャンセル</button>
+      <button class="btn" id="offlineCheck" type="button" disabled>更新を確認</button>
+      <button class="btn" id="offlineDelete" type="button" disabled>保存を削除</button>
+      <button class="btn" id="offlineReload" type="button" hidden>保存した版を開く</button>
+    </div>
+  </div>
+  <progress id="offlineProgress" aria-label="講座の保存進捗" max="1" value="0" hidden></progress>
+  <p id="offlineMessage" role="status" aria-live="polite">保存機能を準備しています…</p>
+  <details ><summary>講座ごとの保存状態</summary><ul id="savedCourses"></ul><p>講座を開き、保存ボタンで選んでください。表示するだけでは動画を保存しません。</p></details>
+  <details><summary>保存容量と使い方</summary>
+    <p id="storageState">保存容量を確認しています…</p>
+    <button class="btn" id="offlinePersist" type="button">保存を保持するようブラウザに要求</button>
+    <p>アプリ内保存には、台本・字幕・クイズ・全動画を含みます。公式ドキュメントなど外部リンクには通信が必要です。オンライン再生や「動画ファイルをダウンロード」はアプリ内保存にはなりません。</p>
+    <p>保存中は画面を開いておいてください。通信やアプリが途切れた場合は、保存状態を確認して再試行できます。更新は手動です。更新失敗時は前の完全な版を維持し、成功時は直前の版も1つ保持します。更新には新しい版の分の空き容量が必要です。</p>
+    <p>iPhone・iPadでもブラウザの保存領域を使います。「ファイル」アプリの動画をこのアプリに取り込む機能はありません。ブラウザとホーム画面のアプリで保存が共有されるとは限らないため、使う方で保存し、機内モードで起動・再生を確かめてください。空き容量、長期間の未使用、サイトデータの削除などで保存が消える場合があります。実機での保存維持やバックグラウンド保存は保証しません。</p>
+  </details>
+  <details id="installHelp"><summary>アプリをインストールする</summary>
+    <p id="installState">対応ブラウザではインストールボタン、またはブラウザのメニューから追加できます。インストールだけでは動画は保存されません。</p>
+    <button class="btn" id="pwaInstall" type="button" hidden>Chalkfile をインストール</button>
+    <p>iPhone・iPad：Safari の共有メニューで「ホーム画面に追加」を選びます。表示される場合は「Webアプリとして開く」を有効にして追加してください。</p>
+  </details>
+  <p id="appUpdate" hidden>アプリの更新があります。保存が終わってから、このサイトのタブをすべて閉じて開き直してください。完全な講座の保存は維持します。</p>
+</section>
+
+  <div class="layout">
+    <section aria-label="講義">
+      <div class="theater" id="theater">
+      <div class="player" id="player">
+        <video id="video" playsinline preload="metadata" controls></video>
+        <div class="ccbar" id="cc" aria-live="off"></div>
+        <div class="nextup" id="nextup" hidden>
+          <div class="nextup-card">
+            <div class="eyebrow">NEXT LECTURE</div>
+            <h3 id="nextTitle"></h3>
+            <div class="row">
+              <button class="btn primary" id="nextGo" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span id="nextGoLabel">次へ</span>
+              </button>
+              <button class="btn ghost-dark" id="nextStay" type="button">ここで止める</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <p id="playbackStatus" role="status">オンライン再生を準備しています。</p>
+      <div class="now">
+        <div class="now-title">
+          <div class="eyebrow" id="nowEyebrow">LECTURE 01</div>
+          <h2 id="nowTitle">このコースで作るもの</h2>
+        </div>
+        <div class="now-actions">
+          <button class="btn" id="loopToggle" type="button" aria-pressed="false">この動画を繰り返す</button>
+          <a class="btn" id="fileDownload" download>動画ファイルをダウンロード</a>
+          <div class="speed" role="group" aria-label="再生速度" id="speed">
+            <button type="button" data-rate="1">1.0×</button>
+            <button type="button" data-rate="1.25">1.25×</button>
+            <button type="button" data-rate="1.5">1.5×</button>
+            <button type="button" data-rate="1.75">1.75×</button>
+          </div>
+          <button class="btn" id="ccToggle" type="button" aria-pressed="true" title="字幕（C）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 10.5a2 2 0 1 0 0 3M16 10.5a2 2 0 1 0 0 3"/></svg>
+            字幕
+          </button>
+          <button class="btn" id="doneToggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <span>完了にする</span>
+          </button>
+          <button class="btn" id="prevBtn" type="button" aria-label="前のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button class="btn" id="nextBtn" type="button" aria-label="次のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="レクチャーの資料">
+        <button role="tab" type="button" id="tab-overview" aria-controls="p-overview" aria-selected="true">概要</button>
+        <button role="tab" type="button" id="tab-material" aria-controls="p-material" aria-selected="false" hidden>教材</button>
+        <button role="tab" type="button" id="tab-transcript" aria-controls="p-transcript" aria-selected="false">台本</button>
+        <button role="tab" type="button" id="tab-notes" aria-controls="p-notes" aria-selected="false">ノート</button>
+        <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">公式ドキュメント</button>
+        <button role="tab" type="button" id="tab-quiz" aria-controls="p-quiz" aria-selected="false">確認クイズ</button>
+        <button role="tab" type="button" id="tab-exercise" aria-controls="p-exercise" aria-selected="false" hidden>実践課題</button>
+        <button role="tab" type="button" id="tab-ask" aria-controls="p-ask" aria-selected="false" hidden>AI に聞く</button>
+      </div>
+
+      <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <p id="summary"></p>
+        <p class="caution" id="caution" hidden></p>
+        <div class="two">
+          <div class="box">
+            <h3 id="takeawaysTitle">実装に効くメモ</h3>
+            <ul class="takeaways" id="takeaways"></ul>
+          </div>
+          <div class="box">
+            <h3>チャプター</h3>
+            <ol class="chapters" id="chapters"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="p-material" role="tabpanel" aria-labelledby="tab-material" hidden>
+        <div class="mat-grid">
+          <div class="box"><h3>この章の学習目標</h3><ul class="mat-list" id="matGoals"></ul></div>
+          <div class="box"><h3>前提知識</h3><ul class="mat-list" id="matPre"></ul></div>
+        </div>
+        <p class="hint">根拠の札: <span class="ev research">研究・学術</span> <span class="ev official">公式・法令・規格</span> <span class="ev practice">実務の指針</span> <span class="ev example">説明用の仮の例</span>　節の上の小さな ID（例: <span class="mono">xx-01-s01</span>）は、あとで質問チャットが根拠の場所を示すための番号です。</p>
+        <nav class="toc" id="matToc" aria-label="教材の節"></nav>
+        <div id="matBody"></div>
+        <h3 style="margin-top:22px">図解・比較例</h3>
+        <div id="matFigs"></div>
+        <div class="box"><h3>要点まとめ</h3><ul class="mat-list" id="matSummary"></ul></div>
+      </div>
+
+      <div class="panel" id="p-exercise" role="tabpanel" aria-labelledby="tab-exercise" hidden>
+        <div id="exBody"></div>
+      </div>
+
+      <div class="panel" id="p-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+        <p>学習画面の右側に置く AI チャットに、こんな質問ができます（チャットはまだありません）。質問ごとに、答えの根拠にする教材の節を付けています。押すと教材のその節へ移ります。</p>
+        <ul class="ask" id="askList"></ul>
+      </div>
+
+      <div class="panel" id="p-transcript" role="tabpanel" aria-labelledby="tab-transcript" hidden>
+        <div class="tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input id="q" type="search" placeholder="全レクチャーの台本から探す（例: past_due、署名）" autocomplete="off">
+          </label>
+          <label class="check"><input id="follow" type="checkbox" checked> 再生に合わせてスクロール</label>
+        </div>
+        <div class="transcript" id="transcript"></div>
+      </div>
+
+      <div class="panel" id="p-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+        <div class="note-new">
+          <textarea id="noteText" placeholder="気づいたこと、実装のときに確かめたいことを書く"></textarea>
+          <div class="tools" style="margin:0">
+            <button class="btn primary" id="noteAdd" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span id="noteAddLabel">00:00 にメモ</span>
+            </button>
+            <button class="btn" id="noteCopy" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+              全ノートをコピー
+            </button>
+            <span class="hint">ノートはこの端末のブラウザに保存されます。</span>
+          </div>
+        </div>
+        <ul class="notes" id="notes"></ul>
+      </div>
+
+      <div class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+        <p>動画の内容は、2026 年 11 月 1 日に読んだ Rive の公式ドキュメント（ランタイムとステートマシンのページ）がもとです。機能・対応する環境・料金は変わるので、使う前に公式で確かめてください。ずんだもん（ボケ）の台詞は、わざと間違えています。</p>
+        <p>外部の公式ドキュメントを開くには通信が必要です。</p>
+        <ul class="docs" id="docs"></ul>
+      </div>
+
+      <div class="panel" id="p-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+        <div class="quiz" id="quiz"></div>
+      </div>
+    </section>
+
+    <aside class="curriculum" aria-label="カリキュラム">
+      <div class="cur-head">
+        <h2>カリキュラム</h2>
+        <span class="sum" id="curSum"></span>
+      </div>
+      <div id="sections"></div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div>ショートカット: <span class="kbd">Space</span> 再生と停止 ・ <span class="kbd">←</span><span class="kbd">→</span> 5 秒 ・ <span class="kbd">J</span><span class="kbd">L</span> 10 秒 ・ <span class="kbd">C</span> 字幕 ・ <span class="kbd">F</span> 全画面 ・ <span class="kbd">N</span> 次のレクチャー</div>
+    <div id="credits"></div>
+    <div>講座は一般的な説明です。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律・税・契約の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
+  </div>
+</div>
+
+<script id="course-data" type="application/json">{"course":{"id":"rive-comedy","title":"笑ってわかる Rive アニメーション","subtitle":"Rive を、ずんだもんとざっくり知るお笑い版","sections":[{"no":1,"title":"ざっくり入門"}],"sourceNote":"ボケの声は VOICEVOX:ずんだもん、天の声は VOICEVOX:玄野武宏。台本は Rive の公式ドキュメント（2026 年 11 月確認）をもとに作成。Rive 社とは関係のない、個人の勉強用の非公式の動画です","disclaimer":"Rive 社とは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています","links":[{"label":"ソースと作り方（GitHub）","url":"https://github.com/sean-sunagaku/chalkfile"}],"unitLabel":"LECTURE","ui":{"takeaways":"要点メモ","docs":"公式ドキュメント","searchHint":"ステートマシン、ランタイム"},"planned":[]},"credits":["VOICEVOX:No.7","VOICEVOX:青山龍星"],"pageVersion":"a9c2c2bcfa682e9126677924a240e58412c742697a9d7caa02d64bfb8d56ef0d","lectures":[{"id":"R01","no":1,"section":{"no":1,"title":"ざっくり入門"},"title":"Rive ってなに？","summary":"Rive を、ずんだもんと先生の掛け合いでざっくり知る。動きを作るエディタと動かすランタイムのセット、.riv ファイル、ステートマシン、対応する環境と注意点。","docs":[{"title":"Rive のランタイム（公式ドキュメント。対応環境・オープンソースと MIT ライセンス）","url":"https://rive.app/docs/runtimes"},{"title":"ステートマシン（公式ドキュメント）","url":"https://rive.app/docs/editor/state-machine/state-machine"},{"title":"料金プラン（公式）","url":"https://rive.app/pricing"}],"quiz":[{"q":"Rive の .riv ファイルについて、正しいものは？","choices":["エディタから書き出し、アプリやゲーム、Web サイトのランタイムが読み込んで動かす","動画のファイルなので、再生と停止しかできない","エンジニアが手で書くプログラムのファイル","Web サイトでしか使えない画像のファイル"],"answer":0,"explain":"エディタで作った絵と動きを .riv に書き出し、公式ランタイムが実行時に読み込んで動かす。"},{"q":"Rive のステートマシンとは？","choices":["ずんだ餅を焼く機械","アニメーション同士をつなぎ、切り替わる条件（ロジック）を決める仕組み","動画を書き出すための設定画面","料金プランの名前"],"answer":1,"explain":"状態（再生するアニメーション）と、状態をつなぐ遷移を、エディタの中で視覚的に作る。"},{"q":"Rive の公式ランタイムについて、公式ドキュメントに書かれていることは？","choices":["Web 版だけがオープンソース","有料プランの人しか使えない","すべてオープンソースで、MIT ライセンス","Unity と Unreal には対応していない"],"answer":2,"explain":"公式ランタイムはすべてオープンソースで MIT ライセンス。ただし機能によっては対応していないランタイムもあるので、Feature Support のページで確かめる。"}],"takeaways":["Rive は、動きを作るエディタと、アプリ・ゲーム・Web で動かすランタイムのセット","エディタから .riv に書き出し、ランタイムが実行時に読み込んで動かす。動きをコードで作り直さなくてよい","ステートマシン = アニメーション同士をつなぎ、切り替わる条件を決める仕組み。アプリは合図や値を渡す","公式ランタイムはオープンソース（MIT）。機能の対応と料金は変わるので、使う前に公式で確かめる"],"caution":"","material":null,"duration":253.9,"chapters":[{"start":0,"heading":"オープニング"},{"start":22.43,"heading":"困りごと: 動きの作り直し"},{"start":49.87,"heading":"Rive の仕組み: 作る → 書き出す → 動かす"},{"start":91,"heading":"ステートマシン: 切り替えもファイルに"},{"start":141.23,"heading":"クイズ"},{"start":168.4,"heading":"どこで動く？"},{"start":198.3,"heading":"使う前の注意"},{"start":216.13,"heading":"振り返り"},{"start":243.97,"heading":"エンディング"}],"cues":[{"start":2.03,"end":3.24,"text":"Rive ってなに？","scene":0},{"start":3.83,"end":7.76,"text":"ずんだもん：ライブ！？　ずんだもんの、単独ライブなのだ！？","scene":0},{"start":7.9,"end":8.67,"text":"先生：歌いません。","scene":0},{"start":8.97,"end":15.03,"text":"先生：Rive は、動くイラストやボタンを作って、アプリやウェブで、そのまま動かすための道具です。","scene":0},{"start":15.33,"end":21.67,"text":"天の声：この動画は、Rive をざっくり知る、お笑い版である。サンプルのコードは、一行も出ない。","scene":0},{"start":22.9,"end":27.68,"text":"先生：アプリの動き。例えば、ボタンを押したときの、ぷるんとした反応。","scene":1},{"start":27.97,"end":32.09,"text":"ずんだもん：デザイナーのぼくが、動画で作ったのだ。かわいいのだ。","scene":1},{"start":32.4,"end":36.42,"text":"ずんだもん：エンジニアのぼくが、それを、コードで作り直したのだ。","scene":1},{"start":36.73,"end":39.4,"text":"ずんだもん：……なんか、違うのだ。","scene":1},{"start":40.5,"end":42.79,"text":"天の声：一人で作って、一人で食い違う。","scene":1},{"start":43.1,"end":49.12,"text":"先生：作った動きと、アプリで動く動きが、別々。これが、よくある困りごとです。","scene":1},{"start":50.33,"end":55.18,"text":"先生：Rive は、動きを作る場所と、動かす仕組みが、セットになっています。","scene":2},{"start":55.47,"end":58.89,"text":"先生：まず、Rive のエディタで、絵と動きを作ります。","scene":2},{"start":59.2,"end":65.16,"text":"先生：できたら、.riv という形式のファイルに書き出します。","scene":2},{"start":65.47,"end":70.87,"text":"ずんだもん：アール、アイ、ブイ……リブ！　スペアリブなのだ！","scene":2},{"start":71.03,"end":73.06,"text":"先生：食べ物から、離れてください。","scene":2},{"start":73.37,"end":79.93,"text":"先生：最後に、アプリやゲーム、ウェブサイトに入れたランタイムが、このファイルを読み込んで、動かします。","scene":2},{"start":80.23,"end":84.66,"text":"天の声：作った動きが、そのまま動く。コードで作り直さなくていいのである。","scene":2},{"start":84.97,"end":87.87,"text":"ずんだもん：ぼくの、一人二役が……。","scene":2},{"start":88.17,"end":90.25,"text":"先生：もう、一役で大丈夫です。","scene":2},{"start":91.47,"end":95.61,"text":"先生：そして、Rive の大きな特徴の一つが、ステートマシンです。","scene":3},{"start":95.9,"end":97.73,"text":"ずんだもん：ステーキ……マシン……？","scene":3},{"start":97.9,"end":98.63,"text":"先生：焼きません。","scene":3},{"start":99.23,"end":103.73,"text":"先生：動きと動きを、線でつないで、切り替わる条件を決める仕組みです。","scene":3},{"start":104.03,"end":107.53,"text":"先生：例えば、ずんだもんの気分で、作ってみましょう。","scene":3},{"start":107.83,"end":110.34,"text":"ずんだもん：ぼくの気分は、複雑なのだ。","scene":3},{"start":110.63,"end":111.71,"text":"先生：ふつうの状態。","scene":3},{"start":112,"end":114.5,"text":"先生：時間がたつと、はらぺこの状態へ。","scene":3},{"start":114.8,"end":117.51,"text":"ずんだもん：ずんだ餅が来たら、ごきげんなのだ！","scene":3},{"start":117.8,"end":120.11,"text":"先生：食べ終わったら、ふつうに戻ります。","scene":3},{"start":120.4,"end":122.05,"text":"天の声：複雑では、なかった。","scene":3},{"start":122.67,"end":130.6,"text":"先生：アプリは、ずんだ餅が来た、という合図を渡すだけ。どの動きに、どう切り替えるかは、ファイルの中に入っています。","scene":3},{"start":130.9,"end":140.49,"text":"先生：ボタンなら、待機、押された、成功。押されたことは、ファイルの中で受け取れます。アプリは、成功した、と伝えるだけです。","scene":3},{"start":141.67,"end":149.34,"text":"先生：クイズです。ステートマシンを使うと、動きの切り替えを、全部コードで書く必要がある。マルか、バツか。","scene":4},{"start":152.83,"end":155.96,"text":"ずんだもん：マルなのだ！　コードは、裏切らないのだ！","scene":4},{"start":156.1,"end":158.29,"text":"先生：さっきの話、聞いてました？","scene":4},{"start":158.6,"end":164.29,"text":"先生：答えは、バツ。切り替えの条件は、エディタで作って、ファイルに入っています。","scene":4},{"start":164.6,"end":167.66,"text":"天の声：ずんだもん、講座が変わっても、負ける。","scene":4},{"start":168.87,"end":173.41,"text":"先生：では、どこで動くのか。公式のランタイムが、こんなにあります。","scene":5},{"start":173.7,"end":174.2,"text":"先生：ウェブ。","scene":5},{"start":174.5,"end":179.26,"text":"先生：iPhone や Android のアプリ。Flutter や React Native も。","scene":5},{"start":179.57,"end":182.59,"text":"先生：ゲームエンジンの、Unity と Unreal。","scene":5},{"start":182.9,"end":185.09,"text":"先生：そのほか、C++ も。","scene":5},{"start":185.4,"end":188.16,"text":"ずんだもん：ずんだ餅の上でも、動くのだ？","scene":5},{"start":188.3,"end":190.42,"text":"先生：画面の上で、動かしてください。","scene":5},{"start":190.73,"end":197.54,"text":"先生：しかも、公式のランタイムは、すべてオープンソースで、MIT ライセンス。仕事でも使えます。","scene":5},{"start":198.77,"end":205.03,"text":"先生：最後に、注意です。機能の対応と料金は、使う前に、公式で確かめましょう。","scene":6},{"start":205.33,"end":211.41,"text":"先生：機能によっては、対応していないランタイムもあります。料金のプランも、変わることがあります。","scene":6},{"start":211.7,"end":214.37,"text":"ずんだもん：ずんだもんのライブは、無料なのだ。","scene":6},{"start":214.53,"end":215.4,"text":"先生：やっていません。","scene":6},{"start":216.57,"end":222.07,"text":"先生：振り返りです。Rive は、動きを作るエディタと、それを動かすランタイムのセット。","scene":7},{"start":222.37,"end":228.81,"text":"先生：ステートマシンで、切り替えの条件まで、ファイルに入ります。アプリは、合図を渡すだけ。","scene":7},{"start":229.1,"end":235.13,"text":"先生：公式のランタイムは、オープンソース。機能の対応と料金は、公式で確かめましょう。","scene":7},{"start":235.43,"end":239.22,"text":"ずんだもん：わかったのだ。Rive は、ずんだ餅で動くのだ！","scene":7},{"start":239.37,"end":240.18,"text":"先生：動きません。","scene":7},{"start":240.47,"end":243.23,"text":"天の声：ずんだもんは、まだ、少しずれている。","scene":7},{"start":244.43,"end":247.99,"text":"ずんだもん：次は、ずんだもんを、Rive で動かすのだ！","scene":8},{"start":248.3,"end":249.9,"text":"天の声：なお、予定はない。","scene":8}],"video":"media/R01.mp4?v=a9c2c2bcfa682e9126677924a240e58412c742697a9d7caa02d64bfb8d56ef0d","poster":"media/R01.jpg?v=a9c2c2bcfa682e9126677924a240e58412c742697a9d7caa02d64bfb8d56ef0d","videoCc":"media/R01.cc.mp4?v=a9c2c2bcfa682e9126677924a240e58412c742697a9d7caa02d64bfb8d56ef0d"}]}</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("course-data").textContent);
+  var L = DATA.lectures;
+  var $ = function (id) { return document.getElementById(id); };
+  var video = $("video");
+  var player = $("player");
+  var theater = $("theater");
+  var offlineState = { saved: false, online: navigator.onLine };
+  function playbackStatus() {
+    $("playbackStatus").textContent = offlineState.saved ? "アプリ内の保存版を再生します。動画ファイルのダウンロードとは別の保存です。" : offlineState.online ? "オンライン再生です。オフラインで使うには上の保存ボタンを選んでください。" : "この講座は未保存です。動画の再生には通信が必要です。";
+  }
+  window.addEventListener("chalkfile:offline-state", function (event) {
+    offlineState = event.detail;
+    if (offlineState.saved && offlineState.pageVersion !== DATA.pageVersion) {
+      video.pause();
+      $("playbackStatus").textContent = "保存版が更新されました。上の「保存した版を開く」で開き直してください。";
+    } else playbackStatus();
+  });
+  video.addEventListener("error", function () { $("playbackStatus").textContent = "動画を再生できません。通信と保存状態を確認し、再読み込みまたは保存を再試行してください。"; });
+  $("loopToggle").addEventListener("click", function () {
+    video.loop = !video.loop;
+    $("loopToggle").setAttribute("aria-pressed", String(video.loop));
+    clearNext();
+  });
+
+  // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
+  var KEY = "chalkfile:" + DATA.course.id + ":";
+  var store = {
+    get: function (k, d) {
+      try { var v = localStorage.getItem(KEY + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) { /* 保存できなくても続ける */ }
+    }
+  };
+  var progress = store.get("progress", {}); // { L01: { t: 秒, max: 0..1, done: bool } }
+  var notes = store.get("notes", {});       // { L01: [{ t, text, at }] }
+  var quizState = store.get("quiz", {});    // { L01: { 0: 選んだ番号 } }
+  var prefs = store.get("prefs", { rate: 1, cc: true, follow: true });
+
+  var fmt = function (s) {
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60);
+    return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+  };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  };
+  // リンクは https:// と http:// だけ通す（javascript: や data: は # にする）
+  var safeUrl = function (u) {
+    try { var x = new URL(String(u), location.href); return x.protocol === "https:" || x.protocol === "http:" ? x.href : "#"; } catch (e) { return "#"; }
+  };
+  var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
+
+  var UNIT = DATA.course.unitLabel || "LECTURE";
+  var UI = DATA.course.ui || {};
+  var PLANNED = DATA.course.planned || [];
+  var current = 0;
+  var cueIdx = -1;
+  var nextTimer = null;
+  var dirtyProgress = false;
+
+  // ── 全体の進み具合 ──
+  function renderCourseProgress() {
+    var done = L.filter(function (l) { return progress[l.id] && progress[l.id].done; }).length;
+    $("cpBar").style.width = (done / L.length * 100) + "%";
+    $("cpLabel").textContent = done + " / " + L.length + " 完了";
+    var total = L.reduce(function (a, l) { return a + l.duration; }, 0);
+    var word = UNIT === "CHAPTER" ? " 章" : " レクチャー";
+    var plan = PLANNED.length ? "（計画 " + (L.length + PLANNED.length) + word + "）" : "";
+    $("curSum").textContent = L.length + word + "・" + Math.round(total / 60) + " 分" + plan;
+    $("courseMeta").textContent = DATA.course.sections.length + " セクション・" + L.length + word + "・約 " + Math.round(total / 60) + " 分" + plan;
+  }
+
+  // ── カリキュラム ──
+  function ring(id, i) {
+    var p = progress[id] || {};
+    if (p.done) {
+      return '<svg class="ring done" viewBox="0 0 24 24" aria-label="完了"><circle class="disc" cx="12" cy="12" r="11"/><path class="tick" d="M7 12.4l3.3 3.3L17 9" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    var max = Math.min(1, p.max || 0);
+    var c = 2 * Math.PI * 10;
+    return '<svg class="ring" viewBox="0 0 24 24" aria-label="' + Math.round(max * 100) + '% 視聴"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5"/>' +
+      (max > 0 ? '<circle class="fg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="' + (c * max).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 12 12)"/>' : "") +
+      '<text class="num" x="12" y="15.2" text-anchor="middle">' + (i + 1) + "</text></svg>";
+  }
+  function renderCurriculum() {
+    var html = "";
+    DATA.course.sections.forEach(function (sec) {
+      var lecs = L.map(function (l, i) { return { l: l, i: i }; }).filter(function (x) { return x.l.section.no === sec.no; });
+      var done = lecs.filter(function (x) { return progress[x.l.id] && progress[x.l.id].done; }).length;
+      html += '<div class="sec"><div class="sec-head"><div class="name"><span class="no">SECTION ' + sec.no + "</span>" + esc(sec.title) + '</div><span class="cnt">' + done + " / " + lecs.length + "</span></div>";
+      lecs.forEach(function (x) {
+        html += '<button type="button" class="lec" data-i="' + x.i + '"' + (x.i === current ? ' aria-current="true"' : "") + ">" + ring(x.l.id, x.i) +
+          '<span class="ttl">' + esc(x.l.title) + '</span><span class="dur">' + fmt(x.l.duration) + "</span></button>";
+      });
+      // まだ作っていない章（講座の計画だけあるもの）
+      PLANNED.filter(function (p) { return p.section === sec.no; }).forEach(function (p) {
+        html += '<div class="lec planned" aria-disabled="true"><svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-dasharray="3 3"/><text class="num" x="12" y="15.2" text-anchor="middle">' + p.no + "</text></svg>" +
+          '<span class="ttl">' + esc(p.title) + '</span><span class="soon">準備中・約 ' + p.minutes + " 分</span></div>";
+      });
+      html += "</div>";
+    });
+    $("sections").innerHTML = html;
+  }
+  $("sections").addEventListener("click", function (e) {
+    var b = e.target.closest(".lec");
+    if (b) load(Number(b.dataset.i), true);
+  });
+
+  // ── レクチャーを開く ──
+  function load(i, play) {
+    if (i < 0 || i >= L.length) return;
+    saveProgress();
+    current = i;
+    var lec = L[i];
+    clearNext();
+    cueIdx = -1;
+    video.pause();
+    video.innerHTML = "";
+    video.removeAttribute("src");
+    video.poster = lec.poster;
+    var src = document.createElement("source");
+    src.src = srcFor(lec);
+    src.type = "video/mp4";
+    // 全画面（iPhone など）用の字幕は、埋め込んだ台本からその場で WebVTT を作る
+    var tr = document.createElement("track");
+    tr.kind = "subtitles";
+    tr.srclang = "ja";
+    tr.label = "日本語";
+    tr.src = vttUrl(lec);
+    video.appendChild(src);
+    video.appendChild(tr);
+    video.load();
+    applyCc();
+    playbackStatus();
+    var resume = progress[lec.id] && !progress[lec.id].done ? progress[lec.id].t || 0 : 0;
+    video.onloadedmetadata = function () {
+      if (resume > 3 && resume < lec.duration - 5) video.currentTime = resume;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    if (play) video.play().catch(function () {});
+    $("nowEyebrow").textContent = UNIT + " " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
+    $("nowTitle").textContent = lec.title;
+    $("summary").textContent = lec.summary;
+    $("caution").textContent = lec.caution || "";
+    $("caution").hidden = !lec.caution;
+    $("takeaways").innerHTML = lec.takeaways.map(function (t) { return "<li><span>" + esc(t) + "</span></li>"; }).join("");
+    $("chapters").innerHTML = lec.chapters.map(function (c, k) {
+      return '<li><button type="button" data-t="' + c.start + '" data-k="' + k + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.heading) + "</span></button></li>";
+    }).join("");
+    $("docs").innerHTML = lec.docs.map(function (d) {
+      var host = "";
+      try { host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, ""); } catch (e) { host = d.url; }
+      return '<li><a href="' + esc(safeUrl(d.url)) + '" target="_blank" rel="noopener noreferrer"><span><span>' + esc(d.title) + '</span><span class="host">' + esc(host) + '</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></li>';
+    }).join("");
+    renderTranscript();
+    renderNotes();
+    renderQuiz();
+    renderMaterial();
+    renderDone();
+    renderCurriculum();
+    $("prevBtn").disabled = i === 0;
+    $("nextBtn").disabled = i === L.length - 1;
+    $("cc").textContent = "";
+    try { history.replaceState(null, "", "#" + lec.id); } catch (e) {}
+    store.set("last", lec.id);
+  }
+
+  var vttCache = {};
+  function vttUrl(lec) {
+    if (vttCache[lec.id]) return vttCache[lec.id];
+    var ts = function (x) {
+      var h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), sec = (x % 60).toFixed(3);
+      return pad2(h) + ":" + pad2(m) + ":" + (sec.length < 6 ? "0" : "") + sec;
+    };
+    var body = "WEBVTT\n\n" + lec.cues.map(function (c, i) {
+      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + String(c.text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/-->/g, "→") + "\n";
+    }).join("\n");
+    try {
+      vttCache[lec.id] = URL.createObjectURL(new Blob([body], { type: "text/vtt" }));
+    } catch (e) {
+      vttCache[lec.id] = "";
+    }
+    return vttCache[lec.id];
+  }
+
+  // ネイティブ字幕は全画面（iPhone など）のときだけ使う。ふだんは自前の字幕を出す
+  function hideNativeTrack() {
+    for (var k = 0; k < video.textTracks.length; k++) video.textTracks[k].mode = "hidden";
+  }
+  video.addEventListener("webkitbeginfullscreen", function () {
+    if (prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+  });
+  video.addEventListener("webkitendfullscreen", hideNativeTrack);
+  // 動画だけの全画面（標準のコントロールの全画面ボタン）でも、字幕を焼き込んだ版が無いときはネイティブ字幕を出す
+  document.addEventListener("fullscreenchange", function () {
+    if (document.fullscreenElement === video && prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+    else hideNativeTrack();
+  });
+
+  // ── 字幕・台本の追従 ──
+  function findCue(t) {
+    var cues = L[current].cues;
+    var lo = 0, hi = cues.length - 1, ans = -1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      if (cues[mid].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    return ans;
+  }
+  video.addEventListener("timeupdate", function () {
+    var lec = L[current];
+    var t = video.currentTime;
+    var k = findCue(t);
+    var c = k >= 0 ? lec.cues[k] : null;
+    var showing = c && t <= c.end + 0.7; // 短い間で字幕がちらつかないように残す
+    $("cc").textContent = showing ? c.text : "";
+    if (k !== cueIdx) {
+      cueIdx = k;
+      var prev = document.querySelector(".cue.on");
+      if (prev) prev.classList.remove("on");
+      var el = document.querySelector('.cue[data-k="' + k + '"]');
+      if (el) {
+        el.classList.add("on");
+        if (prefs.follow && !$("p-transcript").hidden && !$("q").value) {
+          var box = $("transcript");
+          box.scrollTop = el.offsetTop - box.offsetTop - box.clientHeight / 3;
+        }
+      }
+      var ch = lec.chapters.reduce(function (a, cc, idx) { return cc.start <= t + 0.2 ? idx : a; }, 0);
+      Array.prototype.forEach.call(document.querySelectorAll("#chapters button"), function (b) {
+        b.classList.toggle("on", Number(b.dataset.k) === ch);
+      });
+    }
+    var p = progress[lec.id] || (progress[lec.id] = { t: 0, max: 0, done: false });
+    p.t = t;
+    if (lec.duration) p.max = Math.max(p.max || 0, t / lec.duration);
+    if (!p.done && p.max > 0.94) { p.done = true; renderDone(); renderCurriculum(); renderCourseProgress(); }
+    dirtyProgress = true;
+    $("noteAddLabel").textContent = fmt(t) + " にメモ";
+  });
+  setInterval(saveProgress, 4000);
+  function saveProgress() {
+    if (!dirtyProgress) return;
+    dirtyProgress = false;
+    store.set("progress", progress);
+    renderCurriculum();
+  }
+  window.addEventListener("pagehide", saveProgress);
+
+  // ── 次のレクチャーへ ──
+  video.addEventListener("ended", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = {});
+    p.done = true;
+    p.t = 0;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+    if (current >= L.length - 1) return;
+    var nx = L[current + 1];
+    $("nextTitle").textContent = "L" + pad2(nx.no) + "　" + nx.title;
+    $("nextup").hidden = false;
+    var left = 6;
+    $("nextGoLabel").textContent = left + " 秒後に再生";
+    nextTimer = setInterval(function () {
+      left -= 1;
+      $("nextGoLabel").textContent = left > 0 ? left + " 秒後に再生" : "再生";
+      if (left <= 0) { clearNext(); load(current + 1, true); }
+    }, 1000);
+  });
+  function clearNext() {
+    if (nextTimer) clearInterval(nextTimer);
+    nextTimer = null;
+    $("nextup").hidden = true;
+  }
+  $("nextGo").addEventListener("click", function () { clearNext(); load(current + 1, true); });
+  $("nextStay").addEventListener("click", clearNext);
+  $("prevBtn").addEventListener("click", function () { load(current - 1, true); });
+  $("nextBtn").addEventListener("click", function () { load(current + 1, true); });
+
+  // ── 完了 ──
+  function renderDone() {
+    var p = progress[L[current].id] || {};
+    var b = $("doneToggle");
+    b.setAttribute("aria-pressed", p.done ? "true" : "false");
+    b.querySelector("span").textContent = p.done ? "完了済み" : "完了にする";
+  }
+  $("doneToggle").addEventListener("click", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = { t: 0, max: 0 });
+    p.done = !p.done;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+  });
+
+  // ── 速度・字幕 ──
+  function renderSpeed() {
+    Array.prototype.forEach.call(document.querySelectorAll("#speed button"), function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.rate) === prefs.rate ? "true" : "false");
+    });
+  }
+  $("speed").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    prefs.rate = Number(b.dataset.rate);
+    video.playbackRate = prefs.rate;
+    store.set("prefs", prefs);
+    renderSpeed();
+  });
+  // 字幕を焼き込んだ版（videoCc）があるレクチャーは、字幕オンのとき動画ごと差し替える（どの全画面でも字幕が見える）。
+  // 無いレクチャーは、動画を少し縮めて、プレーヤーの中の下に字幕の帯を出す
+  function srcFor(lec) { return prefs.cc && lec.videoCc ? lec.videoCc : lec.video; }
+  function applyCc() {
+    var lec = L[current];
+    var burned = !!lec.videoCc;
+    $("cc").hidden = !prefs.cc || burned;
+    $("player").classList.toggle("cc-on", prefs.cc && !burned);
+    var want = srcFor(lec);
+    $("fileDownload").href = want;
+    $("fileDownload").download = lec.id + (want === lec.video ? "" : ".captioned") + ".mp4";
+  }
+  function swapSource() {
+    var s = video.querySelector("source");
+    var want = srcFor(L[current]);
+    if (!s || s.getAttribute("src") === want) return;
+    var t = video.currentTime, paused = video.paused;
+    s.setAttribute("src", want);
+    video.onloadedmetadata = function () {
+      video.currentTime = t;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    video.load();
+    if (!paused) video.play().catch(function () {});
+  }
+  function setCC(on) {
+    prefs.cc = on;
+    store.set("prefs", prefs);
+    $("ccToggle").setAttribute("aria-pressed", on ? "true" : "false");
+    applyCc();
+    swapSource();
+  }
+  $("ccToggle").addEventListener("click", function () { setCC(!prefs.cc); });
+
+  // ── タブ ──
+  var tabs = ["overview", "material", "transcript", "notes", "docs", "quiz", "exercise", "ask"];
+  function showTab(name) {
+    if ($("tab-" + name).hidden) name = "overview";
+    tabs.forEach(function (t) {
+      $("tab-" + t).setAttribute("aria-selected", t === name ? "true" : "false");
+      $("p-" + t).hidden = t !== name;
+    });
+    store.set("tab", name);
+  }
+  tabs.forEach(function (t) { $("tab-" + t).addEventListener("click", function () { showTab(t); }); });
+
+  // ── チャプター ──
+  $("chapters").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    video.currentTime = Number(b.dataset.t);
+    video.play().catch(function () {});
+  });
+
+  // ── 台本と検索 ──
+  function renderTranscript() {
+    var lec = L[current];
+    var html = "";
+    var last = -1;
+    lec.cues.forEach(function (c, k) {
+      if (c.scene !== last) {
+        last = c.scene;
+        html += "<h4>" + esc(lec.chapters[c.scene] ? lec.chapters[c.scene].heading : "") + "</h4>";
+      }
+      html += '<button type="button" class="cue" data-k="' + k + '" data-t="' + c.start + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.text) + "</span></button>";
+    });
+    $("transcript").innerHTML = html;
+  }
+  function renderSearch(q) {
+    var words = q.trim().toLowerCase();
+    if (!words) { renderTranscript(); return; }
+    var html = "";
+    var hits = 0;
+    L.forEach(function (lec, li) {
+      lec.cues.forEach(function (c) {
+        if (c.text.toLowerCase().indexOf(words) === -1) return;
+        hits += 1;
+        if (hits > 200) return;
+        var i0 = c.text.toLowerCase().indexOf(words);
+        var shown = esc(c.text.slice(0, i0)) + "<mark>" + esc(c.text.slice(i0, i0 + words.length)) + "</mark>" + esc(c.text.slice(i0 + words.length));
+        html += '<button type="button" class="cue" data-li="' + li + '" data-t="' + c.start + '"><span class="t"><span class="hit-lec">L' + pad2(lec.no) + "</span><br>" + fmt(c.start) + "</span><span>" + shown + "</span></button>";
+      });
+    });
+    $("transcript").innerHTML = html || '<p class="hint" style="padding:10px">「' + esc(q) + "」を含む台詞は見つかりませんでした。</p>";
+  }
+  $("q").addEventListener("input", function () { renderSearch(this.value); });
+  $("transcript").addEventListener("click", function (e) {
+    var b = e.target.closest(".cue");
+    if (!b) return;
+    var t = Number(b.dataset.t);
+    if (b.dataset.li !== undefined && Number(b.dataset.li) !== current) {
+      load(Number(b.dataset.li), false);
+      video.addEventListener("loadedmetadata", function go() {
+        video.removeEventListener("loadedmetadata", go);
+        video.currentTime = t;
+        video.play().catch(function () {});
+      });
+      return;
+    }
+    video.currentTime = t + 0.01;
+    video.play().catch(function () {});
+  });
+  $("follow").addEventListener("change", function () { prefs.follow = this.checked; store.set("prefs", prefs); });
+
+  // ── ノート ──
+  function renderNotes() {
+    var list = notes[L[current].id] || [];
+    $("notes").innerHTML = list.map(function (n, k) {
+      return '<li><button type="button" class="stamp" data-t="' + n.t + '">' + fmt(n.t) + '</button><div class="body">' + esc(n.text) +
+        '</div><button type="button" class="del" data-k="' + k + '" aria-label="このメモを消す">消す</button></li>';
+    }).join("") || '<li style="display:block"><span class="hint">まだメモはありません。気になった場面で一時停止して書いてみてください。</span></li>';
+  }
+  $("noteAdd").addEventListener("click", function () {
+    var text = $("noteText").value.trim();
+    if (!text) { $("noteText").focus(); return; }
+    var id = L[current].id;
+    (notes[id] = notes[id] || []).push({ t: Math.floor(video.currentTime), text: text, at: Date.now() });
+    notes[id].sort(function (a, b) { return a.t - b.t; });
+    store.set("notes", notes);
+    $("noteText").value = "";
+    renderNotes();
+    toast("メモを残しました");
+  });
+  $("notes").addEventListener("click", function (e) {
+    var s = e.target.closest(".stamp");
+    if (s) { video.currentTime = Number(s.dataset.t); video.play().catch(function () {}); return; }
+    var d = e.target.closest(".del");
+    if (d) {
+      notes[L[current].id].splice(Number(d.dataset.k), 1);
+      store.set("notes", notes);
+      renderNotes();
+    }
+  });
+  $("noteCopy").addEventListener("click", function () {
+    var out = [];
+    L.forEach(function (lec) {
+      var list = notes[lec.id] || [];
+      if (!list.length) return;
+      out.push("## L" + pad2(lec.no) + " " + lec.title);
+      list.forEach(function (n) { out.push("- [" + fmt(n.t) + "] " + n.text.replace(/\n/g, " ")); });
+      out.push("");
+    });
+    var text = out.join("\n") || "（ノートはまだありません）";
+    var fallback = function () {
+      $("noteText").value = text;
+      $("noteText").select();
+      toast("下の欄に書き出しました。選択してコピーしてください");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("全ノートをコピーしました"); }, fallback);
+    } else fallback();
+  });
+
+  // ── 教材・実践課題・AI に聞く（教材を持つレクチャーだけ）──
+  var EV = { research: "研究・学術", official: "公式・法令・規格", practice: "実務の指針", example: "説明用の仮の例" };
+  // 教材の文字はエスケープしてから、**強調** と「- 」の箇条書きだけを HTML にする
+  function inline(s) { return esc(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+  function paras(list) {
+    var html = "", inList = false;
+    list.forEach(function (b) {
+      String(b).split("\n").forEach(function (line) {
+        if (/^- /.test(line)) {
+          if (!inList) { html += "<ul>"; inList = true; }
+          html += "<li>" + inline(line.slice(2)) + "</li>";
+        } else {
+          if (inList) { html += "</ul>"; inList = false; }
+          if (line.trim()) html += "<p>" + inline(line) + "</p>";
+        }
+      });
+    });
+    if (inList) html += "</ul>";
+    return html;
+  }
+  function evChips(list) { return '<div class="evs">' + list.map(function (e) { return '<span class="ev ' + esc(e) + '">' + esc(EV[e] || e) + "</span>"; }).join("") + "</div>"; }
+  function srcLinks(list) {
+    if (!list || !list.length) return "";
+    return '<p class="msrc">出典: ' + list.map(function (s) {
+      return '<a href="' + esc(safeUrl(s.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher + "（" + s.year + "）") + "</a>";
+    }).join("、") + "</p>";
+  }
+  function figHtml(f) {
+    var h = '<div class="fig" id="' + esc(f.id) + '"><span class="sid">' + esc(f.id) + "</span><h4>" + esc(f.title) + "</h4>" + evChips([f.evidence]) + '<p class="cap">' + inline(f.caption) + "</p>";
+    if (f.table) {
+      h += '<table class="mtable"><thead><tr>' + f.table[0].map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        f.table.slice(1).map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inline(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    }
+    if (f.flow) h += '<div class="flowline">' + f.flow.map(function (x, i) { return (i ? '<span class="ar" aria-hidden="true">→</span>' : "") + '<span class="st">' + inline(x) + "</span>"; }).join("") + "</div>";
+    if (f.code) h += "<pre><code>" + esc(f.code) + "</code></pre>";
+    return h + "</div>";
+  }
+  function renderMaterial() {
+    var m = L[current].material;
+    ["material", "exercise", "ask"].forEach(function (t) { $("tab-" + t).hidden = !m; });
+    if (!m) {
+      if (["material", "exercise", "ask"].indexOf(store.get("tab", "overview")) >= 0) showTab("overview");
+      return;
+    }
+    $("matGoals").innerHTML = m.goals.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matPre").innerHTML = m.prerequisites.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matToc").innerHTML = m.sections.map(function (s, i) { return '<a href="#' + esc(s.id) + '" data-sec="' + esc(s.id) + '">' + (i + 1) + ". " + esc(s.title) + "</a>"; }).join("");
+    $("matBody").innerHTML = m.sections.map(function (s) {
+      return '<section class="msec" id="' + esc(s.id) + '"><span class="sid">' + esc(s.id) + "</span><h3>" + esc(s.title) + "</h3>" + evChips(s.evidence) + paras(s.body) + srcLinks(s.sources) + "</section>";
+    }).join("");
+    $("matFigs").innerHTML = m.figures.map(figHtml).join("");
+    $("matSummary").innerHTML = m.summary.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    var ex = m.exercise;
+    $("exBody").innerHTML =
+      '<div class="msec" id="' + esc(ex.id) + '"><span class="sid">' + esc(ex.id) + "</span><h3>" + esc(ex.title) + "</h3>" +
+      "<p><strong>ねらい</strong>　" + inline(ex.goal) + "</p><p><strong>目安の時間</strong>　" + esc(ex.timebox) + "</p><p><strong>出すもの</strong>　" + inline(ex.deliverable) + "</p>" +
+      '<h3 style="margin-top:14px">手順</h3><ol class="mat-list">' + ex.steps.map(function (x) { return "<li>" + inline(x) + "</li>"; }).join("") + "</ol></div>" +
+      '<div class="msec"><h3>回答例: ' + esc(ex.example.title) + "</h3>" + evChips(["example"]) + paras(ex.example.body) + "</div>" +
+      '<div class="fig"><h4>評価基準</h4><table class="mtable"><thead><tr><th>観点</th><th>できている</th><th>もう一歩</th><th>やり直し</th></tr></thead><tbody>' +
+      ex.rubric.map(function (r) { return "<tr><td><strong>" + inline(r.criterion) + "</strong></td><td>" + inline(r.good) + "</td><td>" + inline(r.fair) + "</td><td>" + inline(r.poor) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+    $("askList").innerHTML = m.askExamples.map(function (a) {
+      return '<li><div class="qq">' + esc(a.q) + '</div><div class="refs">根拠にする節: ' + a.refs.map(function (r) { return '<button type="button" data-sec="' + esc(r) + '">' + esc(r) + "</button>"; }).join("") + "</div></li>";
+    }).join("");
+  }
+  // 節へ移る（目次と、質問例の参照）
+  function gotoSection(id) {
+    showTab("material");
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("matToc").addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-sec]");
+    if (!a) return;
+    e.preventDefault();
+    gotoSection(a.dataset.sec);
+  });
+  $("askList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sec]");
+    if (b) gotoSection(b.dataset.sec);
+  });
+
+  // ── クイズ ──
+  function renderQuiz() {
+    var lec = L[current];
+    var st = quizState[lec.id] || {};
+    var right = 0, answered = 0;
+    var html = lec.quiz.map(function (q, qi) {
+      var picked = st[qi];
+      var done = picked !== undefined;
+      if (done) { answered += 1; if (picked === q.answer) right += 1; }
+      return '<div class="q"><div class="qt"><span class="n">Q' + (qi + 1) + "</span>" + esc(q.q) + '</div><div class="choices">' +
+        q.choices.map(function (c, ci) {
+          var cls = done ? (ci === q.answer ? " right" : ci === picked ? " wrong" : "") : "";
+          return '<button type="button" class="choice' + cls + '" data-q="' + qi + '" data-c="' + ci + '"' + (done ? " disabled" : "") + ">" + esc(c) + "</button>";
+        }).join("") + "</div>" +
+        (done ? '<div class="explain' + (picked === q.answer ? "" : " bad") + '">' + (picked === q.answer ? "正解。" : "答えは「" + esc(q.choices[q.answer]) + "」。") + esc(q.explain) + "</div>" : "") +
+        "</div>";
+    }).join("");
+    html += '<div class="tools"><span class="score">' + (answered ? lec.quiz.length + " 問中 " + right + " 問正解" : "選ぶとすぐ答えと解説が出ます。") + "</span>" +
+      (answered ? '<button type="button" class="btn" id="quizReset">もう一度</button>' : "") + "</div>";
+    $("quiz").innerHTML = html;
+  }
+  $("quiz").addEventListener("click", function (e) {
+    var b = e.target.closest(".choice");
+    if (b && !b.disabled) {
+      var id = L[current].id;
+      (quizState[id] = quizState[id] || {})[b.dataset.q] = Number(b.dataset.c);
+      store.set("quiz", quizState);
+      renderQuiz();
+      return;
+    }
+    if (e.target.closest("#quizReset")) {
+      delete quizState[L[current].id];
+      store.set("quiz", quizState);
+      renderQuiz();
+    }
+  });
+
+  // ── 全画面（自前の字幕ごと） ──
+  function toggleFull() {
+    var doc = document;
+    if (doc.fullscreenElement) { doc.exitFullscreen().catch(function () {}); return; }
+    if (theater.requestFullscreen) theater.requestFullscreen().catch(function () {
+      if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    });
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  }
+  player.addEventListener("dblclick", function (e) { if (e.target === video) { e.preventDefault(); toggleFull(); } });
+
+  // ── キーボード ──
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (["input", "textarea", "select", "button", "a", "summary"].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === " " || k === "k") { e.preventDefault(); if (video.paused) video.play().catch(function () {}); else video.pause(); }
+    else if (k === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); }
+    else if (k === "ArrowRight") { video.currentTime = video.currentTime + 5; }
+    else if (k === "j") { video.currentTime = Math.max(0, video.currentTime - 10); }
+    else if (k === "l") { video.currentTime = video.currentTime + 10; }
+    else if (k === "c") { setCC(!prefs.cc); }
+    else if (k === "f") { toggleFull(); }
+    else if (k === "n") { load(current + 1, true); }
+  });
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.querySelector(".toast");
+    if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  // ── はじめに開く ──
+  $("credits").textContent = "ナレーション " + DATA.credits.join("・") + "　BGM・効果音はプログラムで合成したオリジナル　" + DATA.course.sourceNote;
+  if (DATA.course.disclaimer) { $("courseNote").textContent = DATA.course.disclaimer; $("courseNote").hidden = false; }
+  if (DATA.course.links && DATA.course.links.length) {
+    var box = $("links");
+    box.innerHTML = DATA.course.links.map(function (ln) {
+      return '<a href="' + esc(safeUrl(ln.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(ln.label) +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
+    }).join("");
+    box.hidden = false;
+  }
+  if (UI.takeaways) $("takeawaysTitle").textContent = UI.takeaways;
+  if (UI.docs) $("tab-docs").textContent = UI.docs;
+  if (UI.searchHint) $("q").placeholder = "全" + (UNIT === "CHAPTER" ? "章" : "レクチャー") + "の台本から探す（例: " + UI.searchHint + "）";
+  $("follow").checked = prefs.follow !== false;
+  renderSpeed();
+  setCC(prefs.cc !== false);
+  renderCourseProgress();
+  var fromHash = (location.hash || "").replace("#", "");
+  var startId = L.some(function (l) { return l.id === fromHash; }) ? fromHash : store.get("last", L[0].id);
+  var startIdx = Math.max(0, L.findIndex(function (l) { return l.id === startId; }));
+  load(startIdx, false);
+  showTab(store.get("tab", "overview"));
+})();
+</script>
+<script id="pwa-data" type="application/json">{"root":"../","course":{"id":"rive-comedy","title":"笑ってわかる Rive アニメーション","pageVersion":"a9c2c2bcfa682e9126677924a240e58412c742697a9d7caa02d64bfb8d56ef0d"},"courses":[{"id":"stripe-billing","title":"Stripe サブスク課金 基礎講座"},{"id":"nudge-product","title":"ナッジ理論をプロダクト改善に活かす"},{"id":"uiux-engineers","title":"エンジニアのための UI・UX デザイン"},{"id":"indie-marketing","title":"個人開発者のためのマーケティング"},{"id":"nudge-comedy","title":"笑って覚えるナッジ理論"},{"id":"rive-comedy","title":"笑ってわかる Rive アニメーション"},{"id":"pstack-comedy","title":"笑ってわかる pstack"},{"id":"superagent-comedy","title":"笑ってわかる Super-agent"}]}</script><script>// site/offline-client.ts
+var app = JSON.parse(document.getElementById("pwa-data").textContent);
+var root = new URL(app.root, location.href);
+var $ = (id) => document.getElementById(id);
+var mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+var registration;
+var latest;
+var states = [];
+var busy = false;
+var workingId;
+var refreshInProgress = false;
+var installPrompt = null;
+var locallyDownloading = false;
+var localSaveRequest = false;
+var messageRevision = 0;
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  $("pwaInstall").hidden = false;
+});
+function installed() {
+  $("pwaInstall").hidden = true;
+  $("installState").textContent = "アプリとして起動中、またはインストール済みです。講座は別途選んで保存してください。";
+}
+window.addEventListener("appinstalled", installed);
+if (matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+  installed();
+$("pwaInstall").addEventListener("click", async () => {
+  if (!installPrompt)
+    return;
+  const prompt = installPrompt;
+  installPrompt = null;
+  $("pwaInstall").hidden = true;
+  try {
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    $("installState").textContent = choice.outcome === "accepted" ? "インストール操作を受け付けました。講座も選んで保存してください。" : "インストールを見送りました。ブラウザでも保存して学べます。";
+  } catch {
+    $("installState").textContent = "ブラウザのメニューからインストールしてください。";
+  }
+});
+function request(type, id, progress) {
+  return new Promise((resolve, reject) => {
+    const worker = navigator.serviceWorker.controller ?? registration?.active;
+    if (!worker) {
+      reject(new Error("保存機能を準備できません。オンラインで再読み込みしてください。"));
+      return;
+    }
+    const channel = new MessageChannel;
+    let timer;
+    const finish = (error, value) => {
+      clearTimeout(timer);
+      channel.port1.close();
+      if (error)
+        reject(error);
+      else
+        resolve(value);
+    };
+    const extend = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error("保存機能からの応答が途切れました。保存状態を確認して再試行してください。")), 150000);
+    };
+    channel.port1.onmessage = (event) => {
+      extend();
+      if (event.data.progress)
+        progress?.(event.data.progress);
+      else if (event.data.ok)
+        finish(undefined, event.data);
+      else
+        finish(new Error(event.data.error ?? "保存機能を利用できません。"));
+    };
+    extend();
+    worker.postMessage({ protocol: 1, type, id }, [channel.port2]);
+  });
+}
+function network() {
+  $("networkState").textContent = navigator.onLine ? "オンライン（通信状態は取得時に確認）" : "オフライン：保存済みの講座で学べます";
+}
+function message(text) {
+  messageRevision++;
+  $("offlineMessage").textContent = text;
+}
+function storageMessage() {
+  if (!app.course)
+    return "保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。";
+  const status = states.find((s) => s.id === app.course.id);
+  if (status?.incomplete)
+    return status.saved ? "一部の保存が不完全です。前の完全な保存版を利用できます。オンラインで保存し直してください。" : "保存が不完全です。オンラインで保存し直してください。";
+  return status?.saved ? "保存済みの教材と全動画を利用できます。通信なしで起動・再生できます。" : "この講座は未保存です。動画の再生とアプリ内保存には通信が必要です。オンラインで保存してください。";
+}
+function canShowStatus() {
+  return !busy && !locallyDownloading && !states.some((s) => s.progress);
+}
+function drawProgress(p) {
+  const bar = $("offlineProgress");
+  bar.hidden = !p;
+  if (!p)
+    return;
+  bar.max = p.total || 1;
+  bar.value = p.loaded;
+  message(p.total ? `保存中 ${Math.floor(p.loaded / p.total * 100)}%・${mb(p.loaded)} / ${mb(p.total)}（${p.file} / ${p.count} ファイル）。完了までこの画面を開いておいてください。` : "教材情報を確認しています…");
+}
+function render() {
+  network();
+  const status = states.find((s) => s.id === app.course?.id);
+  const anyProgress = states.find((s) => s.progress)?.progress;
+  const wasWorking = !!workingId;
+  workingId = anyProgress?.id;
+  const processing = busy || !!anyProgress;
+  if (app.course) {
+    const saved = status?.saved;
+    $("savedState").textContent = saved ? `保存済み・教材と全動画 ${mb(saved.manifest.bytes)}・${new Date(saved.savedAt).toLocaleString("ja-JP")}${status?.incomplete ? "（前の完全な版を利用中）" : ""}` : status?.incomplete ? "保存が不完全です。オンラインで保存し直してください。" : "未保存・動画はオンラインで再生します";
+    const same = saved?.manifest.revision === latest?.revision;
+    const save = $("offlineSave");
+    save.textContent = saved && latest && !same ? "新しい版に更新して保存" : status?.incomplete ? "保存し直す" : "この講座をアプリ内に保存";
+    save.disabled = !registration || !navigator.onLine || processing || !latest || !!same && !status?.incomplete;
+    $("offlineDelete").disabled = !registration || processing || !saved && !status?.incomplete;
+    $("offlineCancel").hidden = !anyProgress && !locallyDownloading;
+    $("offlineCancel").disabled = !workingId && !locallyDownloading;
+    $("offlineCheck").disabled = !registration || !navigator.onLine || processing;
+    $("downloadSize").textContent = latest ? `保存対象：台本・字幕・クイズ・全動画とポスター、合計 ${mb(latest.bytes)}。` : "オンラインで保存サイズと更新を確認できます。";
+    const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
+    $("offlineReload").hidden = !changed;
+    if (changed)
+      message("保存版が切り替わりました。「保存した版を開く」で教材と動画をそろえてください。");
+    window.dispatchEvent(new CustomEvent("chalkfile:offline-state", { detail: {
+      saved: !!saved,
+      pageVersion: saved?.manifest.pageVersion,
+      incomplete: status?.incomplete,
+      online: navigator.onLine
+    } }));
+  }
+  const list = $("savedCourses");
+  list.replaceChildren();
+  const courses = [...app.courses];
+  for (const s of states)
+    if (s.saved && !courses.some((c) => c.id === s.id))
+      courses.push({ id: s.id, title: s.saved.manifest.title });
+  for (const course of courses) {
+    const s = states.find((v) => v.id === course.id);
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = new URL(`${course.id}/`, root).href;
+    a.textContent = course.title;
+    const label = document.createElement("span");
+    label.textContent = s?.progress ? "保存中・完了前" : s?.saved ? `保存済み ${mb(s.saved.manifest.bytes)}` : s?.incomplete ? "不完全・要再保存" : "未保存・オンラインで開く";
+    li.append(a, label);
+    list.append(li);
+  }
+  if (!locallyDownloading && !localSaveRequest) {
+    drawProgress(anyProgress);
+    if (wasWorking && !anyProgress && !localSaveRequest)
+      message("別のタブでの保存処理が終了しました。現在の保存状態を確認してください。");
+  }
+  if (localSaveRequest && !busy && !locallyDownloading && !anyProgress)
+    localSaveRequest = false;
+}
+async function capacity() {
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    const persistent = await navigator.storage?.persisted?.();
+    $("storageState").textContent = `${estimate?.quota ? `同一サイト全体の使用量（推定）${mb(estimate.usage ?? 0)} / ${mb(estimate.quota)}。` : "保存容量はブラウザによって異なります。"}${persistent ? "保存の保持が許可されています。" : "保存の保持は未許可です。ブラウザが保存を削除する場合があります。"}`;
+    $("offlinePersist").disabled = !navigator.storage?.persist || !!persistent;
+  } catch {
+    $("storageState").textContent = "保存容量を取得できません。空き容量は保証されません。";
+  }
+}
+async function refresh() {
+  if (!registration || refreshInProgress)
+    return false;
+  refreshInProgress = true;
+  try {
+    states = (await request("STATUS")).courses ?? [];
+    render();
+    await capacity();
+    if (messageRevision === 0 && canShowStatus())
+      message(storageMessage());
+    return true;
+  } catch (error) {
+    message(error.message);
+    return false;
+  } finally {
+    refreshInProgress = false;
+  }
+}
+async function check() {
+  if (!app.course || !navigator.onLine)
+    return;
+  $("offlineCheck").disabled = true;
+  const before = messageRevision;
+  try {
+    latest = (await request("CHECK", app.course.id)).manifest;
+    const status = states.find((s) => s.id === app.course.id);
+    const saved = status?.saved;
+    if (status && before === messageRevision && canShowStatus())
+      message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? "新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。" : saved ? "公開中の版と保存版は同じです。" : storageMessage());
+  } catch (error) {
+    if (before === messageRevision && canShowStatus()) {
+      latest = undefined;
+      message(`${error.message} 保存済みの版は引き続き利用できます。`);
+    }
+  }
+  render();
+}
+$("offlineSave").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  locallyDownloading = true;
+  localSaveRequest = true;
+  render();
+  drawProgress({ id: app.course.id, loaded: 0, total: 0, file: 0, count: 0 });
+  try {
+    await request("SAVE", app.course.id, drawProgress);
+    message("教材と全動画の保存が完了しました。通信を切って再生を確認してください。");
+  } catch (error) {
+    message(`${error.message} 以前の完全な保存があれば維持します。再試行は保存ボタンから行えます。`);
+  } finally {
+    busy = false;
+    locallyDownloading = false;
+    drawProgress();
+    await refresh();
+  }
+});
+$("offlineCancel").addEventListener("click", async () => {
+  try {
+    await request("CANCEL", workingId ?? app.course?.id);
+    message("キャンセルを受け付けました。処理が終わるまでお待ちください。");
+  } catch (error) {
+    message(error.message);
+  }
+});
+$("offlineDelete").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  render();
+  try {
+    await request("DELETE", app.course.id);
+    message("この講座の教材・動画と以前の保存版を削除しました。ノートと学習進捗は残ります。");
+  } catch (error) {
+    message(error.message);
+  } finally {
+    busy = false;
+    await refresh();
+  }
+});
+$("offlineCheck").addEventListener("click", () => {
+  check();
+});
+$("offlineReload").addEventListener("click", () => location.reload());
+$("offlinePersist").addEventListener("click", async () => {
+  try {
+    const granted = await navigator.storage.persist();
+    message(granted ? "ブラウザが保存の保持を許可しました。サイトデータを消すと保存も消えます。" : "ブラウザは保存の保持を許可しませんでした。保存は利用できますが、削除される場合があります。");
+    await capacity();
+  } catch {
+    message("保存の保持を要求できませんでした。ブラウザの設定を確認してください。");
+  }
+});
+window.addEventListener("online", () => {
+  render();
+  check();
+});
+window.addEventListener("offline", () => {
+  render();
+});
+window.addEventListener("pageshow", () => {
+  refresh();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden)
+    refresh();
+});
+network();
+async function init() {
+  if (!("serviceWorker" in navigator) || !isSecureContext || !("caches" in window)) {
+    message("このブラウザではアプリ内保存を利用できません。HTTPS 対応のブラウザで開いてください。オンライン再生は利用できます。");
+    return;
+  }
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.protocol === 1 && event.data?.type === "CHANGED")
+      refresh();
+  });
+  try {
+    registration = await navigator.serviceWorker.register(new URL("sw.js", root), { scope: root.pathname, updateViaCache: "none" });
+    await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error("保存機能の準備が時間切れになりました。")), 30000))]);
+    const updateNotice = () => {
+      if (registration?.waiting)
+        $("appUpdate").hidden = false;
+    };
+    updateNotice();
+    registration.addEventListener("updatefound", () => registration?.installing?.addEventListener("statechange", updateNotice));
+    await refresh();
+    await check();
+    setInterval(() => {
+      if (!document.hidden && (workingId || busy))
+        refresh();
+    }, 2000);
+  } catch {
+    message("保存機能を準備できません。通信とブラウザの保存設定を確認し、オンラインで再読み込みしてください。");
+  }
+}
+init();
+</script>
+</body>
+</html>

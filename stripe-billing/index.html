@@ -1,0 +1,1636 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stripe サブスク課金 基礎講座｜Chalkfile</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wh4j927jGyRq+appts9maV7fyEeQIhIrUbI9FzBJi/A=' 'sha256-tRreo5bb8busOCLdJKsbbUIMfIkP+VzRwE4siyU6Wmk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="Stripe のサブスク課金を、概念からサンプル実装まで。13 本・約 56 分の動画と、台本・確認クイズ。">
+<link rel="canonical" href="https://sean-sunagaku.github.io/chalkfile/stripe-billing/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%227%22%20width%3D%2226%22%20height%3D%2218%22%20rx%3D%225%22%20fill%3D%22%230A2540%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2220%22%20width%3D%2226%22%20height%3D%225%22%20rx%3D%222%22%20fill%3D%22%23635BFF%22%2F%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Chalkfile">
+<meta property="og:title" content="Stripe サブスク課金 基礎講座">
+<meta property="og:description" content="Stripe のサブスク課金を、概念からサンプル実装まで。13 本・約 56 分の動画と、台本・確認クイズ。">
+<meta property="og:url" content="https://sean-sunagaku.github.io/chalkfile/stripe-billing/">
+<meta property="og:image" content="https://sean-sunagaku.github.io/chalkfile/stripe-billing/media/L01.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="../manifest.webmanifest"><link rel="apple-touch-icon" href="../icons/icon-180.png"><meta name="theme-color" content="#F2F7F4"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* レイアウト: 左に講義シアター（動画・操作・タブ）、右にカリキュラム。900px 未満では縦に積む。色・書体・背景の飾りは講座のテーマで決まる（build_site.ts が下に差し込む） */
+:root {
+  --ink: #F6F9FC;
+  --panel: #FFFFFF;
+  --raise: #F6F9FC;
+  --line: #E3E8EE;
+  --fg: #0A2540;
+  --fg-2: #425466;
+  --muted: #7A8CA1;
+  --accent: #635BFF;
+  --on-accent: #FFFFFF;
+  --pink: #b33270;
+  --violet: #4f4fd5;
+  --cyan: #0a7bb5;
+  --mint: #0d8465;
+  --amber: #b5780e;
+  --coral: #b13f49;
+  --pink-soft: rgba(227,54,126,0.1);
+  --violet-soft: rgba(99,91,255,0.1);
+  --cyan-soft: rgba(10,147,214,0.1);
+  --mint-soft: rgba(14,159,112,0.1);
+  --coral-soft: rgba(224,70,76,0.1);
+  --mark: rgba(99,91,255,0.38);
+  --grad: linear-gradient(100deg, #635BFF, #A960EE);
+  --shadow: 0 13px 27px -5px rgba(50,50,93,0.22), 0 8px 16px -8px rgba(0,0,0,0.22);
+  --stage: #0D1F36;
+  --radius: 12px;
+  --font-body: "Inter", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+body { background: var(--ink); }
+.decor { position: absolute; top: 0; right: 0; width: min(820px, 64vw); height: 340px; pointer-events: none; z-index: 0;
+  clip-path: polygon(30% 0, 100% 0, 100% 100%);
+  background: radial-gradient(420px 240px at 92% 6%, rgba(128,233,255,0.9), transparent 70%), linear-gradient(118deg, #A960EE 46%, #FF5C7A 66%, #FFCB57 88%); }
+@media (max-width: 900px) { .decor { height: 150px; width: 64vw; } }
+/* 色と書体は既存の講座テーマを使う。 */
+[hidden] { display: none !important; }
+.offline-box { padding: 16px 18px; margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); font-size: 14px; }
+.offline-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; }
+.offline-box h2 { margin: 0; font-size: 18px; line-height: 1.6; }
+.offline-box p { margin: 8px 0; max-width: 90ch; color: var(--fg-2); }
+.offline-box .offline-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.offline-box .btn { font: inherit; font-weight: 700; min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--raise); color: var(--fg); white-space: normal; }
+.offline-box .btn.primary { background: var(--grad); color: var(--on-accent); border-color: transparent; }
+.offline-box .btn:disabled { opacity: 0.6; cursor: default; }
+.offline-box details { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.offline-box summary { cursor: pointer; font-weight: 700; }
+.offline-box ul { margin: 10px 0; padding-left: 20px; }
+.offline-box li { margin-block: 8px; }
+.offline-box li span { display: block; font-size: 13px; color: var(--muted); }
+.offline-box progress { width: 100%; margin-top: 10px; accent-color: var(--violet); }
+#networkState { font-size: 12px; color: var(--muted); }
+#offlineMessage { min-height: 1.7em; }
+#playbackStatus { font-size: 13px; color: var(--muted); margin: 8px 0; }
+
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: auto-phrase;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--panel);
+}
+a { color: var(--cyan); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ── 上の帯 ── */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.topbar-inner { max-width: 1480px; margin: 0 auto; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 360px; }
+.brand-home { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; flex: none; }
+.brand-home:hover .brand-title { text-decoration: underline; text-underline-offset: 4px; }
+.brand-mark { width: 14px; height: 14px; border-radius: 5px; background: var(--grad); flex: none; }
+.brand-title { font-weight: 900; font-size: 17px; letter-spacing: 0.02em; white-space: nowrap; }
+.brand-sub { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-progress { display: flex; align-items: center; gap: 12px; flex: 0 1 340px; min-width: 220px; }
+.course-progress .bar { flex: 1; height: 6px; border-radius: 9px; background: var(--raise); overflow: hidden; }
+.course-progress .bar > i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 9px; transition: width 0.4s; }
+.course-progress .label { font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+
+/* ── 本体 ── */
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding-block: 22px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 26px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.intro { display: flex; gap: 14px 22px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+.intro-text { display: grid; gap: 2px; }
+.intro .note { font-size: 13px; color: var(--muted); }
+.caution { margin: -4px 0 14px; padding-left: 10px; border-left: 3px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.intro h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 900; line-height: 1.3; text-wrap: balance; }
+.intro .meta { color: var(--muted); font-size: 14px; }
+.intro .links { display: flex; gap: 8px; flex-wrap: wrap; }
+.intro .links a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font-size: 14px; font-weight: 700; text-decoration: none; box-shadow: var(--shadow); }
+.intro .links a:hover { border-color: var(--violet); }
+.intro .links svg { width: 16px; height: 16px; flex: none; }
+
+/* プレーヤー（字幕をオンにすると、動画を少し縮めて、プレーヤーの中の下に字幕の帯を空ける。図は字幕で隠さない） */
+.theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); container-type: inline-size; }
+.player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); font-size: clamp(12px, 2.1cqw, 26px); --ccband: max(13%, 2.9em); }
+.player video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--stage); }
+.player.cc-on video { height: calc(100% - var(--ccband)); }
+.ccbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: var(--ccband);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em 4%;
+  box-sizing: border-box;
+  text-align: center;
+  color: #F1F3FF;
+  background: var(--stage);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.theater:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; background: #000; }
+.theater:fullscreen .player { flex: 1; aspect-ratio: auto; font-size: clamp(18px, 2cqw, 34px); }
+.nextup {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--stage) 88%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.nextup-card { text-align: center; color: #F4F6FF; max-width: 520px; }
+.nextup-card .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.24em; color: #9AA3CF; }
+.nextup-card h3 { margin: 8px 0 18px; font-size: clamp(18px, 2.4vw, 26px); line-height: 1.4; text-wrap: balance; }
+.nextup-card .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--violet); }
+.btn.primary { background: var(--grad); border-color: transparent; color: var(--on-accent); }
+.btn.ghost-dark { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); color: #F4F6FF; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn[aria-pressed="true"] { border-color: var(--violet); background: var(--violet-soft); }
+
+/* 動画の下の操作 */
+.now { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-top: 16px; }
+.now-title { min-width: 0; flex: 1 1 320px; }
+.now-title .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em; color: var(--muted); }
+.now-title h2 { margin: 2px 0 0; font-size: clamp(19px, 2.2vw, 24px); font-weight: 900; line-height: 1.4; text-wrap: balance; }
+.now-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.speed { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.speed button { border: 0; background: transparent; padding: 7px 10px; font-family: var(--font-mono); font-size: 13px; cursor: pointer; color: var(--fg-2); }
+.speed button[aria-pressed="true"] { background: var(--violet-soft); color: var(--fg); font-weight: 700; }
+
+/* タブ */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 20px; overflow-x: auto; scrollbar-width: none; }
+.tabs button {
+  border: 0;
+  background: transparent;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--pink); }
+.panel { padding-top: 18px; }
+.panel[hidden] { display: none; }
+.panel h3 { font-size: 16px; margin: 0 0 10px; }
+.panel p { margin: 0 0 12px; color: var(--fg-2); max-width: 70ch; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 700px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.takeaways { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.takeaways li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; color: var(--fg-2); }
+.takeaways li::before { content: ""; width: 8px; height: 8px; border-radius: 9px; background: var(--mint); margin-top: 9px; justify-self: center; }
+.chapters { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.chapters button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.chapters button:hover { background: var(--raise); }
+.chapters button.on { background: var(--violet-soft); color: var(--fg); }
+.chapters .t { font-family: var(--font-mono); font-size: 13px; color: var(--muted); padding-top: 2px; }
+
+/* 台本 */
+.tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.search { flex: 1 1 260px; min-width: 0; position: relative; }
+.search input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 10px;
+  padding: 9px 12px 9px 36px;
+  font: inherit;
+}
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg-2); cursor: pointer; }
+.transcript { max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 8px; scroll-behavior: smooth; }
+.transcript h4 { margin: 14px 10px 4px; font-size: 13px; letter-spacing: 0.06em; color: var(--muted); }
+.transcript h4:first-child { margin-top: 6px; }
+.cue {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--fg-2);
+  line-height: 1.75;
+}
+.cue:hover { background: var(--raise); }
+.cue .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 3px; }
+.cue.on { background: var(--pink-soft); color: var(--fg); }
+.cue.on .t { color: var(--pink); }
+.cue mark { background: var(--mark); color: var(--fg); border-radius: 3px; padding: 0 2px; }
+.hit-lec { font-family: var(--font-mono); font-size: 12px; color: var(--violet); }
+
+/* ノート */
+.note-new { display: grid; gap: 10px; }
+.note-new textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  line-height: 1.7;
+}
+.notes { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.notes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.notes .stamp { font-family: var(--font-mono); font-size: 13px; border: 1px solid var(--line); background: var(--raise); border-radius: 8px; padding: 2px 8px; cursor: pointer; color: var(--cyan); }
+.notes .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
+.notes .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.notes .del:hover { color: var(--coral); }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* ドキュメント */
+.docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.docs a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.docs a:hover { border-color: var(--cyan); }
+.docs .host { font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: block; overflow-wrap: anywhere; }
+.docs svg { width: 16px; height: 16px; color: var(--muted); }
+
+/* クイズ */
+.quiz { display: grid; gap: 16px; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.q .qt { font-weight: 700; margin-bottom: 10px; }
+.q .qt .n { font-family: var(--font-mono); color: var(--pink); margin-right: 8px; }
+.choices { display: grid; gap: 8px; }
+.choice {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--fg);
+  line-height: 1.6;
+}
+.choice:hover:not(:disabled) { border-color: var(--violet); }
+.choice:disabled { cursor: default; }
+.choice.right { border-color: var(--mint); background: var(--mint-soft); }
+.choice.wrong { border-color: var(--coral); background: var(--coral-soft); }
+.explain { margin-top: 10px; font-size: 14px; color: var(--fg-2); border-left: 3px solid var(--mint); padding-left: 10px; }
+.explain.bad { border-left-color: var(--coral); }
+.score { font-size: 14px; color: var(--fg-2); }
+
+/* カリキュラム */
+.curriculum { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); max-height: calc(100vh - 92px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+@media (max-width: 900px) { .curriculum { position: static; max-height: none; } }
+.cur-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cur-head h2 { margin: 0; font-size: 15px; font-weight: 900; }
+.cur-head .sum { font-size: 12.5px; color: var(--muted); }
+.sec { border-bottom: 1px solid var(--line); }
+.sec:last-child { border-bottom: 0; }
+.sec-head { padding: 12px 16px 6px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.sec-head .name { font-weight: 700; font-size: 13.5px; }
+.sec-head .name .no { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; color: var(--muted); display: block; }
+.sec-head .cnt { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lec {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 9px 16px;
+  cursor: pointer;
+  color: var(--fg-2);
+}
+.lec:hover { background: var(--raise); }
+.lec[aria-current="true"] { background: var(--violet-soft); color: var(--fg); }
+.lec .ttl { font-size: 14px; line-height: 1.5; font-weight: 500; }
+.lec[aria-current="true"] .ttl { font-weight: 700; }
+.lec .dur { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ring { width: 24px; height: 24px; display: block; }
+.ring .bg { stroke: var(--line); }
+.ring .fg { stroke: var(--violet); }
+.ring.done .disc { fill: var(--mint); }
+.ring .tick { stroke: var(--on-accent); }
+.ring .num { fill: var(--muted); font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
+
+/* 教材・実践課題・AI に聞く（教材を持つ講座だけ） */
+.mat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-bottom: 16px; }
+@media (max-width: 700px) { .mat-grid { grid-template-columns: minmax(0, 1fr); } }
+.mat-list { margin: 0; padding-left: 1.2em; color: var(--fg-2); display: grid; gap: 6px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 18px; }
+.toc a { font-size: 13px; text-decoration: none; color: var(--fg-2); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 10px; }
+.toc a:hover { border-color: var(--violet); color: var(--fg); }
+.msec { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; scroll-margin-top: 90px; }
+.msec h3 { font-size: 17px; margin: 0 0 8px; line-height: 1.5; }
+.msec p, .msec li { color: var(--fg-2); line-height: 1.85; max-width: 72ch; }
+.msec ul { margin: 0 0 12px; padding-left: 1.3em; }
+.sid { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-weight: 500; letter-spacing: 0.02em; display: block; }
+.evs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.ev { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--line); }
+.ev.research { background: var(--cyan-soft); border-color: var(--cyan); }
+.ev.official { background: var(--violet-soft); border-color: var(--violet); }
+.ev.practice { background: var(--pink-soft); border-color: var(--amber); }
+.ev.example { background: var(--raise); border-color: var(--line); color: var(--muted); }
+.msrc { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.msrc a { color: var(--fg-2); }
+.fig { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; overflow-x: auto; }
+.fig h4 { margin: 0 0 4px; font-size: 15px; }
+.fig .cap { font-size: 13.5px; color: var(--fg-2); margin: 0 0 10px; }
+.mtable { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+.mtable th, .mtable td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; line-height: 1.6; }
+.mtable th { background: var(--raise); font-weight: 700; }
+.flowline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flowline .st { border: 1px solid var(--line); background: var(--raise); border-radius: 10px; padding: 6px 10px; font-size: 14px; }
+.flowline .ar { color: var(--muted); }
+.fig pre { margin: 0; background: var(--stage); color: #F1F4F8; border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; }
+.ask { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ask li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.ask .qq { font-weight: 700; line-height: 1.7; }
+.ask .refs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.ask .refs button { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); background: var(--raise); color: var(--fg-2); border-radius: 8px; padding: 1px 8px; cursor: pointer; }
+.lec.planned { cursor: default; opacity: 0.62; }
+.lec.planned:hover { background: transparent; }
+.lec .soon { font-size: 11.5px; color: var(--muted); border: 1px dashed var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+
+.foot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+.kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; background: var(--panel); color: var(--fg-2); }
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 40;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<div class="decor" aria-hidden="true"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <a class="brand-home" href="../" title="講座の一覧へ">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-title">Chalkfile</span>
+      </a>
+      <span class="brand-sub">Stripe サブスク課金 基礎講座</span>
+    </div>
+    <div class="course-progress" title="完了したレクチャーの数">
+      <div class="bar" aria-hidden="true"><i id="cpBar"></i></div>
+      <span class="label" id="cpLabel"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="intro">
+    <div class="intro-text">
+      <h1>Stripe のサブスク課金を、概念からサンプル実装まで</h1>
+      <span class="meta" id="courseMeta"></span>
+      <span class="note" id="courseNote" hidden></span>
+    </div>
+    <span class="links" id="links" hidden></span>
+  </div>
+
+  <section class="offline-box" aria-labelledby="offlineHeading">
+  <div class="offline-top"><h2 id="offlineHeading">オフラインで学ぶ</h2><span id="networkState" role="status"></span></div>
+  <div id="courseOffline" >
+    <p id="savedState">保存状態を確認しています…</p>
+    <p id="downloadSize">保存サイズを確認しています…</p>
+    <div class="offline-actions">
+      <button class="btn primary" id="offlineSave" type="button" disabled>この講座をアプリ内に保存</button>
+      <button class="btn" id="offlineCancel" type="button" hidden>保存をキャンセル</button>
+      <button class="btn" id="offlineCheck" type="button" disabled>更新を確認</button>
+      <button class="btn" id="offlineDelete" type="button" disabled>保存を削除</button>
+      <button class="btn" id="offlineReload" type="button" hidden>保存した版を開く</button>
+    </div>
+  </div>
+  <progress id="offlineProgress" aria-label="講座の保存進捗" max="1" value="0" hidden></progress>
+  <p id="offlineMessage" role="status" aria-live="polite">保存機能を準備しています…</p>
+  <details ><summary>講座ごとの保存状態</summary><ul id="savedCourses"></ul><p>講座を開き、保存ボタンで選んでください。表示するだけでは動画を保存しません。</p></details>
+  <details><summary>保存容量と使い方</summary>
+    <p id="storageState">保存容量を確認しています…</p>
+    <button class="btn" id="offlinePersist" type="button">保存を保持するようブラウザに要求</button>
+    <p>アプリ内保存には、台本・字幕・クイズ・全動画を含みます。公式ドキュメントなど外部リンクには通信が必要です。オンライン再生や「動画ファイルをダウンロード」はアプリ内保存にはなりません。</p>
+    <p>保存中は画面を開いておいてください。通信やアプリが途切れた場合は、保存状態を確認して再試行できます。更新は手動です。更新失敗時は前の完全な版を維持し、成功時は直前の版も1つ保持します。更新には新しい版の分の空き容量が必要です。</p>
+    <p>iPhone・iPadでもブラウザの保存領域を使います。「ファイル」アプリの動画をこのアプリに取り込む機能はありません。ブラウザとホーム画面のアプリで保存が共有されるとは限らないため、使う方で保存し、機内モードで起動・再生を確かめてください。空き容量、長期間の未使用、サイトデータの削除などで保存が消える場合があります。実機での保存維持やバックグラウンド保存は保証しません。</p>
+  </details>
+  <details id="installHelp"><summary>アプリをインストールする</summary>
+    <p id="installState">対応ブラウザではインストールボタン、またはブラウザのメニューから追加できます。インストールだけでは動画は保存されません。</p>
+    <button class="btn" id="pwaInstall" type="button" hidden>Chalkfile をインストール</button>
+    <p>iPhone・iPad：Safari の共有メニューで「ホーム画面に追加」を選びます。表示される場合は「Webアプリとして開く」を有効にして追加してください。</p>
+  </details>
+  <p id="appUpdate" hidden>アプリの更新があります。保存が終わってから、このサイトのタブをすべて閉じて開き直してください。完全な講座の保存は維持します。</p>
+</section>
+
+  <div class="layout">
+    <section aria-label="講義">
+      <div class="theater" id="theater">
+      <div class="player" id="player">
+        <video id="video" playsinline preload="metadata" controls></video>
+        <div class="ccbar" id="cc" aria-live="off"></div>
+        <div class="nextup" id="nextup" hidden>
+          <div class="nextup-card">
+            <div class="eyebrow">NEXT LECTURE</div>
+            <h3 id="nextTitle"></h3>
+            <div class="row">
+              <button class="btn primary" id="nextGo" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span id="nextGoLabel">次へ</span>
+              </button>
+              <button class="btn ghost-dark" id="nextStay" type="button">ここで止める</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <p id="playbackStatus" role="status">オンライン再生を準備しています。</p>
+      <div class="now">
+        <div class="now-title">
+          <div class="eyebrow" id="nowEyebrow">LECTURE 01</div>
+          <h2 id="nowTitle">このコースで作るもの</h2>
+        </div>
+        <div class="now-actions">
+          <button class="btn" id="loopToggle" type="button" aria-pressed="false">この動画を繰り返す</button>
+          <a class="btn" id="fileDownload" download>動画ファイルをダウンロード</a>
+          <div class="speed" role="group" aria-label="再生速度" id="speed">
+            <button type="button" data-rate="1">1.0×</button>
+            <button type="button" data-rate="1.25">1.25×</button>
+            <button type="button" data-rate="1.5">1.5×</button>
+            <button type="button" data-rate="1.75">1.75×</button>
+          </div>
+          <button class="btn" id="ccToggle" type="button" aria-pressed="true" title="字幕（C）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 10.5a2 2 0 1 0 0 3M16 10.5a2 2 0 1 0 0 3"/></svg>
+            字幕
+          </button>
+          <button class="btn" id="doneToggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            <span>完了にする</span>
+          </button>
+          <button class="btn" id="prevBtn" type="button" aria-label="前のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button class="btn" id="nextBtn" type="button" aria-label="次のレクチャー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="レクチャーの資料">
+        <button role="tab" type="button" id="tab-overview" aria-controls="p-overview" aria-selected="true">概要</button>
+        <button role="tab" type="button" id="tab-material" aria-controls="p-material" aria-selected="false" hidden>教材</button>
+        <button role="tab" type="button" id="tab-transcript" aria-controls="p-transcript" aria-selected="false">台本</button>
+        <button role="tab" type="button" id="tab-notes" aria-controls="p-notes" aria-selected="false">ノート</button>
+        <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">公式ドキュメント</button>
+        <button role="tab" type="button" id="tab-quiz" aria-controls="p-quiz" aria-selected="false">確認クイズ</button>
+        <button role="tab" type="button" id="tab-exercise" aria-controls="p-exercise" aria-selected="false" hidden>実践課題</button>
+        <button role="tab" type="button" id="tab-ask" aria-controls="p-ask" aria-selected="false" hidden>AI に聞く</button>
+      </div>
+
+      <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <p id="summary"></p>
+        <p class="caution" id="caution" hidden></p>
+        <div class="two">
+          <div class="box">
+            <h3 id="takeawaysTitle">実装に効くメモ</h3>
+            <ul class="takeaways" id="takeaways"></ul>
+          </div>
+          <div class="box">
+            <h3>チャプター</h3>
+            <ol class="chapters" id="chapters"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="p-material" role="tabpanel" aria-labelledby="tab-material" hidden>
+        <div class="mat-grid">
+          <div class="box"><h3>この章の学習目標</h3><ul class="mat-list" id="matGoals"></ul></div>
+          <div class="box"><h3>前提知識</h3><ul class="mat-list" id="matPre"></ul></div>
+        </div>
+        <p class="hint">根拠の札: <span class="ev research">研究・学術</span> <span class="ev official">公式・法令・規格</span> <span class="ev practice">実務の指針</span> <span class="ev example">説明用の仮の例</span>　節の上の小さな ID（例: <span class="mono">xx-01-s01</span>）は、あとで質問チャットが根拠の場所を示すための番号です。</p>
+        <nav class="toc" id="matToc" aria-label="教材の節"></nav>
+        <div id="matBody"></div>
+        <h3 style="margin-top:22px">図解・比較例</h3>
+        <div id="matFigs"></div>
+        <div class="box"><h3>要点まとめ</h3><ul class="mat-list" id="matSummary"></ul></div>
+      </div>
+
+      <div class="panel" id="p-exercise" role="tabpanel" aria-labelledby="tab-exercise" hidden>
+        <div id="exBody"></div>
+      </div>
+
+      <div class="panel" id="p-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+        <p>学習画面の右側に置く AI チャットに、こんな質問ができます（チャットはまだありません）。質問ごとに、答えの根拠にする教材の節を付けています。押すと教材のその節へ移ります。</p>
+        <ul class="ask" id="askList"></ul>
+      </div>
+
+      <div class="panel" id="p-transcript" role="tabpanel" aria-labelledby="tab-transcript" hidden>
+        <div class="tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input id="q" type="search" placeholder="全レクチャーの台本から探す（例: past_due、署名）" autocomplete="off">
+          </label>
+          <label class="check"><input id="follow" type="checkbox" checked> 再生に合わせてスクロール</label>
+        </div>
+        <div class="transcript" id="transcript"></div>
+      </div>
+
+      <div class="panel" id="p-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+        <div class="note-new">
+          <textarea id="noteText" placeholder="気づいたこと、実装のときに確かめたいことを書く"></textarea>
+          <div class="tools" style="margin:0">
+            <button class="btn primary" id="noteAdd" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span id="noteAddLabel">00:00 にメモ</span>
+            </button>
+            <button class="btn" id="noteCopy" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+              全ノートをコピー
+            </button>
+            <span class="hint">ノートはこの端末のブラウザに保存されます。</span>
+          </div>
+        </div>
+        <ul class="notes" id="notes"></ul>
+      </div>
+
+      <div class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+        <p>動画の内容は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog を含む）と、消費者庁・Apple の公式ページがもとです。料金や仕様は変わるので、実装の前にここから確かめ直してください。</p>
+        <p>外部の公式ドキュメントを開くには通信が必要です。</p>
+        <ul class="docs" id="docs"></ul>
+      </div>
+
+      <div class="panel" id="p-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+        <div class="quiz" id="quiz"></div>
+      </div>
+    </section>
+
+    <aside class="curriculum" aria-label="カリキュラム">
+      <div class="cur-head">
+        <h2>カリキュラム</h2>
+        <span class="sum" id="curSum"></span>
+      </div>
+      <div id="sections"></div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div>ショートカット: <span class="kbd">Space</span> 再生と停止 ・ <span class="kbd">←</span><span class="kbd">→</span> 5 秒 ・ <span class="kbd">J</span><span class="kbd">L</span> 10 秒 ・ <span class="kbd">C</span> 字幕 ・ <span class="kbd">F</span> 全画面 ・ <span class="kbd">N</span> 次のレクチャー</div>
+    <div id="credits"></div>
+    <div>講座は一般的な説明です。料金・仕様・法律は変わるので、使う前に公式で確かめてください。法律・税・契約の判断は専門家に確かめてください。サービス名は各社の商標です。</div>
+  </div>
+</div>
+
+<script id="course-data" type="application/json">{"course":{"id":"stripe-billing","title":"Stripe サブスク課金 基礎講座","subtitle":"概念とデータ、サンプルで作る流れ","sections":[{"no":1,"title":"はじめに"},{"no":2,"title":"Stripe の概念とデータ"},{"no":3,"title":"サンプルで作る"},{"no":4,"title":"お金・法律・iOS"},{"no":5,"title":"まとめ"}],"sourceNote":"台本と図は Stripe 公式ドキュメントと、消費者庁・Apple の公式ページ（2026 年 10 月確認）をもとに作成。サンプルアプリは架空のサービス。Stripe 社とは関係のない、個人の勉強用の講座です","disclaimer":"Stripe 社とは関係のない、個人が作った非公式の講座です","links":[{"label":"ソースと作り方（GitHub）","url":"https://github.com/sean-sunagaku/chalkfile"}],"unitLabel":"LECTURE","ui":{},"planned":[]},"credits":["VOICEVOX:No.7","VOICEVOX:青山龍星"],"pageVersion":"bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","lectures":[{"id":"L01","no":1,"section":{"no":1,"title":"はじめに"},"title":"サブスク課金の全体像","summary":"Stripe が受け持つこと・アプリが作ること、課金の裏側で起きる 5 つのこと、コースの地図をつかむ。","docs":[{"title":"Stripe: サブスクリプションの仕組み","url":"https://docs.stripe.com/billing/subscriptions/overview"},{"title":"Stripe: サブスクリプションの組み込み（Checkout を使う）","url":"https://docs.stripe.com/billing/subscriptions/build-subscriptions"},{"title":"Stripe: Billing","url":"https://docs.stripe.com/billing"}],"quiz":[{"q":"カード番号を保管するのは？","choices":["アプリの DB","Stripe","ブラウザの localStorage","アプリのログ"],"answer":1,"explain":"Checkout と Customer Portal を使えば、カード番号はアプリに一切来ない。保管も、決済の安全基準（PCI DSS）への対応も Stripe 側。"},{"q":"アプリが正しく作るべき 2 つの仕事は？","choices":["請求書の作成と送信","通知を受けて DB を書く／DB を見て判定する","失敗した支払いの再試行","解約フォームと返金処理"],"answer":1,"explain":"更新・失敗・解約は Stripe が起こして Webhook で知らせてくる。アプリは「通知 → DB」と「DB → 判定」に集中する。"}],"takeaways":["Stripe が持つ：支払いページ・カードの保管・毎回の請求・失敗の再試行・メール・契約の管理ページ","アプリが作る：申し込みの入口（Checkout Session を作る）・Webhook を受けて DB に写す・DB を見て機能を開ける","この講座のサンプル：架空の「サンプルアプリ」の Pro プラン（月 1,000 円・年 10,000 円・初回は 14 日間無料）"],"caution":"","material":null,"duration":225.83,"chapters":[{"start":0,"heading":"オープニング"},{"start":10.73,"heading":"このレクチャーのゴール"},{"start":25.8,"heading":"この講座の題材"},{"start":47.13,"heading":"Stripe がやること／アプリが作ること"},{"start":86.27,"heading":"課金の裏側で起きる 5 つのこと"},{"start":135.83,"heading":"アプリの仕事"},{"start":152.5,"heading":"コースの地図"},{"start":184.63,"heading":"このサイトの使い方"},{"start":200.7,"heading":"この講座のもと"},{"start":217.53,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.3,"text":"レクチャー1。サブスク課金の全体像。","scene":0},{"start":5.9,"end":9.99,"text":"こんにちは。Stripe サブスク課金の基礎講座へ、ようこそ。","scene":0},{"start":11.17,"end":14.16,"text":"このレクチャーでは、まず全体像をつかみます。","scene":1},{"start":14.47,"end":17.63,"text":"Stripe とアプリが、それぞれ何を受け持つのか。","scene":1},{"start":17.93,"end":20.5,"text":"課金の裏側で、何が起きるのか。","scene":1},{"start":20.8,"end":25.06,"text":"そして、このコースをどんな順番で進むのか。この三つです。","scene":1},{"start":26.27,"end":30.67,"text":"この講座では、架空のサービス、サンプルアプリを題材にします。","scene":2},{"start":30.97,"end":40.26,"text":"サンプルアプリの、Pro プランを月額で売ります。値段は月千円、年払いなら一万円。初めての人は、十四日間無料です。","scene":2},{"start":40.57,"end":46.37,"text":"Stripe の仕組みは、どのサービスでも同じです。自分のサービスに置き換えながら見てください。","scene":2},{"start":47.6,"end":54.58,"text":"まず、役割分担です。サブスク課金というと大変そうですが、重いところは Stripe が持ってくれます。","scene":3},{"start":54.87,"end":60.84,"text":"支払いページ、カード情報の保管、毎回の請求、払えなかったときの再試行。","scene":3},{"start":61.13,"end":67.2,"text":"それから、領収書や案内のメール、契約の管理ページまで、Stripe が用意しています。","scene":3},{"start":67.5,"end":74.28,"text":"アプリが作るのは、申し込みの入口と、Stripe からの通知を受けて、自分の DB に写すところ。","scene":3},{"start":74.6,"end":78.1,"text":"そして、DB を見て、機能を開けるところです。","scene":3},{"start":78.4,"end":85.53,"text":"お金の難しい処理は Stripe に任せて、アプリは、つなぐ部分だけを書く。これが基本の考え方です。","scene":3},{"start":86.73,"end":95.79,"text":"では、課金の裏側で何が起きるのか。登場するのは、ブラウザ、アプリのサーバー、Stripe、そしてアプリのデータベースです。","scene":4},{"start":96.1,"end":99.73,"text":"一つ目。ユーザーが、Pro にする、を押します。","scene":4},{"start":100.03,"end":105.03,"text":"アプリのサーバーは、Stripe に、支払いページを作って、と頼みます。","scene":4},{"start":105.33,"end":113.02,"text":"二つ目。ユーザーは、Stripe の支払いページでカードを入力します。カード番号は、アプリには一切来ません。","scene":4},{"start":113.33,"end":121.78,"text":"三つ目。支払いが通ると、Stripe がアプリに、この人が契約しましたよ、と通知を送ります。これが Webhook です。","scene":4},{"start":122.07,"end":127.92,"text":"四つ目。アプリのサーバーは、自分のデータベースに、この人は Pro、と書きます。","scene":4},{"start":128.23,"end":135.08,"text":"そして五つ目。Pro の機能が使われるたびに、データベースを見て、Pro なら開ける、と判定します。","scene":4},{"start":136.3,"end":143.72,"text":"毎月の更新も、カードの期限切れも、解約も、全部 Stripe 側が起こして、通知で知らせてくれます。","scene":5},{"start":144.03,"end":151.76,"text":"だからアプリが正しく作るべきなのは、通知を受けて DB を書くことと、DB を見て判定すること。この二つだけです。","scene":5},{"start":152.97,"end":156.16,"text":"コースは、このあと四つのセクションに分かれています。","scene":6},{"start":156.47,"end":164.67,"text":"セクション2は、Stripe の概念とデータ。登場人物、データの形、サブスクの一生、請求書を学びます。","scene":6},{"start":164.97,"end":174.52,"text":"セクション3では、サンプルアプリを作る流れで、申し込み、Webhook、DB との同期、判定と管理ページ、テストまでを見ます。","scene":6},{"start":174.83,"end":179.46,"text":"セクション4は、お金と法律、そして iOS アプリとの関係。","scene":6},{"start":179.77,"end":183.89,"text":"最後のセクション5で、よくある誤解を、クイズで確かめます。","scene":6},{"start":185.07,"end":190.46,"text":"動画の下には台本があります。気になった文をクリックすると、その場面に飛べます。","scene":7},{"start":190.77,"end":194.29,"text":"ノートには、再生中の時刻つきでメモを残せます。","scene":7},{"start":194.6,"end":199.94,"text":"各レクチャーの下には、公式ドキュメントへのリンクと、確認クイズを用意しました。","scene":7},{"start":201.13,"end":210.23,"text":"この講座は、Stripe の公式ドキュメントと、消費者庁や Apple の公式ページをもとに、2026 年 10 月時点の内容で作っています。","scene":8},{"start":210.53,"end":216.77,"text":"料金や法律は変わることがあるので、実装の前には、必ず公式でもう一度確かめましょう。","scene":8},{"start":218,"end":221.83,"text":"それでは、さっそく Stripe の登場人物から見ていきましょう。","scene":9}],"video":"media/L01.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L01.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L02","no":2,"section":{"no":2,"title":"Stripe の概念とデータ"},"title":"Stripe の登場人物","summary":"Customer・Product・Price・Subscription・Checkout Session・Customer Portal・Event の 7 つと、その関係・ID の読み方・金額の書き方。","docs":[{"title":"Stripe: 商品と価格の仕組み","url":"https://docs.stripe.com/products-prices/overview"},{"title":"Stripe API: Subscription オブジェクト","url":"https://docs.stripe.com/api/subscriptions/object"},{"title":"Stripe: 対応通貨（ゼロ小数通貨）","url":"https://docs.stripe.com/currencies"},{"title":"Stripe: サンドボックス","url":"https://docs.stripe.com/sandboxes"}],"quiz":[{"q":"`evt_` で始まる ID は何のオブジェクト？","choices":["顧客（Customer）","イベント（Webhook の通知 1 件）","請求書（Invoice）","価格（Price）"],"answer":1,"explain":"cus_ は顧客、sub_ は契約、price_ は価格、in_ は請求書、cs_ は Checkout Session、evt_ はイベント。"},{"q":"JPY で unit_amount=1000 の Price はいくら？","choices":["10 円","1,000 円","100,000 円","通貨の設定による"],"answer":1,"explain":"円は小数のない通貨なので、最小単位＝1 円。unit_amount=1000 はそのまま 1,000 円（USD なら 1000 セント＝10 ドル）。"},{"q":"1 つの Product に付けられる Price は？","choices":["1 つだけ","複数（月額と年額など）","付けられない","顧客ごとに 1 つ"],"answer":1,"explain":"Pro プランという 1 つの商品に、月 1,000 円と年 10,000 円の 2 つの価格を付けられる。"}],"takeaways":["「誰が・何を・いくらで」＝ Customer・Product・Price。それを結ぶのが Subscription","1 つの Product に Price を複数ぶら下げられる（月額・年額）","Price の ID はサンドボックスと本番で違う。コードに直書きせず、設定値か lookup_key で引く","Stripe は、顧客と連結アカウントを 1 つで表す Accounts v2 も進めている（Connect 以外は公開プレビュー・2026-10 時点）。この講座は Customer で説明する"],"caution":"","material":null,"duration":239.77,"chapters":[{"start":0,"heading":"オープニング"},{"start":12.53,"heading":"このレクチャーのゴール"},{"start":26.3,"heading":"覚える 7 つのオブジェクト"},{"start":87.47,"heading":"7 つの関係"},{"start":120,"heading":"補足の用語"},{"start":169.47,"heading":"ID の頭の文字"},{"start":191.8,"heading":"円の金額の書き方"},{"start":210.8,"heading":"まとめ"},{"start":229.83,"heading":"エンディング"}],"cues":[{"start":2.03,"end":4.82,"text":"レクチャー2。Stripe の登場人物。","scene":0},{"start":5.43,"end":11.79,"text":"Stripe は、お客さんも、商品も、契約も、全部オブジェクトという形で持っています。","scene":0},{"start":13,"end":14.92,"text":"このレクチャーのゴールは三つです。","scene":1},{"start":15.23,"end":17.61,"text":"七つのオブジェクトの役割を言えること。","scene":1},{"start":17.9,"end":20.77,"text":"七つのつながりを、図で説明できること。","scene":1},{"start":21.07,"end":25.54,"text":"そして、ID の頭の文字で、何のオブジェクトか分かることです。","scene":1},{"start":26.77,"end":30.59,"text":"Stripe の登場人物を、お店にたとえて見ていきましょう。","scene":2},{"start":30.9,"end":38.61,"text":"まず Customer、顧客です。Stripe 側の、この人、の台帳で、ID は cus から始まります。","scene":2},{"start":38.9,"end":44.18,"text":"Product は商品。売り物の名前です。サンプルアプリなら、Pro プランです。","scene":2},{"start":44.47,"end":55.58,"text":"Price は価格。値段と、払う周期です。月千円、という値札ですね。一つの商品に、月額と年額のように、価格を複数ぶら下げられます。","scene":2},{"start":55.87,"end":63.81,"text":"Subscription は、顧客と価格を結んだ契約です。今どんな状態か、そして今の期間がいつ終わるかを持っています。","scene":2},{"start":64.1,"end":73.21,"text":"Checkout Session は、Stripe が用意する支払いページ、一回分。作ると URL が返ってくるので、そこへ移動させます。","scene":2},{"start":73.5,"end":80.53,"text":"Customer Portal は、契約の管理ページ。解約や、カードの変更、領収書の表示ができます。","scene":2},{"start":80.83,"end":86.71,"text":"そして Webhook とイベント。Stripe で何かが起きたとき、アプリのサーバーに届く通知です。","scene":2},{"start":87.93,"end":94.33,"text":"この七つの関係を、図で見てみます。真ん中にいるのが、Subscription、契約です。","scene":3},{"start":94.63,"end":96.5,"text":"契約は、どの顧客が、","scene":3},{"start":96.8,"end":101.35,"text":"どの価格で、つまり、どの商品の値札で結んだのかを持っています。","scene":3},{"start":101.67,"end":107.6,"text":"契約は毎月、請求書、Invoice を自動で作って、カードに請求します。","scene":3},{"start":107.9,"end":113.98,"text":"最初の契約を作るのが Checkout。契約を変えたり、解約したりするのが Portal です。","scene":3},{"start":114.27,"end":119.26,"text":"そして契約に変化があるたびに、イベントが生まれて、Webhook で届きます。","scene":3},{"start":120.47,"end":123.54,"text":"補足の用語も、少しだけ押さえておきましょう。","scene":4},{"start":123.83,"end":132.69,"text":"Invoice は毎月の請求書。払えたら invoice.paid、払えなかったら invoice.payment_failed という通知が来ます。","scene":4},{"start":133,"end":139.88,"text":"PaymentMethod は、登録されたカード。番号は Stripe が保管するので、アプリは見ません。","scene":4},{"start":140.17,"end":149.2,"text":"Sandbox は、お金が動かないテスト環境。昔のテストモードの後継で、開発用や CI 用など、用途ごとに分けて作れます。","scene":4},{"start":149.5,"end":156.41,"text":"Test clock は、サンドボックスの中で時間を進める道具。一か月後の更新を、待たずに試せます。","scene":4},{"start":156.7,"end":168.72,"text":"Entitlement は、この機能を使える、という権利。Stripe にも仕組みがありますが、判定に使う権利は、アプリの DB でも持っておくのがおすすめです。詳しくはレクチャー9で。","scene":4},{"start":169.93,"end":177.7,"text":"ID の頭の文字を、表にまとめておきます。ログやダッシュボードで ID を見かけたら、まず頭を見る癖をつけましょう。","scene":5},{"start":178,"end":182.02,"text":"cus は顧客、prod は商品、price は価格。","scene":5},{"start":182.33,"end":186.59,"text":"sub は契約、in は請求書、pm は支払い方法。","scene":5},{"start":186.9,"end":191.05,"text":"cs は Checkout Session、evt はイベントです。","scene":5},{"start":192.27,"end":198.22,"text":"最後に、金額の書き方です。Stripe の金額は、通貨の最小単位で書きます。","scene":6},{"start":198.53,"end":210.05,"text":"円は小数がないので、unit_amount が千なら、そのまま千円。ドルはセントが単位なので、同じ千でも十ドルになります。最小の請求額は五十円です。","scene":6},{"start":211.27,"end":212.1,"text":"まとめです。","scene":7},{"start":212.4,"end":219.98,"text":"Customer、Product、Price、Subscription で、誰が、何を、いくらで、を表します。","scene":7},{"start":220.3,"end":224.69,"text":"Checkout が契約を作り、Portal が変え、イベントが知らせる。","scene":7},{"start":225,"end":229.09,"text":"そして ID の頭の文字を見れば、何のオブジェクトか分かります。","scene":7},{"start":230.3,"end":235.77,"text":"次は、これらのオブジェクトが実際にどんなデータなのか、中身を開いて見ていきます。","scene":8}],"video":"media/L02.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L02.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L03","no":3,"section":{"no":2,"title":"Stripe の概念とデータ"},"title":"データの形を読む","summary":"Price・Customer・Subscription・Event の JSON を開き、アプリが読む項目と、metadata・expand の使い方をつかむ。","docs":[{"title":"Stripe API: Price オブジェクト","url":"https://docs.stripe.com/api/prices/object"},{"title":"Stripe API: Customer オブジェクト","url":"https://docs.stripe.com/api/customers/object"},{"title":"Stripe API: Subscription オブジェクト","url":"https://docs.stripe.com/api/subscriptions/object"},{"title":"Stripe API: Event オブジェクト","url":"https://docs.stripe.com/api/events/object"},{"title":"Stripe: レスポンスの展開（expand）","url":"https://docs.stripe.com/expand"},{"title":"Stripe: メタデータ","url":"https://docs.stripe.com/metadata"}],"quiz":[{"q":"Subscription の今の期間の終わり（current_period_end）は、新しい API ではどこにある？","choices":["Subscription の直下","items.data[] の各明細","Customer","Invoice だけ"],"answer":1,"explain":"API 2025-03-31.basil 以降は、契約の明細（items.data[]）の側にある。"},{"q":"expand を付けずに取った Subscription の customer に入っているのは？","choices":["顧客オブジェクトの全部","顧客の ID（cus_…）だけ","メールアドレス","空"],"answer":1,"explain":"関連するオブジェクトは、既定では ID の文字列。中身が欲しいときは expand で展開する。"},{"q":"アプリの user_id を Stripe 側に持たせるには？","choices":["Customer の name に入れる","metadata に入れる","description に入れる","持たせられない"],"answer":1,"explain":"metadata はキーと値の組を自由に付けられる欄。Webhook で届いたとき、どのユーザーかを引く手がかりになる。機密は入れない。"}],"takeaways":["Subscription で読むのは id・customer・status・items.data[0].price.id・items.data[0].current_period_end・cancel_at・trial_end","関連は既定で ID の文字列。expand=[\"latest_invoice\"] のように展開できる（深さは 4 段まで）","metadata にアプリの user_id を入れておくと、Webhook から引きやすい（カード番号などの機密は入れない）","Webhook で届くオブジェクトは展開されない（関連は ID のまま）。中身が要るときは取り直す","Event は data.object に変化したオブジェクトの写し、data.previous_attributes に変わる前の値"],"caution":"","material":null,"duration":280.33,"chapters":[{"start":0,"heading":"オープニング"},{"start":13.03,"heading":"このレクチャーのゴール"},{"start":25.07,"heading":"Price（価格）の中身"},{"start":74.93,"heading":"Customer（顧客）の中身"},{"start":111.47,"heading":"Subscription（契約）の中身"},{"start":178,"heading":"関連は「ID だけ」。必要なら展開する"},{"start":214.2,"heading":"Event（通知）の形"},{"start":251.27,"heading":"まとめ"},{"start":271.5,"heading":"エンディング"}],"cues":[{"start":2.03,"end":4.66,"text":"レクチャー3。データの形を読む。","scene":0},{"start":5.27,"end":12.27,"text":"Stripe の API が返すのは、JSON という形のデータです。今回は、その中身を開いてみます。","scene":0},{"start":13.5,"end":14.69,"text":"ゴールは三つです。","scene":1},{"start":15,"end":16.47,"text":"価格と顧客の中身。","scene":1},{"start":16.77,"end":20.71,"text":"契約、Subscription で、アプリが読むべき項目。","scene":1},{"start":21,"end":24.33,"text":"そして、expand と、イベントの形です。","scene":1},{"start":25.53,"end":33.36,"text":"まずは Price、価格です。API で取ると、こんな JSON が返ってきます。主な項目だけに絞りました。","scene":2},{"start":33.67,"end":38.85,"text":"id は price から始まり、object を見れば、何のオブジェクトかが分かります。","scene":2},{"start":39.17,"end":43.75,"text":"product は、どの商品の値札か。商品の ID が入っています。","scene":2},{"start":44.07,"end":51.98,"text":"currency は jpy、つまり円。unit_amount は千。円は小数がないので、そのまま千円です。","scene":2},{"start":52.27,"end":59.59,"text":"recurring は、繰り返しの周期。interval が month なら毎月。年額の価格なら year になります。","scene":2},{"start":59.9,"end":64.55,"text":"tax_behavior が inclusive なら、税込みの価格という意味です。","scene":2},{"start":64.87,"end":74.18,"text":"lookup_key は、価格に付けられる名前。ID は環境ごとに変わるので、コードからはこの名前で引く、という使い方ができます。","scene":2},{"start":75.4,"end":77.52,"text":"次は Customer、顧客です。","scene":3},{"start":77.83,"end":80.06,"text":"id は cus から始まります。","scene":3},{"start":80.37,"end":84.77,"text":"email と name。Stripe が領収書や案内のメールを送る先です。","scene":3},{"start":85.07,"end":99.01,"text":"metadata には、キーと値の組を自由に入れられます。ここにアプリの user_id を入れておくと、Webhook で届いたとき、どのユーザーかを引く手がかりになります。カード番号のような機密は、入れてはいけません。","scene":3},{"start":99.3,"end":110.71,"text":"invoice_settings の default_payment_method は、既定の支払い方法。pm から始まる ID だけが入っていて、カード番号そのものは見えません。","scene":3},{"start":111.93,"end":118.37,"text":"いよいよ本命、Subscription です。アプリが一番よく読むオブジェクトなので、じっくり見ましょう。","scene":4},{"start":118.67,"end":120.5,"text":"id は sub から始まります。","scene":4},{"start":120.8,"end":127.14,"text":"customer は、誰の契約か。顧客オブジェクトの中身ではなく、ID だけが入っています。","scene":4},{"start":127.43,"end":135.51,"text":"status は、今の状態。trialing は無料期間中です。状態の移り変わりは、次のレクチャーで詳しくやります。","scene":4},{"start":135.8,"end":142.33,"text":"items は、契約の明細です。どの価格で契約しているかが、data の配列に入っています。","scene":4},{"start":142.63,"end":159.45,"text":"current_period_start と end が、今の期間の始まりと終わり。2025 年 3 月の basil というバージョンから、この日付は、Subscription の直下ではなく、明細の側に移りました。古い記事のコードは、ここで動かなくなります。","scene":4},{"start":159.77,"end":167.83,"text":"trial_end は無料期間の終わり。cancel_at は、解約される予定の日時で、予定がなければ null です。","scene":4},{"start":168.13,"end":172.62,"text":"latest_invoice は、一番新しい請求書の ID です。","scene":4},{"start":172.93,"end":177.25,"text":"metadata には、ここでもアプリの user_id を入れておけます。","scene":4},{"start":178.47,"end":185.3,"text":"ここで、大事な性質を一つ。関連するオブジェクトは、既定では ID の文字列だけが入っています。","scene":5},{"start":185.6,"end":193.18,"text":"customer も latest_invoice も、ID だけ。中身を知るには、もう一度 API を呼びます。","scene":5},{"start":193.5,"end":199.32,"text":"API を呼ぶときに expand を付けると、その場で中身を展開して返してくれます。","scene":5},{"start":199.63,"end":202.77,"text":"API を呼ぶ回数を減らせて、便利です。","scene":5},{"start":203.07,"end":213.43,"text":"ただし、展開は必要なときだけに。深さは四段まで。Webhook で届くデータは、いつも展開されていない形なので、中身が要るときは取り直します。","scene":5},{"start":214.63,"end":221.6,"text":"最後に、Webhook で届く Event の形です。無料期間が終わって、有料に切り替わったときの例です。","scene":6},{"start":221.9,"end":229.2,"text":"id は evt から始まり、type が、何が起きたか。ここでは、契約が更新された、です。","scene":6},{"start":229.5,"end":232.39,"text":"created は起きた時刻。秒単位です。","scene":6},{"start":232.7,"end":236.58,"text":"data の object に、変化したオブジェクトの写しが入っています。","scene":6},{"start":236.87,"end":244.32,"text":"previous_attributes には、変わる前の値。status が trialing から active に変わったことが分かります。","scene":6},{"start":244.63,"end":250.51,"text":"livemode は、本番か、テストか。false なら、サンドボックスからの通知です。","scene":6},{"start":251.73,"end":252.57,"text":"まとめです。","scene":7},{"start":252.87,"end":256.82,"text":"Price は金額と周期、Customer は連絡先と metadata。","scene":7},{"start":257.13,"end":263.26,"text":"Subscription では、status、明細の価格と期間、そして解約の予定を読みます。","scene":7},{"start":263.57,"end":270.76,"text":"関連は ID だけなので、必要なら expand。イベントには、写しと、変わる前の値が入っています。","scene":7},{"start":271.97,"end":276.33,"text":"次は、この status が、どんな一生をたどるのかを見ていきます。","scene":8}],"video":"media/L03.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L03.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L04","no":4,"section":{"no":2,"title":"Stripe の概念とデータ"},"title":"サブスクの一生　ステータスを読む","summary":"Subscription の 8 つの status、解約と支払い失敗の動き、アプリで「使える」とする status の決め方。","docs":[{"title":"Stripe: サブスクリプションの仕組み（ステータス一覧）","url":"https://docs.stripe.com/billing/subscriptions/overview"},{"title":"Stripe: 支払いの再試行（Smart Retries）","url":"https://docs.stripe.com/billing/revenue-recovery/smart-retries"},{"title":"Stripe: サブスクリプションのキャンセル","url":"https://docs.stripe.com/billing/subscriptions/cancel"},{"title":"Stripe changelog: current_period の移動（2025-03-31.basil）","url":"https://docs.stripe.com/changelog/basil/2025-03-31/deprecate-subscription-current-period-start-and-end"}],"quiz":[{"q":"Customer Portal で「期間の終わりに解約」した直後の status は？","choices":["canceled","active のまま（cancel_at に期間末の日時）","paused","unpaid"],"answer":1,"explain":"払った期間の終わりまで active のまま。期間末に canceled になり customer.subscription.deleted が届く（今の既定の flexible では cancel_at に期間末の日時が入る。classic では cancel_at_period_end も true）。"},{"q":"初回の支払いが 23 時間払われないと？","choices":["past_due","incomplete_expired","canceled","trialing"],"answer":1,"explain":"incomplete のまま 23 時間たつと incomplete_expired。請求はされず、やり直すなら新しい契約を作る。"},{"q":"アプリで「使える」としてよい代表的な status は？","choices":["trialing と active","canceled","incomplete_expired","unpaid"],"answer":0,"explain":"trialing と active は使える。past_due を猶予として使えるようにするかは、サービスの判断。"}],"takeaways":["再試行が尽きたあとは「解約／unpaid／past_due のまま」（flexible なら一時停止も）を Billing の設定で選ぶ。Smart Retries の推奨は 2 週間で 8 回","請求モード：2025-09-30.clover 以降に作るサブスクの既定は flexible。Portal での期間末の解約は cancel_at に入り、cancel_at_period_end は false のまま（classic では true）","past_due を使えるとするか（猶予にするか）はサービスの判断。猶予にするなら、未払いのまま使える期間ができる","canceled は最終状態。再開は新しい契約（新しい Checkout）","API 2025-03-31.basil 以降、current_period_start / end は items.data[] 側にある"],"caution":"","material":null,"duration":248.53,"chapters":[{"start":0,"heading":"オープニング"},{"start":13.67,"heading":"このレクチャーのゴール"},{"start":26.47,"heading":"サブスクの一生（status の移り変わり）"},{"start":101.03,"heading":"請求モード（billing_mode）"},{"start":130.23,"heading":"解約は「期間の終わり」に止まる"},{"start":161.17,"heading":"いつまで使える？"},{"start":183.63,"heading":"アプリで status をどう読むか（よくある決め方）"},{"start":217.43,"heading":"まとめ"},{"start":239.33,"heading":"エンディング"}],"cues":[{"start":2.03,"end":6.21,"text":"レクチャー4。サブスクの一生、ステータスを読む。","scene":0},{"start":6.8,"end":12.9,"text":"Subscription には status という状態があって、アプリは、これを見て使えるかどうかを決めます。","scene":0},{"start":14.1,"end":15.29,"text":"ゴールは三つです。","scene":1},{"start":15.6,"end":18.36,"text":"status の意味と、どう移り変わるのか。","scene":1},{"start":18.67,"end":21.58,"text":"解約や、支払いに失敗したときの動き。","scene":1},{"start":21.87,"end":25.73,"text":"そして、アプリで使える、とする条件の決め方です。","scene":1},{"start":26.9,"end":30.76,"text":"これが、サブスクの一生です。順番に追いかけましょう。","scene":2},{"start":31.07,"end":36.37,"text":"無料期間つきで始めると、最初の状態は trialing。無料期間中です。","scene":2},{"start":36.67,"end":41.45,"text":"無料期間が終わって支払いが通ると、active。正常な状態です。","scene":2},{"start":41.73,"end":49.9,"text":"無料期間がない場合は、まず incomplete。初回の支払い待ちです。3D セキュアの認証待ちも、ここに入ります。","scene":2},{"start":50.2,"end":59.7,"text":"二十三時間たっても払われないと、incomplete_expired。この契約では請求されず、やり直すなら新しい契約を作ります。","scene":2},{"start":60,"end":69.69,"text":"毎月の更新で支払いに失敗すると、past_due。Stripe が自動で再試行してくれます。おすすめの設定は、二週間で八回です。","scene":2},{"start":70,"end":72.93,"text":"再試行で払えれば、active に戻ります。","scene":2},{"start":73.23,"end":84.1,"text":"再試行が尽きたときは、設定で、canceled か、unpaid か、past_due のままかを選べます。新しい請求モードなら、一時停止も選べます。","scene":2},{"start":84.4,"end":90.9,"text":"canceled は最終状態で、もう戻りません。再開するなら、新しい契約を作ります。","scene":2},{"start":91.2,"end":100.27,"text":"そして paused、一時停止です。カードなしで無料期間が終わったときや、再試行が尽きたときに、設定が一時停止になっていると出てきます。","scene":2},{"start":101.5,"end":106.8,"text":"ここで一つ、知っておきたい設定があります。サブスクの、請求モードです。","scene":3},{"start":107.1,"end":118.5,"text":"2025 年 9 月のバージョンから、新しく作るサブスクの既定は、flexible というモードになりました。古い記事やサンプルの多くは、classic という以前のモードを前提にしています。","scene":3},{"start":118.8,"end":129.47,"text":"解約の予定の入り方や、支払いに失敗したあとの一時停止、プランを変えたときの請求日などが違います。この講座は、今の既定の flexible で説明します。","scene":3},{"start":130.67,"end":136.43,"text":"解約の動きは、特に大事です。Portal で解約を押しても、すぐには終わりません。","scene":4},{"start":136.73,"end":149.76,"text":"払った期間の終わりまでは active のまま。そのかわり、cancel_at に、期間の終わりの日時が入ります。classic のモードなら、cancel_at_period_end も true になります。","scene":4},{"start":150.07,"end":155.63,"text":"期間の終わりに canceled になって、customer.subscription.deleted という通知が届きます。","scene":4},{"start":155.93,"end":160.42,"text":"つまり、解約した瞬間に使えなくする作りにしては、いけません。","scene":4},{"start":161.6,"end":167.59,"text":"いつまで使えるかは、current_period_end、今の期間の終わりで分かります。","scene":5},{"start":167.9,"end":173.23,"text":"DB にこの日付を持っておけば、画面に、何月何日まで、と出せます。","scene":5},{"start":173.53,"end":182.89,"text":"前のレクチャーで見たとおり、basil 以降、この日付は、Subscription 本体ではなく、items、つまり契約の明細の側にあります。","scene":5},{"start":184.07,"end":190.71,"text":"では、アプリはどの状態を、使える、と判定すればよいでしょう。よくある決め方を見てみます。","scene":6},{"start":191,"end":193.95,"text":"trialing と active は、もちろん使えます。","scene":6},{"start":194.27,"end":206.46,"text":"past_due は、サービスの判断です。Stripe が再試行している最中なので、猶予として使えるようにすることが多いですが、その間は未払いのまま使える、ということでもあります。","scene":6},{"start":206.77,"end":212.7,"text":"それ以外、つまり canceled、unpaid、paused、incomplete は使えません。","scene":6},{"start":213,"end":216.67,"text":"この判定を実際のコードに落とすのは、レクチャー9です。","scene":6},{"start":217.9,"end":218.73,"text":"まとめです。","scene":7},{"start":219.03,"end":225.95,"text":"trialing から active、失敗すると past_due、終わると canceled。これが基本の一生です。","scene":7},{"start":226.23,"end":232.65,"text":"解約は期間の終わりに止まります。cancel_at と current_period_end を見ましょう。","scene":7},{"start":232.97,"end":238.59,"text":"trialing と active は使える。past_due をどうするかは、サービスで決めます。","scene":7},{"start":239.8,"end":244.55,"text":"次は、毎月の請求の正体、請求書と支払いを見ていきます。","scene":8}],"video":"media/L04.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L04.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L05","no":5,"section":{"no":2,"title":"Stripe の概念とデータ"},"title":"請求書と支払い","summary":"Invoice の 5 つの状態、毎月の請求で起きること、billing_reason、請求書から契約をたどる方法、支払いの失敗と追加の認証。","docs":[{"title":"Stripe: サブスクリプションの請求書","url":"https://docs.stripe.com/billing/invoices/subscription"},{"title":"Stripe: 請求書の流れ（ステータス）","url":"https://docs.stripe.com/invoicing/overview"},{"title":"Stripe API: Invoice オブジェクト","url":"https://docs.stripe.com/api/invoices/object"},{"title":"Stripe: 支払いの再試行（Smart Retries）","url":"https://docs.stripe.com/billing/revenue-recovery/smart-retries"}],"quiz":[{"q":"支払いが済んだ請求書の status は？","choices":["open","paid","void","draft"],"answer":1,"explain":"draft（下書き）→ open（確定・支払い待ち）→ paid（支払い済み）。取り消しは void、回収できないときは uncollectible。"},{"q":"毎月の更新で作られた請求書の billing_reason は？","choices":["subscription_create","subscription_cycle","subscription_update","manual"],"answer":1,"explain":"最初の請求書は subscription_create、毎回の更新は subscription_cycle、プラン変更ですぐ請求するときは subscription_update。"},{"q":"更新の支払いで 3D セキュアの追加認証が必要になったときに届くのは？","choices":["invoice.paid","invoice.payment_action_required","customer.deleted","checkout.session.expired"],"answer":1,"explain":"ユーザーに認証してもらうまで支払いは終わらない。Stripe のメールで認証のページへ案内する設定がある。"}],"takeaways":["Invoice の status：draft → open → paid（ほかに void・uncollectible）","更新の請求書は下書きで作られ、約 1 時間後に確定して請求される（その間に invoice.created が届く）。invoice.created を受けているのに成功の返事をしないと、確定が最大 72 時間遅れる","どの契約の請求書かは、API 2025-03-31.basil 以降 parent.subscription_details.subscription で読む","invoice.payment_intent と invoice.charge は basil で無くなった。支払いは invoice.payments（InvoicePayment、expand が必要）で見る","使えるかの判定は customer.subscription.* の同期で決め、invoice.* は記録とユーザーへの連絡に使う"],"caution":"","material":null,"duration":269.37,"chapters":[{"start":0,"heading":"オープニング"},{"start":13.73,"heading":"このレクチャーのゴール"},{"start":26.77,"heading":"請求書の一生（Invoice の status）"},{"start":48.63,"heading":"毎月の請求で起きること"},{"start":90.9,"heading":"billing_reason で「何の請求か」が分かる"},{"start":113.63,"heading":"請求書の中身と、契約のたどり方"},{"start":151.5,"heading":"支払いに失敗したら"},{"start":185.8,"heading":"3D セキュアの追加認証"},{"start":206.77,"heading":"アプリは請求書の通知をどう使う？"},{"start":233.17,"heading":"まとめ"},{"start":258.77,"heading":"エンディング"}],"cues":[{"start":2.03,"end":4.38,"text":"レクチャー5。請求書と支払い。","scene":0},{"start":4.97,"end":13,"text":"サブスクの契約そのものが、お金を払うわけではありません。毎回、請求書が作られて、それが支払われています。","scene":0},{"start":14.17,"end":15.36,"text":"ゴールは三つです。","scene":1},{"start":15.67,"end":18.49,"text":"請求書、Invoice の状態の流れ。","scene":1},{"start":18.8,"end":21.67,"text":"毎月の請求で、何が起きているのか。","scene":1},{"start":21.97,"end":26.03,"text":"そして、支払いの失敗と、追加の認証の扱いです。","scene":1},{"start":27.23,"end":29.62,"text":"請求書にも、一生があります。","scene":2},{"start":29.93,"end":35.19,"text":"最初は draft、下書きです。まだ明細を足したり、直したりできます。","scene":2},{"start":35.5,"end":40.97,"text":"確定すると open。請求の内容が固まって、支払いを待つ状態になります。","scene":2},{"start":41.27,"end":42.87,"text":"支払いが済むと paid です。","scene":2},{"start":43.17,"end":47.89,"text":"取り消すなら void。回収できないと判断したら uncollectible です。","scene":2},{"start":49.1,"end":52.8,"text":"毎月の更新の日に、何が起きているのかを追いかけます。","scene":3},{"start":53.1,"end":58.7,"text":"今の期間が終わると、新しい期間が始まって、請求書が下書きで作られます。","scene":3},{"start":59,"end":77.24,"text":"更新の請求書は、およそ一時間、下書きのまま置かれてから確定します。その間に invoice.created が届くので、必要なら明細を足すこともできます。この通知を受けているのに成功の返事をしないと、確定が最大七十二時間遅れるので、注意しましょう。","scene":3},{"start":77.53,"end":81.93,"text":"確定すると、登録されているカードに、自動で請求します。","scene":3},{"start":82.23,"end":90.16,"text":"結果は Webhook で届きます。払えたら invoice.paid、払えなかったら invoice.payment_failed です。","scene":3},{"start":91.37,"end":97.29,"text":"請求書には、billing_reason という項目があって、何の請求かが分かります。","scene":4},{"start":97.6,"end":103.05,"text":"subscription_create は、契約を始めたときの、最初の請求書。","scene":4},{"start":103.37,"end":107.31,"text":"subscription_cycle は、毎月や毎年の更新。","scene":4},{"start":107.6,"end":112.89,"text":"subscription_update は、プランを変えて、すぐに請求するときです。","scene":4},{"start":114.1,"end":116.28,"text":"請求書の中身も見ておきましょう。","scene":5},{"start":116.57,"end":120.93,"text":"id は in から始まります。customer は、誰の請求書か。","scene":5},{"start":121.23,"end":123.57,"text":"status と billing_reason です。","scene":5},{"start":123.87,"end":129.49,"text":"amount_due が請求額、amount_paid が、支払われた額です。","scene":5},{"start":129.8,"end":141.28,"text":"どの契約の請求書かは、parent の中の subscription_details にあります。これも basil からの変更で、古い記事では、直下の subscription を読んでいました。","scene":5},{"start":141.57,"end":150.76,"text":"hosted_invoice_url は、Stripe が用意する請求書のページ。ユーザーは、ここで請求書や領収書を受け取れます。","scene":5},{"start":151.97,"end":155.48,"text":"更新の支払いに失敗すると、何が起きるのでしょう。","scene":6},{"start":155.77,"end":161.48,"text":"invoice.payment_failed が届いて、契約は past_due になります。","scene":6},{"start":161.8,"end":174.01,"text":"でも、すぐに諦めるわけではありません。Smart Retries という仕組みで、Stripe が払えそうなタイミングを選んで、自動で再試行します。おすすめの設定は、二週間で八回です。","scene":6},{"start":174.3,"end":177.92,"text":"カードの更新をお願いするメールも、設定で送れます。","scene":6},{"start":178.2,"end":185.04,"text":"再試行が尽きたら、前のレクチャーで見たとおり、設定に従って、解約や unpaid などに進みます。","scene":6},{"start":186.27,"end":192.41,"text":"更新の支払いでも、カード会社が本人確認、つまり 3D セキュアを求めることがあります。","scene":7},{"start":192.7,"end":201.53,"text":"そのときは、invoice.payment_action_required が届きます。ユーザーが認証するまで、支払いは終わりません。","scene":7},{"start":201.83,"end":206.01,"text":"Stripe の設定で、認証のページへ案内するメールを送れます。","scene":7},{"start":207.23,"end":211.28,"text":"では、アプリは請求書の通知を、どう使えばよいでしょう。","scene":8},{"start":211.57,"end":221.82,"text":"使えるかどうかの判定は、Subscription の状態で決めます。past_due や canceled への変化は、customer.subscription の通知でも届くからです。","scene":8},{"start":222.13,"end":226.44,"text":"請求書の通知は、記録や、ユーザーへの連絡に使います。","scene":8},{"start":226.73,"end":232.43,"text":"領収書は、Stripe の請求書のページや、管理ページの請求履歴に任せられます。","scene":8},{"start":233.6,"end":234.43,"text":"まとめです。","scene":9},{"start":234.73,"end":242.55,"text":"請求書は、draft、open、paid と進みます。取り消しは void、回収できないときは uncollectible。","scene":9},{"start":242.87,"end":249.25,"text":"毎月の更新では、下書き、約一時間で確定、請求、そして結果の通知。","scene":9},{"start":249.53,"end":258.02,"text":"失敗したら past_due と自動の再試行。追加の認証が要るときは、payment_action_required が届きます。","scene":9},{"start":259.2,"end":265.37,"text":"Stripe の概念とデータはここまで。次のセクションから、サンプルアプリを作る流れで見ていきます。","scene":10}],"video":"media/L05.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L05.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L06","no":6,"section":{"no":3,"title":"サンプルで作る"},"title":"Checkout で申し込みを作る","summary":"ホスト型の Checkout を選ぶ理由、Customer を先に作る理由、Checkout Session のサンプルコード、完了ページを信じてはいけない理由。","docs":[{"title":"Stripe: サブスクリプションの組み込み（Stripe がホストするページ）","url":"https://docs.stripe.com/billing/subscriptions/build-subscriptions"},{"title":"Stripe API: Create a Checkout Session","url":"https://docs.stripe.com/api/checkout/sessions/create"},{"title":"Stripe: 注文のフルフィルメント（Webhook と完了ページ）","url":"https://docs.stripe.com/checkout/fulfillment"},{"title":"Stripe: Checkout の無料トライアル","url":"https://docs.stripe.com/payments/checkout/free-trials"}],"quiz":[{"q":"Checkout Session の expires_at に設定できる範囲は？","choices":["5 分〜1 時間","30 分〜24 時間","1 時間〜7 日","制限なし"],"answer":1,"explain":"既定は作成から 24 時間。"},{"q":"success_url に入れておく差し込みは？","choices":["{USER_ID}","{CHECKOUT_SESSION_ID}","{SUBSCRIPTION_ID}","{CUSTOMER_EMAIL}"],"answer":1,"explain":"戻ってきたときに Stripe が Session ID へ置き換える。完了ページはこの ID で Session を取り直す。"},{"q":"完了ページに戻ってきたときの正しい扱いは？","choices":["その場で Pro にする","Stripe から Session を取り直して照合する（確定は Webhook）","URL の session_id を信じる","何もしない"],"answer":1,"explain":"戻り先 URL は偽装できるし、戻ってこない人もいる。確定は Webhook、完了ページの取り直しは反映の遅れの保険。"}],"takeaways":["ユーザー 1 人に Customer 1 つ。Checkout の前に作って users.stripe_customer_id に保存し、customer= で渡す","client_reference_id と、契約の metadata にアプリの user_id。Webhook や完了ページで答え合わせに使う","success_url に {CHECKOUT_SESSION_ID}。完了ページは Session を取り直すだけで、確定は Webhook","無料期間は subscription_data.trial_period_days。何度も使わせないなら、契約の履歴を見てから付ける","無料期間の新しい仕組み（Trial Offer API）も出ている。Checkout では今も trial_period_days が実用的だが、公式ではレガシーの表記（2026-10 時点）","サンプルは読みやすさのため stripe.Customer.create のような書き方にした。stripe-python は StripeClient を勧めていて、この書き方は近く非推奨になる予定"],"caution":"","material":null,"duration":307.2,"chapters":[{"start":0,"heading":"オープニング"},{"start":14.97,"heading":"このレクチャーのゴール"},{"start":28.27,"heading":"支払い画面の 3 つの作り方"},{"start":50.77,"heading":"ホスト型を選ぶ 3 つの理由"},{"start":82.77,"heading":"ボタンを押してから戻るまで"},{"start":114.27,"heading":"まず Customer を用意する"},{"start":154.5,"heading":"Checkout Session を作るコード"},{"start":222.9,"heading":"公式ドキュメントの小ネタ"},{"start":252.13,"heading":"よくある誤解「完了ページ＝契約成立」"},{"start":280.97,"heading":"まとめ"},{"start":297.03,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.68,"text":"レクチャー6。Checkout で、申し込みを作る。","scene":0},{"start":6.27,"end":14.21,"text":"ここからは、サンプルアプリを作る流れで見ていきます。まずは、Pro にするを押してから、支払いが終わって戻ってくるまでです。","scene":0},{"start":15.43,"end":16.63,"text":"ゴールは三つです。","scene":1},{"start":16.93,"end":19.12,"text":"ホスト型の Checkout を選ぶ理由。","scene":1},{"start":19.43,"end":22.05,"text":"Checkout Session の引数の意味。","scene":1},{"start":22.33,"end":27.53,"text":"そして、完了ページに戻っても、それだけでは契約成立ではない理由です。","scene":1},{"start":28.73,"end":32.93,"text":"Stripe で支払いを受ける画面の作り方は、大きく三つあります。","scene":2},{"start":33.23,"end":39.47,"text":"一つ目は、Stripe がホストするページへ移動させる、ホスト型の Checkout。これが既定です。","scene":2},{"start":39.77,"end":44.46,"text":"二つ目は、自分のページの中に、Stripe のフォームを埋め込むやり方。","scene":2},{"start":44.77,"end":50.01,"text":"三つ目は、Elements という部品を組み合わせて、自分で画面を作るやり方です。","scene":2},{"start":51.23,"end":55.2,"text":"この講座では、ホスト型を使います。理由は三つです。","scene":3},{"start":55.5,"end":61.99,"text":"一つ目、コードが最小です。カードの入力フォームも、Stripe.js も持ちません。","scene":3},{"start":62.3,"end":75.22,"text":"二つ目、3D セキュア、多言語、無料期間の表示を、Stripe が持ってくれます。日本では 2025 年 3 月末から、ネットのカード決済に 3D セキュアが原則必須になりました。","scene":3},{"start":75.53,"end":82.01,"text":"三つ目、カード情報に一切触れないので、決済の安全基準への対応も Stripe 側が持ちます。","scene":3},{"start":83.23,"end":85.17,"text":"では、流れを追いかけます。","scene":4},{"start":85.47,"end":92.72,"text":"ユーザーがボタンを押すと、ブラウザからアプリのサーバーに、Checkout Session を作って、とリクエストします。","scene":4},{"start":93.03,"end":97.88,"text":"サーバーは Stripe に Session を作らせて、返ってきた URL を受け取ります。","scene":4},{"start":98.17,"end":103.8,"text":"その URL へブラウザを移動させると、ユーザーは Stripe のページでカードを入力します。","scene":4},{"start":104.1,"end":107.72,"text":"支払いが通ると、Stripe は裏で Webhook を送ります。","scene":4},{"start":108,"end":113.51,"text":"そして、ユーザーをアプリの完了ページ、success_url へ戻します。","scene":4},{"start":114.73,"end":117.69,"text":"Session を作る前に、顧客を用意します。","scene":5},{"start":118,"end":130.63,"text":"すでに Stripe の顧客 ID を持っているユーザーなら、それを使います。一人のユーザーに、顧客は一つ。これで、解約して再加入しても、契約や請求の履歴が一か所にまとまります。","scene":5},{"start":130.93,"end":137.66,"text":"顧客を渡さなくても、Checkout が自動で作ってくれますが、申し込むたびに別の顧客ができてしまいます。","scene":5},{"start":137.97,"end":144.17,"text":"まだなら、Customer を作ります。メールアドレスと、metadata にアプリの user_id。","scene":5},{"start":144.47,"end":153.76,"text":"返ってきた cus から始まる ID を、アプリの users テーブルに保存しておきます。Webhook が来たとき、この ID からユーザーを引くためです。","scene":5},{"start":154.97,"end":161.77,"text":"では、Checkout Session を作るコードです。FastAPI で書くと、こうなります。","scene":6},{"start":162.07,"end":166.31,"text":"ログインしているユーザーの、Pro にするボタンから呼ばれる API です。","scene":6},{"start":166.6,"end":171.09,"text":"mode は subscription。月額の契約を作る、という意味です。","scene":6},{"start":171.4,"end":174.91,"text":"customer には、さっき用意した顧客 ID を渡します。","scene":6},{"start":175.2,"end":183.54,"text":"line_items には、Pro の月額の価格 ID を一つ。価格 ID は環境ごとに違うので、設定値から読みます。","scene":6},{"start":183.83,"end":193.79,"text":"client_reference_id と、契約の metadata に、アプリの user_id。これが、あとで答え合わせをする鍵になります。","scene":6},{"start":194.1,"end":203.66,"text":"success_url には、CHECKOUT_SESSION_ID という差し込みを入れます。戻ってきたとき、どの支払いだったかが分かります。","scene":6},{"start":203.97,"end":208.18,"text":"cancel_url は、支払いをやめたときの戻り先です。","scene":6},{"start":208.47,"end":216.95,"text":"そして、過去に一度も契約がない人だけ、十四日間の無料期間をつけます。無料期間を、何度も使わせないためです。","scene":6},{"start":217.23,"end":222.16,"text":"最後に Session を作って、URL をフロントに返す。これだけです。","scene":6},{"start":223.37,"end":226.42,"text":"公式ドキュメントに、うれしい小ネタがあります。","scene":7},{"start":226.73,"end":237.61,"text":"checkout.session.completed を受け取る Webhook を登録していると、Checkout は、サーバーの返事を最大十秒待ってから、完了ページへ戻してくれます。","scene":7},{"start":237.9,"end":245.08,"text":"つまり、Webhook が速く返事をするほど、戻ってきた時にはもう Pro になっている、という体験に近づきます。","scene":7},{"start":245.37,"end":251.38,"text":"ただし、Stripe CLI でローカルに転送しているときは、待たずにすぐ戻ります。","scene":7},{"start":252.57,"end":259.14,"text":"ここで、よくある誤解です。完了ページに戻ってきたら、契約成立。これは違います。","scene":8},{"start":259.43,"end":265.65,"text":"戻る前にブラウザを閉じる人もいますし、戻り先の URL は、誰でも作れてしまいます。","scene":8},{"start":265.97,"end":275.21,"text":"正しくは、Webhook で確定します。完了ページからは、Stripe に Session を取り直して同期する。これは Webhook を待たないための保険です。","scene":8},{"start":275.5,"end":280.2,"text":"画面は、反映に数秒かかることがある、という前提で作りましょう。","scene":8},{"start":281.4,"end":282.23,"text":"まとめです。","scene":9},{"start":282.53,"end":285.79,"text":"この講座では、ホスト型の Checkout を使います。","scene":9},{"start":286.1,"end":291.56,"text":"customer と client_reference_id で、誰の支払いかを結びます。","scene":9},{"start":291.87,"end":296.27,"text":"そして、完了ページは保険。確定させるのは Webhook です。","scene":9},{"start":297.5,"end":303.19,"text":"次は、支払いのあとに届く通知、Webhook です。ここが一番の山場ですよ。","scene":10}],"video":"media/L06.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L06.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L07","no":7,"section":{"no":3,"title":"サンプルで作る"},"title":"Webhook　あとから届く通知と 4 つの約束","summary":"順番・重複・偽物・すぐ返事の 4 つの約束と対策、受け取るイベント、Snapshot と Thin の違い。","docs":[{"title":"Stripe: Webhook でイベントを受信する（署名・再送・ベストプラクティス）","url":"https://docs.stripe.com/webhooks"},{"title":"Stripe: イベントの仕組み（Snapshot と Thin）","url":"https://docs.stripe.com/events/how-events-work"},{"title":"Stripe: サブスクリプションで Webhook を使う","url":"https://docs.stripe.com/billing/subscriptions/webhooks"},{"title":"Stripe API: Thin イベントの一覧","url":"https://docs.stripe.com/api/v2/core/events/event-types"}],"quiz":[{"q":"Webhook の順番について正しいのは？","choices":["必ず起きた順に届く","created を比べれば順番が分かる","順番は保証されないので、取り直した最新状態で書く","invoice.paid は必ず最後に届く"],"answer":2,"explain":"created は秒単位で同じ値もあるので、公式は created で順序や処理済みを判断しないよう求めている。"},{"q":"署名の検証に必要なものは？","choices":["整形し直した JSON と API キー","生のリクエスト本文・Stripe-Signature ヘッダー・whsec_","ログインの ID トークン","送信元 IP だけ"],"answer":1,"explain":"本文を加工すると検証は失敗する。IP 許可リストは併用の守り。"},{"q":"本番で Webhook の返事が失敗し続けたとき、自動の再送は？","choices":["再送しない","1 時間だけ","指数バックオフで最長 3 日","30 日間"],"answer":2,"explain":"サンドボックスでは数時間のうちに 3 回。手動の再送はダッシュボードで 15 日、CLI で 30 日まで。"}],"takeaways":["エンドポイントは 1 つ（例: POST /webhooks/stripe）。ログインの認証は通さず、署名で守る","Event ID を主キーにした台帳に INSERT できたときだけ処理する（処理済みなら 200 で何もしない。前回失敗した通知は処理し直す）","公式（2026-10 確認）：created で順序を決めない・Snapshot は古い可能性がある・新しい実装には Thin を推奨","購読するイベントは必要なものだけに絞る","Thin で受けるときは construct_event ではなく、StripeClient の parse_event_notification で受ける"],"caution":"","material":null,"duration":350.23,"chapters":[{"start":0,"heading":"オープニング"},{"start":14.57,"heading":"このレクチャーのゴール"},{"start":27.37,"heading":"Webhook のしくみ"},{"start":51.87,"heading":"守るべき 4 つの約束"},{"start":72.9,"heading":"約束 1　順番は保証されない"},{"start":110.2,"heading":"約束 2　同じ通知が 2 回来る"},{"start":147.17,"heading":"約束 3　偽物が来るかもしれない"},{"start":188.67,"heading":"約束 4　すぐ返事をする（再送のしくみ）"},{"start":223.97,"heading":"サブスクで受け取る主なイベント"},{"start":273.27,"heading":"通知の 2 つの形式"},{"start":316.97,"heading":"まとめ"},{"start":341.1,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.62,"text":"レクチャー7。Webhook、あとから届く通知。","scene":0},{"start":6.23,"end":13.81,"text":"Webhook は、Stripe からアプリのサーバーへの、あとから届く電話のようなものです。便利ですが、クセがあります。","scene":0},{"start":15.03,"end":16.23,"text":"ゴールは三つです。","scene":1},{"start":16.53,"end":19.54,"text":"Webhook の四つの約束と、その対策。","scene":1},{"start":19.83,"end":21.82,"text":"サブスクで受け取るイベントの種類。","scene":1},{"start":22.13,"end":26.6,"text":"そして、通知の二つの形式、Snapshot と Thin の違いです。","scene":1},{"start":27.83,"end":29.16,"text":"仕組みはシンプルです。","scene":2},{"start":29.47,"end":38.01,"text":"Stripe で何かが起きると、Stripe がアプリの URL に、HTTP の POST を送ってきます。中身はイベント一件分です。","scene":2},{"start":38.3,"end":42.69,"text":"アプリは、それを記録して、契約の状態を DB に書きます。","scene":2},{"start":43,"end":51.12,"text":"そして、受け取りましたよ、と 200 を返します。返事がないと、Stripe は失敗とみなして、送り直してきます。","scene":2},{"start":52.33,"end":59.15,"text":"Webhook には、守るべき四つの約束があります。まず一覧で見て、それから一つずつ深掘りします。","scene":3},{"start":59.43,"end":61.85,"text":"一つ目、順番は保証されない。","scene":3},{"start":62.17,"end":65.08,"text":"二つ目、同じ通知が二回来ることがある。","scene":3},{"start":65.37,"end":67.91,"text":"三つ目、偽物が来るかもしれない。","scene":3},{"start":68.2,"end":72.15,"text":"四つ目、すぐに返事をしないと、失敗扱いになる。","scene":3},{"start":73.37,"end":84.04,"text":"一つ目の約束、順番です。サブスクを作ると、Stripe の中では、契約の作成、請求書の作成、支払い成功、の順に起きます。","scene":4},{"start":84.33,"end":90.95,"text":"でも、届く順番はバラバラです。支払い成功が、契約の作成より先に届くこともあります。","scene":4},{"start":91.23,"end":101.55,"text":"公式ドキュメントは、はっきり言っています。イベントの created は秒単位なので、同じ時刻になることもある。だから、created で順番を決めないこと。","scene":4},{"start":101.83,"end":109.44,"text":"対策は、届いた順に上書きするのではなく、Stripe の API で取り直した、最新の状態で書くことです。","scene":4},{"start":110.67,"end":119.83,"text":"二つ目の約束、重複です。Stripe は、少なくとも一回は届ける、という方式なので、同じ通知が二回来ることがあります。","scene":5},{"start":120.13,"end":127.17,"text":"対策は、イベント ID を台帳に記録すること。ID を主キーにして、受け取った瞬間に書き込みます。","scene":5},{"start":127.47,"end":136.36,"text":"二回目に来たときは、一意制約で書き込みが失敗します。処理済みなら、何もせず 200 を返します。これを冪等性と言います。","scene":5},{"start":136.67,"end":146.41,"text":"ただし、前回の処理が失敗して failed のまま残っていた通知だけは、もう一度処理します。これで、何回届いても、結果は同じになります。","scene":5},{"start":147.6,"end":155.39,"text":"三つ目の約束、偽物対策です。Webhook の URL は公開されているので、誰でも POST できてしまいます。","scene":6},{"start":155.7,"end":159.37,"text":"そこで Stripe は、通知の一件一件に署名をつけます。","scene":6},{"start":159.67,"end":165.13,"text":"署名は、Stripe-Signature というヘッダーに、時刻と一緒に入っています。","scene":6},{"start":165.43,"end":177.45,"text":"アプリは、署名シークレット、whsec から始まる鍵と、加工していない生の本文で検証します。本文を JSON に読み直したりすると、検証に失敗するので注意です。","scene":6},{"start":177.77,"end":181.08,"text":"正しければ処理へ。偽物なら 400 を返します。","scene":6},{"start":181.4,"end":187.93,"text":"時刻も署名に含まれるので、古すぎる通知も弾けます。ライブラリの既定は、五分の許容です。","scene":6},{"start":189.1,"end":196.98,"text":"四つ目の約束、すぐに返事をすることです。重い処理をしてから返事をすると、タイムアウトして失敗扱いになります。","scene":7},{"start":197.27,"end":203.44,"text":"失敗すると、本番では、間隔を広げながら、最長三日間送り直してくれます。","scene":7},{"start":203.73,"end":206.85,"text":"サンドボックスでは、数時間のうちに三回です。","scene":7},{"start":207.13,"end":213.77,"text":"あとから手で送り直すこともできます。ダッシュボードなら十五日以内、CLI なら三十日以内です。","scene":7},{"start":214.07,"end":223.23,"text":"アプリは、台帳に書けたら 200、署名が不正なら 400、途中で例外が起きたら 500 を返して、Stripe に送り直してもらいます。","scene":7},{"start":224.43,"end":230.69,"text":"サブスクで受け取る、主なイベントです。必要なものだけ購読するのが、公式のおすすめです。","scene":8},{"start":231,"end":236.91,"text":"checkout.session.completed で、どのユーザーが契約したかを結びつけます。","scene":8},{"start":237.2,"end":247.76,"text":"本命は、customer.subscription の created、updated、deleted、それに paused と resumed。契約の状態を DB に同期します。","scene":8},{"start":248.07,"end":261.27,"text":"invoice の paid、payment_failed、payment_action_required は、記録や、ユーザーへの連絡に使います。状態の変化は、subscription の側で同期されるからです。","scene":8},{"start":261.57,"end":266.54,"text":"trial_will_end は、無料期間が終わる三日前に届きます。","scene":8},{"start":266.83,"end":272.53,"text":"返金とチャージバックは、記録して運営に知らせ、権利をどうするかは人が判断します。","scene":8},{"start":273.73,"end":278.36,"text":"最後に、通知の形式です。Snapshot と Thin の二種類があります。","scene":9},{"start":278.67,"end":287.79,"text":"Snapshot は全文入り。イベントが起きた時点の、オブジェクトの写しが入っています。ただし、処理する頃には古くなっているかもしれません。","scene":9},{"start":288.1,"end":295.3,"text":"Thin は、種類と ID だけの軽い通知。中身は API で取り直す前提で、バージョン管理もいりません。","scene":9},{"start":295.6,"end":302.99,"text":"公式ドキュメントでは、新しい実装には Thin がおすすめと書かれていて、サブスク系の Thin イベントも一覧に並んでいます。","scene":9},{"start":303.3,"end":316.23,"text":"この講座のサンプルは、受け取りの手順が少ない Snapshot で受けて、中身は必ず取り直します。Thin に切り替えても、通知はきっかけ、状態は取り直す、という考え方はそのまま使えます。","scene":9},{"start":317.4,"end":320.61,"text":"まとめです。四つの約束を、もう一度。","scene":10},{"start":320.9,"end":324.67,"text":"順番はバラバラなので、取り直した最新の状態で書く。","scene":10},{"start":324.97,"end":329.48,"text":"二回来るので、イベント ID の台帳で、二回目は何もしない。","scene":10},{"start":329.77,"end":334.37,"text":"偽物が来るので、生の本文と whsec で署名を検証する。","scene":10},{"start":334.67,"end":340.36,"text":"そして、すぐ 200 を返す。失敗しても、最長三日は送り直してくれます。","scene":10},{"start":341.57,"end":346.23,"text":"次は、この四つの約束を、サンプルアプリのコードに落とし込みます。","scene":11}],"video":"media/L07.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L07.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L08","no":8,"section":{"no":3,"title":"サンプルで作る"},"title":"Webhook を受けて DB に写す","summary":"サンプルの 3 つのテーブル、受け取りの 4 ステップ、イベントの振り分け、取り直し方式の同期関数、Webhook と完了ページが同時に動いても壊れない理由。","docs":[{"title":"Stripe: Webhook（イベントの順序・重複・署名）","url":"https://docs.stripe.com/webhooks"},{"title":"Stripe: イベントの仕組み（Snapshot は古い可能性）","url":"https://docs.stripe.com/events/how-events-work"},{"title":"Stripe: 注文のフルフィルメント（同じ関数を 2 か所から）","url":"https://docs.stripe.com/checkout/fulfillment"},{"title":"Stripe API: Retrieve a subscription","url":"https://docs.stripe.com/api/subscriptions/retrieve"}],"quiz":[{"q":"台帳への INSERT が一意制約で失敗したら？","choices":["500 を返して再送させる","処理済みとして 200（前回 failed なら処理し直す）","400 を返す","例外で落とす"],"answer":1,"explain":"同じ evt_… は 2 回処理しない。ただし前回 failed の行は、再送で処理し直せるようにする。"},{"q":"署名の検証が失敗する、よくある原因は？","choices":["本文を JSON として読み直してから検証した","200 を返した","Thin イベントを使った","テストカードを使った"],"answer":0,"explain":"検証には加工していない生の本文（bytes）が必要。FastAPI なら await request.body()。"},{"q":"Webhook と完了ページの sync が同時に動いても壊れない理由は？","choices":["ロックを取るから","どちらも同じ sub_… を Stripe の最新状態で upsert するから","片方しか動かないから","Stripe が順番を保証するから"],"answer":1,"explain":"書く内容が Stripe 由来の最新状態なので、最後の状態は一致する。"}],"takeaways":["テーブルは 3 つ：users.stripe_customer_id（UNIQUE）・subscriptions（sub_… が主キー）・webhook_events（evt_… が主キー）","受け取り：生の本文 → construct_event → 台帳に INSERT → 同期 → processed。例外は failed（例外の型名だけ）で 500","customer.subscription.* はどれも「その sub_… を取り直して upsert」。届く順番に関係なく最後は正しい状態になる","知らない customer のイベントは無視してログだけ（偽の通知で Pro にさせない）","解約の予定は cancel_at で持つ（flexible では期間末の解約も cancel_at に入り、cancel_at_period_end は false のまま）","stripe listen が表示する whsec_ はローカル専用。サンドボックスと本番はエンドポイントごとに別の whsec_"],"caution":"","material":null,"duration":292.3,"chapters":[{"start":0,"heading":"オープニング"},{"start":12.1,"heading":"このレクチャーのゴール"},{"start":24.17,"heading":"サンプルの 3 つのテーブル"},{"start":52.67,"heading":"subscriptions（契約の写し）の列"},{"start":87.1,"heading":"受け取りの 4 ステップ"},{"start":124.7,"heading":"FastAPI で書くとこうなる"},{"start":161.8,"heading":"イベントの振り分け"},{"start":188.17,"heading":"取り直し方式の同期関数"},{"start":228,"heading":"Webhook と完了ページが同時に動いても"},{"start":263,"heading":"まとめ"},{"start":281.8,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.99,"text":"レクチャー8。Webhook を受けて、DB に写す。","scene":0},{"start":6.6,"end":11.34,"text":"レクチャー7で学んだ四つの約束を、サンプルアプリのコードに落とし込みます。","scene":0},{"start":12.53,"end":13.73,"text":"ゴールは三つです。","scene":1},{"start":14.03,"end":16.63,"text":"サンプルの、三つのテーブルの役割。","scene":1},{"start":16.93,"end":18.97,"text":"受け取りの、四つのステップ。","scene":1},{"start":19.27,"end":23.43,"text":"そして、届く順番に強い、取り直し方式の同期です。","scene":1},{"start":24.63,"end":29.38,"text":"サンプルアプリの DB には、課金のための置き場所を、三つ用意します。","scene":2},{"start":29.67,"end":37.23,"text":"users テーブルには、Stripe の顧客 ID の列を一つ足します。一意にして、一人のユーザーに顧客は一つ。","scene":2},{"start":37.53,"end":45.29,"text":"subscriptions テーブルは、Stripe の契約の写しです。解約して再加入すると、一人に複数の行ができます。","scene":2},{"start":45.6,"end":51.9,"text":"webhook_events は、受け取った通知の台帳。二回届いた通知を見分けるためのものです。","scene":2},{"start":53.13,"end":55.33,"text":"契約の写しの列を見ておきます。","scene":3},{"start":55.63,"end":64.36,"text":"id には、Stripe の sub から始まる ID を、そのまま主キーとして入れます。user_id は、どのユーザーの契約か。","scene":3},{"start":64.67,"end":67.99,"text":"status は、Stripe の状態をそのまま写します。","scene":3},{"start":68.3,"end":72.21,"text":"price_id で、月額か年額かが分かります。","scene":3},{"start":72.5,"end":79.87,"text":"current_period_end と cancel_at で、いつまで使えるか、いつ解約されるかが分かります。","scene":3},{"start":80.17,"end":86.36,"text":"trial_end は無料期間の終わり。updated_at は、最後に同期した時刻です。","scene":3},{"start":87.57,"end":90.2,"text":"受け取りの手順は、四つのステップです。","scene":4},{"start":90.5,"end":99.03,"text":"ステップ1。生の本文と、Stripe-Signature で、construct_event を呼びます。失敗したら 400。","scene":4},{"start":99.33,"end":106.74,"text":"ステップ2。台帳に、イベント ID で INSERT。一意制約で失敗したら、もう処理済みなので 200。","scene":4},{"start":107.03,"end":112.75,"text":"ステップ3。種類ごとに同期して、同じトランザクションで processed にして、200。","scene":4},{"start":113.07,"end":123.95,"text":"ステップ4。途中で例外が起きたら、failed と例外の種類だけを記録して 500。Stripe が送り直してきたら、failed の行は、もう一度処理できるようにします。","scene":4},{"start":125.17,"end":128.92,"text":"FastAPI で書くと、こんな形になります。","scene":5},{"start":129.23,"end":139.67,"text":"大事なのは最初の行。request.body で、生の本文をバイトのまま受け取ります。JSON として受け取ると、署名の検証に失敗します。","scene":5},{"start":139.97,"end":141.64,"text":"署名が不正なら 400。","scene":5},{"start":141.93,"end":149.86,"text":"台帳への INSERT が通らなければ、処理済みなので 200。ただし、前回 failed だった行は、もう一度処理します。","scene":5},{"start":150.17,"end":152.6,"text":"種類ごとに同期して、processed。","scene":5},{"start":152.9,"end":161.05,"text":"例外が起きたら、failed と、例外の型の名前だけを記録して 500。ログにも、本文やカードの情報は出しません。","scene":5},{"start":162.27,"end":165.39,"text":"種類ごとの振り分けは、これくらいで十分です。","scene":6},{"start":165.7,"end":170.85,"text":"Checkout の完了なら、できあがった契約の ID を取り出して、同期します。","scene":6},{"start":171.17,"end":181.56,"text":"customer.subscription で始まるイベントは、どれも、その契約を同期するだけ。作成でも、更新でも、削除でも、やることは同じです。","scene":6},{"start":181.87,"end":187.4,"text":"支払い失敗のような請求書のイベントは、記録と、ユーザーへの連絡だけにします。","scene":6},{"start":188.6,"end":190.68,"text":"そして、同期の関数です。","scene":7},{"start":190.97,"end":196.53,"text":"まず、イベントの中身ではなく、Stripe から最新の Subscription を取り直します。","scene":7},{"start":196.83,"end":205.84,"text":"顧客 ID から、アプリのユーザーを引きます。知らない顧客なら、無視してログだけ残します。偽の通知で Pro にされるのを防ぐためです。","scene":7},{"start":206.13,"end":210.62,"text":"期間の日付は、basil 以降なので、items の側から読みます。","scene":7},{"start":210.93,"end":217.82,"text":"そして、sub の ID で upsert。何回呼ばれても、どの順番で呼ばれても、結果は同じです。","scene":7},{"start":218.13,"end":227.24,"text":"この関数を、Webhook からも、完了ページの sync からも呼びます。これは公式の、フルフィルメントのガイドが勧めている形そのものです。","scene":7},{"start":228.47,"end":233.1,"text":"Webhook と、完了ページの sync が、同時に走ったらどうなるでしょう。","scene":8},{"start":233.4,"end":236.82,"text":"Webhook の側は、Stripe から sub を取り直します。","scene":8},{"start":237.13,"end":246.79,"text":"sync の側は、Session を取り直して、client_reference_id と customer が本人のものか確かめてから、同じ sub を取り直します。","scene":8},{"start":247.1,"end":262.25,"text":"どちらも、同じ sub の、Stripe の最新状態で upsert するので、最後の状態は一致します。ただ、初めての書き込みが同時に起きると、一意制約で片方が失敗します。そのときは更新に切り替えれば大丈夫です。","scene":8},{"start":263.47,"end":264.3,"text":"まとめです。","scene":9},{"start":264.6,"end":270.17,"text":"受け取りは、署名、台帳、同期、そして例外なら 500 の四ステップ。","scene":9},{"start":270.47,"end":276.15,"text":"契約のイベントは、sub を取り直して upsert するだけ。届く順番に強くなります。","scene":9},{"start":276.47,"end":281.05,"text":"そして、Webhook と完了ページで、同じ同期関数を使います。","scene":9},{"start":282.27,"end":288.31,"text":"次は、写した契約を使って Pro の機能を開ける判定と、契約の管理ページを作ります。","scene":10}],"video":"media/L08.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L08.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L09","no":9,"section":{"no":3,"title":"サンプルで作る"},"title":"使えるかの判定と Customer Portal","summary":"DB だけを見る判定関数、権利をアプリの DB で判定する理由、Customer Portal の作り方と、解約・プラン変更・日割りの動き。","docs":[{"title":"Stripe: エンタイトルメント（内部で保持する推奨）","url":"https://docs.stripe.com/billing/entitlements"},{"title":"Stripe: カスタマーポータル","url":"https://docs.stripe.com/customer-management"},{"title":"Stripe: カスタマーポータルの組み込み","url":"https://docs.stripe.com/customer-management/integrate-customer-portal"},{"title":"Stripe: プランの変更（アップグレード・ダウングレード）","url":"https://docs.stripe.com/billing/subscriptions/change"},{"title":"Stripe: 日割り（プロレーション）","url":"https://docs.stripe.com/billing/subscriptions/prorations"}],"quiz":[{"q":"判定関数が Stripe の API を呼ぶのは？","choices":["機能が使われるたびに毎回","基本は呼ばない（DB だけを見る）","ログインのたび","月に 1 回"],"answer":1,"explain":"毎回呼ぶと遅く、Stripe が落ちると機能も止まる。取りこぼしが心配なら、期間切れなのに有効な行だけ取り直す。"},{"q":"Customer Portal の URL はいつ作る？","choices":["ユーザー登録のとき 1 回","「プランを管理」が押されるたびに","月に 1 回","作らない"],"answer":1,"explain":"ポータルのセッションは短い時間で切れる。押されるたびに作って、すぐ移動させる。"},{"q":"Portal で「期間の終わりに解約」したとき、まず届くのは？","choices":["customer.subscription.deleted","customer.subscription.updated（cancel_at に期間末）","invoice.voided","何も届かない"],"answer":1,"explain":"期間の終わりまでは使える。期間の終わりに customer.subscription.deleted が届いて canceled になる。"}],"takeaways":["has_pro(user)：status が trialing・active（past_due はサービスの判断）で、期間の終わり＋猶予を過ぎていない行が 1 つでもあるか","Portal は Dashboard で「できること」を設定してから、押されるたびに billing_portal.Session を作る","Portal での解約・プラン変更も customer.subscription.updated で届く。同期関数はそのまま使える","日割りの差額は既定で次の請求書に載る。すぐ請求するなら proration_behavior=always_invoice。flexible で請求日を今日に揃えるなら billing_cycle_anchor=now","Portal のプラン変更と数量変更は既定でオフ。設定で有効にして、切り替え先の価格を選んでおく"],"caution":"","material":null,"duration":252.13,"chapters":[{"start":0,"heading":"オープニング"},{"start":13.17,"heading":"このレクチャーのゴール"},{"start":25.73,"heading":"使えるかの判定関数"},{"start":73.6,"heading":"なぜ判定はアプリの DB で行うのか"},{"start":106.53,"heading":"Customer Portal でできること"},{"start":141.03,"heading":"Portal へ移動させるコード"},{"start":163.6,"heading":"Portal で解約すると"},{"start":189.23,"heading":"プランを変えたときの日割り"},{"start":225.53,"heading":"まとめ"},{"start":241.73,"heading":"エンディング"}],"cues":[{"start":2.03,"end":6.03,"text":"レクチャー9。使えるかの判定と、Customer Portal。","scene":0},{"start":6.63,"end":12.41,"text":"写した契約を使って Pro の機能を開け、契約の管理は、Stripe の画面に任せます。","scene":0},{"start":13.6,"end":14.79,"text":"ゴールは三つです。","scene":1},{"start":15.1,"end":17.55,"text":"使えるかどうかの、判定関数。","scene":1},{"start":17.87,"end":20.73,"text":"判定を、アプリの DB で行う理由。","scene":1},{"start":21.03,"end":24.97,"text":"そして、Portal での解約と、プラン変更の動きです。","scene":1},{"start":26.2,"end":29.17,"text":"まずは、Pro の機能を開けてよいかの判定です。","scene":2},{"start":29.47,"end":38.03,"text":"使える状態は、trialing と active。past_due を入れるかは、サービスの判断です。ここでは猶予として入れています。","scene":2},{"start":38.33,"end":45.53,"text":"GRACE は、更新の処理を待つ猶予です。期間の終わりちょうどに、更新の通知が届くとは限らないからです。","scene":2},{"start":45.83,"end":52.48,"text":"ユーザーの契約の行を、順に見ていきます。解約して再加入した人は、行が複数あります。","scene":2},{"start":52.77,"end":55.28,"text":"状態が使えないものは、飛ばします。","scene":2},{"start":55.6,"end":66.9,"text":"期間の終わりから猶予を過ぎても有効のまま残っている行は、通知を取りこぼしたのかもしれません。ここでは使えないことにして、気になるなら、Stripe から取り直す処理を足します。","scene":2},{"start":67.2,"end":72.85,"text":"一行でも当てはまれば Pro です。判定は DB を読むだけなので、速くて止まりません。","scene":2},{"start":74.07,"end":79.67,"text":"なぜ、使えるかの判定を、自分の DB で行うのか。理由は三つあります。","scene":3},{"start":79.97,"end":88.75,"text":"一つ目、速くて止まらない。機能を使うたびに Stripe の API を呼ぶと遅いし、Stripe が落ちたら、機能も止まってしまいます。","scene":3},{"start":89.03,"end":96.31,"text":"二つ目、ほかの条件と並べられる。回数の上限や、お試しの判定と、同じ場所で決められます。","scene":3},{"start":96.6,"end":105.77,"text":"三つ目、Stripe 自身もそれを勧めています。公式ドキュメントに、エンタイトルメントは内部で保持することをおすすめします、と書かれています。","scene":3},{"start":107,"end":114.78,"text":"Customer Portal は、Stripe が用意する、契約の管理ページです。できることは、ダッシュボードの設定で選びます。","scene":4},{"start":115.07,"end":119.97,"text":"カードの期限が切れても、ユーザーが自分で、新しいカードに変えられます。","scene":4},{"start":120.27,"end":123.81,"text":"過去の請求書を見て、領収書をダウンロードできます。","scene":4},{"start":124.1,"end":132.83,"text":"解約もできます。期間の終わりに解約するか、すぐに解約するかは、設定で決めます。解約の理由を集めることもできます。","scene":4},{"start":133.13,"end":140.29,"text":"プランの変更もできます。既定ではオフなので、設定で有効にして、切り替え先の価格を選んでおきます。","scene":4},{"start":141.5,"end":144.39,"text":"Portal へ移動させるコードは、これだけです。","scene":5},{"start":144.7,"end":148.97,"text":"このユーザーの顧客 ID を渡して、ポータルのセッションを作ります。","scene":5},{"start":149.27,"end":153.53,"text":"return_url は、ポータルでの操作が終わったときの戻り先です。","scene":5},{"start":153.83,"end":162.85,"text":"返ってきた URL は、短い時間で使えなくなります。だから、プランを管理する、が押されるたびに作って、すぐ移動させます。","scene":5},{"start":164.03,"end":167.84,"text":"ポータルで解約されたとき、アプリには何が届くのでしょう。","scene":6},{"start":168.13,"end":171.72,"text":"ユーザーが、期間の終わりに解約、を選びます。","scene":6},{"start":172.03,"end":180.82,"text":"すぐに customer.subscription.updated が届いて、写しの cancel_at に、期間の終わりの日時が入ります。まだ使えます。","scene":6},{"start":181.13,"end":188.47,"text":"期間の終わりに、customer.subscription.deleted が届いて、status が canceled に。ここで使えなくなります。","scene":6},{"start":189.67,"end":193.15,"text":"プランを変えたときの、お金の動きも押さえておきましょう。","scene":7},{"start":193.47,"end":199.77,"text":"プランを変えると、差額は日割りで計算されて、既定では、次の請求書にまとめて載ります。","scene":7},{"start":200.07,"end":216.9,"text":"その場で請求したいなら、proration_behavior を always_invoice にします。月額から年額に変えて、請求の日を今日に揃えたいときは、今の既定の flexible では、billing_cycle_anchor を now にして、はっきり指定します。","scene":7},{"start":217.2,"end":224.77,"text":"どちらの場合も、アプリには customer.subscription.updated が届くだけ。同期の関数は、そのまま使えます。","scene":7},{"start":226,"end":226.83,"text":"まとめです。","scene":8},{"start":227.13,"end":231.59,"text":"判定の関数は、DB だけを見て、状態と期間で決めます。","scene":8},{"start":231.9,"end":235.95,"text":"Portal は、押されるたびにセッションを作って、移動させます。","scene":8},{"start":236.27,"end":240.97,"text":"解約もプランの変更も、契約の同期で、そのまま反映されます。","scene":8},{"start":242.17,"end":248.12,"text":"次は、作ったものを、お金を動かさずに確かめる方法と、本番への切り替えです。","scene":9}],"video":"media/L09.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L09.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L10","no":10,"section":{"no":3,"title":"サンプルで作る"},"title":"テストと本番への切り替え","summary":"サンドボックス・テストカード・Stripe CLI・Test clock での確かめ方、通すべきシナリオ、本番に切り替えるときの注意とリリース前のチェック。","docs":[{"title":"Stripe: Billing の組み込みのテスト（Test clock・失敗のテスト）","url":"https://docs.stripe.com/billing/testing"},{"title":"Stripe: テストカード","url":"https://docs.stripe.com/testing"},{"title":"Stripe: サンドボックス","url":"https://docs.stripe.com/sandboxes"},{"title":"Stripe CLI: stripe listen","url":"https://docs.stripe.com/cli/listen"},{"title":"Stripe: 本番稼働前のチェックリスト","url":"https://docs.stripe.com/get-started/checklist/go-live"}],"quiz":[{"q":"「登録はできるが請求が失敗する」テストカードは？","choices":["4242 4242 4242 4242","4000 0000 0000 0341","3530 1113 3330 0000","4000 0027 6000 3184"],"answer":1,"explain":"Test clock と組み合わせて、更新の失敗 → past_due → canceled を再現する。"},{"q":"Test clock でできることは？","choices":["本番の時刻を変える","サンドボックスで時間を進めて、更新や無料期間の終わりを再現する","Webhook を止める","請求書を消す"],"answer":1,"explain":"一度に 2 期間ぶんまで時間を進められる。1 か月後の更新を待たずに試せる。"},{"q":"stripe listen が表示する whsec_ は？","choices":["本番でも使える","ローカルへの転送専用。サンドボックスや本番のエンドポイントとは別","API キーそのもの","顧客 ID"],"answer":1,"explain":"Webhook のシークレットはエンドポイントごとに違う。本番はダッシュボードで登録したエンドポイントの whsec_ を使う。"}],"takeaways":["テストカード：4242 4242 4242 4242 成功／4000 0027 6000 3184 3D セキュア／4000 0000 0000 0341 登録できて請求が失敗／JCB 3530 1113 3330 0000","Test clock は一度に 2 期間ぶんまで。trial_will_end は終了の 3 日前に届く","stripe trigger のデータは架空。本当の動きは、テストのサブスクを実際に作って確かめる","本番は別の鍵・別の Webhook・別の Portal 設定。ダッシュボードの設定を一通りやり直す"],"caution":"","material":null,"duration":236,"chapters":[{"start":0,"heading":"オープニング"},{"start":11.43,"heading":"このレクチャーのゴール"},{"start":22.03,"heading":"テストの 4 つの道具"},{"start":56.23,"heading":"ローカルで試す（Stripe CLI）"},{"start":89.73,"heading":"サンドボックスで通すシナリオ"},{"start":142.33,"heading":"本番への切り替えで気をつけること"},{"start":175.7,"heading":"リリース前のチェック"},{"start":207.1,"heading":"まとめ"},{"start":225.97,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.46,"text":"レクチャー10。テストと、本番への切り替え。","scene":0},{"start":6.07,"end":10.67,"text":"お金を動かさずに、課金のすべての場面を確かめる方法を見ていきます。","scene":0},{"start":11.9,"end":13.09,"text":"ゴールは三つです。","scene":1},{"start":13.4,"end":15.27,"text":"テストの、四つの道具。","scene":1},{"start":15.57,"end":18.06,"text":"サンドボックスで、通すべきシナリオ。","scene":1},{"start":18.37,"end":21.28,"text":"そして、本番に切り替えるときの注意です。","scene":1},{"start":22.5,"end":24.52,"text":"テストの道具は、四つです。","scene":2},{"start":24.8,"end":33.85,"text":"サンドボックスは、お金が動かない、本番とは別の環境です。ダッシュボードから作れて、API の鍵も Webhook も別になります。","scene":2},{"start":34.13,"end":40.59,"text":"テストカードは、番号によって、成功や失敗、3D セキュアの認証を選べるカードです。","scene":2},{"start":40.9,"end":48.27,"text":"Stripe CLI は、ローカルの開発環境に Webhook を転送したり、疑似のイベントを送ったりする道具。","scene":2},{"start":48.57,"end":55.48,"text":"Test clock は、サンドボックスの中で時間を進める道具。一か月後の更新を、待たずに試せます。","scene":2},{"start":56.7,"end":61.04,"text":"ローカルでの試し方です。Stripe CLI を使います。","scene":3},{"start":61.33,"end":71.51,"text":"stripe listen で、Stripe のイベントを、ローカルの Webhook の URL へ転送します。そのとき表示される whsec を、ローカルの設定に入れます。","scene":3},{"start":71.8,"end":74.78,"text":"stripe trigger で、疑似のイベントを送れます。","scene":3},{"start":75.07,"end":77.94,"text":"200 が返っていれば、受け取り成功です。","scene":3},{"start":78.23,"end":89,"text":"同じイベントを再送して、二回目は何もしないことも確かめましょう。ただし trigger のデータは架空なので、本当の動きは、実際にテストのサブスクを作って確かめます。","scene":3},{"start":90.2,"end":93.4,"text":"サンドボックスでは、このシナリオを全部通します。","scene":4},{"start":93.7,"end":100.78,"text":"まずは購入。テストカードの四二四二は、成功するカードです。trialing になるかを見ます。","scene":4},{"start":101.07,"end":104.1,"text":"3D セキュアの認証画面が出るカードもあります。","scene":4},{"start":104.4,"end":116.25,"text":"末尾が〇三四一のカードは、登録はできても、請求が失敗するカード。Test clock と組み合わせて、更新の失敗から past_due、canceled までを再現します。","scene":4},{"start":116.57,"end":125.13,"text":"Test clock は、一度に二期間ぶんまで時間を進められます。無料期間の終わりや、毎月の更新を、待たずに確かめられます。","scene":4},{"start":125.43,"end":141.58,"text":"Portal での解約が、期間末に canceled になること。そして、再送や、署名の不正も試します。それぞれの状態で、Pro の機能が開くのか、閉じるのか。DB の行とダッシュボードが同じ動きをするかを、自分の目で見てください。","scene":4},{"start":142.8,"end":145.58,"text":"本番への切り替えで、気をつけることです。","scene":5},{"start":145.9,"end":151.09,"text":"サンドボックスは、ダッシュボードで、開発用と CI 用のように分けて作れます。","scene":5},{"start":151.4,"end":167.91,"text":"本番は、別の世界だと思ってください。API の鍵も、Webhook のシークレットも、Portal の設定も別です。サンドボックスで動いたからといって、本番も動くとは限りません。ダッシュボードの設定を一通りやり直す、チェックリストが要ります。","scene":5},{"start":168.2,"end":174.95,"text":"そして、鍵はサーバーの設定にだけ置きます。コードやログ、PR には、絶対に出しません。","scene":5},{"start":176.13,"end":178.61,"text":"リリースの前に、確かめることです。","scene":6},{"start":178.9,"end":181.99,"text":"サンドボックスで、全部のシナリオを通したこと。","scene":6},{"start":182.3,"end":188.85,"text":"本番の Stripe で、商品、価格、Portal、メール、Webhook を設定したこと。","scene":6},{"start":189.13,"end":193.9,"text":"本番の鍵と、Webhook のシークレットを、サーバーの設定に入れたこと。","scene":6},{"start":194.2,"end":198.87,"text":"本番で、自分のカードを使って、購入から解約までできたこと。","scene":6},{"start":199.17,"end":206.33,"text":"そして、特定商取引法の表記と、最終確認画面を用意したこと。これは次のレクチャーで見ます。","scene":6},{"start":207.53,"end":208.37,"text":"まとめです。","scene":7},{"start":208.67,"end":214.64,"text":"テストの道具は、サンドボックス、テストカード、CLI、Test clock の四つ。","scene":7},{"start":214.93,"end":220.34,"text":"失敗、認証、更新、解約まで、全部のシナリオを通します。","scene":7},{"start":220.63,"end":225.21,"text":"本番の設定は、サンドボックスとは別に、一通りやり直します。","scene":7},{"start":226.43,"end":232,"text":"サンプルで作るセクションはここまで。次は、お金と、日本で売るときのルールです。","scene":8}],"video":"media/L10.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L10.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L11","no":11,"section":{"no":4,"title":"お金・法律・iOS"},"title":"お金と法律","summary":"1,000 円のうち手元に残る金額、ほかの料金と PayPay、特商法の 2 つの要件と Checkout での補い方、無料期間のルール、消費税の表示。","docs":[{"title":"Stripe: 料金（日本）","url":"https://stripe.com/jp/pricing"},{"title":"Stripe: トライアルの法令遵守（カード会社の要件）","url":"https://docs.stripe.com/billing/subscriptions/trials/manage-trial-compliance"},{"title":"Stripe: PayPay（継続課金の可否）","url":"https://docs.stripe.com/payments/paypay"},{"title":"Stripe API: Checkout Session の consent_collection と custom_text","url":"https://docs.stripe.com/api/checkout/sessions/create"},{"title":"消費者庁: 通信販売（特定商取引法ガイド）","url":"https://www.no-trouble.caa.go.jp/what/mailorder/"}],"quiz":[{"q":"月 1,000 円のプランで、Stripe の取り分の目安は？","choices":["約 10 円","約 43 円（3.6% ＋ 0.7%）","約 100 円","約 300 円"],"answer":1,"explain":"カード決済 3.6%（36 円）と Billing 0.7%（7 円）で約 43 円。手取りは約 957 円。"},{"q":"Stripe の PayPay について正しいのは？","choices":["サブスクにも使える","継続課金には使えない","手数料は無料","iOS アプリ専用"],"answer":1,"explain":"継続課金には対応していない。サブスクはカードで受ける。"},{"q":"申し込みの直前の画面（最終確認画面）で見せるべきものは？","choices":["会社の沿革","金額・支払いの時期・自動更新・解約の条件","ほかのユーザーの口コミ","ソースコード"],"answer":1,"explain":"特定商取引法の第 12 条の 6。誤解のないように、申し込む前に見せる。広告に書いてあっても、最終確認画面でもう一度見せる。"}],"takeaways":["特商法の表記ページ（事業者名・連絡先・税込価格・支払時期と方法・提供時期・解約と返金・定期課金の条件）を用意する","最終確認画面の 6 つ：分量・価格・支払の時期と方法・提供の時期・申込みの期間・撤回や解除。無料期間のあとの金額と時期、自動更新、解約の方法も","Checkout の consent_collection.terms_of_service=required と custom_text で、同意と自動更新の説明を補う（規約の URL はダッシュボードの公開情報に設定）","無料期間：申し込み時に長さ・終了後の金額・解約方法を明示。終了前のリマインドは Stripe の設定で送れる","数字（手数料）は読んだ日の値。実装の前に公式で確かめ直す"],"caution":"法律・税の話は一般的な説明です。判断は専門家に確かめてください","material":null,"duration":298.03,"chapters":[{"start":0,"heading":"オープニング"},{"start":10.3,"heading":"このレクチャーのゴール"},{"start":23.23,"heading":"1,000 円のうち、いくら残る？"},{"start":51.7,"heading":"ほかの料金と決済のルール"},{"start":82.73,"heading":"特定商取引法で必要な 2 つ"},{"start":118.3,"heading":"最終確認画面で見せる 6 つ（第 12 条の 6）"},{"start":154.8,"heading":"3 か所で満たす"},{"start":185.93,"heading":"Checkout で補う 2 つの設定"},{"start":206.57,"heading":"無料期間のカード会社ルール"},{"start":243.87,"heading":"消費税と価格の表示"},{"start":274.57,"heading":"まとめ"},{"start":290.43,"heading":"エンディング"}],"cues":[{"start":2.03,"end":4.57,"text":"レクチャー11。お金と法律。","scene":0},{"start":5.17,"end":9.56,"text":"手数料と、日本で有料のサービスを売るときのルールを整理します。","scene":0},{"start":10.77,"end":11.96,"text":"ゴールは三つです。","scene":1},{"start":12.27,"end":15.08,"text":"千円のうち、手元にいくら残るのか。","scene":1},{"start":15.37,"end":18.72,"text":"特定商取引法で、必要になる二つのもの。","scene":1},{"start":19,"end":22.5,"text":"そして、Checkout で、どこまで補えるかです。","scene":1},{"start":23.7,"end":27.76,"text":"まずお金の流れです。Pro プランが、月千円だとします。","scene":2},{"start":28.07,"end":32.16,"text":"カード決済の手数料が、三・六パーセントで三十六円。","scene":2},{"start":32.47,"end":39.9,"text":"サブスクの機能、Stripe Billing の手数料が、〇・七パーセントで七円。この二つは上乗せです。","scene":2},{"start":40.2,"end":44.79,"text":"合わせて約四十三円。手取りは、約九百五十七円です。","scene":2},{"start":45.1,"end":50.93,"text":"月額料金や初期費用はなく、Checkout と Portal にも、追加の料金はかかりません。","scene":2},{"start":52.17,"end":54.74,"text":"ほかの料金と、決済のルールです。","scene":3},{"start":55.03,"end":58.86,"text":"通貨の換算が必要なときは、二パーセントが加わります。","scene":3},{"start":59.17,"end":63.73,"text":"チャージバック、つまり不審請求の申し立ては、一件千五百円。","scene":3},{"start":64.03,"end":67.25,"text":"3D セキュアは、標準料金なら無料です。","scene":3},{"start":67.57,"end":74.28,"text":"Stripe Tax は、消費税の計算を自動にしたいときに使う機能で、〇・五パーセントです。","scene":3},{"start":74.57,"end":81.97,"text":"そして PayPay。Stripe の PayPay は、継続課金に対応していません。だから、サブスクはカードで受けます。","scene":3},{"start":83.2,"end":92.46,"text":"ここからは法律です。ネットで有料サービスを売るのは通信販売にあたるので、特定商取引法のルールがかかります。必要なものは二つ。","scene":4},{"start":92.77,"end":106.23,"text":"一つ目は、特定商取引法に基づく表記のページ。事業者の名前や連絡先、税込の価格、支払いの時期と方法、提供の時期、解約と返金、定期課金の条件を書きます。","scene":4},{"start":106.53,"end":117.56,"text":"二つ目は、最終確認画面。申し込むボタンを押す直前に、金額、支払いの時期、自動更新、解約の条件を、誤解のないように見せます。","scene":4},{"start":118.77,"end":125.52,"text":"最終確認画面で見せることは、法律で六つ決まっています。サブスクに当てはめると、こうなります。","scene":5},{"start":125.83,"end":132.02,"text":"分量は、何が使えるかと、契約の期間。自動で更新されるなら、そのことも。","scene":5},{"start":132.33,"end":138.89,"text":"価格は、毎回の金額。無料期間のあとに有料になるなら、いつから、いくらになるか。","scene":5},{"start":139.2,"end":142.91,"text":"支払いの時期と方法、そして、いつから使えるか。","scene":5},{"start":143.2,"end":145.71,"text":"期間限定の募集なら、その期限。","scene":5},{"start":146,"end":154.06,"text":"そして、解約の方法と期限。広告に書いてあっても、申し込みの直前の画面に、もう一度出す必要があります。","scene":5},{"start":155.27,"end":165.91,"text":"Checkout は、価格や周期、無料期間のあとの金額は表示してくれます。でも、自動更新や解約の条件の説明は、自分の文章で補います。","scene":6},{"start":166.2,"end":172,"text":"申し込みボタンを置く画面に、自動更新と、無料期間のあとの金額と時期を書きます。","scene":6},{"start":172.3,"end":178.01,"text":"Checkout には、ボタンのそばに説明文を入れて、利用規約への同意を必須にします。","scene":6},{"start":178.3,"end":185.17,"text":"そして、解約は Portal から自分でできる。解約を簡単に、という法改正の流れにも合っています。","scene":6},{"start":186.4,"end":191.42,"text":"Checkout で補うときは、Session を作るときに、二つの設定を足します。","scene":7},{"start":191.73,"end":199.41,"text":"consent_collection で、利用規約への同意を必須に。規約の URL は、ダッシュボードで設定しておきます。","scene":7},{"start":199.7,"end":205.81,"text":"custom_text で、申し込むボタンのそばに、自動更新と解約の説明を出します。","scene":7},{"start":207.03,"end":212.79,"text":"無料期間には、カード会社のルールもあります。Stripe の機能で、ほぼ満たせます。","scene":8},{"start":213.1,"end":219.69,"text":"申し込みのときに、無料期間の長さ、終わったあとの金額、解約の方法をはっきり見せること。","scene":8},{"start":220,"end":230.4,"text":"終わる前にリマインドを送ること。Stripe の設定を有効にすると、終了の七日前にメールが送られます。サンプルの十四日間なら、ちょうど折り返しの日です。","scene":8},{"start":230.7,"end":234.24,"text":"明細の表記には、TRIAL の文字が自動で付きます。","scene":8},{"start":234.53,"end":243.11,"text":"ちなみに、サンドボックスでは、このリマインドメールは、基本的に送られません。テストのときに届かなくても、慌てないように。","scene":8},{"start":244.33,"end":252.81,"text":"消費税です。消費者に価格を見せるときは、税込の総額で表示します。課税事業者には、法律で決まった義務です。","scene":9},{"start":253.1,"end":263.61,"text":"価格は、tax_behavior を inclusive にして、税込千円のように作ります。税の計算を自動にしたいなら、Stripe Tax を使います。","scene":9},{"start":263.9,"end":273.83,"text":"インボイスの登録をしているかどうかで、請求書に書くべきことも変わります。法務と税務の最終確認は、実際の商品と売り方に合わせて行いましょう。","scene":9},{"start":275.03,"end":275.87,"text":"まとめです。","scene":10},{"start":276.17,"end":279.38,"text":"千円のうち、手取りは約九百五十七円。","scene":10},{"start":279.67,"end":284.96,"text":"特定商取引法では、表記のページと、最終確認画面が必要です。","scene":10},{"start":285.27,"end":289.69,"text":"Checkout の同意と説明文、そして Portal での解約で補います。","scene":10},{"start":290.9,"end":294.03,"text":"次は、iOS アプリで売るときのルールです。","scene":11}],"video":"media/L11.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L11.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L12","no":12,"section":{"no":4,"title":"お金・法律・iOS"},"title":"iOS アプリとの関係","summary":"App Store の課金ルール（3.1.1・3.1.3(b)）、日本の外部リンク、Web だけ・アプリ内課金も・外部リンクの 3 つの売り方と、データの持ち方。","docs":[{"title":"Apple: App Store Review Guidelines（3.1 支払い）","url":"https://developer.apple.com/app-store/review/guidelines/#payments"},{"title":"Apple: 日本でのアプリの配信（代替決済とリンクアウト）","url":"https://developer.apple.com/support/app-distribution-in-japan/"},{"title":"Apple: App Store Server Notifications","url":"https://developer.apple.com/documentation/appstoreservernotifications"}],"quiz":[{"q":"iOS アプリの中で機能を開ける購読は、原則として？","choices":["Stripe の Checkout","アプリ内課金（IAP）","銀行振込","何でもよい"],"answer":1,"explain":"ガイドライン 3.1.1。アプリの中で機能やコンテンツを開けるなら、原則アプリ内課金を使う。"},{"q":"Web で買った購読をアプリでも使わせる条件（3.1.3(b)）は？","choices":["条件なし","同じものをアプリ内課金でも売っていること","アプリに価格を書くこと","Android でも売ること"],"answer":1,"explain":"他の場所で買った購読をアプリで使わせるのは可能だが、同じものをアプリ内課金でも提供していることが条件。"},{"q":"Web と iOS の両方で売るとき、契約の写しはどう持つ？","choices":["別々の DB に分ける","source 列で「どこで買った契約か」を分けて同じ表に","持たない","Stripe にアプリ内課金を入れる"],"answer":1,"explain":"stripe と apple の契約を同じ表に並べれば、使えるかの判定関数は変えずに足せる。"}],"takeaways":["3.1.1：アプリ内で機能を開ける購読は、原則アプリ内課金","3.1.3(b)：他で買った購読をアプリで使わせるのは、アプリ内課金でも売っていることが条件","日本では 2025-12-17（iOS 26.2 以降）から、アプリ内の別の決済（アプリ内課金と並べて出す）と、Web の購入ページへのリンクができる","Apple の手数料（2026-10 時点）：リンクアウト 15%、アプリ内の別の決済 21%。小規模事業者やサブスクの 2 年目以降は 10%。リンクアウトはタップから 7 日以内の購入が対象","契約の写しに source（stripe / apple）を持たせると、判定関数を変えずに足せる","ルールと手数料は変わりやすい。アプリに載せる前に、Apple の最新のガイドラインで確かめる"],"caution":"App Store のルールと手数料は変わります。Apple の最新のガイドラインで確かめてください","material":null,"duration":151.6,"chapters":[{"start":0,"heading":"オープニング"},{"start":14.83,"heading":"このレクチャーのゴール"},{"start":26.9,"heading":"iOS アプリと課金のルール"},{"start":57.3,"heading":"3 つの売り方"},{"start":99.1,"heading":"契約の出どころを列で分ける"},{"start":124.9,"heading":"まとめ"},{"start":142.6,"heading":"エンディング"}],"cues":[{"start":2.03,"end":5.18,"text":"レクチャー12。iOS アプリとの関係。","scene":0},{"start":5.77,"end":14.1,"text":"Web で売るサブスクと、iOS アプリの関係を整理します。ここは、ルールを知らないと、アプリの審査で止まるところです。","scene":0},{"start":15.3,"end":16.49,"text":"ゴールは三つです。","scene":1},{"start":16.8,"end":18.89,"text":"App Store の、課金のルール。","scene":1},{"start":19.2,"end":22.29,"text":"Web で買った人を、アプリで扱うときの条件。","scene":1},{"start":22.6,"end":26.14,"text":"そして、三つの売り方と、データの持ち方です。","scene":1},{"start":27.33,"end":30.85,"text":"まず、Apple の App Store の、課金のルールです。","scene":2},{"start":31.17,"end":36.59,"text":"アプリの中で機能を解放する購読は、原則、App 内課金を使うこと。","scene":2},{"start":36.9,"end":44.71,"text":"Web で買った購読を、アプリで使わせるのは可能です。ただし、同じものを App 内課金でも売っていることが条件です。","scene":2},{"start":45,"end":56.56,"text":"日本では 2025 年 12 月から、アプリの中で別の決済を使ったり、Web の購入ページへリンクしたりできるようになりました。ただし、どちらにも Apple の手数料がかかります。","scene":2},{"start":57.77,"end":60.36,"text":"すると、売り方は三つに分かれます。","scene":3},{"start":60.67,"end":75.57,"text":"一つ目、Web だけで売る。アプリの中には、購入の導線も、価格も、有料の案内も出しません。ただし、Web で買った Pro をアプリでも使わせるなら、さっきの 3.1.3(b) の条件を確かめる必要があります。","scene":3},{"start":75.87,"end":83.57,"text":"二つ目、アプリ内課金でも売る。App Store で同じプランを売り、契約の通知は、App Store から受け取ります。","scene":3},{"start":83.87,"end":98.34,"text":"三つ目、日本なら、アプリから Web の購入ページへリンクする。申請が必要で、手数料は、2026 年 10 月時点で十五パーセント。小規模の事業者や、サブスクの二年目からは、十パーセントです。","scene":3},{"start":99.57,"end":103.49,"text":"アプリ内課金でも売ることにしたら、データはどう持てばよいでしょう。","scene":4},{"start":103.8,"end":112.79,"text":"契約の写しに、source という列を足して、どこで買った契約かを分けます。Web なら stripe、iOS なら apple。","scene":4},{"start":113.1,"end":124.16,"text":"同じ表に並べておけば、使えるかの判定関数は、そのまま使えます。違うのは、iOS の契約の通知が、Stripe ではなく App Store から届くことだけです。","scene":4},{"start":125.37,"end":126.2,"text":"まとめです。","scene":5},{"start":126.5,"end":130.56,"text":"アプリの中で機能を開けるなら、原則、App 内課金。","scene":5},{"start":130.87,"end":136.22,"text":"ほかで買った購読をアプリで使わせるなら、App 内課金でも売っていることが条件です。","scene":5},{"start":136.53,"end":141.86,"text":"売り方は三つ。どれを選んでも、source の列で、同じ表に並べられます。","scene":5},{"start":143.03,"end":147.61,"text":"次が最後のレクチャー。よくある誤解を、クイズで一気に潰しましょう。","scene":6}],"video":"media/L12.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L12.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""},{"id":"L13","no":13,"section":{"no":5,"title":"まとめ"},"title":"総まとめ　よくある誤解クイズ","summary":"よくある誤解 7 つを ○× クイズで潰し、この講座の要点と次の一歩を確かめる。","docs":[{"title":"Stripe: 本番稼働前のチェックリスト","url":"https://docs.stripe.com/get-started/checklist/go-live"},{"title":"Stripe: Webhook（ベストプラクティス）","url":"https://docs.stripe.com/webhooks"},{"title":"Stripe: 価格の変更（新しい Price を作る）","url":"https://docs.stripe.com/products-prices/manage-prices"}],"quiz":[{"q":"正しいのはどれ？","choices":["完了ページに戻ったら有料にする","解約したら即停止する","Event ID で重複を除き、最新の状態で書く","支払いに失敗したら即解約"],"answer":2,"explain":"ほかの 3 つは、すべて「よくある誤解」。"},{"q":"解約して canceled になった人が、また入りたいときは？","choices":["canceled を active に戻す","新しい Checkout で新しい契約を作る","Event を再送する","請求書を void にする"],"answer":1,"explain":"canceled は最終状態。再開は新しい契約になる。顧客（cus_…）は同じものを使う。"},{"q":"機能を開けるかの判定に使うのは？","choices":["毎回 Stripe の API","Webhook で写したアプリの DB","ブラウザの localStorage","完了ページの URL"],"answer":1,"explain":"判定はアプリの DB だけを見る。速くて、Stripe が落ちても止まらない。"}],"takeaways":["よくある誤解 7 つ：完了ページで確定／解約で即停止／失敗で即解約／Webhook は順番通り 1 回／カード番号を保存／Price の金額をあとから変える／サンドボックス＝本番","次の一歩：サンドボックスを作り、商品と価格・Portal・Webhook を設定して、stripe listen で通知が DB に写るのを見る"],"caution":"","material":null,"duration":202.87,"chapters":[{"start":0,"heading":"オープニング"},{"start":14.67,"heading":"よくある誤解クイズ"},{"start":32.6,"heading":"よくある誤解クイズ"},{"start":50.2,"heading":"よくある誤解クイズ"},{"start":68.37,"heading":"よくある誤解クイズ"},{"start":87.57,"heading":"よくある誤解クイズ"},{"start":102.47,"heading":"よくある誤解クイズ"},{"start":123.77,"heading":"よくある誤解クイズ"},{"start":144.5,"heading":"この講座で一番伝えたかったこと"},{"start":167.47,"heading":"次の一歩"},{"start":192.03,"heading":"エンディング"}],"cues":[{"start":2.03,"end":6.03,"text":"レクチャー13。総まとめ、よくある誤解クイズ。","scene":0},{"start":6.63,"end":13.92,"text":"最後は、マルバツクイズです。画面の文が正しいか、間違っているか。三秒で考えてみてください。","scene":0},{"start":15.1,"end":20.77,"text":"第一問。完了ページに戻ってきたら、契約成立として、有料にしてよい。","scene":1},{"start":24.27,"end":31.85,"text":"答えは、バツ。確定させるのは Webhook です。完了ページは、Session を取り直して同期する保険でしたね。","scene":1},{"start":33.07,"end":37.08,"text":"第二問。解約を押したら、その瞬間に使えなくする。","scene":2},{"start":40.57,"end":49.46,"text":"答えは、バツ。払った期間の終わりまでは active のままです。cancel_at と、current_period_end を見ます。","scene":2},{"start":50.67,"end":54.62,"text":"第三問。支払いに失敗したら、すぐに解約になる。","scene":3},{"start":58.13,"end":67.62,"text":"答えは、バツ。Stripe が自動で再試行して、その間は past_due です。その間も使えるようにするかは、サービスで決めます。","scene":3},{"start":68.83,"end":73.36,"text":"第四問。Webhook は、起きた順番に、一回ずつ届く。","scene":4},{"start":76.87,"end":86.83,"text":"答えは、バツ。順番は保証されず、同じ通知が二回来ることもあります。イベント ID で重複を除いて、最新の状態で書くんでしたね。","scene":4},{"start":88.03,"end":92.09,"text":"第五問。カード番号は、アプリの DB に保存しない。","scene":5},{"start":95.6,"end":101.72,"text":"答えは、マル。Checkout と Portal を使えば、アプリはカードの情報に一切触れません。","scene":5},{"start":102.93,"end":107.42,"text":"第六問。値上げするときは、今の Price の金額を書き換える。","scene":6},{"start":110.93,"end":123.02,"text":"答えは、バツ。Price の金額は、作ったあとには変えられません。新しい Price を作って、古い Price はアーカイブします。今の契約者をどうするかも、別に決めます。","scene":6},{"start":124.23,"end":129.58,"text":"ラスト、第七問。サンドボックスで動いたら、本番でも同じように動く。","scene":7},{"start":133.07,"end":143.75,"text":"答えは、バツ。本番は、別の鍵、別の Webhook のシークレット、別の Portal の設定です。ダッシュボードの設定を、一通りやり直しましょう。","scene":7},{"start":144.97,"end":150.26,"text":"全問、いかがでしたか。最後に、このコースで一番伝えたかったことです。","scene":8},{"start":150.57,"end":157.31,"text":"アプリが作るのは、通知を受けて DB を書くことと、DB を見て判定すること。この二つだけです。","scene":8},{"start":157.6,"end":166.72,"text":"画面は Stripe に借りて、状態は通知で写し、判定は自分の DB で行う。だから、サブスク課金は、シンプルに作れます。","scene":8},{"start":167.93,"end":169.93,"text":"次の一歩は、三つです。","scene":9},{"start":170.23,"end":175.87,"text":"Stripe のサンドボックスを作って、商品と価格、Portal とメールを設定すること。","scene":9},{"start":176.17,"end":181.83,"text":"stripe listen と trigger で、通知が自分の DB に写るところを、自分の目で見ること。","scene":9},{"start":182.13,"end":191.27,"text":"そして、自分のアプリに当てはめること。DB に持つ表、受け取る通知、判定の三つを、自分のサービスで書き出してみてください。","scene":9},{"start":192.5,"end":198.87,"text":"以上で、Stripe サブスク課金の基礎講座はおしまいです。最後まで、ありがとうございました。","scene":10}],"video":"media/L13.mp4?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","poster":"media/L13.jpg?v=bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf","videoCc":""}]}</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("course-data").textContent);
+  var L = DATA.lectures;
+  var $ = function (id) { return document.getElementById(id); };
+  var video = $("video");
+  var player = $("player");
+  var theater = $("theater");
+  var offlineState = { saved: false, online: navigator.onLine };
+  function playbackStatus() {
+    $("playbackStatus").textContent = offlineState.saved ? "アプリ内の保存版を再生します。動画ファイルのダウンロードとは別の保存です。" : offlineState.online ? "オンライン再生です。オフラインで使うには上の保存ボタンを選んでください。" : "この講座は未保存です。動画の再生には通信が必要です。";
+  }
+  window.addEventListener("chalkfile:offline-state", function (event) {
+    offlineState = event.detail;
+    if (offlineState.saved && offlineState.pageVersion !== DATA.pageVersion) {
+      video.pause();
+      $("playbackStatus").textContent = "保存版が更新されました。上の「保存した版を開く」で開き直してください。";
+    } else playbackStatus();
+  });
+  video.addEventListener("error", function () { $("playbackStatus").textContent = "動画を再生できません。通信と保存状態を確認し、再読み込みまたは保存を再試行してください。"; });
+  $("loopToggle").addEventListener("click", function () {
+    video.loop = !video.loop;
+    $("loopToggle").setAttribute("aria-pressed", String(video.loop));
+    clearNext();
+  });
+
+  // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
+  var KEY = "chalkfile:" + DATA.course.id + ":";
+  var store = {
+    get: function (k, d) {
+      try { var v = localStorage.getItem(KEY + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) { /* 保存できなくても続ける */ }
+    }
+  };
+  var progress = store.get("progress", {}); // { L01: { t: 秒, max: 0..1, done: bool } }
+  var notes = store.get("notes", {});       // { L01: [{ t, text, at }] }
+  var quizState = store.get("quiz", {});    // { L01: { 0: 選んだ番号 } }
+  var prefs = store.get("prefs", { rate: 1, cc: true, follow: true });
+
+  var fmt = function (s) {
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60);
+    return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+  };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  };
+  // リンクは https:// と http:// だけ通す（javascript: や data: は # にする）
+  var safeUrl = function (u) {
+    try { var x = new URL(String(u), location.href); return x.protocol === "https:" || x.protocol === "http:" ? x.href : "#"; } catch (e) { return "#"; }
+  };
+  var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
+
+  var UNIT = DATA.course.unitLabel || "LECTURE";
+  var UI = DATA.course.ui || {};
+  var PLANNED = DATA.course.planned || [];
+  var current = 0;
+  var cueIdx = -1;
+  var nextTimer = null;
+  var dirtyProgress = false;
+
+  // ── 全体の進み具合 ──
+  function renderCourseProgress() {
+    var done = L.filter(function (l) { return progress[l.id] && progress[l.id].done; }).length;
+    $("cpBar").style.width = (done / L.length * 100) + "%";
+    $("cpLabel").textContent = done + " / " + L.length + " 完了";
+    var total = L.reduce(function (a, l) { return a + l.duration; }, 0);
+    var word = UNIT === "CHAPTER" ? " 章" : " レクチャー";
+    var plan = PLANNED.length ? "（計画 " + (L.length + PLANNED.length) + word + "）" : "";
+    $("curSum").textContent = L.length + word + "・" + Math.round(total / 60) + " 分" + plan;
+    $("courseMeta").textContent = DATA.course.sections.length + " セクション・" + L.length + word + "・約 " + Math.round(total / 60) + " 分" + plan;
+  }
+
+  // ── カリキュラム ──
+  function ring(id, i) {
+    var p = progress[id] || {};
+    if (p.done) {
+      return '<svg class="ring done" viewBox="0 0 24 24" aria-label="完了"><circle class="disc" cx="12" cy="12" r="11"/><path class="tick" d="M7 12.4l3.3 3.3L17 9" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    var max = Math.min(1, p.max || 0);
+    var c = 2 * Math.PI * 10;
+    return '<svg class="ring" viewBox="0 0 24 24" aria-label="' + Math.round(max * 100) + '% 視聴"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5"/>' +
+      (max > 0 ? '<circle class="fg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="' + (c * max).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 12 12)"/>' : "") +
+      '<text class="num" x="12" y="15.2" text-anchor="middle">' + (i + 1) + "</text></svg>";
+  }
+  function renderCurriculum() {
+    var html = "";
+    DATA.course.sections.forEach(function (sec) {
+      var lecs = L.map(function (l, i) { return { l: l, i: i }; }).filter(function (x) { return x.l.section.no === sec.no; });
+      var done = lecs.filter(function (x) { return progress[x.l.id] && progress[x.l.id].done; }).length;
+      html += '<div class="sec"><div class="sec-head"><div class="name"><span class="no">SECTION ' + sec.no + "</span>" + esc(sec.title) + '</div><span class="cnt">' + done + " / " + lecs.length + "</span></div>";
+      lecs.forEach(function (x) {
+        html += '<button type="button" class="lec" data-i="' + x.i + '"' + (x.i === current ? ' aria-current="true"' : "") + ">" + ring(x.l.id, x.i) +
+          '<span class="ttl">' + esc(x.l.title) + '</span><span class="dur">' + fmt(x.l.duration) + "</span></button>";
+      });
+      // まだ作っていない章（講座の計画だけあるもの）
+      PLANNED.filter(function (p) { return p.section === sec.no; }).forEach(function (p) {
+        html += '<div class="lec planned" aria-disabled="true"><svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle class="bg" cx="12" cy="12" r="10" fill="none" stroke-width="2.5" stroke-dasharray="3 3"/><text class="num" x="12" y="15.2" text-anchor="middle">' + p.no + "</text></svg>" +
+          '<span class="ttl">' + esc(p.title) + '</span><span class="soon">準備中・約 ' + p.minutes + " 分</span></div>";
+      });
+      html += "</div>";
+    });
+    $("sections").innerHTML = html;
+  }
+  $("sections").addEventListener("click", function (e) {
+    var b = e.target.closest(".lec");
+    if (b) load(Number(b.dataset.i), true);
+  });
+
+  // ── レクチャーを開く ──
+  function load(i, play) {
+    if (i < 0 || i >= L.length) return;
+    saveProgress();
+    current = i;
+    var lec = L[i];
+    clearNext();
+    cueIdx = -1;
+    video.pause();
+    video.innerHTML = "";
+    video.removeAttribute("src");
+    video.poster = lec.poster;
+    var src = document.createElement("source");
+    src.src = srcFor(lec);
+    src.type = "video/mp4";
+    // 全画面（iPhone など）用の字幕は、埋め込んだ台本からその場で WebVTT を作る
+    var tr = document.createElement("track");
+    tr.kind = "subtitles";
+    tr.srclang = "ja";
+    tr.label = "日本語";
+    tr.src = vttUrl(lec);
+    video.appendChild(src);
+    video.appendChild(tr);
+    video.load();
+    applyCc();
+    playbackStatus();
+    var resume = progress[lec.id] && !progress[lec.id].done ? progress[lec.id].t || 0 : 0;
+    video.onloadedmetadata = function () {
+      if (resume > 3 && resume < lec.duration - 5) video.currentTime = resume;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    if (play) video.play().catch(function () {});
+    $("nowEyebrow").textContent = UNIT + " " + pad2(lec.no) + " ・ SECTION " + lec.section.no + " " + lec.section.title;
+    $("nowTitle").textContent = lec.title;
+    $("summary").textContent = lec.summary;
+    $("caution").textContent = lec.caution || "";
+    $("caution").hidden = !lec.caution;
+    $("takeaways").innerHTML = lec.takeaways.map(function (t) { return "<li><span>" + esc(t) + "</span></li>"; }).join("");
+    $("chapters").innerHTML = lec.chapters.map(function (c, k) {
+      return '<li><button type="button" data-t="' + c.start + '" data-k="' + k + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.heading) + "</span></button></li>";
+    }).join("");
+    $("docs").innerHTML = lec.docs.map(function (d) {
+      var host = "";
+      try { host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, ""); } catch (e) { host = d.url; }
+      return '<li><a href="' + esc(safeUrl(d.url)) + '" target="_blank" rel="noopener noreferrer"><span><span>' + esc(d.title) + '</span><span class="host">' + esc(host) + '</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></li>';
+    }).join("");
+    renderTranscript();
+    renderNotes();
+    renderQuiz();
+    renderMaterial();
+    renderDone();
+    renderCurriculum();
+    $("prevBtn").disabled = i === 0;
+    $("nextBtn").disabled = i === L.length - 1;
+    $("cc").textContent = "";
+    try { history.replaceState(null, "", "#" + lec.id); } catch (e) {}
+    store.set("last", lec.id);
+  }
+
+  var vttCache = {};
+  function vttUrl(lec) {
+    if (vttCache[lec.id]) return vttCache[lec.id];
+    var ts = function (x) {
+      var h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), sec = (x % 60).toFixed(3);
+      return pad2(h) + ":" + pad2(m) + ":" + (sec.length < 6 ? "0" : "") + sec;
+    };
+    var body = "WEBVTT\n\n" + lec.cues.map(function (c, i) {
+      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + String(c.text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/-->/g, "→") + "\n";
+    }).join("\n");
+    try {
+      vttCache[lec.id] = URL.createObjectURL(new Blob([body], { type: "text/vtt" }));
+    } catch (e) {
+      vttCache[lec.id] = "";
+    }
+    return vttCache[lec.id];
+  }
+
+  // ネイティブ字幕は全画面（iPhone など）のときだけ使う。ふだんは自前の字幕を出す
+  function hideNativeTrack() {
+    for (var k = 0; k < video.textTracks.length; k++) video.textTracks[k].mode = "hidden";
+  }
+  video.addEventListener("webkitbeginfullscreen", function () {
+    if (prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+  });
+  video.addEventListener("webkitendfullscreen", hideNativeTrack);
+  // 動画だけの全画面（標準のコントロールの全画面ボタン）でも、字幕を焼き込んだ版が無いときはネイティブ字幕を出す
+  document.addEventListener("fullscreenchange", function () {
+    if (document.fullscreenElement === video && prefs.cc && !L[current].videoCc && video.textTracks[0]) video.textTracks[0].mode = "showing";
+    else hideNativeTrack();
+  });
+
+  // ── 字幕・台本の追従 ──
+  function findCue(t) {
+    var cues = L[current].cues;
+    var lo = 0, hi = cues.length - 1, ans = -1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      if (cues[mid].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    return ans;
+  }
+  video.addEventListener("timeupdate", function () {
+    var lec = L[current];
+    var t = video.currentTime;
+    var k = findCue(t);
+    var c = k >= 0 ? lec.cues[k] : null;
+    var showing = c && t <= c.end + 0.7; // 短い間で字幕がちらつかないように残す
+    $("cc").textContent = showing ? c.text : "";
+    if (k !== cueIdx) {
+      cueIdx = k;
+      var prev = document.querySelector(".cue.on");
+      if (prev) prev.classList.remove("on");
+      var el = document.querySelector('.cue[data-k="' + k + '"]');
+      if (el) {
+        el.classList.add("on");
+        if (prefs.follow && !$("p-transcript").hidden && !$("q").value) {
+          var box = $("transcript");
+          box.scrollTop = el.offsetTop - box.offsetTop - box.clientHeight / 3;
+        }
+      }
+      var ch = lec.chapters.reduce(function (a, cc, idx) { return cc.start <= t + 0.2 ? idx : a; }, 0);
+      Array.prototype.forEach.call(document.querySelectorAll("#chapters button"), function (b) {
+        b.classList.toggle("on", Number(b.dataset.k) === ch);
+      });
+    }
+    var p = progress[lec.id] || (progress[lec.id] = { t: 0, max: 0, done: false });
+    p.t = t;
+    if (lec.duration) p.max = Math.max(p.max || 0, t / lec.duration);
+    if (!p.done && p.max > 0.94) { p.done = true; renderDone(); renderCurriculum(); renderCourseProgress(); }
+    dirtyProgress = true;
+    $("noteAddLabel").textContent = fmt(t) + " にメモ";
+  });
+  setInterval(saveProgress, 4000);
+  function saveProgress() {
+    if (!dirtyProgress) return;
+    dirtyProgress = false;
+    store.set("progress", progress);
+    renderCurriculum();
+  }
+  window.addEventListener("pagehide", saveProgress);
+
+  // ── 次のレクチャーへ ──
+  video.addEventListener("ended", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = {});
+    p.done = true;
+    p.t = 0;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+    if (current >= L.length - 1) return;
+    var nx = L[current + 1];
+    $("nextTitle").textContent = "L" + pad2(nx.no) + "　" + nx.title;
+    $("nextup").hidden = false;
+    var left = 6;
+    $("nextGoLabel").textContent = left + " 秒後に再生";
+    nextTimer = setInterval(function () {
+      left -= 1;
+      $("nextGoLabel").textContent = left > 0 ? left + " 秒後に再生" : "再生";
+      if (left <= 0) { clearNext(); load(current + 1, true); }
+    }, 1000);
+  });
+  function clearNext() {
+    if (nextTimer) clearInterval(nextTimer);
+    nextTimer = null;
+    $("nextup").hidden = true;
+  }
+  $("nextGo").addEventListener("click", function () { clearNext(); load(current + 1, true); });
+  $("nextStay").addEventListener("click", clearNext);
+  $("prevBtn").addEventListener("click", function () { load(current - 1, true); });
+  $("nextBtn").addEventListener("click", function () { load(current + 1, true); });
+
+  // ── 完了 ──
+  function renderDone() {
+    var p = progress[L[current].id] || {};
+    var b = $("doneToggle");
+    b.setAttribute("aria-pressed", p.done ? "true" : "false");
+    b.querySelector("span").textContent = p.done ? "完了済み" : "完了にする";
+  }
+  $("doneToggle").addEventListener("click", function () {
+    var p = progress[L[current].id] || (progress[L[current].id] = { t: 0, max: 0 });
+    p.done = !p.done;
+    store.set("progress", progress);
+    renderDone();
+    renderCurriculum();
+    renderCourseProgress();
+  });
+
+  // ── 速度・字幕 ──
+  function renderSpeed() {
+    Array.prototype.forEach.call(document.querySelectorAll("#speed button"), function (b) {
+      b.setAttribute("aria-pressed", Number(b.dataset.rate) === prefs.rate ? "true" : "false");
+    });
+  }
+  $("speed").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    prefs.rate = Number(b.dataset.rate);
+    video.playbackRate = prefs.rate;
+    store.set("prefs", prefs);
+    renderSpeed();
+  });
+  // 字幕を焼き込んだ版（videoCc）があるレクチャーは、字幕オンのとき動画ごと差し替える（どの全画面でも字幕が見える）。
+  // 無いレクチャーは、動画を少し縮めて、プレーヤーの中の下に字幕の帯を出す
+  function srcFor(lec) { return prefs.cc && lec.videoCc ? lec.videoCc : lec.video; }
+  function applyCc() {
+    var lec = L[current];
+    var burned = !!lec.videoCc;
+    $("cc").hidden = !prefs.cc || burned;
+    $("player").classList.toggle("cc-on", prefs.cc && !burned);
+    var want = srcFor(lec);
+    $("fileDownload").href = want;
+    $("fileDownload").download = lec.id + (want === lec.video ? "" : ".captioned") + ".mp4";
+  }
+  function swapSource() {
+    var s = video.querySelector("source");
+    var want = srcFor(L[current]);
+    if (!s || s.getAttribute("src") === want) return;
+    var t = video.currentTime, paused = video.paused;
+    s.setAttribute("src", want);
+    video.onloadedmetadata = function () {
+      video.currentTime = t;
+      video.playbackRate = prefs.rate;
+      hideNativeTrack();
+    };
+    video.load();
+    if (!paused) video.play().catch(function () {});
+  }
+  function setCC(on) {
+    prefs.cc = on;
+    store.set("prefs", prefs);
+    $("ccToggle").setAttribute("aria-pressed", on ? "true" : "false");
+    applyCc();
+    swapSource();
+  }
+  $("ccToggle").addEventListener("click", function () { setCC(!prefs.cc); });
+
+  // ── タブ ──
+  var tabs = ["overview", "material", "transcript", "notes", "docs", "quiz", "exercise", "ask"];
+  function showTab(name) {
+    if ($("tab-" + name).hidden) name = "overview";
+    tabs.forEach(function (t) {
+      $("tab-" + t).setAttribute("aria-selected", t === name ? "true" : "false");
+      $("p-" + t).hidden = t !== name;
+    });
+    store.set("tab", name);
+  }
+  tabs.forEach(function (t) { $("tab-" + t).addEventListener("click", function () { showTab(t); }); });
+
+  // ── チャプター ──
+  $("chapters").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    video.currentTime = Number(b.dataset.t);
+    video.play().catch(function () {});
+  });
+
+  // ── 台本と検索 ──
+  function renderTranscript() {
+    var lec = L[current];
+    var html = "";
+    var last = -1;
+    lec.cues.forEach(function (c, k) {
+      if (c.scene !== last) {
+        last = c.scene;
+        html += "<h4>" + esc(lec.chapters[c.scene] ? lec.chapters[c.scene].heading : "") + "</h4>";
+      }
+      html += '<button type="button" class="cue" data-k="' + k + '" data-t="' + c.start + '"><span class="t">' + fmt(c.start) + "</span><span>" + esc(c.text) + "</span></button>";
+    });
+    $("transcript").innerHTML = html;
+  }
+  function renderSearch(q) {
+    var words = q.trim().toLowerCase();
+    if (!words) { renderTranscript(); return; }
+    var html = "";
+    var hits = 0;
+    L.forEach(function (lec, li) {
+      lec.cues.forEach(function (c) {
+        if (c.text.toLowerCase().indexOf(words) === -1) return;
+        hits += 1;
+        if (hits > 200) return;
+        var i0 = c.text.toLowerCase().indexOf(words);
+        var shown = esc(c.text.slice(0, i0)) + "<mark>" + esc(c.text.slice(i0, i0 + words.length)) + "</mark>" + esc(c.text.slice(i0 + words.length));
+        html += '<button type="button" class="cue" data-li="' + li + '" data-t="' + c.start + '"><span class="t"><span class="hit-lec">L' + pad2(lec.no) + "</span><br>" + fmt(c.start) + "</span><span>" + shown + "</span></button>";
+      });
+    });
+    $("transcript").innerHTML = html || '<p class="hint" style="padding:10px">「' + esc(q) + "」を含む台詞は見つかりませんでした。</p>";
+  }
+  $("q").addEventListener("input", function () { renderSearch(this.value); });
+  $("transcript").addEventListener("click", function (e) {
+    var b = e.target.closest(".cue");
+    if (!b) return;
+    var t = Number(b.dataset.t);
+    if (b.dataset.li !== undefined && Number(b.dataset.li) !== current) {
+      load(Number(b.dataset.li), false);
+      video.addEventListener("loadedmetadata", function go() {
+        video.removeEventListener("loadedmetadata", go);
+        video.currentTime = t;
+        video.play().catch(function () {});
+      });
+      return;
+    }
+    video.currentTime = t + 0.01;
+    video.play().catch(function () {});
+  });
+  $("follow").addEventListener("change", function () { prefs.follow = this.checked; store.set("prefs", prefs); });
+
+  // ── ノート ──
+  function renderNotes() {
+    var list = notes[L[current].id] || [];
+    $("notes").innerHTML = list.map(function (n, k) {
+      return '<li><button type="button" class="stamp" data-t="' + n.t + '">' + fmt(n.t) + '</button><div class="body">' + esc(n.text) +
+        '</div><button type="button" class="del" data-k="' + k + '" aria-label="このメモを消す">消す</button></li>';
+    }).join("") || '<li style="display:block"><span class="hint">まだメモはありません。気になった場面で一時停止して書いてみてください。</span></li>';
+  }
+  $("noteAdd").addEventListener("click", function () {
+    var text = $("noteText").value.trim();
+    if (!text) { $("noteText").focus(); return; }
+    var id = L[current].id;
+    (notes[id] = notes[id] || []).push({ t: Math.floor(video.currentTime), text: text, at: Date.now() });
+    notes[id].sort(function (a, b) { return a.t - b.t; });
+    store.set("notes", notes);
+    $("noteText").value = "";
+    renderNotes();
+    toast("メモを残しました");
+  });
+  $("notes").addEventListener("click", function (e) {
+    var s = e.target.closest(".stamp");
+    if (s) { video.currentTime = Number(s.dataset.t); video.play().catch(function () {}); return; }
+    var d = e.target.closest(".del");
+    if (d) {
+      notes[L[current].id].splice(Number(d.dataset.k), 1);
+      store.set("notes", notes);
+      renderNotes();
+    }
+  });
+  $("noteCopy").addEventListener("click", function () {
+    var out = [];
+    L.forEach(function (lec) {
+      var list = notes[lec.id] || [];
+      if (!list.length) return;
+      out.push("## L" + pad2(lec.no) + " " + lec.title);
+      list.forEach(function (n) { out.push("- [" + fmt(n.t) + "] " + n.text.replace(/\n/g, " ")); });
+      out.push("");
+    });
+    var text = out.join("\n") || "（ノートはまだありません）";
+    var fallback = function () {
+      $("noteText").value = text;
+      $("noteText").select();
+      toast("下の欄に書き出しました。選択してコピーしてください");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("全ノートをコピーしました"); }, fallback);
+    } else fallback();
+  });
+
+  // ── 教材・実践課題・AI に聞く（教材を持つレクチャーだけ）──
+  var EV = { research: "研究・学術", official: "公式・法令・規格", practice: "実務の指針", example: "説明用の仮の例" };
+  // 教材の文字はエスケープしてから、**強調** と「- 」の箇条書きだけを HTML にする
+  function inline(s) { return esc(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+  function paras(list) {
+    var html = "", inList = false;
+    list.forEach(function (b) {
+      String(b).split("\n").forEach(function (line) {
+        if (/^- /.test(line)) {
+          if (!inList) { html += "<ul>"; inList = true; }
+          html += "<li>" + inline(line.slice(2)) + "</li>";
+        } else {
+          if (inList) { html += "</ul>"; inList = false; }
+          if (line.trim()) html += "<p>" + inline(line) + "</p>";
+        }
+      });
+    });
+    if (inList) html += "</ul>";
+    return html;
+  }
+  function evChips(list) { return '<div class="evs">' + list.map(function (e) { return '<span class="ev ' + esc(e) + '">' + esc(EV[e] || e) + "</span>"; }).join("") + "</div>"; }
+  function srcLinks(list) {
+    if (!list || !list.length) return "";
+    return '<p class="msrc">出典: ' + list.map(function (s) {
+      return '<a href="' + esc(safeUrl(s.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher + "（" + s.year + "）") + "</a>";
+    }).join("、") + "</p>";
+  }
+  function figHtml(f) {
+    var h = '<div class="fig" id="' + esc(f.id) + '"><span class="sid">' + esc(f.id) + "</span><h4>" + esc(f.title) + "</h4>" + evChips([f.evidence]) + '<p class="cap">' + inline(f.caption) + "</p>";
+    if (f.table) {
+      h += '<table class="mtable"><thead><tr>' + f.table[0].map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        f.table.slice(1).map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inline(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    }
+    if (f.flow) h += '<div class="flowline">' + f.flow.map(function (x, i) { return (i ? '<span class="ar" aria-hidden="true">→</span>' : "") + '<span class="st">' + inline(x) + "</span>"; }).join("") + "</div>";
+    if (f.code) h += "<pre><code>" + esc(f.code) + "</code></pre>";
+    return h + "</div>";
+  }
+  function renderMaterial() {
+    var m = L[current].material;
+    ["material", "exercise", "ask"].forEach(function (t) { $("tab-" + t).hidden = !m; });
+    if (!m) {
+      if (["material", "exercise", "ask"].indexOf(store.get("tab", "overview")) >= 0) showTab("overview");
+      return;
+    }
+    $("matGoals").innerHTML = m.goals.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matPre").innerHTML = m.prerequisites.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    $("matToc").innerHTML = m.sections.map(function (s, i) { return '<a href="#' + esc(s.id) + '" data-sec="' + esc(s.id) + '">' + (i + 1) + ". " + esc(s.title) + "</a>"; }).join("");
+    $("matBody").innerHTML = m.sections.map(function (s) {
+      return '<section class="msec" id="' + esc(s.id) + '"><span class="sid">' + esc(s.id) + "</span><h3>" + esc(s.title) + "</h3>" + evChips(s.evidence) + paras(s.body) + srcLinks(s.sources) + "</section>";
+    }).join("");
+    $("matFigs").innerHTML = m.figures.map(figHtml).join("");
+    $("matSummary").innerHTML = m.summary.map(function (g) { return "<li>" + inline(g) + "</li>"; }).join("");
+    var ex = m.exercise;
+    $("exBody").innerHTML =
+      '<div class="msec" id="' + esc(ex.id) + '"><span class="sid">' + esc(ex.id) + "</span><h3>" + esc(ex.title) + "</h3>" +
+      "<p><strong>ねらい</strong>　" + inline(ex.goal) + "</p><p><strong>目安の時間</strong>　" + esc(ex.timebox) + "</p><p><strong>出すもの</strong>　" + inline(ex.deliverable) + "</p>" +
+      '<h3 style="margin-top:14px">手順</h3><ol class="mat-list">' + ex.steps.map(function (x) { return "<li>" + inline(x) + "</li>"; }).join("") + "</ol></div>" +
+      '<div class="msec"><h3>回答例: ' + esc(ex.example.title) + "</h3>" + evChips(["example"]) + paras(ex.example.body) + "</div>" +
+      '<div class="fig"><h4>評価基準</h4><table class="mtable"><thead><tr><th>観点</th><th>できている</th><th>もう一歩</th><th>やり直し</th></tr></thead><tbody>' +
+      ex.rubric.map(function (r) { return "<tr><td><strong>" + inline(r.criterion) + "</strong></td><td>" + inline(r.good) + "</td><td>" + inline(r.fair) + "</td><td>" + inline(r.poor) + "</td></tr>"; }).join("") + "</tbody></table></div>";
+    $("askList").innerHTML = m.askExamples.map(function (a) {
+      return '<li><div class="qq">' + esc(a.q) + '</div><div class="refs">根拠にする節: ' + a.refs.map(function (r) { return '<button type="button" data-sec="' + esc(r) + '">' + esc(r) + "</button>"; }).join("") + "</div></li>";
+    }).join("");
+  }
+  // 節へ移る（目次と、質問例の参照）
+  function gotoSection(id) {
+    showTab("material");
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("matToc").addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-sec]");
+    if (!a) return;
+    e.preventDefault();
+    gotoSection(a.dataset.sec);
+  });
+  $("askList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sec]");
+    if (b) gotoSection(b.dataset.sec);
+  });
+
+  // ── クイズ ──
+  function renderQuiz() {
+    var lec = L[current];
+    var st = quizState[lec.id] || {};
+    var right = 0, answered = 0;
+    var html = lec.quiz.map(function (q, qi) {
+      var picked = st[qi];
+      var done = picked !== undefined;
+      if (done) { answered += 1; if (picked === q.answer) right += 1; }
+      return '<div class="q"><div class="qt"><span class="n">Q' + (qi + 1) + "</span>" + esc(q.q) + '</div><div class="choices">' +
+        q.choices.map(function (c, ci) {
+          var cls = done ? (ci === q.answer ? " right" : ci === picked ? " wrong" : "") : "";
+          return '<button type="button" class="choice' + cls + '" data-q="' + qi + '" data-c="' + ci + '"' + (done ? " disabled" : "") + ">" + esc(c) + "</button>";
+        }).join("") + "</div>" +
+        (done ? '<div class="explain' + (picked === q.answer ? "" : " bad") + '">' + (picked === q.answer ? "正解。" : "答えは「" + esc(q.choices[q.answer]) + "」。") + esc(q.explain) + "</div>" : "") +
+        "</div>";
+    }).join("");
+    html += '<div class="tools"><span class="score">' + (answered ? lec.quiz.length + " 問中 " + right + " 問正解" : "選ぶとすぐ答えと解説が出ます。") + "</span>" +
+      (answered ? '<button type="button" class="btn" id="quizReset">もう一度</button>' : "") + "</div>";
+    $("quiz").innerHTML = html;
+  }
+  $("quiz").addEventListener("click", function (e) {
+    var b = e.target.closest(".choice");
+    if (b && !b.disabled) {
+      var id = L[current].id;
+      (quizState[id] = quizState[id] || {})[b.dataset.q] = Number(b.dataset.c);
+      store.set("quiz", quizState);
+      renderQuiz();
+      return;
+    }
+    if (e.target.closest("#quizReset")) {
+      delete quizState[L[current].id];
+      store.set("quiz", quizState);
+      renderQuiz();
+    }
+  });
+
+  // ── 全画面（自前の字幕ごと） ──
+  function toggleFull() {
+    var doc = document;
+    if (doc.fullscreenElement) { doc.exitFullscreen().catch(function () {}); return; }
+    if (theater.requestFullscreen) theater.requestFullscreen().catch(function () {
+      if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    });
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  }
+  player.addEventListener("dblclick", function (e) { if (e.target === video) { e.preventDefault(); toggleFull(); } });
+
+  // ── キーボード ──
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (["input", "textarea", "select", "button", "a", "summary"].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === " " || k === "k") { e.preventDefault(); if (video.paused) video.play().catch(function () {}); else video.pause(); }
+    else if (k === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); }
+    else if (k === "ArrowRight") { video.currentTime = video.currentTime + 5; }
+    else if (k === "j") { video.currentTime = Math.max(0, video.currentTime - 10); }
+    else if (k === "l") { video.currentTime = video.currentTime + 10; }
+    else if (k === "c") { setCC(!prefs.cc); }
+    else if (k === "f") { toggleFull(); }
+    else if (k === "n") { load(current + 1, true); }
+  });
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.querySelector(".toast");
+    if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  // ── はじめに開く ──
+  $("credits").textContent = "ナレーション " + DATA.credits.join("・") + "　BGM・効果音はプログラムで合成したオリジナル　" + DATA.course.sourceNote;
+  if (DATA.course.disclaimer) { $("courseNote").textContent = DATA.course.disclaimer; $("courseNote").hidden = false; }
+  if (DATA.course.links && DATA.course.links.length) {
+    var box = $("links");
+    box.innerHTML = DATA.course.links.map(function (ln) {
+      return '<a href="' + esc(safeUrl(ln.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(ln.label) +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
+    }).join("");
+    box.hidden = false;
+  }
+  if (UI.takeaways) $("takeawaysTitle").textContent = UI.takeaways;
+  if (UI.docs) $("tab-docs").textContent = UI.docs;
+  if (UI.searchHint) $("q").placeholder = "全" + (UNIT === "CHAPTER" ? "章" : "レクチャー") + "の台本から探す（例: " + UI.searchHint + "）";
+  $("follow").checked = prefs.follow !== false;
+  renderSpeed();
+  setCC(prefs.cc !== false);
+  renderCourseProgress();
+  var fromHash = (location.hash || "").replace("#", "");
+  var startId = L.some(function (l) { return l.id === fromHash; }) ? fromHash : store.get("last", L[0].id);
+  var startIdx = Math.max(0, L.findIndex(function (l) { return l.id === startId; }));
+  load(startIdx, false);
+  showTab(store.get("tab", "overview"));
+})();
+</script>
+<script id="pwa-data" type="application/json">{"root":"../","course":{"id":"stripe-billing","title":"Stripe サブスク課金 基礎講座","pageVersion":"bb423ad8cb7cafeebc479238a85649a8dc9a2843d3bb798de3a1769b0ed0bacf"},"courses":[{"id":"stripe-billing","title":"Stripe サブスク課金 基礎講座"},{"id":"nudge-product","title":"ナッジ理論をプロダクト改善に活かす"},{"id":"uiux-engineers","title":"エンジニアのための UI・UX デザイン"},{"id":"indie-marketing","title":"個人開発者のためのマーケティング"},{"id":"nudge-comedy","title":"笑って覚えるナッジ理論"},{"id":"rive-comedy","title":"笑ってわかる Rive アニメーション"},{"id":"pstack-comedy","title":"笑ってわかる pstack"},{"id":"superagent-comedy","title":"笑ってわかる Super-agent"}]}</script><script>// site/offline-client.ts
+var app = JSON.parse(document.getElementById("pwa-data").textContent);
+var root = new URL(app.root, location.href);
+var $ = (id) => document.getElementById(id);
+var mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+var registration;
+var latest;
+var states = [];
+var busy = false;
+var workingId;
+var refreshInProgress = false;
+var installPrompt = null;
+var locallyDownloading = false;
+var localSaveRequest = false;
+var messageRevision = 0;
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  $("pwaInstall").hidden = false;
+});
+function installed() {
+  $("pwaInstall").hidden = true;
+  $("installState").textContent = "アプリとして起動中、またはインストール済みです。講座は別途選んで保存してください。";
+}
+window.addEventListener("appinstalled", installed);
+if (matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+  installed();
+$("pwaInstall").addEventListener("click", async () => {
+  if (!installPrompt)
+    return;
+  const prompt = installPrompt;
+  installPrompt = null;
+  $("pwaInstall").hidden = true;
+  try {
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    $("installState").textContent = choice.outcome === "accepted" ? "インストール操作を受け付けました。講座も選んで保存してください。" : "インストールを見送りました。ブラウザでも保存して学べます。";
+  } catch {
+    $("installState").textContent = "ブラウザのメニューからインストールしてください。";
+  }
+});
+function request(type, id, progress) {
+  return new Promise((resolve, reject) => {
+    const worker = navigator.serviceWorker.controller ?? registration?.active;
+    if (!worker) {
+      reject(new Error("保存機能を準備できません。オンラインで再読み込みしてください。"));
+      return;
+    }
+    const channel = new MessageChannel;
+    let timer;
+    const finish = (error, value) => {
+      clearTimeout(timer);
+      channel.port1.close();
+      if (error)
+        reject(error);
+      else
+        resolve(value);
+    };
+    const extend = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error("保存機能からの応答が途切れました。保存状態を確認して再試行してください。")), 150000);
+    };
+    channel.port1.onmessage = (event) => {
+      extend();
+      if (event.data.progress)
+        progress?.(event.data.progress);
+      else if (event.data.ok)
+        finish(undefined, event.data);
+      else
+        finish(new Error(event.data.error ?? "保存機能を利用できません。"));
+    };
+    extend();
+    worker.postMessage({ protocol: 1, type, id }, [channel.port2]);
+  });
+}
+function network() {
+  $("networkState").textContent = navigator.onLine ? "オンライン（通信状態は取得時に確認）" : "オフライン：保存済みの講座で学べます";
+}
+function message(text) {
+  messageRevision++;
+  $("offlineMessage").textContent = text;
+}
+function storageMessage() {
+  if (!app.course)
+    return "保存状態を確認しました。講座を開いて、使いたい講座の保存ボタンを選んでください。";
+  const status = states.find((s) => s.id === app.course.id);
+  if (status?.incomplete)
+    return status.saved ? "一部の保存が不完全です。前の完全な保存版を利用できます。オンラインで保存し直してください。" : "保存が不完全です。オンラインで保存し直してください。";
+  return status?.saved ? "保存済みの教材と全動画を利用できます。通信なしで起動・再生できます。" : "この講座は未保存です。動画の再生とアプリ内保存には通信が必要です。オンラインで保存してください。";
+}
+function canShowStatus() {
+  return !busy && !locallyDownloading && !states.some((s) => s.progress);
+}
+function drawProgress(p) {
+  const bar = $("offlineProgress");
+  bar.hidden = !p;
+  if (!p)
+    return;
+  bar.max = p.total || 1;
+  bar.value = p.loaded;
+  message(p.total ? `保存中 ${Math.floor(p.loaded / p.total * 100)}%・${mb(p.loaded)} / ${mb(p.total)}（${p.file} / ${p.count} ファイル）。完了までこの画面を開いておいてください。` : "教材情報を確認しています…");
+}
+function render() {
+  network();
+  const status = states.find((s) => s.id === app.course?.id);
+  const anyProgress = states.find((s) => s.progress)?.progress;
+  const wasWorking = !!workingId;
+  workingId = anyProgress?.id;
+  const processing = busy || !!anyProgress;
+  if (app.course) {
+    const saved = status?.saved;
+    $("savedState").textContent = saved ? `保存済み・教材と全動画 ${mb(saved.manifest.bytes)}・${new Date(saved.savedAt).toLocaleString("ja-JP")}${status?.incomplete ? "（前の完全な版を利用中）" : ""}` : status?.incomplete ? "保存が不完全です。オンラインで保存し直してください。" : "未保存・動画はオンラインで再生します";
+    const same = saved?.manifest.revision === latest?.revision;
+    const save = $("offlineSave");
+    save.textContent = saved && latest && !same ? "新しい版に更新して保存" : status?.incomplete ? "保存し直す" : "この講座をアプリ内に保存";
+    save.disabled = !registration || !navigator.onLine || processing || !latest || !!same && !status?.incomplete;
+    $("offlineDelete").disabled = !registration || processing || !saved && !status?.incomplete;
+    $("offlineCancel").hidden = !anyProgress && !locallyDownloading;
+    $("offlineCancel").disabled = !workingId && !locallyDownloading;
+    $("offlineCheck").disabled = !registration || !navigator.onLine || processing;
+    $("downloadSize").textContent = latest ? `保存対象：台本・字幕・クイズ・全動画とポスター、合計 ${mb(latest.bytes)}。` : "オンラインで保存サイズと更新を確認できます。";
+    const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
+    $("offlineReload").hidden = !changed;
+    if (changed)
+      message("保存版が切り替わりました。「保存した版を開く」で教材と動画をそろえてください。");
+    window.dispatchEvent(new CustomEvent("chalkfile:offline-state", { detail: {
+      saved: !!saved,
+      pageVersion: saved?.manifest.pageVersion,
+      incomplete: status?.incomplete,
+      online: navigator.onLine
+    } }));
+  }
+  const list = $("savedCourses");
+  list.replaceChildren();
+  const courses = [...app.courses];
+  for (const s of states)
+    if (s.saved && !courses.some((c) => c.id === s.id))
+      courses.push({ id: s.id, title: s.saved.manifest.title });
+  for (const course of courses) {
+    const s = states.find((v) => v.id === course.id);
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = new URL(`${course.id}/`, root).href;
+    a.textContent = course.title;
+    const label = document.createElement("span");
+    label.textContent = s?.progress ? "保存中・完了前" : s?.saved ? `保存済み ${mb(s.saved.manifest.bytes)}` : s?.incomplete ? "不完全・要再保存" : "未保存・オンラインで開く";
+    li.append(a, label);
+    list.append(li);
+  }
+  if (!locallyDownloading && !localSaveRequest) {
+    drawProgress(anyProgress);
+    if (wasWorking && !anyProgress && !localSaveRequest)
+      message("別のタブでの保存処理が終了しました。現在の保存状態を確認してください。");
+  }
+  if (localSaveRequest && !busy && !locallyDownloading && !anyProgress)
+    localSaveRequest = false;
+}
+async function capacity() {
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    const persistent = await navigator.storage?.persisted?.();
+    $("storageState").textContent = `${estimate?.quota ? `同一サイト全体の使用量（推定）${mb(estimate.usage ?? 0)} / ${mb(estimate.quota)}。` : "保存容量はブラウザによって異なります。"}${persistent ? "保存の保持が許可されています。" : "保存の保持は未許可です。ブラウザが保存を削除する場合があります。"}`;
+    $("offlinePersist").disabled = !navigator.storage?.persist || !!persistent;
+  } catch {
+    $("storageState").textContent = "保存容量を取得できません。空き容量は保証されません。";
+  }
+}
+async function refresh() {
+  if (!registration || refreshInProgress)
+    return false;
+  refreshInProgress = true;
+  try {
+    states = (await request("STATUS")).courses ?? [];
+    render();
+    await capacity();
+    if (messageRevision === 0 && canShowStatus())
+      message(storageMessage());
+    return true;
+  } catch (error) {
+    message(error.message);
+    return false;
+  } finally {
+    refreshInProgress = false;
+  }
+}
+async function check() {
+  if (!app.course || !navigator.onLine)
+    return;
+  $("offlineCheck").disabled = true;
+  const before = messageRevision;
+  try {
+    latest = (await request("CHECK", app.course.id)).manifest;
+    const status = states.find((s) => s.id === app.course.id);
+    const saved = status?.saved;
+    if (status && before === messageRevision && canShowStatus())
+      message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? "新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。" : saved ? "公開中の版と保存版は同じです。" : storageMessage());
+  } catch (error) {
+    if (before === messageRevision && canShowStatus()) {
+      latest = undefined;
+      message(`${error.message} 保存済みの版は引き続き利用できます。`);
+    }
+  }
+  render();
+}
+$("offlineSave").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  locallyDownloading = true;
+  localSaveRequest = true;
+  render();
+  drawProgress({ id: app.course.id, loaded: 0, total: 0, file: 0, count: 0 });
+  try {
+    await request("SAVE", app.course.id, drawProgress);
+    message("教材と全動画の保存が完了しました。通信を切って再生を確認してください。");
+  } catch (error) {
+    message(`${error.message} 以前の完全な保存があれば維持します。再試行は保存ボタンから行えます。`);
+  } finally {
+    busy = false;
+    locallyDownloading = false;
+    drawProgress();
+    await refresh();
+  }
+});
+$("offlineCancel").addEventListener("click", async () => {
+  try {
+    await request("CANCEL", workingId ?? app.course?.id);
+    message("キャンセルを受け付けました。処理が終わるまでお待ちください。");
+  } catch (error) {
+    message(error.message);
+  }
+});
+$("offlineDelete").addEventListener("click", async () => {
+  if (!app.course || busy)
+    return;
+  busy = true;
+  render();
+  try {
+    await request("DELETE", app.course.id);
+    message("この講座の教材・動画と以前の保存版を削除しました。ノートと学習進捗は残ります。");
+  } catch (error) {
+    message(error.message);
+  } finally {
+    busy = false;
+    await refresh();
+  }
+});
+$("offlineCheck").addEventListener("click", () => {
+  check();
+});
+$("offlineReload").addEventListener("click", () => location.reload());
+$("offlinePersist").addEventListener("click", async () => {
+  try {
+    const granted = await navigator.storage.persist();
+    message(granted ? "ブラウザが保存の保持を許可しました。サイトデータを消すと保存も消えます。" : "ブラウザは保存の保持を許可しませんでした。保存は利用できますが、削除される場合があります。");
+    await capacity();
+  } catch {
+    message("保存の保持を要求できませんでした。ブラウザの設定を確認してください。");
+  }
+});
+window.addEventListener("online", () => {
+  render();
+  check();
+});
+window.addEventListener("offline", () => {
+  render();
+});
+window.addEventListener("pageshow", () => {
+  refresh();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden)
+    refresh();
+});
+network();
+async function init() {
+  if (!("serviceWorker" in navigator) || !isSecureContext || !("caches" in window)) {
+    message("このブラウザではアプリ内保存を利用できません。HTTPS 対応のブラウザで開いてください。オンライン再生は利用できます。");
+    return;
+  }
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.protocol === 1 && event.data?.type === "CHANGED")
+      refresh();
+  });
+  try {
+    registration = await navigator.serviceWorker.register(new URL("sw.js", root), { scope: root.pathname, updateViaCache: "none" });
+    await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error("保存機能の準備が時間切れになりました。")), 30000))]);
+    const updateNotice = () => {
+      if (registration?.waiting)
+        $("appUpdate").hidden = false;
+    };
+    updateNotice();
+    registration.addEventListener("updatefound", () => registration?.installing?.addEventListener("statechange", updateNotice));
+    await refresh();
+    await check();
+    setInterval(() => {
+      if (!document.hidden && (workingId || busy))
+        refresh();
+    }, 2000);
+  } catch {
+    message("保存機能を準備できません。通信とブラウザの保存設定を確認し、オンラインで再読み込みしてください。");
+  }
+}
+init();
+</script>
+</body>
+</html>
