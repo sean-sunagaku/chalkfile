@@ -85,6 +85,8 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 初回のAPI tokenをCLIで登録するときは `bun scripts/setup_cloudflare_ci.ts plan` で対象と3権限を確認し、公式cf CLIの本人認可後に `apply` を使う。認可はscope追加を伴うため既存Wrangler OAuthの流用で置き換えない。tokenはghの標準入力だけへ渡し、登録に失敗したらその場で発行したものだけを失効する。
 
+Mac Safariは `safaridriver` と `bun tests/verify-safari.ts` を使える。必要な初回設定はApple公式の `safaridriver --enable`（環境によりsudo認可が必要）。ロック中のpointer入力や画面更新の制限を、CLI全体が使えないという判断へ広げない。非表示中は保存/字幕ボタンのDOM clickと、動画から実際に取り出した非単色フレームを検証する。`--disconnect-wifi=<interface>` を明示した場合だけ実際にWi-Fiを切り、独立した復旧プロセスを先に用意する。Safariのnavigator.onLineだけで通信断を断定しない。実機が未接続ならシミュレータを実機成功として扱わない。
+
 ## よくある直し
 
 | 頼まれたこと | やること |
