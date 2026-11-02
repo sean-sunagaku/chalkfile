@@ -4,7 +4,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { COURSES } from '../content';
 
 const base = process.argv[2] ?? 'http://127.0.0.1:8787/';
-const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true });
+// 購入直後の端末側 negative DNS cache の検証用。公開DNSで確認したIPだけを明示し、TLS検証は維持する。
+const resolveIp = process.env.CHALKFILE_RESOLVE_IP;
+if (resolveIp && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(resolveIp)) throw new Error('検証先 IP の形式が不正です');
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome', headless: true,
+  args: resolveIp ? [`--host-resolver-rules=MAP chalkfile.com ${resolveIp}`] : [] });
 const context = await browser.newContext();
 const page = await context.newPage();
 const violations: string[] = [];
@@ -26,6 +30,6 @@ try {
   if (new URL(scope).pathname !== '/') throw new Error('SW の scope が / ではありません');
   if (violations.length || errors.length) throw new Error('CSP またはページのエラーがあります');
   mkdirSync('.work/evidence', { recursive: true });
-  writeFileSync('.work/evidence/site-smoke.json', JSON.stringify({ base, pages, scope, violations, errors }, null, 2));
+  writeFileSync('.work/evidence/site-smoke.json', JSON.stringify({ base, resolveIp, pages, scope, violations, errors }, null, 2));
   console.log(`全 ${pages.length} ページ 200・CSP/JS エラーなし・SW scope /`);
 } finally { await browser.close(); }
