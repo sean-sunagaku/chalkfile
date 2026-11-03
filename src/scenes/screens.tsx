@@ -1,8 +1,10 @@
+// 場面「screens」: 画面の比較（改善前・改善後。架空のアプリの画面と、部品の右の番号つきの注）
 import React from 'react';
 import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../content/types';
 import { Icon, Pill, Rich } from '../components/ui';
 import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, PAD, SANS, tone } from '../theme';
 import { dropY, useAppear, useText } from '../timing';
+import { defineScene } from './define';
 
 /*
  * 架空のアプリの画面（改善前・改善後）。画面の中の色は「そのアプリの色」なので、講座のテーマではなくここの M で描く。
@@ -312,7 +314,7 @@ const Labeled: React.FC<{ sc: MockScreen; children: React.ReactNode; style?: Rea
   );
 };
 
-export const Screens: React.FC<{ s: ScreensScene }> = ({ s }) => {
+const Screens: React.FC<{ s: ScreensScene }> = ({ s }) => {
   const device = s.device ?? 'browser';
   const top = CONTENT_TOP + 4;
   const height = CONTENT_BOTTOM - top;
@@ -364,3 +366,5 @@ export const Screens: React.FC<{ s: ScreensScene }> = ({ s }) => {
     </div>
   );
 };
+
+export const screens = defineScene({ kind: 'screens', Component: Screens });

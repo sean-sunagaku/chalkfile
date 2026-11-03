@@ -63,10 +63,6 @@ export const X01: Lecture = {
         { key: 'scene', en: 'Scene', ja: '場面', desc: '画面の 1 まとまり', tone: 'violet', icon: 'layout', at: 0 },
         { key: 'line', en: 'Line', ja: '台詞', desc: '声と字幕の 1 文', tone: 'pink', icon: 'message', at: 1 },
       ],
-      focus: [
-        { key: 'scene', at: 0 },
-        { key: null, at: 1 },
-      ],
       lines: [{ t: '場面は、画面の一まとまりです。' }, { t: '台詞は、声と字幕の一文です。', sfx: 'pop' }],
     },
     {
@@ -221,9 +217,9 @@ export const X01: Lecture = {
       kind: 'phone',
       heading: 'スマホの画面',
       screens: [
-        { at: 0, kind: 'app', title: 'Pro にする？', lead: 'はじめての設定', body: ['月 1,000 円'], primary: '申し込む', secondary: 'あとで', caption: 'アプリの画面' },
-        { at: 1, kind: 'stripe', title: '支払い', lead: 'Pro プラン', body: ['14 日間無料', '月 1,000 円', 'いつでも解約できる'], primary: '申し込む', caption: '支払いの画面' },
-        { at: 2, kind: 'done', title: 'ようこそ', lead: 'Pro になりました', body: ['全部の機能が使える'], primary: 'はじめる', caption: '終わりの画面' },
+        { at: 0, kind: 'app', brand: 'サンプルアプリ', brandSub: 'Pro プラン', title: 'Pro にする？', lead: 'はじめての設定', body: ['月 1,000 円'], primary: '申し込む', secondary: 'あとで', caption: 'アプリの画面' },
+        { at: 1, kind: 'app', brand: 'サンプルアプリ', title: '支払い', lead: 'Pro プラン', body: ['14 日間無料', '月 1,000 円', 'いつでも解約できる'], primary: '申し込む', caption: '支払いの画面' },
+        { at: 2, kind: 'done', brand: 'サンプルアプリ', brandSub: 'Pro プラン', title: 'ようこそ', lead: 'Pro になりました', body: ['全部の機能が使える'], primary: 'はじめる', caption: '終わりの画面' },
       ],
       lines: [{ t: 'アプリで申し込みます。', v: Z }, { t: '支払いの画面で、カードを入れます。' }, { t: '終わりの画面が出ます。', v: Z, sfxAfter: 'chin' }],
     },
@@ -268,7 +264,7 @@ export const X01: Lecture = {
       title: 'Terminal — 見本',
       entries: [
         { cmd: 'bun scripts/validate.ts', out: ['台本の検証: 誤り 0 件'], at: 1, note: '誤りが無いことを見る' },
-        { out: ['--> done'], at: 2 },
+        { out: [{ text: '--> done', tone: 'info' }], at: 2 },
       ],
       lines: [{ t: '端末で確かめます。' }, { t: '検証を流します。', sfx: 'type' }, { t: '誤りは無しです。', bgm: 'cut' }],
     },

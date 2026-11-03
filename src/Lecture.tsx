@@ -6,59 +6,19 @@ import { themeOf } from '../content/themes';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
-import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/basic';
-import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/data';
-import { Flow, Sequence as SequenceDiagram, States } from './scenes/diagram';
-import { Screens } from './scenes/mock';
+import { SCENES } from './scenes';
 import { alpha, applyTheme, C, H, SANS, tone } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
+import { CAPTION, frames, LEAD } from './video.config';
 
 export type LectureTimeline = { fps: number; durationInFrames: number; scenes: SceneTiming[] };
 export const TIMELINE = timelineJson as unknown as Record<string, LectureTimeline>;
 
+/** 場面の kind で登録表（src/scenes/index.ts）を引いて描く */
 const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
-  switch (s.kind) {
-    case 'opening':
-      return <Opening s={s} />;
-    case 'goals':
-      return <Goals s={s} />;
-    case 'points':
-      return <Points s={s} />;
-    case 'concepts':
-      return <Concepts s={s} />;
-    case 'sequence':
-      return <SequenceDiagram s={s} />;
-    case 'flow':
-      return <Flow s={s} />;
-    case 'states':
-      return <States s={s} />;
-    case 'code':
-      return <CodeView s={s} />;
-    case 'table':
-      return <Table s={s} />;
-    case 'compare':
-      return <Compare s={s} />;
-    case 'big':
-      return <Big s={s} />;
-    case 'numbers':
-      return <Numbers s={s} />;
-    case 'timeline':
-      return <Timeline s={s} />;
-    case 'quiz':
-      return <Quiz s={s} />;
-    case 'recap':
-      return <Recap s={s} />;
-    case 'refs':
-      return <Refs s={s} />;
-    case 'phone':
-      return <Phone s={s} />;
-    case 'screens':
-      return <Screens s={s} />;
-    case 'terminal':
-      return <Terminal s={s} />;
-    case 'ending':
-      return <Ending s={s} />;
-  }
+  // kind で引いた部品なので、s はその部品が受け取る形と合う（部品の型は種類ごとに違うので、ここだけ Scene に広げる）
+  const Body = SCENES[s.kind].Component as React.FC<{ s: Scene }>;
+  return <Body s={s} />;
 };
 
 const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = ({ s, duration, caution }) => {
@@ -78,8 +38,9 @@ const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = (
 /* ───────────── 焼き込みの字幕 ─────────────
  * captions=true のとき、場面を縮めて下に字幕の帯を空け、台詞（t）をそのまま出す。
  * 講座サイトは動画の下に自前の字幕を出すので、サイト用の動画は字幕なしで書き出す（render.sh の CAPTIONS=1 で両方作る）。
+ * 縮める割合・字幕を残す時間・文字の大きさは src/video.config.ts の CAPTION
  */
-const CAPTION_SCALE = 0.88;
+const CAPTION_SCALE = CAPTION.scale;
 const CAPTION_BAND = H - Math.round(H * CAPTION_SCALE);
 
 /** who: 掛け合いの講座で、話している人の名前と色（講座の cast） */
@@ -88,10 +49,10 @@ type Cue = { start: number; end: number; text: string; who?: { name: string; ton
 const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
   const frame = useCurrentFrame();
   let i = -1;
-  for (let k = 0; k < cues.length; k++) if (frame >= cues[k].start - 3) i = k;
+  for (let k = 0; k < cues.length; k++) if (frame >= cues[k].start - LEAD.caption) i = k;
   const cue = cues[i];
-  // 台詞の後の短い間では字幕を残す（ちらつかせない）。次の台詞の手前までか、0.7 秒まで
-  const until = cue ? Math.min(cue.end + 21, (cues[i + 1]?.start ?? Infinity) - 3) : -1;
+  // 台詞の後の短い間では字幕を残す（ちらつかせない）。次の台詞の手前までか、CAPTION.holdSec（0.7 秒）まで
+  const until = cue ? Math.min(cue.end + frames(CAPTION.holdSec), (cues[i + 1]?.start ?? Infinity) - LEAD.caption) : -1;
   const show = cue && frame <= until;
   return (
     <div
@@ -105,22 +66,22 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 120px',
+        padding: `0 ${CAPTION.sidePad}px`,
       }}
     >
       {show ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: CAPTION.gap }}>
           {cue.who ? (
             <div
               style={{
                 flex: 'none',
                 fontFamily: SANS,
                 fontWeight: 900,
-                fontSize: 28,
+                fontSize: CAPTION.nameSize,
                 color: '#FFFFFF',
                 background: tone(cue.who.tone).main,
                 borderRadius: 999,
-                padding: '6px 20px',
+                padding: `6px ${CAPTION.namePadX}px`,
                 whiteSpace: 'nowrap',
               }}
             >
@@ -131,11 +92,11 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
             style={{
               fontFamily: SANS,
               fontWeight: 700,
-              fontSize: 38,
+              fontSize: CAPTION.size,
               lineHeight: 1.42,
               color: '#FFFFFF',
               textAlign: cue.who ? 'left' : 'center',
-              letterSpacing: 1,
+              letterSpacing: CAPTION.spacing,
               textWrap: 'balance' as React.CSSProperties['textWrap'],
             }}
           >

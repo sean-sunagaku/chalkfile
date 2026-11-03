@@ -15,16 +15,17 @@ import { VIDEOS, type Video } from '../content';
 import type { Lang } from '../content/i18n';
 import type { Lecture, Scene, VoiceId } from '../content/types';
 import { formatIssues, validateLecture } from '../engine/core/validate';
+import { STING, VIDEO } from '../src/video.config';
 import { creditsIn, KOKORO, SITE_CREDITS, speechIn, ttsKeyIn, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const CACHE_ONLY = process.argv.includes('--cached-only');
 const ENGINE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
-const FPS = 30;
+const FPS = VIDEO.fps;
 
 // 間の取り方（秒）
 const LEAD_IN = 0.45;
-const OPENING_LEAD_IN = 2.05; // ジングルの「ドン」（sting_intro の 2.0 秒）に合わせて呼び込む
+const OPENING_LEAD_IN = STING.introHitSec + 0.05; // ジングルの「ドン」（src/video.config.ts。今は 2.0 秒）の 0.05 秒あとに呼び込む
 const GAP = 0.3;
 const MIN_GAP = 0.05;
 const TAIL = 0.75;

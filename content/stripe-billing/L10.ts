@@ -90,7 +90,14 @@ export const L10: Lecture = {
       entries: [
         { cmd: 'stripe listen --forward-to localhost:8000/webhooks/stripe', out: ["Ready! Your webhook signing secret is 'whsec_…' (^C to quit)"], at: 1, note: '表示された whsec_ をローカルの設定へ' },
         { cmd: 'stripe trigger customer.subscription.updated', out: ['Setting up fixture for: customer', 'Trigger succeeded! Check dashboard for event details.'], at: 2, note: '疑似のイベントを送る' },
-        { out: ['--> customer.subscription.updated [evt_…]', '<-- [200] POST http://localhost:8000/webhooks/stripe [evt_…]'], at: 3, note: '200 なら受け取り成功' },
+        {
+          out: [
+            { text: '--> customer.subscription.updated [evt_…]', tone: 'info' },
+            { text: '<-- [200] POST http://localhost:8000/webhooks/stripe [evt_…]', tone: 'ok' },
+          ],
+          at: 3,
+          note: '200 なら受け取り成功',
+        },
         { cmd: 'stripe events resend evt_…', at: 4, note: 'listen 中のローカルへ再送して「2 回目は何もしない」を確かめる' },
       ],
       lines: [
