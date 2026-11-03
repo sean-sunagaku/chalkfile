@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  ALLOW_OLD,
+  allowOf,
   anchorsOf,
   checkLinks,
   checkOldWords,
@@ -12,8 +14,10 @@ import {
   hasUsage,
   isRunnable,
   linksOf,
+  type OldAllow,
   slug,
   tableUnder,
+  unusedAllows,
 } from '../scripts/check_docs';
 
 const files: Record<string, string> = {
@@ -51,12 +55,12 @@ describe('リンクとアンカー', () => {
 });
 
 describe('古い言葉', () => {
-  test('スキルに「deploy_pages.sh で公開」と書くと見つける（--strict で止まる）', () => {
+  test('スキルに「deploy_pages.sh で公開」と書くと止める', () => {
     const out: Finding[] = [];
     checkOldWords('.claude/skills/x/SKILL.md', '公開は deploy_pages.sh で公開する\n', out);
     expect(out).toEqual([
       {
-        level: 'warn',
+        level: 'error',
         check: '古い言葉',
         where: '.claude/skills/x/SKILL.md:1',
         what: expect.stringContaining('deploy_pages.sh で公開'),
@@ -89,6 +93,49 @@ describe('古い言葉', () => {
       checkOldWords(f, 'https://sean-sunagaku.github.io/chalkfile/ npm install dist-media', out);
     }
     expect(out).toEqual([]);
+  });
+
+  test('動かした生成物の前の場所と、前の公開の言い方を見つける', () => {
+    const out: Finding[] = [];
+    const text = [
+      'src/generated/timeline.json を直す',
+      'bash scripts/deploy_pages.sh',
+      'bash scripts/legacy/deploy_pages.sh',
+      'site/media-manifest.json',
+      '講座サイトを GitHub Pages に出す',
+      '動画は gh-pages ブランチにだけ置く',
+      '旧 Pages（gh-pages ブランチ）には、案内だけを置く',
+    ].join('\n');
+    checkOldWords('docs/guide/x.md', text, out);
+    expect(out.map((f) => [f.where, f.what.match(/「(.+?)」/)?.[1]])).toEqual([
+      ['docs/guide/x.md:1', 'src/generated/*.json'],
+      ['docs/guide/x.md:2', 'scripts/deploy_pages.sh'],
+      ['docs/guide/x.md:4', 'site/media-manifest.json'],
+      ['docs/guide/x.md:5', 'GitHub Pages に出す'],
+      ['docs/guide/x.md:6', 'gh-pages に置く'],
+    ]);
+  });
+
+  test('ファイルごとの例外は、書いた言葉だけを許し、使った数を数える', () => {
+    const out: Finding[] = [];
+    const used = new Map<OldAllow, number>();
+    checkOldWords('tests/delivery.test.ts', "migrationUrl('/chalkfile/a/')\nnpm install\n", out, used);
+    expect(out.map((f) => [f.where, f.level])).toEqual([['tests/delivery.test.ts:2', 'error']]);
+    const allow = allowOf('tests/delivery.test.ts', '/chalkfile/');
+    expect(allow?.words).toEqual(['/chalkfile/']);
+    expect(used.get(allow as OldAllow)).toBe(1);
+    expect(allowOf('tests/delivery.test.ts', 'npm install')).toBeUndefined();
+  });
+
+  test('もう古い言葉が無いファイルごとの例外を出す（場所ごとの例外は出さない）', () => {
+    const file: OldAllow = { rx: /^a\.ts$/, words: ['dist-media'], why: 'テスト' };
+    const dir: OldAllow = { rx: /^docs\/history\//, why: 'テスト' };
+    expect(unusedAllows(new Map(), [file, dir])).toEqual([file]);
+    expect(unusedAllows(new Map([[file, 1]]), [file, dir])).toEqual([]);
+  });
+
+  test('例外には、どれも理由がある', () => {
+    for (const a of ALLOW_OLD) expect(a.why.length).toBeGreaterThan(0);
   });
 });
 

@@ -1,6 +1,6 @@
 # 講座を保存して、オフラインで学ぶ
 
-講座サイト（https://chalkfile.com/）を使って学ぶ人への説明。保存の作り（保存の約束・互換の決まり）の正本は、スキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md)。
+講座サイト（https://chalkfile.com/）を使って学ぶ人への説明。保存の作り（保存の約束・互換の決まり）の正本は [保存の設計](../architecture/offline.md)。
 
 ## 講座サイトでできること
 
