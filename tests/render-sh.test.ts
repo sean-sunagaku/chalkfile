@@ -55,12 +55,13 @@ const UNCHANGED = {
 
 /**
  * 300 フレーム（10 秒）の T01 を書き出し、終わったあとの out/・site/ の中身（大きいファイルは大きさだけ）と、偽の道具の呼ばれ方を返す。
- * 上限の正本（site/limits.ts）は本物を写す。limits に中身を渡すとそれに替え、null なら置かない
+ * 上限の正本（site/limits.ts）は本物を写す。limits に中身を渡すとそれに替え、null なら置かない。extra は足すファイル（偽の記録の道具など）
  */
 const render = (
   env: Record<string, string> = {},
   limits: string | null = readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8'),
   timeline: string | null = JSON.stringify({ key: 'T01', durationInFrames: 300, fps: 30 }),
+  extra: Record<string, string> = {},
 ) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-render-'));
   const put = (file: string, text: string) => {
@@ -79,6 +80,7 @@ const render = (
     chmodSync(path.join(dir, 'bin/ffmpeg'), 0o755);
     for (const file of PREVIOUS) put(file, 'old');
     if (limits !== null) put('site/limits.ts', limits);
+    for (const [file, text] of Object.entries(extra)) put(file, text);
     const r = Bun.spawnSync(['bash', 'scripts/render.sh', 'T01'], {
       cwd: dir,
       env: {
@@ -212,5 +214,31 @@ describe('render.sh は、動画の目安と保存の上限を site/limits.ts �
       expect(r.files).toEqual(before);
       expect(r.calls).toEqual([]);
     }
+  });
+});
+
+describe('render.sh は、書き出しの前後に段の記録（scripts/pipeline.ts record render）を流す', () => {
+  // 記録の道具の偽物（呼ばれ方を FAKE_LOG に書く）。本物は .work/state/render/<id>.json を書く
+  const FAKE_PIPELINE = `import { appendFileSync } from 'node:fs';
+appendFileSync(process.env.FAKE_LOG ?? '', \`pipeline \${process.argv.slice(2).join(' ')}\\n\`);
+`;
+  test('書き出す前に --begin、全部の出力を置き換えたあとで記録する（字幕版もできてから）', () => {
+    const r = render({ CAPTIONS: '1' }, undefined, undefined, { 'scripts/pipeline.ts': FAKE_PIPELINE });
+    expect(r.code).toBe(0);
+    const order = r.calls.map((c) => c.split(' ')[0] + (c.startsWith('pipeline') ? ` ${c.split(' ').slice(1).join(' ')}` : ''));
+    expect(order[0]).toBe('pipeline record render --begin T01');
+    expect(order[order.length - 1]).toBe('pipeline record render T01');
+    expect(order.filter((c) => c.startsWith('remotion'))).toHaveLength(2);
+  });
+  test('書き出しに失敗したら、記録しない（--begin だけ）', () => {
+    const r = render({ FAKE_REMOTION: 'fail' }, undefined, undefined, { 'scripts/pipeline.ts': FAKE_PIPELINE });
+    expect(r.code).not.toBe(0);
+    expect(r.calls.filter((c) => c.startsWith('pipeline'))).toEqual(['pipeline record render --begin T01']);
+  });
+  test('記録の道具が失敗しても、書き出しは止めない（知らせるだけ）', () => {
+    const r = render({}, undefined, undefined, { 'scripts/pipeline.ts': 'process.exit(1);\n' });
+    expect(r.code).toBe(0);
+    expect(r.stderr).toContain('注意: --begin T01: 書き出しの記録を書けなかった');
+    expect(r.files['site/media/T01.mp4']).toBe('encoded');
   });
 });

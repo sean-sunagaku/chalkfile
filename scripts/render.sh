@@ -92,6 +92,11 @@ site_encode() {
     big="$big $2"
   fi
 }
+# 書き出しの記録（.work/state/render/<id>.json。npm run chalk -- status と build が読み、media push が動画の一覧の inputs に写す）。
+# --begin で書き出す前の入力の指紋を置き、書き出し終えたら比べてから記録する。記録できなくても、書き出しは止めない
+record() {
+  if [ -f scripts/pipeline.ts ]; then bun scripts/pipeline.ts record render "$@" || echo "注意: $*: 書き出しの記録を書けなかった" >&2; fi
+}
 # CHUNK=1500 のように渡すと、その枚数ずつ分けて書き出して最後につなぐ。
 # Remotion は書き出し中のフレームを一時フォルダに JPEG で置く（5 分で 1〜2GB）ので、ディスクの空きが少ないとき用
 CHUNK=${CHUNK:-0}
@@ -111,6 +116,7 @@ for id in "${ids[@]}"; do
   if [ "${CAPTIONS:-0}" != "1" ] && [ -e "site/media/$id.cc.mp4" ]; then
     echo "注意: $id: 字幕つきの版（site/media/$id.cc.mp4）は作り直さず、前のままです。そろえるなら CAPTIONS=1 を付ける" >&2
   fi
+  record --begin "$id"
   if [ "$CHUNK" -gt 0 ]; then
     total=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["durationInFrames"])' "$tl")
     list="out/master/$id.parts.txt"
@@ -153,6 +159,7 @@ for id in "${ids[@]}"; do
     site_encode "out/master/$id.cc.mp4" "site/media/$id.cc.mp4" "$id"
     echo "$id: サイト用の字幕つき crf=$crf  $(( size / 1024 / 1024 )) MB"
   fi
+  record "$id"
 done
 if [ -n "$over" ]; then echo "警告: crf 29 でもサイト用の目安（$(( TARGET / 1024 )) KiB）を超えた動画があります:$over" >&2; fi
 if [ -n "$big" ]; then echo "警告: 保存の 1 ファイルの上限（$(( MAX_FILE / 1024 / 1024 )) MiB）を超えた動画があります（動画を短く分ける）:$big" >&2; fi

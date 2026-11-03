@@ -16,6 +16,22 @@
 
 - 声も動画も変えない PR（サイト・Worker・文書・エンジンの整理）は、3〜6 を飛ばす。PR の前の確かめ方は、下の「サイトと Worker を変えたとき」
 - 台詞を変えず、図や画面の要素だけを直したときは、3 と 4 は要らない（声が変わらない）
+- どの段が古いかは、いつでも `npm run chalk -- status` で見られる。3・5 と教材・サイトは、`npm run chalk -- build --to <段>` で、古くなったものだけを順に流せる（下の「段の状態を見て、古い段だけを流す」）
+
+## 段の状態を見て、古い段だけを流す（status・build --to）
+
+```bash
+npm run chalk -- status                                  # 段ごとの新しい・古い・記録が無い、古い理由、次に流す段（何も作らない）
+npm run chalk -- status --course <講座 ID> --json        # 講座で絞る。AI・ほかの道具が読む形
+npm run chalk -- build --to site --dry-run               # 流すものだけを見る
+npm run chalk -- build --to site                         # 声と時刻（synth）→ サイト（build_site）の、古いものだけ
+npm run chalk -- build --to render --video <ID…>         # 声と時刻 → ミックス → 動画（render.sh）の、古いものだけ
+```
+
+- 段は `voice`（synth）・`mix`（mix.py）・`render`（render.sh）・`docs`（build_materials）・`site`（build_site）。`build --to` は、その段と前の段を、前から順に流す。入力（台本・声・時刻・ミックスの音・道具のコードなど）の指紋が記録と同じで、出力も記録のとおりなら流さない。指紋に入れるものと記録の置き場所は [全体図](../architecture/overview.md) の「段と記録」
+- 記録は、`build` が流したあとと、`npm run mix`（`npm run chalk -- mix`）・`render.sh`（`npm run render` と `npm run chalk -- render`）が流したあとに書く。`npm run synth` は記録を書かないので、あとの `build` が synth をもう一度流す（数秒で、同じ出力になる）
+- 記録が無い動画（この仕組みより前に書き出した動画）は、書き出し直さない（今の動画を残す）。台本を直した動画は `--force --video <ID>` で書き出す。描き方のコード（`src/`・`engine/`・Remotion の版など）だけが変わった動画も、既定では書き出さない（見た目が変わる直しは、まとめて書き出す。そのときは `--src`）
+- 声を作らずに流すときは `--cached-only`（素材の声だけを使う）。全部を流し直すときは `--force`
 
 ## 1. 台本を commit する
 
@@ -63,7 +79,8 @@ npm run mix -- <ID…>
 CAPTIONS=1 npm run render -- <ID…>         # 字幕を焼き込んだ版も作る（お笑い版では必ず）
 ```
 
-- render は、動画を `site/media/` に、ポスターを講座のフォルダ（`content/<講座>/generated/posters/<ID>.jpg`）に書く
+- render は、動画を `site/media/` に、ポスターを講座のフォルダ（`content/<講座>/generated/posters/<ID>.jpg`）に書く。書き出した動画ごとに、書き出しの記録（`.work/state/render/<ID>.json`）も書く
+- mix と render の代わりに、`npm run chalk -- build --to render --video <ID…>` でもよい（古いものだけを流す。掛け合いの講座は字幕を焼き込んだ版も作る）。書き出す前に `npm run chalk -- status` で、どれが古いかを見られる
 - 6 の `media push --course <講座 ID>` は、その講座の通常版が全部手元にないと止まる（ほかの講座の動画は要らない）。字幕版は、手元に無いと動画の一覧から外れ、サイトに出なくなる。だから、同じ講座の作り直さない動画は、先に `media.ts pull <講座 ID>` でそろえる
 - `media.ts pull` は、手元の動画が動画の一覧と違うと止まる（上書きしない）。作り直したあとに流すと、作り直した動画で止まる。render より前に流す
 - 書き出したら確かめる。読み・静止画・長さ・サイトの見え方は、スキルの [SKILL.md](../../.claude/skills/study-video-course/SKILL.md) の「5. 確かめる」と、[new-course.md](../guide/new-course.md) の「確かめる」
@@ -81,6 +98,8 @@ npm run media:check
 - 書き換えるのは、選んだ講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけ。ほかの講座の一覧には触らない。ほかの講座の手元の動画が一覧と違えば、知らせるだけ
 - 古いハッシュの動画は消さず、その講座の動画の一覧の `retained` に回す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
 - push は、前の手順で `site/media/<ID>.jpg` にだけあるポスターを講座のフォルダに写し、選んだ講座の全部の asset を確かめてから、その講座の動画の一覧を書き換える
+- 書き出しの記録のある動画は、一覧の項目に `inputs`（書き出したときの台本の側と描き方の側の指紋）を書く（一覧の版 2）。同じ動画を置き直すときは、前の一覧の `inputs` を引き継ぐ。記録の無い動画は、知らせて `inputs` を書かない
+- 書き出したあとで台本が変わった動画があると、Releases に何も置かずに止まる（書き出し直してから push する）。描き方のコードだけが変わったときは、知らせて置く
 - gh が失敗したときは、gh のエラーの出力を、token・Authorization・署名つきの URL を伏せてから出す
 - check は、公開した asset があることと、その大きさと SHA-256、手元の動画の SHA-256 を照らし合わせる
 - **動画は merge の前に、公開の Releases に置かれる**。サイトからはまだリンクされないが、置いた時点で誰でも取れる。見直す前の動画を置かない。PR の見直しで直したら、作り直してもう一度 push する（前のハッシュは `retained` に残る）
@@ -91,7 +110,7 @@ npm run media:check
 |---|---|
 | `content/<講座>/generated/timeline/<key>.json` | synth |
 | `content/<講座>/generated/posters/<key>.jpg` | render |
-| `content/<講座>/generated/media.<言語>.json`（その講座の動画の一覧） | `media push --course <講座 ID>` |
+| `content/<講座>/generated/media.<言語>.json`（その講座の動画の一覧。書き出しの記録のある動画は `inputs` も） | `media push --course <講座 ID>` |
 | `docs/courses/`（読む教材・AI チャット用のチャンク） | `npm run build:materials`（台本と timeline から作る。ずれは `npm run check` の `check:materials` と CI が止める） |
 | `tests/fixtures/snapshots/`（音声の鍵と読み） | `bun scripts/snapshots.ts --update`。台詞・読み・声を変えたときと、動画を足したとき。PR に「合成し直しが要る」と書く |
 
@@ -107,7 +126,7 @@ npm run build:site -- --strict      # merge で動く Actions と同じ組み立
 
 - PR は、テンプレート（`.github/pull_request_template.md`）の項目を埋める。新しい講座のときに書くことは [new-course.md](../guide/new-course.md) の「PR に書くこと」
 - merge すると、Actions（`ci.yml`）が次の順に流す。どこかで止まったら、公開しない。ジョブの中身と理由は [CI の形](ci.md)
-  1. `check`: `npm run check` と同じ点検（lint・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検）
+  1. `check`: `npm run check` と同じ点検（lint・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検）。台本と公開の検証は、公開した動画が今の台本で書き出したものかも見る（[CI の形](ci.md)）
   2. `build`: 素材ブランチから声を取り出し、`synth --cached-only` で時刻とサイトのデータを作る（声を合成しない）→ `media.ts check` で動画の一覧と Releases を照らす → `gen.ts --media` で Worker の許可リスト（講座ごとの動画の一覧をつないだもの。Git に入れない）を作る → `build_site.ts --strict` で組み立て、`check_delivery.ts` で点検する → 組み立てた公開物を artifact に残す
   3. `e2e`（合成の講座で、ブラウザのテスト）と `smoke`（build の artifact を手元の Worker で配って確かめる）
   4. `deploy`: build の artifact を、build が出した sha256 の一覧と照らしてから `wrangler deploy` で出す。公開したページが組み立てたものと同じか・全部の動画の Range（`verify_public.ts`）・HTML の smoke（`tests/worker-site-smoke.ts`）を確かめ、通らなければ前の版に戻す
