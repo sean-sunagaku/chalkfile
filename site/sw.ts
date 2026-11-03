@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { byteRange, COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
-import type { Asset, CourseManifest, CourseStatus, DownloadProgress, SavedRecord, SavedVersion } from './offline-shared';
+import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineReply, OfflineRequest, SavedRecord, SavedVersion } from './offline-shared';
 
 /** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。例 en → /chalkfile-media-en/） */
 declare const __BUILD_CONFIG__: { build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string> };
@@ -220,7 +220,7 @@ async function download(f: Asset, signal: AbortSignal, onBytes: (bytes: number) 
 }
 
 async function broadcast(): Promise<void> {
-  for (const c of await sw.clients.matchAll()) c.postMessage({ protocol: 1, type: 'CHANGED' });
+  for (const c of await sw.clients.matchAll()) c.postMessage({ protocol: 1, type: 'CHANGED' } satisfies OfflineBroadcast);
 }
 
 async function save(id: string, report: (p: DownloadProgress) => void): Promise<void> {
@@ -306,7 +306,8 @@ sw.addEventListener('activate', (event) => event.waitUntil((async () => { await 
 
 sw.addEventListener('message', (event) => {
   const port = event.ports[0];
-  const data = event.data;
+  // 頼みごとの形は offline-shared.ts の OfflineRequest。古いページや、ほかのページからも来るので、項目があるとは限らない（ここで確かめる）
+  const data: Partial<OfflineRequest> | null | undefined = event.data;
   const source = event.source as Client | null;
   if (!port || !source?.url.startsWith(scope) || data?.protocol !== 1) return;
   event.waitUntil((async () => {
@@ -314,23 +315,23 @@ sw.addEventListener('message', (event) => {
       if (data.type === 'STATUS') {
         const courses = await statuses();
         await cleanup();
-        port.postMessage({ ok: true, courses });
+        port.postMessage({ ok: true, courses } satisfies OfflineReply<'STATUS'>);
       } else {
         const id = data.id;
         if (typeof id !== 'string' || !COURSE_ID.test(id)) throw new OfflineError('pick');
-        if (data.type === 'CHECK') port.postMessage({ ok: true, manifest: await fetchManifest(id) });
+        if (data.type === 'CHECK') port.postMessage({ ok: true, manifest: await fetchManifest(id) } satisfies OfflineReply<'CHECK'>);
         else if (data.type === 'SAVE') {
-          await save(id, (progress) => port.postMessage({ progress }));
-          port.postMessage({ ok: true });
+          await save(id, (progress) => port.postMessage({ progress } satisfies OfflineReply<'SAVE'>));
+          port.postMessage({ ok: true } satisfies OfflineReply<'SAVE'>);
         } else if (data.type === 'CANCEL') {
           const job = jobs.get(id);
           if (job) { job.cancelled = true; job.controller.abort(); }
-          port.postMessage({ ok: true });
-        } else if (data.type === 'DELETE') { await remove(id); port.postMessage({ ok: true }); }
+          port.postMessage({ ok: true } satisfies OfflineReply<'CANCEL'>);
+        } else if (data.type === 'DELETE') { await remove(id); port.postMessage({ ok: true } satisfies OfflineReply<'DELETE'>); }
         else throw new OfflineError('unknownOp');
       }
     } catch (e) {
-      port.postMessage({ ok: false, error: messageOf(e, typeof data.lang === 'string' ? data.lang : 'ja') });
+      port.postMessage({ ok: false, error: messageOf(e, typeof data.lang === 'string' ? data.lang : 'ja') } satisfies OfflineReply);
     }
   })());
 });
