@@ -6,6 +6,9 @@ import {
   checkSavedVersion, parseQuarantineName, parseRecord, planCleanup, QUARANTINE_DAYS, quarantineName, recordCaches, validateManifest,
   type CleanupInput, type SavedRecord,
 } from '../site/offline-shared';
+import {
+  type KeyValueStore, type Learning, openStore, readPrefs, readProgress, STORE_VERSION, storagePrefix,
+} from '../site/page/storage';
 
 // 利用者が保存した記録（tests/fixtures/saved-records/<日付>/）を、今の読み込みが全部受け入れることを確かめる。
 // 落ちたら、保存した講座が読めなくなる（隔離のあと 30 日で消える）。検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。
@@ -136,5 +139,104 @@ describe('cleanup の片付けと隔離（planCleanup）', () => {
   test('activate のときだけ、今の shell 以外の shell を消す', () => {
     expect(planCleanup(base([`${prefix}shell:old`]))).toEqual({ remove: [], create: [] });
     expect(planCleanup(base([`${prefix}shell:old`], { oldShell: true }))).toEqual({ remove: [`${prefix}shell:old`], create: [] });
+  });
+});
+
+// 学習の記録（localStorage）。見本（tests/fixtures/local-storage/<日付>.json）は、前の版の講座のページが書いたもの。
+// 今の画面（site/page/storage.ts）が全部を読めること、今の画面が書き直した記録を前の版の画面も読めること（保存した前の版・
+// 無効にした版をオフラインで開いたときに、同じ鍵を読み書きする）を確かめる。落ちたら、読み方を戻すか、読むときに変えるコードを足す。fixture を書き換えて通さない
+type LocalFixture = { lang: string; course: string; lectures: string[]; storage: Record<string, string> };
+const localFixtures = path.join(import.meta.dir, 'fixtures/local-storage');
+const memory = (init: Record<string, string> = {}) => {
+  const map = new Map(Object.entries(init));
+  const storage: KeyValueStore = { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v) };
+  return { map, storage };
+};
+
+describe('学習の記録（localStorage）の互換', () => {
+  for (const file of readdirSync(localFixtures).filter((f) => f.endsWith('.json'))) {
+    const fixture = read<LocalFixture>(path.join(localFixtures, file));
+    const prefix = storagePrefix(fixture.lang, fixture.course);
+    const old = (name: string) => JSON.parse(fixture.storage[`${prefix}${name}`]) as unknown;
+
+    test(`${file}: 前の形の記録を、今の画面が落とさずに読む`, () => {
+      const store = openStore(memory(fixture.storage).storage, prefix);
+      const learning = store.read();
+      expect(learning.progress).toEqual(old('progress') as Learning['progress']);
+      expect(learning.notes).toEqual(old('notes') as Learning['notes']);
+      expect(learning.quiz).toEqual(old('quiz') as Learning['quiz']);
+      expect(learning.prefs).toEqual(old('prefs') as Learning['prefs']);
+      expect(store.last()).toBe(old('last') as string);
+      expect(store.tab()).toBe(old('tab') as string);
+      expect(fixture.lectures).toContain(store.last() ?? '');
+    });
+
+    test(`${file}: 今の画面が書き直した記録には版の番号が入り、前の版の画面も同じ項目を読める`, () => {
+      const { map, storage } = memory(fixture.storage);
+      const store = openStore(storage, prefix);
+      const learning = store.read();
+      store.saveProgress(learning.progress);
+      store.saveNotes(learning.notes);
+      store.saveQuiz(learning.quiz);
+      store.savePrefs(learning.prefs);
+      for (const name of ['progress', 'notes', 'quiz', 'prefs']) {
+        const written = JSON.parse(map.get(`${prefix}${name}`) ?? 'null') as Record<string, unknown>;
+        expect(written.v).toBe(STORE_VERSION);
+        // 前の版の画面は、値の中のレクチャー ID（prefs は rate・cc・follow）の項目だけを引く
+        for (const [k, v] of Object.entries(old(name) as Record<string, unknown>)) expect(written[k]).toEqual(v);
+      }
+      // 版の番号を入れた記録も、今の画面は同じに読む
+      expect(openStore(storage, prefix).read()).toEqual(learning);
+    });
+  }
+
+  test('鍵の頭は前と同じ（日本語は言語を付けない。訳の講座は言語を付けて分ける）', () => {
+    expect(storagePrefix('ja', 'stripe-billing')).toBe('chalkfile:stripe-billing:');
+    expect(storagePrefix('en', 'pstack-comedy')).toBe('chalkfile:en/pstack-comedy:');
+  });
+
+  test('前の形の、項目の足りない記録（完了の札だけ・max の無いもの）を補って読む', () => {
+    expect(readProgress({ L01: { done: true, t: 0 }, L02: { t: 0, max: 0, done: true }, L03: { t: 12.5, max: 0.4 } })).toEqual({
+      L01: { t: 0, max: 0, done: true },
+      L02: { t: 0, max: 0, done: true },
+      L03: { t: 12.5, max: 0.4, done: false },
+    });
+    expect(readPrefs({ rate: 1.25 })).toEqual({ rate: 1.25, cc: true, follow: true });
+  });
+
+  test('壊れた記録・知らない形を読んでも止めず、読めない所だけを落とす', () => {
+    const { storage } = memory({
+      'chalkfile:x:progress': '{"L01":"x","L02":{"t":"5","max":2,"done":"yes"},"v":9}',
+      'chalkfile:x:notes': '{"L01":[{"t":4,"text":"残す"},{"t":1,"text":""},null,"x"],"L02":"x"}',
+      'chalkfile:x:quiz': '{"L01":{"0":2,"a":1,"1":-1,"2":1.5},"L02":[]}',
+      'chalkfile:x:prefs': '{"rate":3,"cc":"no","follow":false}',
+      'chalkfile:x:last': '7',
+      'chalkfile:x:tab': '{',
+    });
+    const store = openStore(storage, 'chalkfile:x:');
+    expect(store.read()).toEqual({
+      progress: { L02: { t: 0, max: 1, done: false } },
+      notes: { L01: [{ t: 4, text: '残す', at: 0 }] },
+      quiz: { L01: { '0': 2 } },
+      prefs: { rate: 1, cc: true, follow: false },
+    });
+    expect(store.last()).toBeNull();
+    expect(store.tab()).toBeNull();
+  });
+
+  test('localStorage を使えない（null・読み書きで例外）ときは、既定の値を返し、書けなくても止めない', () => {
+    const throwing: KeyValueStore = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    };
+    for (const storage of [null, throwing]) {
+      const store = openStore(storage, 'chalkfile:x:');
+      expect(store.read()).toEqual({ progress: {}, notes: {}, quiz: {}, prefs: { rate: 1, cc: true, follow: true } });
+      expect(() => store.saveProgress({ L01: { t: 1, max: 0.1, done: false } })).not.toThrow();
+    }
   });
 });

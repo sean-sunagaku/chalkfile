@@ -1,6 +1,6 @@
 // ページの CSP（meta の Content-Security-Policy）。script-src には、組み立てが入れる信頼できる script のハッシュだけを、
 // 描く前に計算して書く（組み上がった HTML の中の <script> から集めると、エスケープし忘れて紛れ込んだ script も許してしまう）。
-// 信頼できる script は 3 本: www の移動（下の定数）・講座のページの本体（site/template.html の script）・offline-client（bundle）。
+// 信頼できる script は 3 本: www の移動（下の定数）・講座のページの画面（site/course-page.ts の bundle）・offline-client（bundle）。
 // 最終の HTML で動く script がこの 3 本のどれかで、CSP と過不足なく合うかは、組み立ての最後に scripts/site-invariants.ts が確かめる。
 // 保存版のページは SW が応答のヘッダーを作り直すので、CSP は HTTP のヘッダーではなく meta に書く
 import { createHash } from 'node:crypto';
@@ -40,20 +40,4 @@ export const cspPolicy = (hashes: readonly string[]) =>
 export const cspHead = (scripts: readonly string[]): Html => {
   const hashes = [WWW_REDIRECT_SCRIPT, ...scripts].map(scriptHash);
   return html`<meta http-equiv="Content-Security-Policy" content="${cspPolicy(hashes)}">${inlineScript(WWW_REDIRECT_SCRIPT)}`;
-};
-
-/**
- * 講座のページのテンプレートから、ページの本体の script（属性の無い <script> がちょうど 1 つ）を取り出し、その場所を __PAGE_SCRIPT__ にする。
- * 取り出した本体は、CSP のハッシュを先に計算する信頼できるソースの 1 つ
- */
-export const splitPageScript = (template: string, where: string): { template: string; script: string } => {
-  const blocks = [...template.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-  if (blocks.length !== 1)
-    throw new Error(`${where} に、ページの本体の script（属性の無い <script>）が 1 つではなく ${blocks.length} ある`);
-  const [block] = blocks;
-  const at = block.index ?? 0;
-  return {
-    template: `${template.slice(0, at)}__PAGE_SCRIPT__${template.slice(at + block[0].length)}`,
-    script: block[1],
-  };
 };

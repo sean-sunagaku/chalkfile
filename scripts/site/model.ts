@@ -1,10 +1,12 @@
 // 講座のページに入れるデータ（純粋。ファイルを読み書きしない）。台本（Course）と講義のデータ（synth.ts が書く site/data/<key>.json）から、
-// ページの中の JSON（template.html の __COURSE_JSON__。画面の JS が読む）の形を作る。講義のデータは呼ぶ側が読んで渡す
+// ページの中の JSON（template.html の __COURSE_JSON__。画面の site/course-page.ts が読む）の形を作る。講義のデータは呼ぶ側が読んで渡す。
+// 形の正本は画面の側の site/page/data.ts の CourseData（courseJson が satisfies で確かめる）
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { ChapterMaterial, Course, Source, VoiceId } from '../../content/types';
 import { creditsIn, SITE_CREDITS } from '../../content/voices';
 import type { SiteText } from '../../site/i18n';
 import { type MediaEntry, mediaPath } from '../../site/media-shared';
+import type { CourseData } from '../../site/page/data';
 import { PAGE_VERSION_MARK } from '../site-version';
 import type { SiteConfig } from '../validate';
 import { type Html, jsonHtml } from './html';
@@ -159,5 +161,5 @@ export const courseJson = (o: {
         videoCc: cc ? mediaPath(cc) : '',
       };
     }),
-  });
+  } satisfies CourseData);
 };

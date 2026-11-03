@@ -1,5 +1,6 @@
 import type { CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineOperation, OfflineReply, OfflineResults } from './offline-shared';
 import type { SiteText } from './i18n';
+import { OFFLINE_STATE, type OfflineState } from './page/events';
 
 type AppData = {
   root: string;
@@ -122,7 +123,8 @@ function render() {
     const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
     $('offlineReload').hidden = !changed;
     if (changed) message(T.ocSwitched);
-    window.dispatchEvent(new CustomEvent('chalkfile:offline-state', { detail: {
+    // 講座のページの画面（site/course-page.ts の player）が、再生の状態の文に使う
+    window.dispatchEvent(new CustomEvent<OfflineState>(OFFLINE_STATE, { detail: {
       saved: !!saved, pageVersion: saved?.manifest.pageVersion, incomplete: status?.incomplete, online: navigator.onLine,
     } }));
   }

@@ -17,6 +17,7 @@
       "scripts/**",
       "site/*.ts",
       "site/lib/*.ts",
+      "site/page/*.ts",
       "site/*.json",
       "worker/**",
       "tests/**",

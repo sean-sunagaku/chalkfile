@@ -43,8 +43,12 @@ function icon(size: number, t: Theme): Buffer {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('IDAT', deflateSync(pixels)), chunk('IEND', Buffer.alloc(0))]);
 }
 
+/**
+ * ページに入れる script を 1 本にまとめる（講座のページの画面と offline-client）。1 つのページに 2 本を入れるので、それぞれを関数で包む
+ * （iife。包まないと、両方の一番上の名前が同じ大域の変数になり、あとの script が前の script の値を書き換える）
+ */
 export async function bundle(file: string): Promise<string> {
-  const result = await Bun.build({ entrypoints: [file], target: 'browser', minify: false });
+  const result = await Bun.build({ entrypoints: [file], target: 'browser', format: 'iife', minify: false });
   if (!result.success) throw new Error(result.logs.join('\n'));
   return result.outputs[0].text();
 }

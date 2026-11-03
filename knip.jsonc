@@ -7,7 +7,8 @@
     // 動画（Remotion の入口）
     "src/index.ts",
     "remotion.config.ts",
-    // サイトの画面と SW。scripts/build_site.ts・pwa.ts・build_migration.ts が Bun.build で 1 本にまとめる
+    // サイトの画面と SW。scripts/site/build.ts・pwa.ts・build_migration.ts が Bun.build で 1 本にまとめる
+    "site/course-page.ts",
     "site/offline-client.ts",
     "site/sw.ts",
     "site/legacy-sw.ts",
@@ -20,6 +21,7 @@
     "scripts/**/*.ts",
     "site/*.ts",
     "site/lib/*.ts",
+    "site/page/*.ts",
     "worker/src/**/*.ts",
     "tests/**/*.ts",
     "*.ts"

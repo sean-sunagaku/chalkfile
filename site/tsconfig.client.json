@@ -1,8 +1,8 @@
 {
-  // 画面の側（ページで動く offline-client.ts と、その文字の i18n.ts）。DOM の型だけで見る。SW の型（ServiceWorkerGlobalScope など）は使えない。
+  // 画面の側（ページで動く course-page.ts と page/・offline-client.ts と、その文字の i18n.ts）。DOM の型だけで見る。SW の型（ServiceWorkerGlobalScope など）は使えない。
   // 共有のモジュール（offline-shared.ts・media-shared.ts・lib/）は、tsconfig.sw.json からも見る（どちらの型でも通ること）
   "extends": "../tsconfig.json",
   "compilerOptions": { "lib": ["DOM", "ES2022"] },
-  "include": ["*.ts", "lib/*.ts"],
+  "include": ["*.ts", "lib/*.ts", "page/*.ts"],
   "exclude": ["sw.ts", "legacy-sw.ts"]
 }

@@ -19,7 +19,7 @@ import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version'
 import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../validate';
 import { copyAssets, thumbnailAssets } from './assets';
 import { realPosterOf, SITE_DIR, siteBase } from './config';
-import { cspHead, splitPageScript, WWW_REDIRECT_SCRIPT } from './csp';
+import { cspHead, WWW_REDIRECT_SCRIPT } from './csp';
 import { cleanOutput, listOutput, writeCourse } from './emit';
 import { NOT_FOUND_HTML, writeServingFiles } from './headers';
 import { fillTemplate } from './html';
@@ -105,11 +105,10 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const problems = siteProblems(config, coursesIn);
   if (problems.length) throw new Error(problems.join('\n'));
 
-  // ページの本体の script は、テンプレートから取り出しておく（CSP のハッシュを先に計算する、信頼できるソースの 1 つ）
-  const { template, script: pageScript } = splitPageScript(
-    readFileSync(path.join(SITE_DIR, 'template.html'), 'utf8'),
-    'site/template.html',
-  );
+  // 講座のページの画面（site/course-page.ts）と保存の画面（site/offline-client.ts）は、Bun で 1 本ずつにまとめてページに入れる
+  // （CSP のハッシュを先に計算する、信頼できるソース。保存版の HTML が 1 枚で完結する）
+  const template = readFileSync(path.join(SITE_DIR, 'template.html'), 'utf8');
+  const pageScript = await bundle(path.join(SITE_DIR, 'course-page.ts'));
   const home = readFileSync(path.join(SITE_DIR, 'home.html'), 'utf8');
   const offlineCss = readFileSync(path.join(SITE_DIR, 'offline.css'), 'utf8');
   const app: AppContext = {
@@ -256,7 +255,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
-  // ページで動く script は、信頼できる 3 本（www の移動・講座のページの本体・offline-client）のどれかでなければ止める
+  // ページで動く script は、信頼できる 3 本（www の移動・講座のページの画面・offline-client）のどれかでなければ止める
   assertSiteInvariants({
     dist,
     scope: base,

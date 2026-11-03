@@ -1,6 +1,6 @@
 // 講座サイトの組み立て（scripts/site/build.ts の buildSite）を、合成の講座（tests/fixtures/content/site-sample）で確かめる。
 // 出力のスナップショット（tests/fixtures/content/site-sample/snapshot.json）と比べ、出力が変わったら落ちる。
-// bundle（offline-client と sw.js）・アイコンの PNG・ハッシュと大きさは、Bun の版で変わるので正規化してから比べる。
+// bundle（講座のページの画面・offline-client・sw.js）・アイコンの PNG・ハッシュと大きさは、Bun の版で変わるので正規化してから比べる。
 // わざと出力を変えたときは、UPDATE_SITE_SNAPSHOT=1 bun test tests/site-build.test.ts で作り直す（本物の講座の site/dist が変わる直しなら、
 // サイトの版が変わる。保存した人に「新しい版」が出るので、まとめて出す回に入れる）
 import { afterAll, describe, expect, test } from 'bun:test';
@@ -14,7 +14,7 @@ import type { Course } from '../content/types';
 import { bundle } from '../scripts/pwa';
 import { type BuildSiteOptions, buildSite, disabledRevisionProblems } from '../scripts/site/build';
 import { heroSnippetOf } from '../scripts/site/config';
-import { scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
+import { scriptHash, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 import { type MediaEntry, mediaFilename } from '../site/media-shared';
 import { resolveCourse } from '../content/lines';
 import SAMPLE from './fixtures/content/site-sample';
@@ -71,23 +71,29 @@ const buildSample = async (over: Partial<BuildSiteOptions> = {}) => {
 
 const sha256 = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
 
+/** ページに入れる bundle（講座のページの画面と offline-client） */
+const bundles = async () => ({
+  pageScript: await bundle(path.join(ROOT, 'site/course-page.ts')),
+  offlineClient: await bundle(path.join(ROOT, 'site/offline-client.ts')),
+});
+
 /**
  * 1 ファイルの正規化した指紋。bundle（sw.js）とアイコン（PNG の圧縮）は、在ることだけを見る。
- * 文字のファイルは、offline-client の bundle・CSP のハッシュ・sha256（版・revision・ファイルの中身）・保存の manifest の大きさを印にしてから
+ * 文字のファイルは、ページに入れる bundle・CSP のハッシュ・sha256（版・revision・ファイルの中身）・保存の manifest の大きさを印にしてから
  */
-const fingerprintOf = (rel: string, data: Buffer, offlineClient: string): string => {
+const fingerprintOf = (rel: string, data: Buffer, b: { pageScript: string; offlineClient: string }): string => {
   if (rel === 'sw.js' || rel.startsWith('icons/')) return 'present';
   if (!/\.(html|json|webmanifest)$|(^|\/)(_headers|\.assetsignore|\.nojekyll)$/.test(rel)) return sha256(data);
-  let text = data.toString('utf8').split(offlineClient).join('<offline-client>');
+  let text = data.toString('utf8').split(b.pageScript).join('<course-page>').split(b.offlineClient).join('<offline-client>');
   text = text.replace(/'sha256-[A-Za-z0-9+/=]+'/g, "'sha256-<hash>'").replace(/[a-f0-9]{64}/g, '<sha256>');
   if (rel.endsWith('offline-manifest.json')) text = text.replace(/"bytes":\d+/g, '"bytes":0');
   return sha256(text);
 };
 
 const snapshotOf = async (outDir: string, files: { name: string }[]) => {
-  const offlineClient = await bundle(path.join(ROOT, 'site/offline-client.ts'));
+  const b = await bundles();
   const names = files.map((f) => f.name.split(path.sep).join('/')).sort();
-  return Object.fromEntries(names.map((n) => [n, fingerprintOf(n, readFileSync(path.join(outDir, n)), offlineClient)]));
+  return Object.fromEntries(names.map((n) => [n, fingerprintOf(n, readFileSync(path.join(outDir, n)), b)]));
 };
 
 /** 台本の抜き出しの行が、file の続いた行と合うか（長い行は「, … },」の前まで）。合わなければ、その行 */
@@ -148,10 +154,9 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     ).rejects.toThrow('動画の一覧がありません: ja/site-sample/Y02');
   });
 
-  test('CSP の script-src は、ページに入れる信頼できる script（www の移動・本体・offline-client）のハッシュだけ', async () => {
+  test('CSP の script-src は、ページに入れる信頼できる script（www の移動・画面・offline-client）のハッシュだけ', async () => {
     const { outDir } = await buildSample();
-    const offlineClient = await bundle(path.join(ROOT, 'site/offline-client.ts'));
-    const { script: pageScript } = splitPageScript(readFileSync(path.join(ROOT, 'site/template.html'), 'utf8'), 't');
+    const { pageScript, offlineClient } = await bundles();
     const scriptSrc = (rel: string) =>
       /script-src ([^;]+);/.exec(readFileSync(path.join(outDir, rel), 'utf8'))?.[1].split(' ') ?? [];
     expect(scriptSrc('site-sample/index.html')).toEqual(
@@ -159,6 +164,13 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     );
     expect(scriptSrc('index.html')).toEqual([WWW_REDIRECT_SCRIPT, offlineClient].map(scriptHash));
     expect(scriptSrc('404.html')).toEqual([scriptHash(WWW_REDIRECT_SCRIPT)]);
+  });
+
+  test('ページに入れる 2 本の script（画面と offline-client）は、それぞれ関数で包む（一番上の名前を大域の変数にしない）', async () => {
+    for (const code of Object.values(await bundles())) {
+      expect(code).toMatch(/^\(\(\)\s*=>\s*\{/);
+      expect(code).toMatch(/\}\)\(\);?\s*$/);
+    }
   });
 
   test('台本に置き換えの印（__DOCS_NOTE__・{{tabQuiz}}・__COURSE_JSON__）や </script> を書いても、組み立てが壊れない', async () => {

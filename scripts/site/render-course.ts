@@ -1,5 +1,5 @@
 // 講座のページ（site/template.html）を描く（純粋）。印は 1 回の走査で置き換える（scripts/site/html.ts の fillTemplate）。
-// 版の印（scripts/site-version.ts）は入れたまま描く。CSP は、ページに入れる script（本体と offline-client）から先に作る（csp.ts）
+// 版の印（scripts/site-version.ts）は入れたまま描く。CSP は、ページに入れる script（画面と offline-client）から先に作る（csp.ts）
 import { LANG_INFO, type Lang } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
 import type { SiteText } from '../../site/i18n';
@@ -12,9 +12,9 @@ import { type LectureModel, plain } from './model';
 import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } from './parts';
 
 export type CoursePageInput = {
-  /** site/template.html の中身から、ページの本体の script を __PAGE_SCRIPT__ にしたもの（csp.ts の splitPageScript） */
+  /** site/template.html の中身（画面の script は __PAGE_SCRIPT__ の所に入れる） */
   template: string;
-  /** ページの本体の script（csp.ts の splitPageScript が取り出したもの） */
+  /** 講座のページの画面（site/course-page.ts を bundle したもの） */
   pageScript: string;
   /** offline-client.ts を bundle したもの（保存機能の部品の script と同じ） */
   offlineClient: string;
@@ -56,7 +56,7 @@ export const renderCoursePage = (p: CoursePageInput): string => {
   const url = `${p.base}${cid}/`;
   const firstPoster = `${url}media/${p.lectures[0].key}.jpg`;
   const marks = {
-    // CSP の script-src は、このページに入れる script（文書の順に、本体・offline-client）のハッシュ
+    // CSP の script-src は、このページに入れる script（文書の順に、画面・offline-client）のハッシュ
     CSP: cspHead([p.pageScript, p.offlineClient]),
     PAGE_SCRIPT: inlineScript(p.pageScript),
     LANG: html`${info.html}`,
