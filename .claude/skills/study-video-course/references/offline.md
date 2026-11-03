@@ -15,6 +15,9 @@ SWは `/media/` をページのURLより先に判定して講座を決める。�
 - `site/offline-client.ts` と `offline-panel.html`・`offline.css`: 選択して保存、バイト単位の進捗、保存状態、キャンセル、再試行、削除、更新、推定容量、保持要求、インストールの案内。
 - `site/sw.ts`: 完全な講座の確定、保存版の教材と MP4 の配信、Range、起動用ページ、途中終了の片付け、読めない記録の隔離。
 - `site/offline-shared.ts`: 保存対象の形式・範囲、保存の記録の読み込み、片付けと隔離の判断、単一 bytes Range の解釈。
+- `site/limits.ts`: 保存・動画・Workers の大きさの上限の正本（下の「保存と更新の約束」の 3）。境目の値のテストは `tests/limits.test.ts`。
+- `site/mime.ts`: 拡張子と MIME の対応表（Workers が返す型と同じ）。起動用ファイルと保存するファイルの型はここから付け、知らない拡張子なら組み立てを止める。
+- `scripts/site-invariants.ts`: 組み立ての最後に、公開物の決まり（Workers の上限・MP4 なし・置き換えの印の残り・CSP と script の数・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用ファイルの中身と型）を確かめる。テストは `tests/site-invariants.test.ts`。
 - `tests/offline.test.ts` と `tests/browser/`: 境界値と実ブラウザの回帰テスト。通信などの障害は `tests/browser-server.ts` で注入する。
 - `tests/offline-compat.test.ts` と `tests/fixtures/saved-records/<日付>/`: 利用者が保存した記録の互換テスト（下の「保存データの互換」）。fixture は `tests/capture-saved-records.ts` で作る。
 
@@ -32,7 +35,7 @@ SWは `/media/` をページのURLより先に判定して講座を決める。�
 
 1. 表示するだけでは動画を保存しない。利用者が講座を開いて保存を選ぶ。起動用の HTML・アイコン・トップの画像だけは worker の導入時に保持する。
 2. 生成した同一 origin / アプリ scope 内の教材ページ・MP4・JPG だけを保存する。外部 URL、リダイレクト、opaque 応答、206、違う MIME、別講座へのパス、DRM や認証付き配信を受け入れない。取得には `credentials: omit` を指定する。権利・保存許可のある公開コンテンツだけを対象にする。
-3. 1 ファイルずつ全文を取得して、宣言サイズと SHA-256 を照合する。MP4 は現行の15MB制約内で作る。保存側の上限は1ファイル32MiB、講座全体1GiB。合わないデータや不足した生成物から保存用 manifest を配らない。
+3. 1 ファイルずつ全文を取得して、宣言サイズと SHA-256 を照合する。上限の正本は `site/limits.ts` で、保存は 1 ファイル 32 MiB（`OFFLINE_FILE_MAX_BYTES`。動画も含む）・講座のページ 4 MiB（`OFFLINE_PAGE_MAX_BYTES`）・1 講座 1 GiB（`OFFLINE_COURSE_MAX_BYTES`）・1 講座 201 ファイル（`OFFLINE_COURSE_MAX_FILES`）。サイト用の MP4 は、`render.sh` が目安の 14,500 KiB（`VIDEO_TARGET_BYTES`）に crf を上げて合わせる。目安は上限ではなく、crf 29 でも超えたら警告だけでそのまま使う（2026-11-03 の時点で 60 本中 32 本が目安を超え、いちばん大きいのは 18.6 MiB）。保存の上限を超える動画は `media.ts push`・`check` が、超える講座は組み立ての最後（`scripts/site-invariants.ts`）が止める。合わないデータや不足した生成物から保存用 manifest を配らない。
 4. 仮の Cache 領域に全ファイルがそろってから、registry の1件の pointer を切り替える。失敗やキャンセルで前の完全な版を消さない。再試行は全体を取得し直す。ブラウザ終了で残った仮領域は次の状態確認/起動時に片付ける。
 5. 版は、利用者に届く出力（ページの HTML と、保存する動画・ポスター）から決める。組み立てるスクリプトのソースは版に入れないので、整形・コメント・関数の切り出しのように出力の変わらない直しでは版が変わらない。ページと動画 URL に版を対応させ、保存した講座のページはオンラインでも保存版を返す。新しい教材に古い MP4 を組み合わせない。更新を自動で取得せず、利用者が選んで全検証後に切り替える。
 6. 更新後は直前の完全な版も1つ保持し、開いていたタブの再生に使う。現在の教材と保存の版が違ったら停止と再読み込みの案内を出す。さらに古い動画を要求されたら別の版へ置き換えず、利用不可として返す。
@@ -72,7 +75,7 @@ iOSもCache APIのブラウザ保存であり、「ファイル」アプリへ�
 
 ## 検証と公開
 
-`npm run typecheck`、`npm test`、content点検のself-testと本体、`bun scripts/build_site.ts --strict`、`npm run test:browser` を実行する。専用lintスクリプトはない。再生確認には実際に生成した動画と字幕データが必要。mock・型検査・ブラウザのモバイル幅からiOS実機成功を推定しない。PCと375pxの画面、実際のオフライン通信断、ブラウザ終了からの再起動、保存/削除、更新失敗/成功、キャンセル/再試行、容量例外、バイト列を照合したRangeとシークを記録する。
+`npm run check`（lint・型・単体テスト・台本と公開の検証・content と文書の点検）、`bun scripts/build_site.ts --strict`（最後に公開物の決まりを確かめる。PR の CI の build ジョブも同じ手順で組み立てる）、`npm run test:browser` を実行する。再生確認には実際に生成した動画と字幕データが必要。mock・型検査・ブラウザのモバイル幅からiOS実機成功を推定しない。PCと375pxの画面、実際のオフライン通信断、ブラウザ終了からの再起動、保存/削除、更新失敗/成功、キャンセル/再試行、容量例外、バイト列を照合したRangeとシークを記録する。
 
 動画・生成物・ブラウザプロファイル・秘密情報をmainに入れない。既存 `scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内のときだけ使う）はforce pushを使う。依頼の境界でforce pushが禁止されていれば実行せず、その制約とPRの状態を報告する。
 

@@ -43,7 +43,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | どこで | すること | 正本 |
 |---|---|---|
 | 手元 | 台本を書き、synth・mix・render で声と動画を作る。動画は `media.ts push` で Releases に、台詞の音声は `materials.ts push` で素材ブランチに置く | 順番は [workers-delivery.md](../workers-delivery.md) の「公開する順番」 |
-| PR の CI | 型検査・単体テスト・台本とファイルの点検 | `.github/workflows/check.yml` |
+| PR の CI | lint・型検査・単体テスト・台本と公開の検証（ポスターと動画の一覧の抜けも）・ファイルと文書の点検。main の CI と同じ手順でサイトを組み立てて点検する（公開はしない） | `.github/workflows/check.yml` |
 | main の CI | 声も動画も作らない。素材ブランチから声を取り出して、時刻とサイトのデータを作り直す。動画の一覧を Releases と照らし、サイトを組み立てて点検してから、wrangler で出す。出したあと、全部の動画の Range を確かめる | `.github/workflows/deploy.yml` |
 
 - 動画は merge の前に Releases に置く。置いた時点で、誰でも取れる

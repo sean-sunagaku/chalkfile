@@ -171,12 +171,16 @@ npm run build:materials && npm run build:site   # 読む教材と講座サイト
 
 ```bash
 npm ci --ignore-scripts
-npm run check                             # 型・単体テスト・台本とファイルの点検（CI と同じ。動画なしで流せる）
-npm run build:site -- --strict            # site/data・posters・Releases の一覧が必要。手元の MP4 は任意
+npm run check                             # lint・型・単体テスト・台本と公開の検証・ファイルと文書の点検（CI の check ジョブと同じ。動画なしで流せる）
+npm run build:site -- --strict            # site/data・posters・Releases の一覧が必要。手元の MP4 は任意（CI の build ジョブと同じ手順）
 npm run test:e2e                          # 実 Chrome と、Stripe 講座の生成済み 13 本の動画を使う（test:browser と同じ）
 ```
 
-専用の lint スクリプトはありません。CI は型検査（Remotion・台本、PWA のブラウザ/worker、scripts・tests）、Range・保存対象テスト、content 点検を行います（`npm run check` と同じ）。実ブラウザのテストはローカルの生成物が必要なため、CI の content 点検だけで再生成功とは扱いません。`PW_CHANNEL=chromium npm run test:browser` なら Playwright の Chromium も選べます（別途そのブラウザが必要）。通常はインストール済みの Chrome を一時プロファイルで使います。
+PR の CI（`.github/workflows/check.yml`）は 2 つのジョブです。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見ます。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `build_site --strict` → `check_delivery`）でサイトを組み立てます。公開はせず、秘密情報も使いません。`build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まります。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP のハッシュと動く script の数・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型です。
+
+大きさの上限の正本は `site/limits.ts` です。保存は 1 ファイル 32 MiB（動画も）・ページ 4 MiB・1 講座 1 GiB・201 ファイル、Workers の静的 assets は 1 ファイル 25 MiB・2 万ファイル、動画は 2 GiB 未満（Releases）。サイト用の動画は 14,500 KiB を目安に書き出します（上限ではありません）。保存の上限を超える動画は `media.ts push`・`check` が止めます。ファイルの型は拡張子の対応表 `site/mime.ts` から付けます。知らない拡張子のファイルを `site/assets` に置くと、組み立てが止まります。
+
+実ブラウザのテストはローカルの生成物が必要なため、CI の点検と組み立てだけで再生成功とは扱いません。`PW_CHANNEL=chromium npm run test:browser` なら Playwright の Chromium も選べます（別途そのブラウザが必要）。通常はインストール済みの Chrome を一時プロファイルで使います。
 
 ブラウザテストは `127.0.0.1:8877/chalkfile/` に本物の build 出力を配り、オンライン/オフライン、全保存・削除、Range の応答とバイト一致、実動画の再生・停止・シーク・繰り返し、ブラウザ完全終了からの再起動、教材/worker 更新、保存欠損を確認します。容量不足は Cache API の例外、通信失敗・206・破損・途中データ・リダイレクト・キャンセルはテストサーバーで再現します。物理的なディスク枯渇や iOS 実機検証の代わりではありません。証跡は既定で `/tmp/chalkfile-pwa-evidence/` に置き、動画や証跡を main に入れません。`CHALKFILE_EVIDENCE_DIR` で保存先を変えられます。
 
@@ -226,7 +230,7 @@ export const STRIPE_BILLING: Course = {
 
 `bash scripts/legacy/deploy_pages.sh` は、旧 https://sean-sunagaku.github.io/chalkfile/ を移行案内だけに置き換える専用手順です。通常公開には使いません。旧保存cacheを残したまま、オンラインでは同じpath/query/hashの新サイトへ案内し、オフラインでは保存版を表示して保存し直しを案内します。保存と学習記録は異なるoriginへ自動移行しません。
 
-サイト・ポスターはWorkers assets、動画はReleasesから同じoriginのWorker経由で配ります。静的出力は2万ファイル/1ファイル25MiB以内を点検し、MP4を含めません。Workers Freeを維持し、広告・Terraform・有料の保存先を導入しません。
+サイト・ポスターはWorkers assets、動画はReleasesから同じoriginのWorker経由で配ります。静的出力は2万ファイル/1ファイル25MiB以内（`site/limits.ts`）を組み立ての最後に点検し、MP4を含めません。Workers Freeを維持し、広告・Terraform・有料の保存先を導入しません。
 
 ## フォルダ
 
