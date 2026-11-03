@@ -62,7 +62,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 ```
 
 - Worker の動きの正本は `worker/src/media.ts`。設計は [配信の設計](delivery.md)、決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md)
-- 保存の設計は、今はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md)
+- 保存の設計は [保存の設計](offline.md)。直すときの決まりと確かめ方は、スキル [chalkfile-engine](../../.claude/skills/chalkfile-engine/SKILL.md)
 
 ## 置き場所
 
@@ -91,7 +91,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
 | `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
-| `.claude/skills/` | Claude Code のスキル（作り方・書き方・調べ方・テーマの作り方）。AI 共通のきまりは直下の `AGENTS.md` |
+| `.claude/skills/` | Claude Code のスキル（講座の作り方・書き方・調べ方・テーマの作り方は `study-video-course`、共通プロンプトからの講座は `course-from-prompt`、サイト・保存・Worker は `chalkfile-engine`）。AI 共通のきまりは直下の `AGENTS.md` |
 | `.github/` | CI（`workflows/`）・Dependabot・CODEOWNERS・PR のひな形 |
 
 ## 外から指される名前（変えると壊れる）

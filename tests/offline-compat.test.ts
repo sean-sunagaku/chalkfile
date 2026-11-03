@@ -9,7 +9,7 @@ import {
 
 // 利用者が保存した記録（tests/fixtures/saved-records/<日付>/）を、今の読み込みが全部受け入れることを確かめる。
 // 落ちたら、保存した講座が読めなくなる（隔離のあと 30 日で消える）。検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。
-// 決まりは .claude/skills/study-video-course/references/offline.md の「保存データの互換」
+// 決まりは docs/architecture/offline.md の「保存データの互換」
 type Era = { scope: string; prefix: string; reader: 'sw' | 'legacy-sw'; mediaRoots: Record<string, string> };
 const fixtures = path.join(import.meta.dir, 'fixtures/saved-records');
 const read = <T>(file: string) => JSON.parse(readFileSync(file, 'utf8')) as T;

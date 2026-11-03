@@ -15,6 +15,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 始め方（3 通りの作り直し・前提の道具） | [guide/quickstart.md](guide/quickstart.md) | |
 | 講座の作り方 | スキル [study-video-course](../.claude/skills/study-video-course/SKILL.md) | 共通プロンプトから講座を丸ごと作るときは [course-from-prompt](../.claude/skills/course-from-prompt/SKILL.md) |
 | 講座の型ごとの長さと本数 | [course-design.md](../.claude/skills/study-video-course/references/course-design.md) の「講座の型と大きさ」 | ほかの文書は、この表へリンクする |
+| サイト・保存・Worker を直すときの決まりと確かめ方 | スキル [chalkfile-engine](../.claude/skills/chalkfile-engine/SKILL.md) | コマンドの正本は [公開の順番](operations/publish.md) の「サイトと Worker を変えたとき」 |
 | 講座を足す（チェックリスト・頭文字の表・PR に書くこと） | [guide/new-course.md](guide/new-course.md) | 中身の作り方はスキル |
 | 画面と話し方 | [style.md](../.claude/skills/study-video-course/references/style.md) | |
 | テーマ（色・書体・背景） | 値は `content/themes.ts`、仕様は [theme.md](../.claude/skills/study-video-course/references/theme.md) | |
@@ -30,7 +31,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | ハマりどころ | [operations/troubleshooting.md](operations/troubleshooting.md) | 症状からひく索引 |
 | AI 共通のきまり（方針・安全・公開・並行作業・文体・コマンド） | [AGENTS.md](../AGENTS.md) | Claude Code は [CLAUDE.md](../CLAUDE.md) から読み込む |
 | 安全（AI 向けのきまり・公開物・点検） | [AGENTS.md](../AGENTS.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts` |
-| 保存の設計（オフライン・PWA） | `docs/architecture/offline.md`（予定） | 今はスキルの [offline.md](../.claude/skills/study-video-course/references/offline.md) |
+| 保存の設計（オフライン・PWA） | [architecture/offline.md](architecture/offline.md) | 直すときの決まりと確かめ方は、スキル [chalkfile-engine](../.claude/skills/chalkfile-engine/SKILL.md) |
 | 学ぶ人向けの保存の説明 | [guide/learner-offline.md](guide/learner-offline.md) | |
 | 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
 | 日付つきの記録 | [history/](history/) | [2026-10-30 の制作メモ](history/2026-10-30-production-notes.md)・[2026-11-03 の公開確認](history/2026-11-03-workers-verification.md)。記録で、今の手順ではない |
@@ -41,7 +42,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 
 | 場所 | 中身 |
 |---|---|
-| `architecture/` | 仕組みの説明（全体図・用語集・配信の設計。保存の設計も、ここに移す予定） |
+| `architecture/` | 仕組みの説明（全体図・用語集・配信の設計・保存の設計） |
 | `adr/` | 決めたことの記録 |
 | `courses/` | 生成物（読む教材） |
 | `guide/` | 始め方・講座の足し方・コマンド・学ぶ人の保存 |
