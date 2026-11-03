@@ -1,23 +1,10 @@
-# 作り方（コマンド・確認・ハマりどころ・公開）
+# 作り方（道具の前提・コマンドの入力と出力・確かめ方）
 
-## 動画の配信（Workers / Releases）
-
-動画の制作は手元のMacで行う。`bun scripts/media.ts push --course <講座 ID>` は、その講座の通常版と字幕焼込み版をhash付きでReleasesへ置き、全assetを確認してから、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを更新する。`bun scripts/media.ts check` は公開assetの存在・サイズ・提供されたSHA-256、および手元のMP4のSHA-256を照合し、欠けていれば停止する。`push` は既存のhashを上書きせず、古いassetを消さない。mainへ入れるのは小さな一覧とコードだけ。Actionsは読み取りのcheckを行い、動画の作成・uploadは行わない。
-
-公開用パスは `/media/<言語>/<講座>/<ID>[.cc].<SHA-256>.mp4`。上流は固定の `sean-sunagaku/chalkfile` の `media-<言語>-<講座>` タグに限る。手元の入力はrenderの形式に合わせ、日本語が `site/media/<ID>[.cc].mp4`、翻訳は `site/media/<ID>.<言語>[.cc].mp4`。
+コマンドの一覧と `npm run` の名前は [commands.md](../../../../docs/guide/commands.md)、公開の順番は [公開の順番](../../../../docs/operations/publish.md)、動画の配り方は [配信の設計](../../../../docs/architecture/delivery.md)。ここには、道具の前提・コマンドの入力と出力・確かめ方を書く。
 
 ## 前提
 
-| ツール | 版（置き場所） | 用途 |
-|---|---|---|
-| Node.js | `.node-version` | Remotion（書き出し・静止画）と Playwright |
-| bun | `.bun-version` | synth・build_site・serve・単体テスト |
-| Python | `.python-version`（uv が用意する） | mix.py・build_music.py・Kokoro・Whisper |
-| uv | `pyproject.toml` の `required-version` | mix.py・build_music.py（numpy・scipy の版は `pyproject.toml` と `uv.lock`） |
-| ffmpeg | 8.0 で確かめた | 音と映像の合わせ・ポスター |
-| VOICEVOX | 0.25 で確かめた | 日本語の声（エンジンが `127.0.0.1:50021`） |
-| Kokoro（`kokoro`・`misaki` の版は `scripts/tts_kokoro.py` の頭と `scripts/tts_kokoro.py.lock`） | Kokoro-82M・v1.1-zh | 英語と中国語の声（`scripts/tts_kokoro.py` を `uv run` が用意する。初回はモデルを取ってくる） |
-| Remotion | `package.json`（`remotion` と `@remotion/*`） | 映像 |
+道具と版の置き場所（`.node-version`・`.bun-version`・`.python-version`・`package.json`・`pyproject.toml`）と、作業ごとに要る道具は、[始め方](../../../../docs/guide/quickstart.md) の「前提の道具」。ここで確かめた版: ffmpeg 8.0・VOICEVOX 0.25。英語と中国語の声（Kokoro-82M・Kokoro-82M-v1.1-zh）の `kokoro`・`misaki` の版は、`scripts/tts_kokoro.py` の頭と `scripts/tts_kokoro.py.lock` にある（`uv run` が用意し、初回はモデルを取ってくる）。
 
 VOICEVOX はアプリを開くか、macOS ならエンジンだけを起動する。台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出せばよい（下の「素材」）。
 
@@ -37,49 +24,44 @@ curl -s http://127.0.0.1:50021/version
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp`・`restamp`・`scaffold`（`npm run i18n -- …`） | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋・訳のひな形（[i18n.md](i18n.md)） |
 | `uv run --locked --group audio python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav` |
-| `bash scripts/render.sh [ID…]` | `src/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（15MB 以下）・`.jpg`（ポスター） |
+| `bash scripts/render.sh [ID…]`（`npm run render`） | `src/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター `content/<講座>/generated/posters/<id>.jpg`。`CAPTIONS=1` で `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用） |
 | `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
-| `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、`site/media/`、`site/*.html`、`site/config.json` | `site/dist/` |
+| `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`site/config.json`（`--strict` は Releases も照らす） | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
-| `bash scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内のときだけ。講座サイトの公開には使わない） | `site/dist/`（`site/config.json` の `publishLangs` に訳の言語があるときは `site/dist-media/<言語>/` も） | 講座サイトの gh-pages（最新の main からだけ。いまは日本語だけ。訳の公開先は chalkfile.com の Worker に移る（[i18n.md](i18n.md)）） |
-| `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は gh-pages も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
+| `bun scripts/media.ts push --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
+| `bun scripts/media.ts pull [講座 ID…]` | 動画の一覧、Releases | `site/media/`（SHA-256 を確かめる。手元の違う動画は上書きしない） |
+| `bun scripts/gen.ts`（`npm run gen`） | 講座の登録と、講座のフォルダの動画の一覧・timeline | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表 |
+| `bash scripts/legacy/deploy_pages.sh`（持ち主だけ。旧 Pages の移行の案内のときだけ） | `site/migration-dist/`（`scripts/build_migration.ts` が作る） | 旧 Pages の `gh-pages` ブランチ（新しいサイトへの案内だけ） |
+| `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は Releases の動画も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
 | `bun scripts/materials.ts push [--dry-run]` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（リモートの素材に足すだけ。前の版を親にしたコミット） |
 | `bun scripts/materials.ts gc [--keep ref] [--confirm]` | `materials` ブランチ、`--keep` の ref（既定 origin/main）の台本 | 台本が使わない台詞の音声の一覧（`--confirm` のときだけ消して push） |
 
 ## 素材（`materials` ブランチ）
 
-VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作り直しに VOICEVOX が要るので、素材だけを置くブランチ `materials` に置く。main の履歴には入れない（動画を gh-pages に置くのと同じ考え方）。
+VOICEVOX と Kokoro の出力（台詞の声）と BGM・効果音は、作り直しに VOICEVOX が要るので、素材だけを置くブランチ `materials` に置く。main の履歴には入れない（理由は [ADR](../../../../docs/adr/2026-10-31-materials-branch.md)）。
 
-- 中身: `tts/<講座 ID>/<key>.flac`・`.kana`（台本の全部の台詞。`key` は `scripts/voices.ts` の `ttsKey`）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻した後の中身と読み）、`README.md`
-- 取り出す: `bun scripts/materials.ts pull` → `bun scripts/synth.ts` は VOICEVOX につながずに時刻を決める（声のキャッシュが全部当たる）。足りない台詞があると、VOICEVOX に届かないことと `pull` を案内して止まる
-- 確かめる: `bun scripts/materials.ts check`（台本の全部の台詞の声が `.work/tts/` に、決まった名前の BGM・効果音が `public/audio/` にあるか）
-- 足す: 台詞を直したら、台本をコミット → synth（kana を見る）→ `bun scripts/materials.ts push`。push は足すだけ（リモートの素材に手元の素材を足すか上書きし、手元の台本に無い講座の素材は残す。`--dry-run` で本数を見る）。コミットしていない台本の変更があるときと、HEAD が origin/main を含まないときは止まる。マージで走る公開が素材を取り出すので、PR をマージする前に push する
-- 消す: `bun scripts/materials.ts gc` だけ。origin/main（`--keep` で変えられる）の台本が使わない台詞の音声を一覧にし、`--confirm` を付けたときだけ消す（持ち主が流す）
-- FLAC は可逆なので、WAV に戻すと VOICEVOX の出力と同じバイトになる（`pull` が `SHA256SUMS` で確かめる）。音声は WAV のままの 3 分の 1 ほど
-- push は前の版を親にする（送るのは新しい素材だけで、前の版に戻せる）。gc は親の無い 1 コミットにして、それまでの履歴を切る。消した素材が要るときは、そのときの台本のコミットから VOICEVOX で作り直す
+- 中身: `tts/<講座 ID>/<key>.flac`・`.kana`（台本の全部の台詞。`key` は `scripts/voices.ts` の `ttsKey`）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻したあとの中身と読み）、`README.md`
+- 取り出す: `npm run materials:pull` → `npm run synth -- --cached-only` は VOICEVOX につながずに時刻を決める。足りない台詞があると、`pull` を案内して止まる
+- 確かめる: `npm run materials:check`（台本の全部の台詞の声が `.work/tts/` に、決まった名前の BGM・効果音が `public/audio/` にあるか）
+- 足す: [公開の順番](../../../../docs/operations/publish.md) の 4（足すだけ。merge より前に）。消すのは `materials.ts gc` だけで、持ち主が流す（[戻し方](../../../../docs/operations/recovery.md) の「素材を片付ける」）
+- FLAC は可逆なので、WAV に戻すと VOICEVOX の出力と同じバイトになる（`pull` が `SHA256SUMS` で確かめる）。大きさは WAV のままの 3 分の 1 ほど
 
 ## 確かめ方
 
-- 台本: `bun scripts/validate.ts`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
+- 台本: `npm run validate`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
 - 読み: `.work/kana/<id>.txt`
-- 見た目: `node scripts/stills.ts L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
+- 見た目: `npm run stills -- L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
 - 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `content/stripe-billing/generated/timeline/L04.json` の `durationInFrames / 30` と合う
 - 1 場面だけ見たいとき: `ffmpeg -ss <秒> -i site/media/L04.mp4 -frames:v 1 frame.jpg`
-- Remotion Studio: `npx remotion studio`（音つきで見るときは props の `audio` を true）
+- Remotion Studio: `npm run studio`（音つきで見るときは props の `audio` を true）
 
 ## ハマりどころ
 
 正本は [troubleshooting.md](../../../../docs/operations/troubleshooting.md)（書き出しでディスクが埋まる・Chrome Headless Shell の展開が止まる・動画の途中に飛べない・合成し直しの単位など）。
 
-## 公開（Workers / Releases）
+## 公開
 
-公開の順番の正本は [publish.md](../../../../docs/operations/publish.md)。動画はMacで `media.ts push/check` を先に行い、mainへ入れる。Actionsは `npm ci --ignore-scripts`、型/単体/安全点検、素材pull、`synth --cached-only`、動画check、strict build、生成物点検、Wrangler、公開後の全動画Range確認の順。Cloudflare secretはDeploy stepだけ。音声・動画が不足したら停止する。
-
-JPGは講座のフォルダの `generated/posters/` の小さな静的入力としてmainに含める（render.sh が書く）。MP4はReleasesにだけ置き、`media.ts pull [講座ID…]` で戻す。従来の `materials.ts pull --videos` もReleasesから取得し、変更済みローカル動画は上書きしない。
-
-手元は `npm run dev:worker` でroot/CSP/scopeを確認。初回試験公開は `wrangler deploy --env preview`、本番は `wrangler deploy --env=""`。Workers Freeを維持する。静的assetsはMP4なし・2万files/25MiB以内。`no-transform` で本文hashとCSPを保つ。
-
-`scripts/legacy/deploy_pages.sh` は旧Pagesを移行案内だけへ置き換える専用手順。最新mainとcleanなcheckout、公開先のRange/CSP検証に通った後、明示した旧SHAに対するforce-with-leaseで置き換える。旧保存cacheは移行SWが保持する。公開と旧Pages切替は本人が依頼した範囲で実行し、許可済み操作を繰り返し確認しない。
+公開の順番は [公開の順番](../../../../docs/operations/publish.md)、初回の設定は [初回の設定](../../../../docs/operations/setup.md)。ここには写さない。
 
 ## 見た目が変わっていないかを見る（静止画の比較）
 
@@ -87,9 +69,9 @@ JPGは講座のフォルダの `generated/posters/` の小さな静的入力と�
 
 ```bash
 git fetch origin
-bun scripts/stills-compare.ts --base origin/main     # 場面の種類ごとに 1 つ（20 場面）× 5 テーマ。1 分ほど
-bun scripts/stills-compare.ts L04:3,6 --theme night  # 場面とテーマを絞る（--captions で字幕つきの版を比べる）
-bun scripts/stills-compare.ts --base-install --head origin/dependabot/npm_and_yarn/<名前> --out .work/stills-compare/<名前>  # 依存を上げる PR
+npm run stills:compare -- --base origin/main     # 場面の種類ごとに 1 つ × 全部のテーマ。1 分ほど
+npm run stills:compare -- L04:3,6 --theme night  # 場面とテーマを絞る（--captions で字幕つきの版を比べる）
+npm run stills:compare -- --base-install --head origin/dependabot/npm_and_yarn/<名前> --out .work/stills-compare/<名前>  # 依存を上げる PR
 ```
 
 - 基準の版を一時の worktree に作って同じ静止画（場面の終わり）を書き出し、ffmpeg の PSNR で比べる。同じ絵は inf。45dB（`--threshold`）より低いと「差あり」になり、`.work/stills-compare/diff/` に「基準・今・差を強めた絵」を並べた画像を出して 1 で終わる

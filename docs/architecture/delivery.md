@@ -13,6 +13,16 @@
 - 動画の一覧には、今の動画（`entries`）と、前の版のハッシュの動画（`retained`）を並べる。サイトのページが指すのは `entries` だけで、Worker は両方を通す。開いたままの前のページや、戻した版のページが、途中への移動で 404 にならないようにするため（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
 - 一覧の形の検査は `site/media-shared.ts` にあり、サイトの組み立て・Worker・テストが同じものを使う
 
+## 入口の振り分け
+
+- `run_worker_first` に合わないパスには、合う静的なファイルに当たらなくても assets が答え（`404.html` を 404 で返す。GET と HEAD のほかは 405）、Worker を呼ばない。Worker の入口に受け口を足しても、`run_worker_first` に入れるまで本番の要求は届かない
+- Worker の入口（`worker/src/app.ts`）は、パスの頭で受け口を選ぶ小さなルーター。どれにも合わなければ assets に渡す。形と、`run_worker_first` を広げる時期は [ADR](../adr/2026-11-03-worker-api-shape.md)
+
+| パスの頭 | 受け口 |
+|---|---|
+| `/media/` | 動画の中継（`worker/src/media.ts`。下の「/media/ の中継」）。www は apex へ 301 |
+| `/api/` | AI チャットの受け口（`worker/src/api.ts`。M4 で入れる）。それまでは、どのパスとメソッドにも 404 と `{"error":"not_found"}`（`no-store`）を返す。`run_worker_first` に `/api/*` を足すのは、受け口と守りを入れる PR |
+
 ## /media/ の中継
 
 - Worker は、動画の一覧にあるパスだけを中継する（`/media/<言語>/<講座 ID>/<レクチャー ID>[.cc].<SHA-256>.mp4`）。上流は、固定のリポジトリの決まったタグだけ

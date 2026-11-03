@@ -1,16 +1,17 @@
-// 文書の点検（D-16・P-29）。文書と実装の食い違いが PR を通って入らないようにする。問題があれば止まる（npm run check と CI が使う）。
+// 文書の点検。文書と実装の食い違いが PR を通って入らないようにする。問題があれば止まる（npm run check と CI が使う）。
 //   bun scripts/check_docs.ts            # 確かめる（npm run check:docs）
-//   bun scripts/check_docs.ts --strict   # 注意も止める（古い言葉と一覧の食い違いを片付けたら、CI をこちらにする）
+//   bun scripts/check_docs.ts --strict   # 注意も止める（一覧の食い違いと使い方の抜けを片付けたら、CI をこちらにする）
 //
 // 見るもの
 //   1. Markdown の相対リンクとアンカー（リンク先のファイルと見出しがあるか）                    止める
 //   2. スキルの description の長さ（1,024 字以下。.claude/skills/*/SKILL.md）                    止める
-//   3. 古い言葉（GitHub Pages の頃の公開の仕方など）。許す場所（ALLOW_OLD）では見ない            注意
+//   3. 古い言葉（旧 Pages の頃の公開と配り方・動かした生成物の前の場所）。例外（ALLOW_OLD）のほかで見つけたら  止める
+//      例外のうち、もう古い言葉が無いもの（直したのに残った行）                                  注意
 //   4. テーマの表（theme.md）と content/themes.ts の THEMES                                     注意
 //   5. 生成した表（README の講座の表・new-course.md の頭文字の表。npm run gen が作る）が、作り直したものと同じか  止める
 //   6. 生成物の印（docs/courses の教材の頭に「生成物」のコメントがあるか）                       注意
 //   7. 直接流す道具（scripts/）の頭書きに、流し方（使い方）の行があるか                           注意
-// 3・4・6・7 は、今は食い違いが多いので注意にしている。片付けたら --strict で止める
+// 4・6・7 は注意にしている。片付けたら --strict で止める
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -137,7 +138,7 @@ export const checkLinks = (file: string, md: string, read: (file: string) => str
 
 /* ───────────── 古い言葉 ───────────── */
 
-/** 今の手順と違う、古い言葉（GitHub Pages の頃の公開・配り方） */
+/** 今の形と違う、古い言葉（旧 Pages の頃の公開と配り方・動かした生成物の前の場所）。例外（ALLOW_OLD）のほかで見つけたら止める */
 export const OLD_WORDS: { rx: RegExp; word: string; now: string }[] = [
   // 旧 Pages（sean-sunagaku.github.io）。w3c.github.io のような、ほかのサイトの名前は除く
   {
@@ -145,34 +146,120 @@ export const OLD_WORDS: { rx: RegExp; word: string; now: string }[] = [
     word: 'github.io',
     now: '公開先は https://chalkfile.com/',
   },
-  { rx: /gh-pages で公開/, word: 'gh-pages で公開', now: 'サイトは main から Actions と Wrangler で公開する' },
-  { rx: /npm install/, word: 'npm install', now: '依存は npm ci --ignore-scripts で入れる' },
   // github.com/sean-sunagaku/chalkfile/ のような、リポジトリの URL の中のものは除く
   { rx: /(?<![\w.-])\/chalkfile\//, word: '/chalkfile/', now: '旧 Pages のパス。今のサイトは chalkfile.com の直下' },
-  { rx: /dist-media/, word: 'dist-media', now: '動画は Releases に置き、/media/ で配る（media.ts push）' },
+  {
+    rx: /GitHub Pages に(?:出す|出し|置|そのまま)/,
+    word: 'GitHub Pages に出す',
+    now: 'サイトは main への merge で、Actions が chalkfile.com に出す',
+  },
+  { rx: /gh-pages で公開/, word: 'gh-pages で公開', now: 'サイトは main から Actions と Wrangler で公開する' },
+  {
+    rx: /gh-pages(?: ?ブランチ)? ?に(?:だけ)?置/,
+    word: 'gh-pages に置く',
+    now: '動画は Releases に置く。gh-pages は旧 Pages の案内だけ',
+  },
   { rx: /deploy_pages\.sh で公開/, word: 'deploy_pages.sh で公開', now: 'deploy_pages.sh は旧 Pages の移行の案内だけ' },
+  { rx: /scripts\/deploy_pages\.sh/, word: 'scripts/deploy_pages.sh', now: '旧 Pages の道具は scripts/legacy/deploy_pages.sh' },
+  { rx: /dist-media/, word: 'dist-media', now: '動画は Releases に置き、/media/ で配る（media.ts push）' },
+  { rx: /npm install/, word: 'npm install', now: '依存は npm ci --ignore-scripts で入れる' },
+  // 動かした生成物の前の場所
+  {
+    rx: /src\/generated\/(?:timeline|credits|lecture-credits)\.json/,
+    word: 'src/generated/*.json',
+    now: 'timeline は content/<講座>/generated/timeline/<key>.json。クレジットは content/voices.ts から作る',
+  },
+  {
+    rx: /site\/media-manifest\.json/,
+    word: 'site/media-manifest.json',
+    now: '動画の一覧は講座ごとの content/<講座>/generated/media.<言語>.json',
+  },
 ];
 
-/** 古い言葉を書いてよい場所（過去の記録・旧 Pages の移行のための道具・テストの記録）と、この点検そのもの（と、そのテスト） */
-export const ALLOW_OLD = [
-  /^scripts\/legacy\//,
-  /^site\/legacy-/,
-  /^docs\/history\//,
-  /^docs\/adr\//,
-  /^tests\/fixtures\//,
-  /^scripts\/check_docs\.ts$/,
-  /^tests\/check-docs\.test\.ts$/,
+/**
+ * 古い言葉を書いてよい場所（例外）。わざと古い言葉を書く所だけを、理由と一緒に置く。
+ * - words を書いたものは、その言葉だけを許す（ほかの古い言葉は止める）。もう古い言葉が無ければ、注意を出す（消し忘れ）
+ * - pending: 直す担当が決まっていて、まだ直していないコードの説明や処理。直したら、その行を消す
+ */
+export type OldAllow = { rx: RegExp; words?: string[]; why: string; pending?: boolean };
+
+export const ALLOW_OLD: OldAllow[] = [
+  // 記録（当時のことを、そのまま残す）
+  { rx: /^docs\/history\//, why: '日付つきの記録。当時の手順と名前をそのまま残す' },
+  { rx: /^docs\/adr\//, why: '決定の記録。前の形と比べて書く' },
+  // 旧 Pages からの移行（凍結した移行のコードと、その確かめ）
+  { rx: /^scripts\/legacy\//, why: '旧 Pages を移行の案内に置き換える道具' },
+  { rx: /^site\/legacy-/, why: '旧 Pages の保存版を守る、移行用の Service Worker とその設定' },
+  {
+    rx: /^scripts\/build_migration\.ts$/,
+    words: ['github.io', '/chalkfile/'],
+    why: '旧 Pages の URL から chalkfile.com へ移す案内を作る',
+  },
+  { rx: /^tests\/fixtures\//, why: '旧 Pages の頃の公開物と保存の記録（互換のテストの入力）' },
+  { rx: /^tests\/browser\/migration\.spec\.ts$/, words: ['/chalkfile/'], why: '旧 Pages からの移行を確かめるテスト' },
+  {
+    rx: /^tests\/browser-server\.ts$/,
+    words: ['/chalkfile/'],
+    why: '移行のテストのために、旧 Pages の公開物を /chalkfile/ に配る',
+  },
+  {
+    rx: /^tests\/capture-saved-records\.ts$/,
+    words: ['github.io', '/chalkfile/'],
+    why: '旧 Pages の保存の記録を取る（互換のテストの入力を作る）',
+  },
+  { rx: /^tests\/delivery\.test\.ts$/, words: ['/chalkfile/'], why: '旧 Pages のパスを新しいサイトへ移す変換のテスト' },
+  {
+    rx: /^tests\/offline-compat\.test\.ts$/,
+    words: ['/chalkfile/'],
+    why: '旧 Pages の頃の保存の名前を、今の読み込みが受け入れるかのテスト',
+  },
+  { rx: /^tests\/verify-production\.ts$/, words: ['github.io'], why: '公開したあとに、旧 Pages からの移行を確かめる' },
+  // 動かした生成物の前の場所を、わざと読むか止めるコード
+  {
+    rx: /^scripts\/stills-compare\.ts$/,
+    words: ['src/generated/*.json'],
+    why: '基準の版が前の形（1 つの timeline）でも比べる',
+  },
+  { rx: /^tests\/timeline\.test\.ts$/, words: ['src/generated/*.json'], why: '前の場所の timeline を止めることのテスト' },
+  { rx: /^\.gitignore$/, words: ['dist-media'], why: '前の組み立ての出力が手元に残っていても、Git に入れない' },
+  // この点検そのもの
+  { rx: /^scripts\/check_docs\.ts$/, why: 'この点検（古い言葉の一覧）' },
+  { rx: /^tests\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
+  // 直す担当が決まっている、コードの古い説明と前の形の処理（直したら、この行を消す）
+  {
+    rx: /^scripts\/build_site\.ts$/,
+    words: ['dist-media', 'GitHub Pages に出す'],
+    why: '頭書きと、前の訳の動画のサイトを消す処理',
+    pending: true,
+  },
+  { rx: /^scripts\/serve\.ts$/, words: ['dist-media'], why: '頭書きと、訳の動画のサイトを配る処理', pending: true },
+  { rx: /^site\/offline-shared\.ts$/, words: ['/chalkfile/'], why: 'コメントの scope の例', pending: true },
+  { rx: /^tests\/browser-server\.ts$/, words: ['dist-media'], why: '訳の動画のサイトを配る処理のコメント', pending: true },
+  { rx: /^tests\/browser\/i18n\.spec\.ts$/, words: ['dist-media'], why: '頭書きの、組み立ての説明', pending: true },
 ];
 
-export const checkOldWords = (file: string, text: string, out: Finding[]) => {
-  if (ALLOW_OLD.some((rx) => rx.test(file))) return;
+/** その場所で、その古い言葉を許す例外（無ければ undefined） */
+export const allowOf = (file: string, word: string): OldAllow | undefined =>
+  ALLOW_OLD.find((a) => a.rx.test(file) && (!a.words || a.words.includes(word)));
+
+/** 古い言葉を探す。例外で許したものは used に数える（例外の消し忘れを見るため） */
+export const checkOldWords = (file: string, text: string, out: Finding[], used?: Map<OldAllow, number>) => {
   text.split('\n').forEach((line, i) => {
     for (const { rx, word, now } of OLD_WORDS) {
-      if (rx.test(line))
-        out.push({ level: 'warn', check: '古い言葉', where: `${file}:${i + 1}`, what: `「${word}」（${now}）` });
+      if (!rx.test(line)) continue;
+      const allow = allowOf(file, word);
+      if (allow) {
+        used?.set(allow, (used.get(allow) ?? 0) + 1);
+        continue;
+      }
+      out.push({ level: 'error', check: '古い言葉', where: `${file}:${i + 1}`, what: `「${word}」（${now}）` });
     }
   });
 };
+
+/** ファイルごとの例外（words を書いたもの）のうち、もう古い言葉が無いもの。直したなら ALLOW_OLD から消す */
+export const unusedAllows = (used: Map<OldAllow, number>, allows: OldAllow[] = ALLOW_OLD) =>
+  allows.filter((a) => a.words && !used.has(a));
 
 /* ───────────── 表と実装 ───────────── */
 
@@ -361,11 +448,11 @@ const listFiles = () =>
     ),
   ].filter((f) => existsSync(path.join(ROOT, f)) && statSync(path.join(ROOT, f)).isFile());
 
-/** 古い言葉を探すテキストのファイル（生成したデータ・lock は除く） */
-const TEXT = /\.(md|ts|tsx|js|mjs|json|jsonc|sh|py|ya?ml|html|css|toml|txt)$/;
+/** 古い言葉を探すテキストのファイル（生成したデータ・lock は除く）。.gitignore と .gitattributes の注も見る */
+const TEXT = /(?:\.(md|ts|tsx|js|mjs|json|jsonc|sh|py|ya?ml|html|css|toml|txt)|(?:^|\/)\.git(?:ignore|attributes))$/;
 const SKIP_TEXT = /^(package-lock\.json|uv\.lock|content\/[^/]+\/generated\/)/;
 
-export const checkDocs = (out: Finding[]) => {
+export const checkDocs = (out: Finding[], used: Map<OldAllow, number> = new Map()) => {
   const files = listFiles();
   // あるかどうかは Git に入れるファイルで決める（手元にだけある生成物へのリンクも、CI と同じく「無い」とする）
   const known = new Set(files);
@@ -387,7 +474,7 @@ export const checkDocs = (out: Finding[]) => {
     if (text === null) continue;
     if (file.endsWith('.md')) checkLinks(file, text, read, out);
     if (/(^|\/)\.claude\/skills\/[^/]+\/SKILL\.md$/.test(file)) checkSkill(file, text, out);
-    if (!SKIP_TEXT.test(file)) checkOldWords(file, text, out);
+    if (!SKIP_TEXT.test(file)) checkOldWords(file, text, out, used);
     if (/^docs\/courses\/.+\.md$/.test(file) && !hasGeneratedMark(text)) {
       out.push({
         level: 'warn',
@@ -400,6 +487,14 @@ export const checkDocs = (out: Finding[]) => {
       out.push({ level: 'warn', check: '使い方', where: file, what: '頭書きに流し方（使い方）の行が無い' });
     }
   }
+  for (const a of unusedAllows(used)) {
+    out.push({
+      level: 'warn',
+      check: '古い言葉の例外',
+      where: 'scripts/check_docs.ts',
+      what: `もう古い言葉が無い例外（${a.rx.source}。${a.why}）。直したなら ALLOW_OLD から消す`,
+    });
+  }
   checkTables(read, out);
   checkGenerated(read, out);
 };
@@ -407,7 +502,8 @@ export const checkDocs = (out: Finding[]) => {
 if (import.meta.main) {
   const strict = process.argv.includes('--strict');
   const out: Finding[] = [];
-  checkDocs(out);
+  const used = new Map<OldAllow, number>();
+  checkDocs(out, used);
   if (strict) for (const f of out) f.level = 'error';
   const errors = out.filter((f) => f.level === 'error');
   const warns = out.filter((f) => f.level === 'warn');
@@ -418,8 +514,13 @@ if (import.meta.main) {
     for (const f of list) by.set(f.check, (by.get(f.check) ?? 0) + 1);
     return [...by].map(([check, n]) => `${check} ${n}`).join('・');
   };
+  const allowed = (pending: boolean) =>
+    [...used].filter(([a]) => !!a.pending === pending).reduce((n, [, k]) => n + k, 0);
   console.log(
     `文書の点検: 止める ${errors.length} 件${errors.length ? `（${count(errors)}）` : ''}・注意 ${warns.length} 件${warns.length ? `（${count(warns)}）` : ''}`,
+  );
+  console.log(
+    `古い言葉の例外（ALLOW_OLD）で許したもの: わざと書く所 ${allowed(false)} 件・直す担当が決まっている所 ${allowed(true)} 件`,
   );
   process.exit(errors.length ? 1 : 0);
 }

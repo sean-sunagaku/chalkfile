@@ -2,7 +2,7 @@
 
 Chalkfile は、TypeScript で書いた台本から、声・動画・講座サイト・読む教材を作る。台本（`content/`）が正本で、ほかのものは台本と素材から作り直せる。
 
-- 確かめた時点: 2026-11-03 のコード（生成物を講座のフォルダに移した T2-01〜T2-06 のあと）
+- 確かめた時点: 2026-11-03 のコード（生成物を講座のフォルダに移したあと）
 - 言葉の意味は [用語集](glossary.md)、決めた理由は [ADR](../adr/README.md)
 - コマンドの書き方は [コマンド](../guide/commands.md) と [始め方](../guide/quickstart.md)。ここには写さない
 
@@ -31,7 +31,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  └─ scripts/build_site.ts（site/data・講座のフォルダのポスターと動画の一覧を読む）→ site/dist
        └→ .github/workflows/deploy.yml（main への push）→ gen.ts --media → wrangler deploy → https://chalkfile.com/
 
-旧 https://sean-sunagaku.github.io/chalkfile/ ＝ gh-pages ブランチ（新しいサイトへの案内だけ。scripts/legacy/deploy_pages.sh）
+旧 Pages ＝ gh-pages ブランチ（新しいサイトへの案内だけ。scripts/legacy/deploy_pages.sh）
 ```
 
 - 「追跡」は main で Git が追跡するファイル。ほかは `.gitignore` で外していて、手元だけにある
@@ -61,8 +61,8 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
             大きさと SHA-256 を確かめてブラウザに保存し、通信なしでも開けるようにする
 ```
 
-- Worker の動きの正本は `worker/src/media.ts`。設計は [配信の設計](delivery.md)、決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md)
-- 保存の設計は、今はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md)
+- Worker の入口（パスの頭で受け口を選ぶ）は `worker/src/app.ts`、`/media/*` の動きの正本は `worker/src/media.ts`。設計は [配信の設計](delivery.md)、決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md) と [入口の ADR](../adr/2026-11-03-worker-api-shape.md)
+- 保存の設計は [保存の設計](offline.md)。直すときの決まりと確かめ方は、スキル [chalkfile-engine](../../.claude/skills/chalkfile-engine/SKILL.md)
 
 ## 置き場所
 
@@ -72,7 +72,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材を足す（消すのは `materials.ts gc` だけ）。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-<言語>-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の講座ごとの動画の一覧が決める | render のあと、`media.ts push --course <講座 ID>` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、deploy.yml が組み立てて出す |
-| `gh-pages` ブランチ（旧 `sean-sunagaku.github.io/chalkfile/`） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
+| `gh-pages` ブランチ（旧 Pages。前の公開先） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
 | 手元だけ（`.gitignore`） | `.work/`（声のキャッシュ・ミックスの設計図・読み）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
 | リポジトリの外 | Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 初回に自動で取ってくる |
 
@@ -89,10 +89,10 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
 | `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）と、Python が読む動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
-| `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |
+| `worker/`・`wrangler.jsonc` | Worker の入口（`worker/src/app.ts`。パスの頭で受け口を選ぶ）・`/media/` の中継（`media.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）・AI チャットの受け口（`api.ts`。M4 で入れる）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
 | `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
-| `.claude/skills/` | Claude Code のスキル（作り方・書き方・調べ方・テーマの作り方）。AI 共通のきまりは直下の `AGENTS.md` |
+| `.claude/skills/` | Claude Code のスキル（講座の作り方・書き方・調べ方・テーマの作り方は `study-video-course`、共通プロンプトからの講座は `course-from-prompt`、サイト・保存・Worker は `chalkfile-engine`）。AI 共通のきまりは直下の `AGENTS.md` |
 | `.github/` | CI（`workflows/`）・Dependabot・CODEOWNERS・PR のひな形 |
 
 ## 外から指される名前（変えると壊れる）

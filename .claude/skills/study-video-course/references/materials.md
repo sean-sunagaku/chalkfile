@@ -22,7 +22,7 @@
 - 章 ID: `<講座の短い名前>-<2 桁>`（例: `nudge-01`）。`syllabus.chapters[].id` と `material.id` を同じにする
 - 節 ID: `<章 ID>-s<2 桁>`、図 ID: `<章 ID>-f<2 桁>`、課題 ID: `<章 ID>-ex`
 - 公開したあとは変えない（チャットの回答が指す場所がずれる）。節を足すときは番号を足し、消した番号は使い回さない
-- `bun scripts/build_materials.ts` が `docs/courses/<講座>/chunks.jsonl` に、ID・本文・根拠の種類・出典をまとめて書く（チャットの検索に使う）
+- `npm run build:materials` が `docs/courses/<講座>/chunks.jsonl` に、ID・本文・根拠の種類・出典をまとめて書く（チャットの検索に使う）
 
 ## 根拠の種類（研究・公式・実務・仮の例を分ける）
 
@@ -43,7 +43,7 @@
 
 `opening` → `goals` → 困りごと（`phone`／`numbers`）→ 打ち手の整理（`table`）→ 定義（`big`）→ 考え方（`concepts`・`points`）→ 悪い例・良い例（`screens`）→ ○×クイズ（`quiz`）→ 研究と限界（`numbers`）→ 実践手順（`points` numbered）→ 演習（`big` と `hold`）→ 振り返り（`recap`）→ 講座の地図（`timeline`）→ `ending`
 
-- 1 本 5〜10 分（台詞 55〜70 行・2,100〜2,900 字が目安。合成すると 1 秒あたり約 6.3 字）
+- 長さ・場面・台詞の数の目安は、[course-design.md](course-design.md) の「講座の型と大きさ」の表の「章立ての講座」の行
 - 演習の場面は `hold` で 2〜3 秒の間を足し、「動画を止めて」と言う。詳しい手順はサイトの実践課題に回す
 
 ## `screens`（同じ画面の改善前・改善後）
@@ -59,8 +59,8 @@
 ## 字幕を焼き込んだ動画
 
 ```bash
-CAPTIONS=1 bash scripts/render.sh N01   # site/media/N01.mp4（字幕なし）、site/media/N01.cc.mp4（サイト用の字幕焼き込み）、out/captioned/N01.mp4（配る用の字幕焼き込み・高画質）
-node scripts/stills.ts N01@2400 --captions   # 字幕つきの見た目を静止画で確かめる
+CAPTIONS=1 npm run render -- N01   # site/media/N01.mp4（字幕なし）、site/media/N01.cc.mp4（サイト用の字幕焼き込み）、out/captioned/N01.mp4（配る用の字幕焼き込み・高画質）
+npm run stills -- N01@2400 --captions   # 字幕つきの見た目を静止画で確かめる
 ```
 
 - 講座サイトは、`site/media/<id>.cc.mp4` があるレクチャーでは、字幕オンのとき字幕を焼き込んだ版を流し、「字幕」ボタン（C キー）で字幕なしの版に差し替える（再生位置はそのまま）。字幕が動画の中にあるので、標準のコントロールの全画面でも字幕が見える。お笑い版の講座は必ず `CAPTIONS=1` で書き出す
@@ -72,11 +72,11 @@ node scripts/stills.ts N01@2400 --captions   # 字幕つきの見た目を静止
 ## 作り直しの順番
 
 ```bash
-bun scripts/synth.ts N01 D01 M01
-uv run --locked --group audio python scripts/mix.py N01 D01 M01
-CAPTIONS=1 bash scripts/render.sh N01 D01 M01
-bun scripts/build_materials.ts            # docs/courses/ の Markdown と chunks.jsonl
-bun scripts/build_site.ts nudge-product uiux-engineers indie-marketing
+npm run synth -- N01 D01 M01
+npm run mix -- N01 D01 M01
+CAPTIONS=1 npm run render -- N01 D01 M01
+npm run build:materials                   # docs/courses/ の Markdown と chunks.jsonl
+npm run build:site -- nudge-product uiux-engineers indie-marketing
 ```
 
-`build_materials.ts` は、絵コンテの秒数を `site/data/<id>.json` から取るので、synth の後に流す。
+`build:materials` は、絵コンテの秒数を `site/data/<id>.json` から取るので、synth の後に流す。
