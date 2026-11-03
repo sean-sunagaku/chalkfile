@@ -1,6 +1,7 @@
 # 手元だけの生成物（台本と素材から作り直せる。公開する動画は Releases に置く）
 node_modules/
 .venv/
+__pycache__/
 .ruff_cache/
 out/
 .work/
