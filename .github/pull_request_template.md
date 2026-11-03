@@ -17,7 +17,7 @@
 
 ## 確かめたこと
 
-- [ ] `npm run check` が通る（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検）
+- [ ] `npm run check` が通る（CI と同じ点検。中身は `package.json` の `check`）
 - [ ] 台詞を変えたら、merge の前に素材（`npm run materials:push`）と動画（`npm run media:push -- --course <講座 ID>`・`npm run media:check`）を push した
 - [ ] 生成物（timeline・ポスター・動画の一覧・README と new-course.md の表・読む教材）を、手で直さずに作り直した（`npm run gen` など。AGENTS.md の「並行作業のきまり」）
 - [ ] サイトや保存の仕組みを変えたら、`npm run build:site -- --strict` と `npm run test:e2e` を流した
