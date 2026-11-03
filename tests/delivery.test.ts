@@ -19,6 +19,7 @@ import {
   type WorkflowRule,
   workflowFindings,
 } from '../scripts/check_delivery';
+import { tableUnder } from '../scripts/check_docs';
 
 type WranglerConfig = { assets: Record<string, unknown>; observability?: unknown; [key: string]: unknown };
 test('Workerを先に通すのは/media/だけで、静的404もassetsに任せる', () => {
@@ -780,6 +781,12 @@ describe('リポジトリの中の composite action は、中の手順まで同�
       expect(rulesOf(workflow(), 'x.yml', loadAction)).toContain(WORKFLOW_RULES[rule]));
 });
 
+test('CI の説明（docs/operations/ci.md）の表は、点検する性質と ci.yml のジョブと同じ', () => {
+  const md = readFileSync('docs/operations/ci.md', 'utf8');
+  const names = (heading: string) => (tableUnder(md, heading) ?? []).map((row) => row[0].replaceAll('`', ''));
+  expect(names('点検する性質')).toEqual(Object.values(WORKFLOW_RULES));
+  expect(names('ジョブ（ci.yml）')).toEqual(Object.keys(read('ci.yml').jobs));
+});
 test('SHA で固定した uses の横には、版の注を書く', () => {
   for (const file of FILES) expect(pinNoteFindings(readFileSync(path.join(DIR, file), 'utf8'), file)).toEqual([]);
   const text = `      - uses: actions/checkout@${SHA} # v7.0.1\n      - uses: actions/setup-node@${SHA}\n      - uses: ./.github/actions/setup\n`;

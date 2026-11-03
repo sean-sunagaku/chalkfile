@@ -9,7 +9,7 @@
 //   5. 3 か 4 が通らなければ（4 は間をおいて 1 回だけ流し直す）、1 で控えた版へ wrangler rollback して、1 で終える
 // - 確かめのコマンドには、Cloudflare の token と account ID を渡さない（環境変数から外して流す）
 // - --main を付けると、main の先頭がその commit でないときは何も出さずに終える（古い実行を流し直して、古い版を出さない）
-// - --drill は preview だけ。確かめをわざと失敗させて、rollback が動くかを試す（docs/operations/recovery.md の「rollback を試す」）
+// - --drill は preview だけ。確かめをわざと失敗させて、rollback が動くかを試す（docs/operations/recovery.md の「rollback を試す（preview）」）
 import { spawn } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';

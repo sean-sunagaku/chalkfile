@@ -24,6 +24,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 名前と公式ドキュメントの使い方 | [rights.md](../.claude/skills/study-video-course/references/rights.md) | |
 | コマンド・道具の役割・ポート | `package.json` の `scripts` と [guide/commands.md](guide/commands.md) | 入力と出力の表は、スキルの [pipeline.md](../.claude/skills/study-video-course/references/pipeline.md) |
 | 公開の順番 | [operations/publish.md](operations/publish.md) | 公開の順番を書くのはここだけ |
+| CI の形（ジョブ・キャッシュ・PR で見られるもの・毎日の確かめ・点検する性質） | [operations/ci.md](operations/ci.md) | 手順の中身の正本は `.github/workflows/` と `.github/actions/` の YAML |
 | 初回の設定（Cloudflare・GitHub） | [operations/setup.md](operations/setup.md) | 持ち主だけ |
 | 戻し方・作り直し（rollback・出し直し・素材・retained・token・無料枠・ドメイン） | [operations/recovery.md](operations/recovery.md) | 持ち主だけ |
 | ハマりどころ | [operations/troubleshooting.md](operations/troubleshooting.md) | 症状からひく索引 |
@@ -48,7 +49,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | `adr/` | 決めたことの記録 |
 | `courses/` | 生成物（読む教材） |
 | `guide/` | 始め方・講座の足し方・コマンド・学ぶ人の保存・プライバシー・物ごとのライセンス |
-| `operations/` | 公開・初回の設定・戻し方・ハマりどころ |
+| `operations/` | 公開・CI の形・初回の設定・戻し方・ハマりどころ |
 | `history/` | 日付つきの記録。名前の頭に日付を付ける。今の手順はここに書かない |
 
 ## 文書の決まり

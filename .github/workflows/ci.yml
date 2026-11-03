@@ -178,7 +178,7 @@ jobs:
             echo "- 取り出す: $ARTIFACT_URL"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # 合成の講座でサイトを組み、ブラウザ（Playwright の Chromium）で確かめる（npm run test:e2e:ci。まだ無いうちは何もせずに通る）
+  # 合成の講座でサイトを組み、ブラウザ（Playwright の Chromium）で確かめる（npm run test:e2e:ci を --if-present で流す。package.json に入れたら流れる）
   e2e:
     needs: check
     runs-on: ubuntu-latest
