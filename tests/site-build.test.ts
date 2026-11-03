@@ -16,7 +16,11 @@ import { type BuildSiteOptions, buildSite } from '../scripts/site/build';
 import { heroSnippetOf } from '../scripts/site/config';
 import { scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 import { type MediaEntry, mediaFilename } from '../site/media-shared';
+import { resolveCourse } from '../content/lines';
 import SAMPLE from './fixtures/content/site-sample';
+
+/** 合成の講座（台本に書いたままの形を、番号に直したもの） */
+const SAMPLE_COURSE = resolveCourse(SAMPLE.course);
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const FIXTURE = path.join(ROOT, 'tests/fixtures/content/site-sample');
@@ -48,7 +52,7 @@ const sampleMedia = (course: Course) => ({
 const buildSample = async (over: Partial<BuildSiteOptions> = {}) => {
   const outDir = mkdtempSync(path.join(tmpdir(), 'chalkfile-site-build-'));
   dirs.push(outDir);
-  const course = over.courses?.ja[0] ?? SAMPLE.course;
+  const course = over.courses?.ja[0] ?? SAMPLE_COURSE;
   const result = await buildSite({
     courses: { ja: [course], en: [], zh: [] },
     dataDir: path.join(FIXTURE, 'data'),
@@ -140,7 +144,7 @@ describe('講座サイトの組み立て（合成の講座）', () => {
 
   test('動画の一覧に無いレクチャーがあれば止まる', async () => {
     await expect(
-      buildSample({ mediaManifest: { schema: 1, entries: sampleMedia(SAMPLE.course).entries.slice(0, 1) } }),
+      buildSample({ mediaManifest: { schema: 1, entries: sampleMedia(SAMPLE_COURSE).entries.slice(0, 1) } }),
     ).rejects.toThrow('動画の一覧がありません: ja/site-sample/Y02');
   });
 
@@ -159,11 +163,11 @@ describe('講座サイトの組み立て（合成の講座）', () => {
 
   test('台本に置き換えの印（__DOCS_NOTE__・{{tabQuiz}}・__COURSE_JSON__）や </script> を書いても、組み立てが壊れない', async () => {
     const tricky: Course = {
-      ...SAMPLE.course,
+      ...SAMPLE_COURSE,
       title: '見本 __DOCS_NOTE__ の講座',
       headline: '{{tabQuiz}} と __COURSE_JSON__',
       docsNote: '__HEADLINE__ と </script><script>alert(1)</script>',
-      lectures: [{ ...SAMPLE.course.lectures[0], title: '__TITLE__ {{sep}}' }, SAMPLE.course.lectures[1]],
+      lectures: [{ ...SAMPLE_COURSE.lectures[0], title: '__TITLE__ {{sep}}' }, SAMPLE_COURSE.lectures[1]],
     };
     const { outDir } = await buildSample({ courses: { ja: [tricky], en: [], zh: [] } });
     const page = readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8');
@@ -194,8 +198,8 @@ describe('一覧のページの最初の画面に出す台本の抜き出し（h
     expect(heroDrift(SAMPLE.heroSnippet as HeroSnippet)).toBeNull();
   });
   test('並びで最初の、抜き出しのある講座のものを使う。どれにも無ければ止まる', () => {
-    const a = { ...SAMPLE, course: { ...SAMPLE.course, id: 'a' } };
-    const b = { course: { ...SAMPLE.course, id: 'b' }, heroSnippet: { file: 'b.ts', lines: ['b'] } };
+    const a = { ...SAMPLE, course: { ...SAMPLE_COURSE, id: 'a' } };
+    const b = { course: { ...SAMPLE_COURSE, id: 'b' }, heroSnippet: { file: 'b.ts', lines: ['b'] } };
     expect(heroSnippetOf([b.course, a.course], [a, b])).toEqual(b.heroSnippet);
     expect(heroSnippetOf([a.course, b.course], [a, b])).toEqual(SAMPLE.heroSnippet as HeroSnippet);
     expect(() => heroSnippetOf([b.course], [{ course: b.course }])).toThrow('heroSnippet');
