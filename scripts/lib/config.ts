@@ -6,7 +6,7 @@ import { ROOT } from './paths';
 
 /**
  * site/config.json。publishLangs: 公開する言語（synth・サイトの既定の対象）。
- * media: 訳の言語の動画を置くサイト（url はサイトの URL、repo はそのサイトのリポジトリ）
+ * 動画はどの言語も、同じ origin の /media/<言語>/<講座>/ で配る（Worker が Releases から中継する）ので、ここには書かない
  */
 export type SiteConfig = {
   series: string;
@@ -14,7 +14,6 @@ export type SiteConfig = {
   baseUrl: string;
   repoUrl: string;
   publishLangs: Lang[];
-  media?: Partial<Record<Lang, { url: string; repo: string }>>;
 };
 
 export const readSiteConfig = (root = ROOT): SiteConfig =>

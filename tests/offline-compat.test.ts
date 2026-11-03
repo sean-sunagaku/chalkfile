@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import config from '../site/config.json';
 import {
   checkSavedVersion, parseQuarantineName, parseRecord, planCleanup, QUARANTINE_DAYS, quarantineName, recordCaches, validateManifest,
   type CleanupInput, type SavedRecord,
@@ -12,13 +11,16 @@ import {
 
 // 利用者が保存した記録（tests/fixtures/saved-records/<日付>/）を、今の読み込みが全部受け入れることを確かめる。
 // 落ちたら、保存した講座が読めなくなる（隔離のあと 30 日で消える）。検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。
-// 決まりは docs/architecture/offline.md の「保存データの互換」
+// 決まりは docs/architecture/offline.md の「保存データの互換」。
+// 読み込みは、記録を書いた SW と同じ読み方で確かめる: sw.ts は parseRecord（動画の置き場所は /media/<言語>/ だけ）、
+// 旧 Pages の legacy-sw.ts は、その頃の訳の動画のサイト（mediaRoots。fixture の index.json）を validateManifest に渡す
 type Era = { scope: string; prefix: string; reader: 'sw' | 'legacy-sw'; mediaRoots: Record<string, string> };
 const fixtures = path.join(import.meta.dir, 'fixtures/saved-records');
 const read = <T>(file: string) => JSON.parse(readFileSync(file, 'utf8')) as T;
 const DAY = 24 * 60 * 60 * 1000;
-/** 訳の言語を公開したときの mediaRoots（site/config.json の media）。増えても日本語の講座の記録は読める */
-const publishedRoots = Object.fromEntries(Object.entries(config.media).map(([lang, m]) => [lang, new URL(m.url).pathname]));
+/** その頃の SW の、教材情報の確かめ方（今の SW は動画のサイトを渡さない） */
+const manifestOf = (era: Era, value: unknown, id: string) =>
+  era.reader === 'sw' ? validateManifest(value, id, era.scope) : validateManifest(value, id, era.scope, era.mediaRoots);
 
 for (const date of readdirSync(fixtures).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))) {
   const { eras } = read<{ eras: Record<string, Era> }>(path.join(fixtures, date, 'index.json'));
@@ -36,15 +38,21 @@ for (const date of readdirSync(fixtures).filter((d) => /^\d{4}-\d{2}-\d{2}$/.tes
         const id = decodeURIComponent(folder);
         test(`${id}: 教材情報（offline-manifest.json）を今の validateManifest が受け入れる`, () => {
           const m = read<unknown>(path.join(dir, folder, 'offline-manifest.json'));
-          expect(validateManifest(m, id, era.scope, era.mediaRoots).id).toBe(id);
-          if (era.reader === 'sw') expect(validateManifest(m, id, era.scope, publishedRoots).id).toBe(id);
+          expect(manifestOf(era, m, id).id).toBe(id);
         });
       }
       for (const { id, file, value } of records) test(`${id}: 保存の記録（${file}）を今の読み込みが受け入れる`, () => {
         // sw.ts は 1 つでも読めない版があれば記録全体を読めないとする。旧 Pages の legacy-sw.ts は、読める版だけを使う
-        // （versions() が checkSavedVersion と同じ確かめ方をする。公開中の移行 SW とバイト列を変えないため、T6-01 まで手を入れない）
-        if (era.reader === 'sw') expect(parseRecord(value, id, era.scope, era.prefix, era.mediaRoots).versions).toHaveLength(value.versions.length);
-        for (const v of value.versions) expect(checkSavedVersion(v, id, era.scope, era.prefix, era.mediaRoots).cache).toBe(v.cache);
+        // （versions() が、教材情報と Cache の名前の頭を確かめる。公開中の移行 SW とバイト列を変えないため、移行のコードを終えるまで手を入れない）
+        if (era.reader === 'sw') {
+          expect(parseRecord(value, id, era.scope, era.prefix).versions).toHaveLength(value.versions.length);
+          for (const v of value.versions) expect(checkSavedVersion(v, id, era.scope, era.prefix).cache).toBe(v.cache);
+        } else {
+          for (const v of value.versions) {
+            expect(manifestOf(era, v.manifest, id).id).toBe(id);
+            expect(v.cache.startsWith(`${era.prefix}course:${id}:`)).toBe(true);
+          }
+        }
       });
       for (const { id, value } of records.filter((r) => r.file === 'record-updated.json')) test(`${id}: 更新して保存した記録は、新しい版の後ろに前の版をそのまま残す`, () => {
         const before = records.find((r) => r.id === id && r.file === 'record.json')!.value;
@@ -55,7 +63,7 @@ for (const date of readdirSync(fixtures).filter((d) => /^\d{4}-\d{2}-\d{2}$/.tes
       if (era.reader === 'sw') test('保存したあとの Cache を、今の cleanup は 1 つも消さず、隔離もしない', () => {
         const { caches } = read<{ caches: string[] }>(path.join(dir, 'caches.json'));
         const keep = new Set([`${era.prefix}registry`, ...caches.filter((n) => n.startsWith(`${era.prefix}shell:`))]);
-        for (const r of records.filter((x) => x.file === 'record.json')) for (const v of parseRecord(r.value, r.id, era.scope, era.prefix, era.mediaRoots).versions) keep.add(v.cache);
+        for (const r of records.filter((x) => x.file === 'record.json')) for (const v of parseRecord(r.value, r.id, era.scope, era.prefix).versions) keep.add(v.cache);
         for (const oldShell of [false, true]) {
           expect(planCleanup({ names: caches, prefix: era.prefix, keep, held: { caches: new Set(), ids: new Set() }, oldShell, now: Date.now() }))
             .toEqual({ remove: [], create: [] });

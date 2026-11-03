@@ -54,11 +54,13 @@ export class OfflineError extends Error {
 }
 
 /**
- * 保存用の教材情報を確かめる。scope はアプリの場所（例: https://…/chalkfile/）。
- * mediaRoots は、訳の言語の動画を置く別のサイトの場所（言語 → URL。同じ origin のときだけ使える）。
- * 動画は、講座の media/ の下か、その言語の mediaRoots の <講座>/ の下だけ。どのレクチャーも動画とポスターがそろっていること（字幕を焼き込んだ版はあってもなくてもよい）
+ * 保存用の教材情報を確かめる。scope はアプリの場所（例: https://chalkfile.com/）。
+ * 動画は、同じ origin の /media/<言語>/<講座>/ の SHA-256 の入った名前。ポスター（と前の形の動画）は、講座の media/ の下で、?v= は版。
+ * どのレクチャーも動画とポスターがそろっていること（字幕を焼き込んだ版はあってもなくてもよい）。
+ * legacyMedia は、旧 Pages の頃に訳の言語の動画を置いた、同じ origin の別のサイト（言語 → パス）。旧 Pages の移行の SW（site/legacy-sw.ts）
+ * だけが渡し、その SW を消すときに一緒に消す。今の SW は渡さない
  */
-export function validateManifest(value: unknown, id: string, scope: string, mediaRoots: Record<string, string> = {}): CourseManifest {
+export function validateManifest(value: unknown, id: string, scope: string, legacyMedia: Record<string, string> = {}): CourseManifest {
   const m = value as CourseManifest;
   if (!m || m.schema !== 1 || !COURSE_ID.test(id) || m.id !== id || typeof m.title !== 'string' || m.title.length > 300 ||
       !HASH.test(m.pageVersion) || !HASH.test(m.revision) || !Array.isArray(m.files) || m.files.length < 3 || m.files.length > OFFLINE_COURSE_MAX_FILES) {
@@ -67,7 +69,7 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
   const origin = new URL(scope).origin;
   const lang = id.includes('/') ? id.split('/')[0] : '';
   const slug = id.split('/').pop()!;
-  const mediaRoot = lang && mediaRoots[lang] ? new URL(mediaRoots[lang], scope).href : '';
+  const legacyRoot = lang && legacyMedia[lang] ? new URL(legacyMedia[lang], scope).href : '';
   const urls = new Set<string>();
   let bytes = 0;
   const media = new Map<string, Set<string>>();
@@ -77,7 +79,7 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
     urls.add(f.url);
     const url = new URL(f.url, scope);
     const inScope = url.href.startsWith(scope);
-    const inMedia = !!mediaRoot && url.href.startsWith(mediaRoot);
+    const inMedia = !!legacyRoot && url.href.startsWith(legacyRoot);
     if (url.origin !== origin || (!inScope && !inMedia) || url.hash || url.username || url.password) throw new OfflineError('origin');
     if (f.url === `${id}/`) {
       if (f.type !== 'text/html' || f.bytes > OFFLINE_PAGE_MAX_BYTES) throw new OfflineError('page');
@@ -93,7 +95,7 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
         bytes += f.bytes;
         continue;
       }
-      const rest = inMedia ? url.href.slice(mediaRoot.length) : url.href.slice(scope.length);
+      const rest = inMedia ? url.href.slice(legacyRoot.length) : url.href.slice(scope.length);
       const match = new RegExp(`^${inMedia ? '' : `${lang ? `${lang}\\/` : ''}`}([A-Za-z0-9][A-Za-z0-9_-]*)\\/${inMedia ? '' : 'media\\/'}${MEDIA_NAME}\\?v=([a-f0-9]{64})$`).exec(rest);
       // 訳の講座の動画は、名前の終わりに講座の言語が付く（S01.en）。日本語の講座は付かない（S01）
       const nameLang = match?.[2].includes('.') ? match[2].split('.')[1] : '';
@@ -116,18 +118,18 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
  * 保存の記録の 1 つの版を確かめる（教材情報と、Cache の名前がその講座のものか）。prefix は Cache の名前の頭（chalkfile:<scope の path>:offline-v1:）。
  * 利用者が保存した記録も毎回ここを通る。ここと validateManifest を厳しくすると、保存した講座が読めなくなる（tests/offline-compat.test.ts）
  */
-export function checkSavedVersion(value: unknown, id: string, scope: string, prefix: string, mediaRoots: Record<string, string> = {}): SavedVersion {
+export function checkSavedVersion(value: unknown, id: string, scope: string, prefix: string): SavedVersion {
   const v = value as SavedVersion;
-  validateManifest(v?.manifest, id, scope, mediaRoots);
+  validateManifest(v?.manifest, id, scope);
   if (typeof v.cache !== 'string' || !v.cache.startsWith(`${prefix}course:${id}:`)) throw new OfflineError('manifest');
   return v;
 }
 
 /** 保存の記録を読む（site/sw.ts）。1 つでも読めない版があれば、記録全体を読めないとして OfflineError を投げる */
-export function parseRecord(value: unknown, id: string, scope: string, prefix: string, mediaRoots: Record<string, string> = {}): SavedRecord {
+export function parseRecord(value: unknown, id: string, scope: string, prefix: string): SavedRecord {
   const r = value as SavedRecord;
   if (!r || !Array.isArray(r.versions) || r.versions.length > 2) throw new OfflineError('manifest');
-  for (const v of r.versions) checkSavedVersion(v, id, scope, prefix, mediaRoots);
+  for (const v of r.versions) checkSavedVersion(v, id, scope, prefix);
   return r;
 }
 

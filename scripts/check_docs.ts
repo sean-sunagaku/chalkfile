@@ -220,8 +220,7 @@ export const ALLOW_OLD: OldAllow[] = [
   // この点検そのもの
   { rx: /^scripts\/check_docs\.ts$/, why: 'この点検（古い言葉の一覧）' },
   { rx: /^tests\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
-  // 直す担当が決まっている、コードの古い説明と前の形の処理（直したら、この行を消す）
-  { rx: /^site\/offline-shared\.ts$/, words: ['/chalkfile/'], why: 'コメントの scope の例', pending: true },
+  // 直す担当が決まっている、コードの古い説明と前の形の処理は、pending: true を付けてここに足す（直したら、その行を消す）
 ];
 
 /** その場所で、その古い言葉を許す例外（無ければ undefined） */

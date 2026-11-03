@@ -83,7 +83,6 @@ const makeSite = () => {
   const input: SiteInvariantInput = {
     dist: dir,
     scope,
-    mediaRoots: {},
     media: { schema: 1, entries: [video] },
     shell: [
       asset('./', Buffer.from(home), 'text/html'),

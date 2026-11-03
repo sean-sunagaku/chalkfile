@@ -5,13 +5,8 @@ import { downloadName, parseMediaPath } from './media-shared';
 import { COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
 import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineReply, OfflineRequest, SavedRecord, SavedVersion } from './offline-shared';
 
-/**
- * 組み立て（scripts/pwa.ts の buildPwa）が入れる設定。mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。
- * 例 en → /chalkfile-media-en/）。disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts）
- */
-declare const __BUILD_CONFIG__: {
-  build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string>; disabledRevisions: string[];
-};
+/** 組み立て（scripts/pwa.ts の buildPwa）が入れる設定。disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts） */
+declare const __BUILD_CONFIG__: { build: string; courses: string[]; shell: Asset[]; disabledRevisions: string[] };
 // 組み立ては __BUILD_CONFIG__ を、出てくる場所ごとに中身で置き換える。1 か所で受けて、sw.js に設定を 1 回だけ入れる
 const CONFIG = __BUILD_CONFIG__;
 const sw = globalThis as unknown as ServiceWorkerGlobalScope;
@@ -28,7 +23,6 @@ const deleting = new Set<string>();
 // 訳の講座の ID は en/… のように / を含むので、記録の URL では符号にする
 const recordUrl = (id: string) => new URL(`.offline-records/${encodeURIComponent(id)}`, scope).href;
 const assetUrl = (f: Asset) => new URL(f.url, scope).href;
-const mediaRoots = Object.fromEntries(Object.entries(CONFIG.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
 /** 重大な不具合で無効にした保存版の revision。当たる保存版は消さないが、オンラインではそのページを開かない（route） */
 const disabled = new Set(CONFIG.disabledRevisions);
 
@@ -124,7 +118,7 @@ async function readRecord(id: string): Promise<RecordData> {
   let value: unknown;
   try {
     value = await res.json();
-    return parseRecord(value, id, scope, prefix, CONFIG.mediaRoots);
+    return parseRecord(value, id, scope, prefix);
   } catch { return { versions: [], unreadable: { caches: recordCaches(value, id, prefix) } }; }
 }
 
@@ -215,7 +209,7 @@ async function fetchManifest(id: string): Promise<CourseManifest> {
   if (text.length > 100000) throw new OfflineError('tooLarge');
   let parsed: unknown;
   try { parsed = JSON.parse(text); } catch { throw new OfflineError('manifest'); }
-  const m = validateManifest(parsed, id, scope, CONFIG.mediaRoots);
+  const m = validateManifest(parsed, id, scope);
   if (await sha256(new TextEncoder().encode(JSON.stringify(m.files)).buffer) !== m.revision) throw new OfflineError('integrity');
   return m;
 }
@@ -405,18 +399,12 @@ function cachedResponse(req: Request, response: Response): Promise<Response> {
 }
 
 /**
- * URL がどの講座のものか。訳の講座のページは <言語>/<講座>/、訳の動画は別のサイト（動画のサイト）の <講座>/ の下。
- * media は動画のサイトの URL（relative は動画のサイトの中のパス）。2 文字の英小文字の講座 ID は使わない（content/index.ts）
+ * URL がどの講座のものか。訳の講座のページは <言語>/<講座>/、動画はどの言語も /media/<言語>/<講座>/ の下（media は動画の URL）。
+ * 2 文字の英小文字の講座 ID は使わない（content/index.ts）
  */
 function courseIdOf(url: URL): { id: string; relative: string; media: boolean } {
   const hashed = parseMediaPath(url.pathname);
   if (hashed) return { id: `${hashed.lang === 'ja' ? '' : `${hashed.lang}/`}${hashed.course}`, relative: url.pathname.slice(1), media: true };
-  for (const [lang, root] of Object.entries(mediaRoots)) {
-    if (url.href.startsWith(root)) {
-      const relative = url.pathname.slice(new URL(root).pathname.length);
-      return { id: `${lang}/${relative.split('/')[0]}`, relative, media: true };
-    }
-  }
   const relative = url.pathname.slice(new URL(scope).pathname.length);
   const parts = relative.split('/');
   const id = /^[a-z]{2}$/.test(parts[0]) && parts.length > 1 && parts[1] ? `${parts[0]}/${parts[1]}` : parts[0];
@@ -467,7 +455,7 @@ async function route(req: Request): Promise<Response> {
     if (response.status < 500 || req.mode !== 'navigate') return response;
   } catch { /* オフラインでは選択して保存した教材と起動用ページだけ返す */ }
   const shell = await caches.open(shellName);
-  // 動画のサイトの URL に、一覧のページを返さない（保存していない訳の動画とポスターは、下の 503 になる）
+  // 動画の URL に、一覧のページを返さない（保存していない動画は、下の 503 になる）
   const key = !media && (!relative || relative === 'index.html') ? scope : url.href;
   const cached = await shell.match(key);
   if (cached) return cachedResponse(req, cached);
@@ -480,7 +468,6 @@ async function route(req: Request): Promise<Response> {
 
 sw.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  const mine = url.href.startsWith(scope) || Object.values(mediaRoots).some((root) => url.href.startsWith(root));
-  if (url.origin !== new URL(scope).origin || !mine || !['GET', 'HEAD'].includes(event.request.method)) return;
+  if (url.origin !== new URL(scope).origin || !url.href.startsWith(scope) || !['GET', 'HEAD'].includes(event.request.method)) return;
   event.respondWith(route(event.request));
 });

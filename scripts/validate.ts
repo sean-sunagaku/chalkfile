@@ -18,7 +18,7 @@
 // 終了コード: 0 誤りなし・1 誤りがある・2 使い方の誤り
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
+import { LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Course, Theme } from '../content/types';
 import { creditsIn, voicesOf } from '../content/voices';
@@ -45,12 +45,6 @@ export type Report = { ok: boolean; errors: number; warnings: number; courses: n
 /** site/config.json の形と読み方（scripts/build_site.ts も、ここから読む。置き場所は scripts/lib/config.ts） */
 export { readSiteConfig, type SiteConfig };
 
-/** 訳の言語の動画のサイトのパス（/media/en/ など。サイトと同じ origin なので、パスだけで指せる）。日本語と、動画のサイトの無い言語は null */
-export const mediaRootOf = (config: SiteConfig, lang: Lang): string | null => {
-  const m = lang === 'ja' ? undefined : config.media?.[lang];
-  return m ? new URL(m.url.endsWith('/') ? m.url : `${m.url}/`).pathname : null;
-};
-
 const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
 
@@ -61,25 +55,8 @@ const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
  * coursesIn は言語ごとの講座（content/index.ts の coursesIn）。公開しない言語の講座も見る
  */
 export const siteProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], themes: readonly Theme[] = Object.values(THEMES)): string[] => {
-  const base = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
   const problems: string[] = [];
   if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
-  for (const [lang, m] of Object.entries(config.media ?? {})) {
-    if (!m || !HTTPS.test(m.url) || !HTTPS.test(m.repo)) problems.push(`site/config.json の media.${lang} の url と repo は https:// で書く`);
-    // 動画のサイトは講座サイトと同じ origin（Service Worker が中身を確かめて保存でき、Range もそのまま動く）
-    else if (new URL(m.url).origin !== new URL(base).origin) problems.push(`site/config.json の media.${lang}.url は baseUrl と同じ origin にする: ${m.url}`);
-    else {
-      // 講座サイトを含むパスに置くと、ページと動画の区別（Service Worker）が崩れる。講座サイトの下に置くとき（chalkfile.com/media/ など）は、
-      // 頭のフォルダの名前を、講座 ID・言語のフォルダと重ねない
-      // biome-ignore lint/style/noNonNullAssertion: media に書いた訳の言語には、動画のサイトのパスが必ずある（build_site.ts にあったときのまま）
-      const mp = mediaRootOf(config, lang as Lang)!;
-      const bp = new URL(base).pathname;
-      const head = mp.startsWith(bp) ? mp.slice(bp.length).split('/')[0] : '';
-      if (bp.startsWith(mp) || coursesIn('ja').some((c) => c.id === head) || LANGS.some((l) => LANG_INFO[l].path === `${head}/`)) {
-        problems.push(`site/config.json の media.${lang}.url は、講座サイトを含まず、講座 ID・言語のフォルダと重ならない場所にする: ${m.url}`);
-      }
-    }
-  }
   for (const lang of LANGS)
     for (const c of coursesIn(lang)) {
       if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);

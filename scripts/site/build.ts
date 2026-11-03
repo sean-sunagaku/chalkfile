@@ -17,7 +17,7 @@ import type { Asset, CourseManifest } from '../../site/offline-shared';
 import { asset, buildPwa, bundle } from '../pwa';
 import { assertSiteInvariants } from '../site-invariants';
 import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version';
-import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../validate';
+import { readSiteConfig, type SiteConfig, siteProblems } from '../validate';
 import { copyAssets, thumbnailAssets } from './assets';
 import { ROOT, realPosterOf, SITE_DIR, siteBase } from './config';
 import { cspHead, WWW_REDIRECT_SCRIPT } from './csp';
@@ -143,7 +143,6 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   for (const lang of langs) {
     const T = SITE_TEXT[lang];
     const info = LANG_INFO[lang];
-    const mediaRoot = mediaRootOf(config, lang);
     for (const course of coursesIn(lang).filter((c) => !only.length || only.includes(c.id))) {
       const theme = themeOf(course.theme);
       const cid = `${info.path}${course.id}`;
@@ -196,7 +195,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       if (manifest) manifests.push(manifest);
       writeCourse({ outDir: dist, cid, page, posters, manifest });
       log(
-        `site/dist/${cid}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}${mediaRoot ? `  動画 ${mediaRoot}` : ''}`,
+        `site/dist/${cid}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}`,
       );
     }
   }
@@ -243,9 +242,6 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       coursesIn('ja').map((c) => homePosterOf(c, '')),
     ),
   );
-  const mediaRoots = Object.fromEntries(
-    langs.flatMap((l) => (mediaRootOf(config, l) ? [[l, mediaRootOf(config, l) as string]] : [])),
-  );
   // sw.js に入れる講座（保存できる講座）は、出す言語の全部の講座から、組み立てたサイトに保存の manifest があるものを選ぶ。
   // 講座を指定して組み立てたときも、前に組んだ講座を外さない（外すと、その講座を保存できず、一覧のページの保存の欄からも消える）
   const saveable = langs
@@ -259,7 +255,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
   const disabledProblems = disabledRevisionProblems(disabledRevisions, published);
   if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
-  await buildPwa(SITE_DIR, dist, brand, saveable, shell, mediaRoots, disabledRevisions);
+  await buildPwa(SITE_DIR, dist, brand, saveable, shell, disabledRevisions);
   writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
@@ -267,7 +263,6 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   assertSiteInvariants({
     dist,
     scope: base,
-    mediaRoots,
     media: o.mediaManifest,
     shell,
     courses: saveable,

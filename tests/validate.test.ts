@@ -167,11 +167,8 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
       sources: [{ id: 's1', publisher: '公式', year: '2026', title: '仕様', url: 'http://example.com/spec', kind: 'official', checked: '2026-11-03', note: '見本' }],
       headline: `版の印 ${PAGE_VERSION_MARK} を書いた`,
     });
-    const media = { en: { url: 'https://example.com/media/en/', repo: 'https://github.com/sean-sunagaku/chalkfile' }, zh: { url: 'https://chalkfile.com/stripe-billing/zh/', repo: 'https://github.com/sean-sunagaku/chalkfile' } };
-    expect(siteProblems({ ...config, baseUrl: 'http://chalkfile.com/', media }, ja([bad]), [{ ...THEMES.chalkfile, id: 'bad theme' }])).toEqual([
+    expect(siteProblems({ ...config, baseUrl: 'http://chalkfile.com/' }, ja([bad]), [{ ...THEMES.chalkfile, id: 'bad theme' }])).toEqual([
       'site/config.json の baseUrl と repoUrl は https:// で書く',
-      'site/config.json の media.en.url は baseUrl と同じ origin にする: https://example.com/media/en/',
-      'site/config.json の media.zh.url は baseUrl と同じ origin にする: https://chalkfile.com/stripe-billing/zh/',
       '講座 ID が英数字でない: bad course',
       'bad course のリンクが https:// でない: javascript:alert(1)',
       'レクチャー ID が英数字でない: X 01',
@@ -180,9 +177,6 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
       `bad course の台本に、版の印と同じ文字 ${PAGE_VERSION_MARK} がある`,
       'テーマ ID が英数字でない: bad theme',
     ]);
-    // 訳の動画のサイトは、講座 ID・言語のフォルダと重ねない
-    const inCourse = { ...config, media: { en: { url: 'https://chalkfile.com/stripe-billing/', repo: 'https://github.com/sean-sunagaku/chalkfile' } } };
-    expect(siteProblems(inCourse, coursesIn)).toEqual(['site/config.json の media.en.url は、講座サイトを含まず、講座 ID・言語のフォルダと重ならない場所にする: https://chalkfile.com/stripe-billing/']);
     expect(siteProblems(config, coursesIn)).toEqual([]);
   });
   test('教材の ID の重なりと、質問例の参照先の抜け（build_materials.ts にあったもの）を、全部まとめて返す', () => {

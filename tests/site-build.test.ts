@@ -83,7 +83,7 @@ const bundles = async () => ({
  */
 const fingerprintOf = (rel: string, data: Buffer, b: { pageScript: string; offlineClient: string }): string => {
   if (rel === 'sw.js' || rel.startsWith('icons/')) return 'present';
-  if (!/\.(html|json|webmanifest)$|(^|\/)(_headers|\.assetsignore|\.nojekyll)$/.test(rel)) return sha256(data);
+  if (!/\.(html|json|webmanifest)$|(^|\/)(_headers|\.assetsignore)$/.test(rel)) return sha256(data);
   let text = data.toString('utf8').split(b.pageScript).join('<course-page>').split(b.offlineClient).join('<offline-client>');
   text = text.replace(/'sha256-[A-Za-z0-9+/=]+'/g, "'sha256-<hash>'").replace(/[a-f0-9]{64}/g, '<sha256>');
   if (rel.endsWith('offline-manifest.json')) text = text.replace(/"bytes":\d+/g, '"bytes":0');

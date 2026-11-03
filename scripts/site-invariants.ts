@@ -26,8 +26,6 @@ export type SiteInvariantInput = {
   dist: string;
   /** アプリの場所（site/config.json の baseUrl。SW の scope と同じ） */
   scope: string;
-  /** 訳の言語の動画のサイトのパス（sw.js の mediaRoots と同じ） */
-  mediaRoots?: Record<string, string>;
   /** 動画の一覧（Worker の許可リスト）。渡すと、保存の manifest の動画が一覧にあるかも見る */
   media?: MediaManifest;
   /** sw.js が install のときに取る起動用ファイル（buildPwa に渡したもの） */
@@ -200,7 +198,7 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
     const id = path.posix.dirname(rel);
     let m: CourseManifest;
     try {
-      m = validateManifest(JSON.parse(read(rel).toString('utf8')), id, scope, input.mediaRoots ?? {});
+      m = validateManifest(JSON.parse(read(rel).toString('utf8')), id, scope);
     } catch (e) {
       const why =
         e instanceof OfflineError
