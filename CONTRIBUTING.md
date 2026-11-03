@@ -87,6 +87,8 @@ npm run check    # lint・型・単体テスト・台本の検証・台本とフ
 - 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
 - 動画（`site/media/`・`out/`）は commit しない。ポスター（`content/<講座>/generated/posters/`）と動画の一覧（`content/<講座>/generated/media.<言語>.json`。`media push --course` が書く）は commit する。commit する生成物の一覧は、[公開の順番](docs/operations/publish.md) の「生成物を commit する」。動画は merge の前に Releases に置き、サイトは main への merge で Actions が出す
 - 講座サイトと保存の仕組み（PWA）を変えたら、作った動画と教材で `npm run build:site -- --strict` → `npm run test:e2e` を流す。保存の失敗・更新・通信なしでの起動も確かめる。HTML（`site/template.html` など）は lint の対象の外
+- 公開した講座の中身（事実・台詞・画面の文字・教材）を直したら、講座のフォルダの `content/<講座 ID>/CHANGES.md` に、日付・直したこと・理由を足す。初めて直すときに、このファイルを作る（[変更の記録](CHANGELOG.md) の「講座ごとの更新の記録」）
+- サイトが端末に残すもの・外に送るものを変えたら、[プライバシーの説明](docs/guide/privacy.md) を先に直す
 - Pull Request のひな形の、確かめたことの項目を埋める
 
 ## AI を使った貢献
@@ -99,7 +101,7 @@ npm run check    # lint・型・単体テスト・台本の検証・台本とフ
 
 ## ライセンス
 
-出したもの（コード・台本・テーマ）は、このリポジトリと同じ [MIT License](LICENSE) で公開されることに同意したものとします。
+出したもの（コード・台本・テーマ）は、このリポジトリと同じ [MIT License](LICENSE) で公開されることに同意したものとします。声・書体・道具など、物ごとの条件は [物ごとのライセンス](docs/guide/licenses.md)。
 
 ## 行動規範
 
