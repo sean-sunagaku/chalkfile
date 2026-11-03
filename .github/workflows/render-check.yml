@@ -1,0 +1,108 @@
+# 動画の書き出しが Linux（GitHub の Ubuntu の runner）でも通るかを、手で流して確かめる（Actions → render-check → Run workflow）。
+# 短い動画を 1 本だけ、手元と同じ道具（素材の取り出し → synth --cached-only → mix → render）で書き出す。書き出しの道具が、
+# 出力を ffprobe（長さ・形式・大きさ・音のあるなし）で確かめてから置き換える。書き出した動画とポスターは artifact で見られる。
+# secret は使わない。動画の push・Releases・公開はしない。素材は ci.yml の build と同じキャッシュ（main の実行が残す）を戻して使い、
+# 足りなければ素材のブランチから取り出す。見ることと直し方は docs/operations/ci.md の「Linux の書き出し（render-check.yml）」
+name: render-check
+
+on:
+  workflow_dispatch:
+    inputs:
+      video:
+        description: 書き出す動画（短いものを 1 本。例 L12・G01。掛け合いの講座は字幕版も作る）
+        required: true
+        default: L12
+
+# 読み取りだけ
+permissions:
+  contents: read
+
+concurrency:
+  group: render-check-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # 声の共有のキャッシュを作業フォルダの中に置く（ci.yml の build と同じ置き場所と鍵）
+      CHALKFILE_CACHE_DIR: ${{ github.workspace }}/.work/cache
+      VIDEO: ${{ inputs.video }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # 素材の FLAC を WAV に戻す・ミックス・サイト用の動画とポスター・書き出したものを確かめる（ffprobe）のに使う
+      - uses: ./.github/actions/ffmpeg
+      # ミックス（scripts/mix.py）。uv の版は pyproject.toml の required-version から決まる
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+      # 動画の名前は、ファイルの名前と artifact のパスにも使うので、形を先に確かめる（scripts/stages/video/plan.ts の VIDEO_KEY と同じ形）
+      - name: 動画と講座
+        id: video
+        run: |
+          if ! [[ $VIDEO =~ ^[A-Za-z0-9][A-Za-z0-9_-]*(\.[a-z]{2})?$ ]]; then
+            echo "動画の名前の形が違う: $VIDEO（例: L12・P01.en）" >&2
+            exit 2
+          fi
+          course=$(bun -e "import { VIDEOS } from './content'; const v = VIDEOS.find((x) => x.key === process.env.VIDEO); if (!v) { console.error('台本に無い動画: ' + process.env.VIDEO); process.exit(2); } console.log(v.course.id)")
+          echo "course=$course" >> "$GITHUB_OUTPUT"
+      - name: 素材のブランチの版
+        id: materials
+        run: |
+          sha=$(git ls-remote --exit-code origin refs/heads/materials | cut -f1)
+          if ! [[ $sha =~ ^[0-9a-f]{40}$ ]]; then
+            echo '素材のブランチ（materials）の版を読めない' >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      # 戻すだけ（残すのは ci.yml の main の実行）。版が違えば、次の手順が素材のブランチから取り出す
+      - name: 素材のキャッシュを戻す
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .work/cache/tts
+            public/audio
+          key: materials-wav-v2-${{ steps.materials.outputs.sha }}
+      - name: 素材を取り出す（その講座の声と、BGM・効果音）
+        env:
+          COURSE: ${{ steps.video.outputs.course }}
+        run: bun scripts/materials.ts pull "$COURSE"
+      - name: 声と時刻（合成しない）
+        run: bun scripts/synth.ts --cached-only "$VIDEO"
+      - name: 音のミックス
+        run: npm run mix -- "$VIDEO"
+      # バンドルを作り、Remotion の Chrome Headless Shell を取ってきて書き出す。出力は ffprobe で確かめてから置き換える
+      - name: 書き出す（Linux）
+        run: npm run render -- "$VIDEO"
+      - name: 要約（ffprobe）
+        if: ${{ !cancelled() && steps.video.outcome == 'success' }}
+        run: |
+          {
+            echo "### Linux の書き出し: $VIDEO"
+            echo
+            echo '```text'
+            for f in site/media/"$VIDEO".mp4 site/media/"$VIDEO".cc.mp4 out/captioned/"$VIDEO".mp4 site/media/"$VIDEO".jpg; do
+              [ -f "$f" ] || continue
+              echo "$f（$(stat -c %s "$f") バイト）"
+              ffprobe -v error -show_entries format=duration:stream=codec_type,codec_name,width,height,r_frame_rate,nb_frames,sample_rate -of compact=p=0 "$f"
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: artifact に残す（render-check）
+        if: ${{ !cancelled() && steps.video.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: render-check
+          path: |
+            site/media/${{ inputs.video }}.mp4
+            site/media/${{ inputs.video }}.cc.mp4
+            site/media/${{ inputs.video }}.jpg
+            out/captioned/${{ inputs.video }}.mp4
+          if-no-files-found: warn
+          retention-days: 7
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
