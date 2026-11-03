@@ -3,6 +3,8 @@
 const ACCOUNT = '1771bd0a5ec29834c0c8714ffe808889';
 const REPOSITORY = 'sean-sunagaku/chalkfile';
 const PROFILE = 'chalkfile-ci-bootstrap';
+// cf は初回の登録で 1 度だけ使うので package.json に入れず、実行のときに npm exec で取ってくる。
+// 版はここで完全に固定し、インストール時スクリプトは動かさない（下の cf() の --ignore-scripts）
 const CF_VERSION = '1.0.0-beta.26';
 const SECRET_NAME = 'CLOUDFLARE_API_TOKEN';
 let stage = '引数確認';
@@ -39,8 +41,10 @@ export async function registerGeneratedToken(token: { id: string; value: string 
   }
 }
 async function run(args: string[], stdin?: string) {
-  const child = Bun.spawn(args, { stdin: stdin === undefined ? 'ignore' : 'pipe', stdout: 'pipe', stderr: 'ignore', env: { ...process.env, CI: '1', CLOUDFLARE_ACCOUNT_ID: ACCOUNT } });
-  if (stdin !== undefined) { child.stdin.write(stdin); child.stdin.end(); }
+  // 標準入力はいつも pipe にし、渡す値が無いときはすぐに閉じる（stdin が条件で変わると、型の上で child.stdin が undefined になりうる）
+  const child = Bun.spawn(args, { stdin: 'pipe', stdout: 'pipe', stderr: 'ignore', env: { ...process.env, CI: '1', CLOUDFLARE_ACCOUNT_ID: ACCOUNT } });
+  if (stdin !== undefined) child.stdin.write(stdin);
+  child.stdin.end();
   const [stdout, code] = await Promise.all([new Response(child.stdout).text(), child.exited]);
   return { code, stdout };
 }

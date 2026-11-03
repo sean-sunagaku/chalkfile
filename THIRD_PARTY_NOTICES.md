@@ -20,5 +20,5 @@
 
 - BGM と効果音は `scripts/build_music.py` が合成したオリジナルで、外の音源は使っていません
 - 英語版・中国語版のずんだもんは、VOICEVOX:ずんだもんの声ではなく Kokoro の声です（キャラクターは東北ずん子・ずんだもんプロジェクトのキャラクター利用の手引きに沿って使う）
-- Python の道具（Kokoro・faster-whisper など）は `uv run` が、スクリプトの頭に書いた版で用意します（このリポジトリには入れません）
+- Python の道具は `uv run` が、固定した版で用意します（このリポジトリには入れません）。NumPy・SciPy は `pyproject.toml` と `uv.lock`、Kokoro・faster-whisper などはスクリプトの頭と `scripts/<名前>.py.lock` に版があります
 - 依存しているパッケージの正確な版は `package-lock.json` にあります
