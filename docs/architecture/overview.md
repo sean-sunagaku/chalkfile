@@ -15,7 +15,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  │    ├→ ~/.cache/chalkfile/tts/<声の鍵>.wav・.kana … 台詞の音声と読み。同じ文・同じ声なら使い回す（作業フォルダの間で共有。前の置き場所 .work/tts も読む）
  │    ├→ content/<講座>/generated/timeline/<key>.json … 場面と台詞の始まるフレーム（動画ごと・指紋つき。追跡）
  │    ├→ .work/plan/<key>.json ……………………… ミックスの設計図
- │    └→ site/data/<key>.json・.vtt ……………… サイトに出す台本・章・字幕の時刻
+ │    └→ site/data/<key>.json ………………………… サイトに出す台本・章・字幕の時刻（字幕の WebVTT はブラウザが作る）
  │
  ├─ scripts/materials.ts push ⇄ pull ── materials ブランチ（台詞の音声と読み・BGM・効果音）
  ├─ scripts/build_music.py（中身は scripts/audio/music/）──→ public/audio/music/・sfx/（BGM・ジングル・効果音）
@@ -73,7 +73,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-<言語>-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の講座ごとの動画の一覧が決める | render のあと、`media.ts push --course <講座 ID>` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、ci.yml の deploy のジョブが、build のジョブが組み立てたものを出す |
 | `gh-pages` ブランチ（旧 Pages。前の公開先） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
-| 手元だけ（`.gitignore`） | `.work/`（ミックスの設計図・読み。前の置き場所の声のキャッシュ `.work/tts` も読む）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
+| 手元だけ（`.gitignore`） | `.work/`（ミックスの設計図・読み。前の置き場所の声のキャッシュ `.work/tts` も読む）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕の時刻）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
 | リポジトリの外 | 台詞の声と読みの共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`。作業フォルダの間で使い回す）・Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 声 → `materials.ts pull`（同じ中身があれば取り出さない。台詞を変えたら synth）。ほかは初回に自動で取ってくる |
 
 ## リポジトリのフォルダ

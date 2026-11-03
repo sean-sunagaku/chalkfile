@@ -15,7 +15,7 @@
 //   content/<講座>/generated/timeline/<key>.json   Remotion が読む場面・台詞の開始フレーム（指紋つき。Git に入れる。自分の動画のファイルだけを書く）
 //   .work/plan/<key>.json                mix.py が読むミックスの設計図（音声は場所に縛られない名前 .work/tts/<hash>.wav で書く）
 //   .work/kana/<key>.txt                 台詞ごとの読み（カナ。訳は Kokoro に渡した音素）。.work/speech/<key>.json は訳の聞き取りの点検用
-//   site/data/<key>.json, <key>.vtt      講座サイトの台本と字幕
+//   site/data/<key>.json                 講座サイトの台本（章と字幕の時刻。字幕の VTT はブラウザがこの台本から作る）
 // 終了コード: 0 できた・1 失敗（台本の誤り・合成の失敗）・2 使い方の誤り・3 前提が足りない（素材の声・VOICEVOX・uv）
 import { mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';

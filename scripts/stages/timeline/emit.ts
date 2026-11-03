@@ -5,24 +5,15 @@
 //   .work/plan/<key>.json                          mix.py が読むミックスの設計図
 //   .work/kana/<key>.txt                           台詞ごとの読み（カナ。訳は Kokoro に渡した音素）
 //   .work/speech/<key>.json                        訳の動画の、台詞と音声の対応（聞き取りの点検用）
-//   site/data/<key>.json・<key>.vtt                 講座サイトの台本と字幕
+//   site/data/<key>.json                           講座サイトの台本（章と字幕の時刻。字幕の VTT はブラウザが作る）
+import { rmSync } from 'node:fs';
 import path from 'node:path';
 import type { Video } from '../../../content';
 import { timelineFile } from '../../../engine/core/generated';
 import { timelineJson } from '../../../engine/core/timeline';
 import { writeAtomic } from '../../lib/fsx';
 import { ROOT } from '../../lib/paths';
-import {
-  kanaLogOf,
-  type LineVoice,
-  layout,
-  planOf,
-  siteDataOf,
-  speechFileOf,
-  type Timed,
-  timelineOf,
-  vttOf,
-} from './compute';
+import { kanaLogOf, type LineVoice, layout, planOf, siteDataOf, speechFileOf, type Timed, timelineOf } from './compute';
 
 /** 書く場所。root はリポジトリの最上位（timeline は root からの content/<講座>/generated/timeline/） */
 export type OutDirs = { root: string; plan: string; kana: string; speech: string; siteData: string };
@@ -51,8 +42,8 @@ export const emitVideo = (
     timelineJson(timelineOf(key, lecture, lang, timed, fps)),
   );
   writeAtomic(path.join(out.plan, `${key}.json`), JSON.stringify(planOf(key, timed), null, 1));
-  const site = siteDataOf(key, lecture, course, timed);
-  writeAtomic(path.join(out.siteData, `${key}.json`), JSON.stringify(site));
-  writeAtomic(path.join(out.siteData, `${key}.vtt`), vttOf(site.cues));
+  writeAtomic(path.join(out.siteData, `${key}.json`), JSON.stringify(siteDataOf(key, lecture, course, timed)));
+  // 前の synth が書いた字幕のファイル（誰も読まない）を消す
+  rmSync(path.join(out.siteData, `${key}.vtt`), { force: true });
   return timed;
 };

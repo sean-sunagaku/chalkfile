@@ -108,7 +108,10 @@ export const planOf = (key: string, timed: Timed) => ({
   })),
 });
 
-/** 講座サイトの台本（章と、字幕の時刻と文）。掛け合いの講座は、話している人の名前を付ける（「ずんだもん：…」） */
+/**
+ * 講座サイトの台本（章と、字幕の時刻と文）。掛け合いの講座は、話している人の名前を付ける（「ずんだもん：…」）。
+ * サイトの字幕（WebVTT）は、ブラウザがこの cues から作る（site/template.html）。VTT のファイルは作らない
+ */
 export const siteDataOf = (key: string, lecture: Lecture, course: Course, timed: Timed) => {
   const cast = course.cast ?? {};
   const said = (l: TimedLine) => {
@@ -134,17 +137,6 @@ export const siteDataOf = (key: string, lecture: Lecture, course: Course, timed:
       })),
     ),
   };
-};
-
-/** 字幕（WebVTT）。サイトの台本と同じ時刻と文 */
-export const vttOf = (cues: { start: number; end: number; text: string }[]): string => {
-  const ts = (x: number) => {
-    const h = Math.floor(x / 3600);
-    const m = Math.floor((x % 3600) / 60);
-    const s = x % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s.toFixed(3).padStart(6, '0')}`;
-  };
-  return `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${ts(c.start)} --> ${ts(c.end)}\n${c.text}\n`).join('\n')}`;
 };
 
 /** 台詞ごとの読みの記録（.work/kana/<key>.txt）。訳は、画面の文と読み上げた文が違えば、読み上げた文も書く */

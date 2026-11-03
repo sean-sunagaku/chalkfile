@@ -2,7 +2,7 @@
 // 出力（scripts/stages/timeline/emit.ts）は一時のフォルダに書き、計算した形とそのまま同じかを見る。
 // 間の取り方（engine/core/timeline.ts の TIMING）や丸め方を変えたら、ここの値も直す（全部の動画の timeline が変わる）
 import { afterAll, describe, expect, test } from 'bun:test';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Video } from '../content';
@@ -187,11 +187,16 @@ describe('出力の形', () => {
 });
 
 describe('出力を書く（emitVideo）', () => {
-  test('自分の動画のファイルだけを、計算した形のとおりに書く（一時のファイルを残さない）', () => {
+  test('自分の動画のファイルだけを、計算した形のとおりに書く（一時のファイルを残さない。字幕の VTT は書かない）', () => {
     const root = mkdtempSync(path.join(sandbox, 'root-'));
     const out = outDirs(root);
+    // 前の synth が書いた字幕のファイル（誰も読まない）は消し、ほかの動画のファイルには触らない
+    mkdirSync(out.siteData, { recursive: true });
+    writeFileSync(path.join(out.siteData, 'X01.vtt'), 'WEBVTT\n');
+    writeFileSync(path.join(out.siteData, 'X02.vtt'), 'WEBVTT\n');
     const video: Video = { key: 'X01', lang: 'ja', lecture: lec, course: c };
     const t = emitVideo(out, video, voices, FPS);
+    expect(readdirSync(out.siteData).sort()).toEqual(['X01.json', 'X02.vtt']);
     expect(t).toEqual(layout(lec, voices, FPS));
     const read = (p: string) => readFileSync(path.join(root, p), 'utf8');
     expect(read(timelineFile(c.id, 'X01'))).toBe(timelineJson(timelineOf('X01', lec, 'ja', t, FPS)));
