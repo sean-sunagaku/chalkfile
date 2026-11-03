@@ -60,6 +60,7 @@
     "@remotion/renderer": "4.0.539",
     "@types/bun": "1.3.6",
     "@types/react": "19.3.0",
+    "jsonc-parser": "3.3.1",
     "knip": "6.44.1",
     "typescript": "6.0.3",
     "wrangler": "4.156.1"
