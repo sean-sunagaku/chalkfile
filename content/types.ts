@@ -661,4 +661,30 @@ export type Theme = {
   decor: 'chalk' | 'band' | 'stars';
   /** カードの角の丸み（px） */
   radius: number;
+  /**
+   * 暗い地（scheme が dark）の面と線の色。暗い地のテーマには必ず書く。明るい地は color から作るので書かない。
+   * 地の暗さと色みで合う値が違うので、テーマごとに決める（NIGHT は最初の版の値）。CSS の色（#RRGGBB か rgba()）で書く
+   */
+  dark?: DarkSurfaces;
+};
+
+/** 暗い地の面と線（Theme の dark） */
+export type DarkSurfaces = {
+  /** カードの面（上と下）。地に白を薄く重ねる */
+  glass: string;
+  glass2: string;
+  /** 図の上に重ねる札の面（矢印の文字・クイズの判定・比べるの結論） */
+  overlay: string;
+  /** 色の付かない矢印・線 */
+  edge: string;
+  /** 縦の補助線（やりとりの図） */
+  lane: string;
+  /** 進み具合の溝 */
+  track: string;
+  /** タイトルの後ろを横切る薄い光 */
+  sheen: string;
+  /** ごく薄い面（始まりの状態・選ばれていない丸） */
+  faint: string;
+  /** 図の色（tone の main）の上に乗せる文字 */
+  onTone: string;
 };

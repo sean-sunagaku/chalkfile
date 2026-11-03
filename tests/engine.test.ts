@@ -1,9 +1,12 @@
-import { afterAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { CHALKFILE, NIGHT, THEMES } from '../content/themes';
-import type { Tone } from '../content/types';
-import { contrastRatio, contrastSummary, luminance, mixHex, onTone, themeContrast, toneText } from '../engine/core/contrast';
-import { alpha, applyTheme, C, mix, tone, TONES } from '../src/theme';
+import type { Theme } from '../content/types';
+import { alpha, mix } from '../engine/core/color';
+import { contrastRatio, contrastSummary, luminance, themeContrast } from '../engine/core/contrast';
+import { derivePalette, TONE_TEXT_MIX } from '../engine/core/theme';
+import { validateTheme } from '../engine/core/validate';
 import { lineEnd, lineStart } from '../src/timing';
+import paletteJson from './fixtures/palette/themes.json';
 
 describe('台詞の番号からフレーム（src/timing.tsx の lineStart・lineEnd）', () => {
   const lines = [
@@ -33,49 +36,101 @@ describe('台詞の番号からフレーム（src/timing.tsx の lineStart・lin
   test('整数でない at は描く途中で止まる（台本の検証が誤りにする理由）', () => expect(() => lineStart(lines, 1.5)).toThrow());
 });
 
-describe('色の関数（src/theme.ts の alpha・mix）', () => {
+describe('色の関数（engine/core/color.ts の alpha・mix）', () => {
   test('alpha は #RRGGBB に透明度を付ける', () => {
     expect(alpha('#FF8000', 0.5)).toBe('rgba(255,128,0,0.5)');
     expect(alpha('#ff8000', 1)).toBe('rgba(255,128,0,1)');
   });
-  test('#RRGGBB でない色は黙って壊れる（テーマの検証が誤りにする理由）', () => expect(alpha('#FFF', 0.5)).toBe('rgba(255,15,NaN,0.5)'));
+  test('#RRGGBB でない色は、黙って壊れた色を返さずに止める（テーマの検証が誤りにする形）', () => {
+    expect(() => alpha('#FFF', 0.5)).toThrow('#RRGGBB でない色');
+    expect(() => mix('red', '#000000', 0.5)).toThrow('#RRGGBB でない色');
+  });
   test('mix は 2 色を混ぜて、小文字の #rrggbb を返す', () => {
     expect(mix('#000000', '#FFFFFF', 0.5)).toBe('#808080');
     expect(mix('#ABCDEF', '#000000', 0)).toBe('#abcdef');
     expect(mix('#000000', '#FFFFFF', 1)).toBe('#ffffff');
   });
-  test('engine/core/contrast.ts の mixHex は、src/theme.ts の mix と同じ値を出す', () => {
-    for (const [a, b] of [
-      ['#14312A', '#FFC93C'],
-      ['#090D22', '#FFFFFF'],
-      ['#E58F00', '#0A2540'],
-    ])
-      for (const t of [0, 0.22, 0.3, 0.45, 1]) expect(mixHex(a, b, t)).toBe(mix(a, b, t));
+  test('16 進の透明度（#RRGGBBAA）と同じ値を、alpha(色, AA / 255) で書ける', () => {
+    for (const aa of [0x26, 0x30, 0x38, 0x40, 0x55, 0x66, 0x88, 0xcc]) expect(alpha('#E0507F', aa / 255)).toBe(`rgba(224,80,127,${aa / 255})`);
   });
 });
 
-describe('テーマの当てはめ（src/theme.ts の applyTheme）', () => {
-  afterAll(() => applyTheme(CHALKFILE, false));
-  test('5 つのテーマで、図の文字色と onTone が engine/core/contrast.ts の作り方と同じ', () => {
-    for (const theme of Object.values(THEMES)) {
-      applyTheme(theme, false);
-      for (const t of Object.keys(theme.tones) as Tone[]) {
-        expect(TONES[t].main).toBe(theme.tones[t]);
-        expect(TONES[t].text).toBe(toneText(theme, t));
-      }
-      expect(C.onTone).toBe(onTone(theme));
+/** 前の src/theme.ts（applyTheme）が作った色（tests/fixtures/palette/themes.json） */
+type Recorded = { C: Record<string, string>; TONES: Record<string, Record<string, string>>; GRAD: string; DISPLAY: string; SYNTAX: Record<string, string>; MESH: string[] };
+const RECORDED_PALETTE = (paletteJson as { themes: Record<string, Recorded> }).themes;
+
+describe('パレット（engine/core/theme.ts の derivePalette）', () => {
+  test('5 つのテーマで、前の src/theme.ts（applyTheme）と同じ色を作る（動画の見た目を変えない）', () => {
+    expect(Object.keys(THEMES).sort()).toEqual(Object.keys(RECORDED_PALETTE).sort());
+    for (const [id, theme] of Object.entries(THEMES)) {
+      const p = derivePalette(theme);
+      const want = RECORDED_PALETTE[id];
+      expect(Object.fromEntries(Object.keys(want.C).map((k) => [k, p.C[k as keyof typeof p.C]]))).toEqual(want.C);
+      expect(p.TONES).toEqual(want.TONES as typeof p.TONES);
+      expect({ GRAD: p.GRAD, DISPLAY: p.DISPLAY, SYNTAX: p.SYNTAX, MESH: p.MESH }).toEqual({ GRAD: want.GRAD, DISPLAY: want.DISPLAY, SYNTAX: want.SYNTAX as typeof p.SYNTAX, MESH: want.MESH });
     }
   });
-  test('薄い面は、明るい地で 10%・暗い地で 15% の透明度', () => {
-    applyTheme(CHALKFILE, false);
-    expect(TONES.mint.soft).toBe(alpha(CHALKFILE.tones.mint, 0.1));
-    applyTheme(NIGHT, false);
-    expect(TONES.mint.soft).toBe(alpha(NIGHT.tones.mint, 0.15));
+  test('足した色: 字幕の文字（onCode）は白、コードの面の下の端（codeShade）は code を黒に 0.18 寄せた色', () => {
+    for (const theme of Object.values(THEMES)) {
+      const { C } = derivePalette(theme);
+      expect(C.onCode).toBe('#FFFFFF');
+      expect(C.codeShade).toBe(mix(theme.color.code, '#000000', 0.18));
+    }
+  });
+  test('暗い地の面と線は、テーマの dark に書いた値（Night は最初の版の値）', () => {
+    const { C } = derivePalette(NIGHT);
+    for (const [k, v] of Object.entries(NIGHT.dark ?? {})) expect(C[k as keyof typeof C]).toBe(v);
+  });
+  test('暗い地のテーマに dark が無ければ止める', () => {
+    const { dark: _, ...noDark } = NIGHT;
+    expect(() => derivePalette({ ...noDark, id: 'no-dark' })).toThrow('dark');
+  });
+  test('同じテーマと言語なら、前に作ったパレットを返す（テーマごとに 1 回だけ作る）', () => {
+    expect(derivePalette(CHALKFILE, 'ja')).toBe(derivePalette(CHALKFILE));
+    expect(derivePalette(CHALKFILE, 'zh')).not.toBe(derivePalette(CHALKFILE, 'ja'));
+  });
+  test('書体の並びは言語に合わせる（中国語は Noto Sans SC。英字用の Inter は残す）', () => {
+    expect(derivePalette(CHALKFILE, 'ja').fonts).toEqual(['zen-maru']);
+    expect(derivePalette(CHALKFILE, 'zh').fonts).toEqual(['noto-sc']);
+    expect(derivePalette(THEMES.indigo, 'zh').fonts).toEqual(['inter', 'noto-sc']);
   });
   test('tone() は省くと violet', () => {
-    applyTheme(CHALKFILE, false);
-    expect(tone()).toBe(TONES.violet);
-    expect(tone('coral').main).toBe(CHALKFILE.tones.coral);
+    const p = derivePalette(CHALKFILE);
+    expect(p.tone()).toBe(p.TONES.violet);
+    expect(p.tone('coral').main).toBe(CHALKFILE.tones.coral);
+  });
+  test('講座サイトの図の文字色は、動画と作り方が違う（明るい地は ink に 0.22、暗い地はそのまま。動画は 0.3 と白に 0.45）', () => {
+    expect(TONE_TEXT_MIX).toEqual({ video: { light: 0.3, dark: 0.45 }, site: { light: 0.22 } });
+    const light = derivePalette(CHALKFILE);
+    expect(light.site.toneText.pink).toBe(mix(CHALKFILE.tones.pink, CHALKFILE.color.ink, 0.22));
+    expect(light.TONES.pink.text).toBe(mix(CHALKFILE.tones.pink, CHALKFILE.color.ink, 0.3));
+    const dark = derivePalette(NIGHT);
+    expect(dark.site.toneText.pink).toBe(NIGHT.tones.pink);
+    expect(dark.TONES.pink.text).toBe(mix(NIGHT.tones.pink, '#FFFFFF', 0.45));
+  });
+});
+
+describe('テーマの検証（engine/core/validate.ts の validateTheme）', () => {
+  const brief = (theme: Theme) => validateTheme(theme, 't').map((x) => `${x.level} ${x.where}`).sort();
+  test('今の 5 つのテーマに、誤りも注意も無い', () => {
+    for (const t of Object.values(THEMES)) expect(validateTheme(t)).toEqual([]);
+  });
+  test('要る項目の抜け（色・コードの色分け・影・角の丸み）と、知らない書体を見つける', () => {
+    const { muted: _, ...color } = CHALKFILE.color;
+    const { fn: __, ...syntax } = CHALKFILE.syntax;
+    const bad = { ...CHALKFILE, color, syntax, shadow: '', radius: -1, fonts: ['zen-maru', 'comic'] } as unknown as Theme;
+    expect(brief(bad)).toEqual(['error t color.muted', 'error t fonts[1]', 'error t radius', 'error t shadow', 'error t syntax.fn']);
+  });
+  test('暗い地のテーマは dark が要る。dark の色は #RRGGBB か rgba()、図の色の上の文字（onTone）は #RRGGBB', () => {
+    const { dark: _, ...noDark } = NIGHT;
+    expect(brief(noDark)).toEqual(['error t dark']);
+    const base = NIGHT.dark;
+    if (!base) throw new Error('NIGHT に dark が無い');
+    const dark = { ...base, overlay: 'navy', edge: 'rgba(300,0,0,0.5)', track: 'rgba(255, 255, 255, 0.1)', onTone: 'rgba(11,15,36,1)' };
+    expect(brief({ ...NIGHT, dark })).toEqual(['error t dark.edge', 'error t dark.onTone', 'error t dark.overlay']);
+  });
+  test('明るい地のテーマに dark を書くと注意（使わない）', () => {
+    expect(brief({ ...CHALKFILE, dark: NIGHT.dark })).toEqual(['warning t dark']);
   });
 });
 
