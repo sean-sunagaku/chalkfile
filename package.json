@@ -16,7 +16,7 @@
     "knip": "knip",
     "format": "biome check --write",
     "format:new": "bun scripts/format_new.ts --write",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.client.json && tsc --noEmit -p site/tsconfig.sw.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
     "test": "bun test tests/*.test.ts",
     "test:e2e": "playwright test",
     "test:browser": "playwright test",
