@@ -8,5 +8,5 @@
     // build_site.ts は別の PR が組み直している最中なので、ここでは直さない。直ったら、この行を消す
     "noUnusedParameters": false
   },
-  "include": ["*.ts", "lib/*.ts"]
+  "include": ["*.ts", "lib/*.ts", "stages/**/*.ts"]
 }

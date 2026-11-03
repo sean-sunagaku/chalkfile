@@ -39,6 +39,10 @@ const MODULES = [
   'timelines',
   'voices',
   ...readdirSync(path.join(ROOT, 'scripts/lib')).map((f) => `lib/${f.replace(/\.ts$/, '')}`),
+  // 段の部品（scripts/stages/<段>/<部品>.ts）
+  ...readdirSync(path.join(ROOT, 'scripts/stages')).flatMap((stage) =>
+    readdirSync(path.join(ROOT, 'scripts/stages', stage)).map((f) => `stages/${stage}/${f.replace(/\.ts$/, '')}`),
+  ),
 ];
 const NODE = ['node', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON'];
 type Case = { name: string; argv: string[]; file: string };
