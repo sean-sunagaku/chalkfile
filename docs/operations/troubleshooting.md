@@ -47,6 +47,10 @@
 
 - **`materials push` が止まる**: commit していない台本の変更があるか、HEAD が origin/main を含まない。commit して、main を取り込む（[公開の順番](publish.md) の 1・2）
 - **`synth --cached-only` が、声が足りないと止まる**: `npm run materials:pull` で取り出す。新しい台詞なら、VOICEVOX を動かして synth し、`materials push` する（[戻し方](recovery.md) の「素材を作り直す」）
+- **synth が「VOICEVOX（…）の … が … 秒で答えない」で止まる（終了コード 3）**: エンジンが止まっているか、重すぎる。エンジンを起こし直してから流す。1 回の時間切れ（既定 60 秒）は `VOICEVOX_TIMEOUT=<秒>` で変えられる（3 回まで試す）。台詞を変えていないなら、`npm run materials:pull` の声で足りる
+- **synth が「エンジンの版が混ざっている」と知らせる**: 1 本の動画の声を、違う版の VOICEVOX（訳は Kokoro）で作った。そろえるなら、古い版の声（`<鍵>.meta.json` の `engineVersion` で分かる）をキャッシュから消して、もう一度 synth する
+- **`synth --durations-only` が「DURATIONS.json がまだ無い」「長さが無いか古い台詞がある」と出す**: 素材ブランチの長さの一覧が、まだ無いか、今の音声と合わない。そのときは今までどおり音声を取り出して作るので、止まりはしない（ffmpeg が要る）。次の `materials push` で一覧がそろう
+- **`materials push` が「台詞の音声の長さを測れない」で止まる**: 手元のその WAV が壊れている。消してから、synth か `npm run materials:pull` で作り直す
 - **`media push` が「通常動画がありません」で止まる**: 選んだ講座（`--course`）の通常版が全部手元に要る（ほかの講座の動画は要らない）。作り直さない動画は `bun scripts/media.ts pull <講座 ID>` で取る（[公開の順番](publish.md) の 5）
 - **`media.ts pull` が「上書きしません」で止まる**: 手元の動画が、動画の一覧と違う。作り直した動画なら、その講座を外して pull する。古い写しなら、消してから pull する（[公開の順番](publish.md) の「ぶつかったとき」）
 - **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、`render.sh` と同じ 4.2 秒の所・幅 1280・JPEG の品質 3 で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない

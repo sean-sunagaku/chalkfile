@@ -14,7 +14,7 @@ export const cacheDir = (env: NodeJS.ProcessEnv = process.env): string =>
   env.CHALKFILE_CACHE_DIR ? path.resolve(env.CHALKFILE_CACHE_DIR) : path.join(os.homedir(), '.cache', 'chalkfile');
 
 /**
- * 台詞の音声と読み（<鍵>.wav・<鍵>.kana）の名前の頭。鍵は文と声から決まる（scripts/voices.ts の ttsKeyIn）ので、同じ名前なら中身も同じ。
+ * 台詞の音声と読み（<鍵>.wav・<鍵>.kana）の名前の頭。鍵は文と合成のレシピから決まる（scripts/voices.ts の ttsKeysIn）ので、同じ名前なら中身も同じ。
  * 素材の SHA256SUMS・設計図（.work/plan）・聞き取りの対応（.work/speech）には、場所に縛られないこの名前を書く
  */
 export const TTS_REL = '.work/tts';

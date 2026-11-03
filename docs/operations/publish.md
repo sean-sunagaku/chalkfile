@@ -53,6 +53,7 @@ npm run materials:push
 - push は足すだけ。手元の素材を足すか上書きし、手元の台本に無い講座の素材は消さない。消すのは `bun scripts/materials.ts gc` だけで、持ち主が流す（[戻し方](recovery.md) の「素材を片付ける」）
 - **merge より前に** push する。merge で動く Actions は、素材ブランチから声を取り出して時刻を作る。声が足りないと、そこで止まる
 - 手元に無い台詞があると、push は止まる。`npm run materials:check` で先に見られる
+- push は、台詞の長さの一覧 `DURATIONS.json`（WAV から測った長さと、測った WAV の sha256）と、v2 の鍵で作った声の記録（`.meta.json`。合成のレシピとエンジンの版）も素材ブランチに書く。長さを測れない壊れた音声があると止まる。`synth --cached-only --durations-only` は、この一覧と読みだけで、音声を取り出さずに時刻とサイトのデータを作る（一覧が無い・古いときは、音声を取り出してから作る）
 
 ## 5. 動画を作る（render）
 
