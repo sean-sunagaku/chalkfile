@@ -354,7 +354,10 @@ export type MockScreen<A extends At = number> = {
 export type ScreensScene<A extends At = number> = Base & {
   kind: 'screens';
   device?: 'browser' | 'phone';
-  /** 画面の中身の拡大率（部品が少ない画面は大きくして読みやすくする）。既定はスマホ 1.3・ブラウザ 1.1 */
+  /**
+   * 画面の中身の拡大率（部品が少ない画面は大きくして読みやすくする）。既定はスマホ 1.3、ブラウザは 2 枚並べるとき 1.1・1 枚だけのとき 1.15
+   * （src/scenes/screens.tsx の Frame に渡す値）
+   */
   zoom?: number;
   left: MockScreen<A>;
   right?: MockScreen<A>;
