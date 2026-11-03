@@ -12,6 +12,7 @@
 // engine/core の外を import しない。台本の外の一覧のうち、中身（content/）にあるもの（テーマの一覧）は、validateCourse を呼ぶ側が渡す（CourseContext）
 import { assertNever } from './assert';
 import { isHex } from './color';
+import { contrastProblems } from './contrast';
 import { timelineFile } from './generated';
 import { AT_KEYS, l10nProblems, videoKey, type Lang } from './i18n';
 import { legacyUses } from './legacy';
@@ -86,31 +87,32 @@ const has = <K extends string>(set: Record<K, true>, v: unknown): v is K => type
 const names = (set: Record<string, true>) => Object.keys(set).join('・');
 
 /* ───────────── 画面の大きさの見込み ─────────────
- * 大きさは部品と同じ engine/core/video-config.ts の値（実際に測る形に変えるのは、見た目の更新のとき）。文字の幅は見積もりなので、注意にとどめる。
+ * 大きさは部品と同じ engine/core/video-config.ts の値。部品は描くときに文字の幅を測って、入らなければ縮める（src/components/fit.ts）。
+ * ここは書体を読めないので見積もりで、縮めても入らない見込みのものだけを注意にする（見積もりなので、誤りにはしない）。
  * 半角の英数字と記号は平均 0.5em、ほか（かな・漢字・全角の記号）は 1em と見る。2026-11-02 に、字幕つきの静止画 22 枚（日本語・英語・中国語）と
  * 見出し 4 枚を書き出して、行数と幅がこの見込みと合うことを確かめた（Zen Maru Gothic の英字は約 0.44em、Inter はもう少し広い）
  */
 const LAYOUT = {
   /** 焼き込み字幕（src/Lecture.tsx の Captions）。使える幅は画面の幅から左右の余白を引いたもの（今は 1680px）。名前札は、文字の幅に左右の余白と札と文の間を足す */
-  caption: { size: CAPTION.size, spacing: CAPTION.spacing, width: VIDEO.width - CAPTION.sidePad * 2, lines: CAPTION.lines, nameSize: CAPTION.nameSize, namePad: CAPTION.namePadX * 2, gap: CAPTION.gap },
+  caption: { size: CAPTION.size, minSize: CAPTION.minSize, spacing: CAPTION.spacing, width: VIDEO.width - CAPTION.sidePad * 2, lines: CAPTION.lines, fill: CAPTION.fill, nameSize: CAPTION.nameSize, namePad: CAPTION.namePadX * 2, gap: CAPTION.gap },
   /** 場面の見出し（src/components/chrome.tsx の Header）。折り返さない。使える幅は内容の枠の幅（今は 1728px）。根拠の札は、文字の幅に札の余白とアイコン（chipPad）と見出しとの間を足す */
-  heading: { size: HEADING.size, spacing: HEADING.spacing, width: VIDEO.width - CONTENT.pad * 2, chipSize: HEADING.chipSize, chipSpacing: HEADING.chipSpacing, chipPad: HEADING.chipPad, gap: HEADING.gap },
+  heading: { size: HEADING.size, minSize: HEADING.minSize, spacing: HEADING.spacing, width: VIDEO.width - CONTENT.pad * 2, chipSize: HEADING.chipSize, chipSpacing: HEADING.chipSpacing, chipPad: HEADING.chipPad, gap: HEADING.gap },
 };
 
 /** 文字の幅の見込み（px）。半角の英数字と記号は 0.5em、ほか（かな・漢字・全角の記号）は 1em。字間は 1 字ごとに足す */
 export const estimateWidth = (text: string, size: number, spacing = 0): number =>
   [...text].reduce((w, ch) => w + (/[\x20-\x7E]/.test(ch) ? 0.5 : 1) * size + spacing, 0);
 
-/** 焼き込み字幕の、文字の幅の見込みと、1 行に使える幅（px）。name は掛け合いの名前札（講座の cast） */
-const captionFit = (text: string, name?: string) => {
+/** 焼き込み字幕の、文字の幅の見込みと、1 行に使える幅（px）。name は掛け合いの名前札（講座の cast）、size は文字の大きさ（既定は字幕の大きさ） */
+const captionFit = (text: string, name?: string, size: number = LAYOUT.caption.size) => {
   const c = LAYOUT.caption;
   const tag = name ? estimateWidth(name, c.nameSize) + c.namePad + c.gap : 0;
-  return { width: estimateWidth(text, c.size, c.spacing), line: c.width - tag };
+  return { width: estimateWidth(text, size, c.spacing), line: c.width - tag };
 };
 
-/** 焼き込み字幕の行数の見込み */
-export const captionLines = (text: string, name?: string): number => {
-  const { width, line } = captionFit(text, name);
+/** 焼き込み字幕の行数の見込み（size の大きさで。既定は字幕の大きさ） */
+export const captionLines = (text: string, name?: string, size?: number): number => {
+  const { width, line } = captionFit(text, name, size);
   return Math.ceil(width / line);
 };
 
@@ -200,10 +202,12 @@ const checkLine = (line: Line, k: number, sw: string, course: Course, out: Issue
   if (typeof line?.t !== 'string') return;
   checkEmphasis(line.t, false, `${w}.t`, out);
   const name = course.cast?.[line.v ?? 'narrator']?.name;
-  const { width, line: room } = captionFit(line.t, name);
-  const n = Math.ceil(width / room);
-  if (n > LAYOUT.caption.lines) {
-    push(out, 'warning', 'caption-lines', `${w}.t`, `焼き込み字幕が ${n} 行になる見込み（文字の幅は約 ${Math.round(width)}px、帯の 2 行に入るのは約 ${Math.round(room * 2)}px まで）。台詞を短くするか、2 つに分ける`);
+  // 帯に入らない台詞は、字幕の部品が minSize まで縮める。縮めても入らない見込みのものだけを注意にする
+  const c = LAYOUT.caption;
+  const { width, line: room } = captionFit(line.t, name, c.minSize);
+  const fits = room * c.lines * c.fill;
+  if (width > fits) {
+    push(out, 'warning', 'caption-lines', `${w}.t`, `焼き込み字幕が、${c.minSize}px に縮めても帯の ${c.lines} 行に入らない見込み（文字の幅は約 ${Math.round(width)}px、入るのは約 ${Math.round(fits)}px まで）。台詞を短くするか、2 つに分ける`);
   }
 };
 
@@ -211,9 +215,10 @@ const checkHeading = (s: Scene, sw: string, course: Course, lang: Lang, out: Iss
   if (!s.heading || s.kind === 'opening' || s.kind === 'ending') return;
   const h = LAYOUT.heading;
   const chip = s.evidence && has(EVIDENCE_SET, s.evidence) && !course.standalone ? h.chipPad + estimateWidth(VIDEO_TEXT[lang].evidence[s.evidence], h.chipSize, h.chipSpacing) + h.gap : 0;
-  const width = estimateWidth(s.heading, h.size, h.spacing);
+  // 入らない見出しは、見出しの部品が minSize まで縮める。縮めても入らない見込みのものだけを注意にする
+  const width = estimateWidth(s.heading, h.minSize, h.spacing);
   if (width > h.width - chip) {
-    push(out, 'warning', 'heading-width', `${sw} heading`, `見出しが 1 行に入らない見込み（約 ${Math.round(width)}px・使える幅 ${Math.round(h.width - chip)}px${chip ? '。根拠の札のぶんを引いた幅' : ''}）。短くする`);
+    push(out, 'warning', 'heading-width', `${sw} heading`, `見出しが、${h.minSize}px に縮めても 1 行に入らない見込み（約 ${Math.round(width)}px・使える幅 ${Math.round(h.width - chip)}px${chip ? '。根拠の札のぶんを引いた幅' : ''}）。短くする`);
   }
 };
 
@@ -712,6 +717,12 @@ export const validateTheme = (theme: Theme, where = `テーマ ${theme?.id}`): I
     }
   } else if (theme.dark !== undefined) {
     push(out, 'warning', 'theme', `${where} dark`, '明るい地のテーマは dark を使わない（明るい地の面と線は color から作る）');
+  }
+  // 文字と地のコントラスト比（engine/core/contrast.ts の組と下限。本文 4.5・大きい文字 3.0）。形が合っているテーマだけを見る
+  if (!out.some((x) => x.level === 'error')) {
+    for (const p of contrastProblems(theme)) {
+      error(`コントラスト ${p.role}`, `文字と地のコントラスト比が ${p.ratio.toFixed(2)}（下限 ${p.min}）。文字か地の色を、明るい地は濃く、暗い地は明るくする（theme.md の「確かめること」）`);
+    }
   }
   return out;
 };

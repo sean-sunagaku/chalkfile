@@ -3,8 +3,8 @@ import { LANGS } from '../content/i18n';
 import { CHALKFILE, NIGHT, THEMES } from '../content/themes';
 import type { Theme } from '../content/types';
 import { alpha, mix } from '../engine/core/color';
-import { contrastRatio, contrastSummary, luminance, themeContrast } from '../engine/core/contrast';
-import { derivePalette, TONE_TEXT_MIX } from '../engine/core/theme';
+import { contrastProblems, contrastRatio, contrastSummary, luminance, themeContrast } from '../engine/core/contrast';
+import { CONTRAST_MIN, derivePalette, TONE_TEXT_MIX } from '../engine/core/theme';
 import { validateTheme } from '../engine/core/validate';
 import { formatInteger, VIDEO_TEXT } from '../src/i18n';
 import { lineEnd, lineStart } from '../src/timing';
@@ -57,20 +57,50 @@ describe('色の関数（engine/core/color.ts の alpha・mix）', () => {
   });
 });
 
-/** 前の src/theme.ts（applyTheme）が作った色（tests/fixtures/palette/themes.json） */
+/** 前の src/theme.ts（applyTheme）が作った色（tests/fixtures/palette/themes.json。見た目の更新の前の色） */
 type Recorded = { C: Record<string, string>; TONES: Record<string, Record<string, string>>; GRAD: string; DISPLAY: string; SYNTAX: Record<string, string>; MESH: string[] };
 const RECORDED_PALETTE = (paletteJson as { themes: Record<string, Recorded> }).themes;
 
+/** 見た目の更新で、読める濃さにするために変えた色（ほかの色は前のまま） */
+const READABLE_C = ['muted', 'codeMuted'] as const;
+
 describe('パレット（engine/core/theme.ts の derivePalette）', () => {
-  test('5 つのテーマで、前の src/theme.ts（applyTheme）と同じ色を作る（動画の見た目を変えない）', () => {
+  test('5 つのテーマで、読める濃さにした色（補足の muted・行番号の codeMuted・図の色の文字 text）のほかは、前の src/theme.ts（applyTheme）と同じ色を作る', () => {
     expect(Object.keys(THEMES).sort()).toEqual(Object.keys(RECORDED_PALETTE).sort());
     for (const [id, theme] of Object.entries(THEMES)) {
       const p = derivePalette(theme);
       const want = RECORDED_PALETTE[id];
-      expect(Object.fromEntries(Object.keys(want.C).map((k) => [k, p.C[k as keyof typeof p.C]]))).toEqual(want.C);
-      expect(p.TONES).toEqual(want.TONES as typeof p.TONES);
+      const same = Object.keys(want.C).filter((k) => !(READABLE_C as readonly string[]).includes(k));
+      expect(Object.fromEntries(same.map((k) => [k, p.C[k as keyof typeof p.C]]))).toEqual(Object.fromEntries(same.map((k) => [k, want.C[k]])));
+      for (const [t, set] of Object.entries(want.TONES)) {
+        const got = p.TONES[t as keyof typeof p.TONES];
+        expect({ main: got.main, soft: got.soft, deep: got.deep }).toEqual({ main: set.main, soft: set.soft, deep: set.deep });
+      }
       expect({ GRAD: p.GRAD, DISPLAY: p.DISPLAY, SYNTAX: p.SYNTAX, MESH: p.MESH }).toEqual({ GRAD: want.GRAD, DISPLAY: want.DISPLAY, SYNTAX: want.SYNTAX as typeof p.SYNTAX, MESH: want.MESH });
     }
+  });
+  test('読める濃さにした色は、前の色が下限に届いていればそのまま、届いていなければ見出しの色（暗い地は白）に寄せた色', () => {
+    const changed: string[] = [];
+    for (const [id, theme] of Object.entries(THEMES)) {
+      const p = derivePalette(theme);
+      const want = RECORDED_PALETTE[id];
+      if (p.C.muted !== want.C.muted) changed.push(`${id} muted`);
+      if (p.C.codeMuted !== want.C.codeMuted) changed.push(`${id} codeMuted`);
+      for (const [t, set] of Object.entries(want.TONES)) if (p.TONES[t as keyof typeof p.TONES].text !== set.text) changed.push(`${id} ${t}.text`);
+      // 暗い地（night）の補足は、前の色のまま届いている
+      if (theme.scheme === 'dark') expect(p.C.muted).toBe(want.C.muted);
+    }
+    expect(changed.sort()).toEqual(
+      [
+        ...['chalkfile', 'indigo', 'paper', 'stage'].map((id) => `${id} muted`),
+        ...['chalkfile', 'indigo', 'night', 'paper', 'stage'].map((id) => `${id} codeMuted`),
+        'chalkfile pink.text',
+        'chalkfile cyan.text',
+        'chalkfile mint.text',
+        'chalkfile amber.text',
+        'indigo amber.text',
+      ].sort(),
+    );
   });
   test('足した色: 字幕の文字（onCode）は白、コードの面の下の端（codeShade）は code を黒に 0.18 寄せた色', () => {
     for (const theme of Object.values(THEMES)) {
@@ -101,14 +131,28 @@ describe('パレット（engine/core/theme.ts の derivePalette）', () => {
     expect(p.tone()).toBe(p.TONES.violet);
     expect(p.tone('coral').main).toBe(CHALKFILE.tones.coral);
   });
-  test('講座サイトの図の文字色は、動画と作り方が違う（明るい地は ink に 0.22、暗い地はそのまま。動画は 0.3 と白に 0.45）', () => {
+  test('講座サイトの図の文字色は、動画と作り方が違う（サイトは明るい地は ink に 0.22、暗い地はそのまま。動画は 0.3 から下限に届くまでと、白に 0.45）', () => {
     expect(TONE_TEXT_MIX).toEqual({ video: { light: 0.3, dark: 0.45 }, site: { light: 0.22 } });
     const light = derivePalette(CHALKFILE);
     expect(light.site.toneText.pink).toBe(mix(CHALKFILE.tones.pink, CHALKFILE.color.ink, 0.22));
-    expect(light.TONES.pink.text).toBe(mix(CHALKFILE.tones.pink, CHALKFILE.color.ink, 0.3));
+    // 動画の pink は 0.3 では本文の下限（4.5）に届かないので、0.35 まで寄せる。violet は 0.3 で届く
+    expect(light.TONES.pink.text).toBe(mix(CHALKFILE.tones.pink, CHALKFILE.color.ink, 0.35));
+    expect(light.TONES.violet.text).toBe(mix(CHALKFILE.tones.violet, CHALKFILE.color.ink, 0.3));
     const dark = derivePalette(NIGHT);
     expect(dark.site.toneText.pink).toBe(NIGHT.tones.pink);
     expect(dark.TONES.pink.text).toBe(mix(NIGHT.tones.pink, '#FFFFFF', 0.45));
+  });
+  test('図の色の上の文字（on）は、明るい地は白、白で読めない色（明るい地の amber）は見出しの色、暗い地はテーマの dark.onTone', () => {
+    expect(derivePalette(CHALKFILE).TONES.violet.on).toBe('#FFFFFF');
+    expect(derivePalette(CHALKFILE).TONES.amber.on).toBe(CHALKFILE.color.ink);
+    expect(derivePalette(THEMES.indigo).TONES.amber.on).toBe(THEMES.indigo.color.ink);
+    for (const t of Object.values(derivePalette(NIGHT).TONES)) expect(t.on).toBe(NIGHT.dark?.onTone ?? '');
+  });
+  test('大きな文字の図の色（strong）は、地と面に 3.0 で届けば main のまま、届かなければ濃くする', () => {
+    const p = derivePalette(CHALKFILE);
+    expect(p.TONES.violet.strong).toBe(CHALKFILE.tones.violet);
+    expect(p.TONES.amber.strong).not.toBe(CHALKFILE.tones.amber);
+    for (const t of Object.values(derivePalette(NIGHT).TONES)) expect(t.strong).toBe(t.main);
   });
 });
 
@@ -149,24 +193,34 @@ describe('コントラスト比（engine/core/contrast.ts）', () => {
   });
   test('#RRGGBB でない色は止める', () => expect(() => contrastRatio('#FFF', '#000000')).toThrow());
 
-  // 今の 5 テーマの数（2026-11-02 の記録）。役割ごとの、いちばん低い比（tone と syntax は全部の色の中で）。
-  // テーマの色を変えたら、この表も直す。下限（本文 4.5・大きい文字 3.0）で止めるのは見た目の更新（計画の T3A-14）でまとめて行う
-  const RECORDED: Record<string, Record<string, number>> = {
-    chalkfile: { 'ink/bg': 12.9, 'sub/surface': 7.55, 'muted/bg2': 3.09, 'onAccent/accent': 9.1, 'caption/code': 12.29, 'syntax/code': 5.12, 'tone.main/surface': 2.76, 'tone.text/surface': 4.41, 'onTone/tone.main': 2.76, 'caption/tone.main': 2.76 },
-    indigo: { 'ink/bg': 14.7, 'sub/surface': 7.8, 'muted/bg2': 3.45, 'onAccent/accent': 4.7, 'caption/code': 16.58, 'syntax/code': 5.16, 'tone.main/surface': 2.54, 'tone.text/surface': 4.34, 'onTone/tone.main': 2.54, 'caption/tone.main': 2.54 },
-    night: { 'ink/bg': 17.83, 'sub/surface': 8.99, 'muted/bg2': 5.4, 'onAccent/accent': 6.87, 'caption/code': 18.45, 'syntax/code': 5.36, 'tone.main/surface': 5.68, 'tone.text/surface': 9.21, 'onTone/tone.main': 6.87, 'caption/tone.main': 1.6 },
-    paper: { 'ink/bg': 16.04, 'sub/surface': 10.07, 'muted/bg2': 3.91, 'onAccent/accent': 4.29, 'caption/code': 15.63, 'syntax/code': 5.17, 'tone.main/surface': 3.76, 'tone.text/surface': 5.92, 'onTone/tone.main': 3.76, 'caption/tone.main': 3.76 },
-    stage: { 'ink/bg': 16.08, 'sub/surface': 10.57, 'muted/bg2': 4.25, 'onAccent/accent': 4.69, 'caption/code': 15.84, 'syntax/code': 5.42, 'tone.main/surface': 3.81, 'tone.text/surface': 5.98, 'onTone/tone.main': 3.81, 'caption/tone.main': 3.81 },
-  };
-  test('今の 5 テーマの数を記録する', () => {
-    expect(Object.keys(THEMES).sort()).toEqual(Object.keys(RECORDED).sort());
-    for (const [id, theme] of Object.entries(THEMES)) expect(contrastSummary(themeContrast(theme))).toEqual(RECORDED[id]);
+  test('全部のテーマで、全部の組が役割の下限に届く（本文 4.5・大きい文字 3.0）', () => {
+    const low = Object.values(THEMES).flatMap((t) => contrastProblems(t).map((p) => `${t.id} ${p.role} ${p.ratio.toFixed(2)}（下限 ${p.min}）`));
+    expect(low).toEqual([]);
   });
-  test('いちばん低い組は、amber の色の文字（明るい地）と、暗い地の字幕の名前札', () => {
-    const ratio = (id: string, role: string) => themeContrast(THEMES[id]).find((p) => p.role === role)!.ratio;
-    expect(ratio('chalkfile', 'tone.main/surface:amber')).toBeCloseTo(2.76, 2);
-    expect(ratio('indigo', 'tone.main/surface:amber')).toBeCloseTo(2.54, 2);
-    expect(ratio('night', 'caption/tone.main:amber')).toBeCloseTo(1.6, 2);
+  test('本文の組と大きい文字の組の下限', () => {
+    expect(CONTRAST_MIN).toEqual({ body: 4.5, large: 3.0 });
+    const roles = Object.fromEntries(themeContrast(CHALKFILE).map((p) => [p.role.replace(/:.*$/, ''), p.min]));
+    for (const r of ['ink/bg', 'sub/surface', 'muted/bg2', 'caption/code', 'codeMuted/code', 'tone.text/surface', 'tone.text/soft']) expect(`${r} ${roles[r]}`).toBe(`${r} 4.5`);
+    for (const r of ['tone.strong/surface', 'tone.on/main', 'onGrad/gradient', 'display/bg']) expect(`${r} ${roles[r]}`).toBe(`${r} 3`);
+  });
+  test('前は下限に届かなかった組（出典・注意書き・クレジットの muted、amber の文字、暗い地の名前札）が、届く', () => {
+    const ratio = (id: string, role: string) => themeContrast(THEMES[id]).find((p) => p.role === role)?.ratio ?? 0;
+    // 前は chalkfile 3.09・indigo 3.45・paper 3.91・stage 4.25
+    for (const id of ['chalkfile', 'indigo', 'paper', 'stage']) expect(ratio(id, 'muted/bg2')).toBeGreaterThanOrEqual(4.5);
+    // 前は amber の main の文字（クイズの考える時間の数）が chalkfile 2.76・indigo 2.54
+    expect(ratio('chalkfile', 'tone.text/surface:amber')).toBeGreaterThanOrEqual(4.5);
+    expect(ratio('indigo', 'tone.strong/surface:amber')).toBeGreaterThanOrEqual(3);
+    // 前は名前札が白の直書きで、night では 1.60〜2.76
+    expect(ratio('night', 'tone.on/main:amber')).toBeGreaterThanOrEqual(3);
+  });
+  test('テーマの検証は、下限に届かない組を誤りにする（形が合っているテーマだけを見る）', () => {
+    const bad = { ...CHALKFILE, id: 'pale', color: { ...CHALKFILE.color, ink: '#B0C4BC' } };
+    expect(validateTheme(bad, 't').some((x) => x.level === 'error' && x.where.includes('コントラスト ink/bg'))).toBe(true);
+  });
+  test('役割ごとのいちばん低い比にまとめる（tone ごと・syntax ごとの組は 1 つ）', () => {
+    const sum = contrastSummary(themeContrast(CHALKFILE));
+    expect(Object.keys(sum)).toContain('tone.text/surface');
+    expect(Object.keys(sum)).toContain('syntax/code');
   });
 });
 

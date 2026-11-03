@@ -24,8 +24,9 @@ curl -s http://127.0.0.1:50021/version
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp`・`restamp`・`scaffold`（`npm run i18n -- …`） | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋・訳のひな形（[i18n.md](i18n.md)） |
 | `uv run --locked --group audio python scripts/mix.py <ID…>`（`npm run mix` は選んだ動画か、公開する言語の全部を渡す） | `.work/plan/`、声、BGM、効果音の一覧 `scripts/audio/sfx.json`、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav`。始める前に、設計図の形（`scripts/audio/handoff.py`）と、要る声・BGM・効果音がそろっているかを見る |
-| `npm run render -- [ID…]`（`bun scripts/stages/video/render.ts`。`npm run chalk -- render` も同じ） | `src/`、timeline、mix | 選んだ動画を 1 回で書き出す（バンドルは 1 回）。`out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター（公開する言語の動画は `content/<講座>/generated/posters/<id>.jpg`。どの動画も写しを `site/media/<id>.jpg`）。掛け合いの講座（`cast` のある講座）は `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用）も（`--captions` か `CAPTIONS=1` で全部の動画）。出力は一時の名前に書き、ffprobe で確かめてから置き換える。設定は `scripts/stages/video/render.config.ts` |
-| `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
+| `npm run render -- [ID…]`（`bun scripts/stages/video/render.ts`。`npm run chalk -- render` も同じ） | `src/`、書体 `engine/fonts/`、timeline、mix | 選んだ動画を 1 回で書き出す（バンドルは 1 回）。`out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター（公開する言語の動画は `content/<講座>/generated/posters/<id>.jpg`。どの動画も写しを `site/media/<id>.jpg`）。掛け合いの講座（`cast` のある講座）は `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用）も（`--captions` か `CAPTIONS=1` で全部の動画）。出力は一時の名前に書き、ffprobe で確かめてから置き換える。設定は `scripts/stages/video/render.config.ts` |
+| `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、書体 `engine/fonts/`、timeline | `out/stills/` |
+| `bun scripts/fonts.ts [--check]`（`npm run fonts`） | 台本の全部の文字、元の書体（google/fonts の固定した commit。共有のキャッシュ `~/.cache/chalkfile/fonts/`） | `engine/fonts/`（サブセットの woff2・`fonts.json`・`OFL-<書体>.txt`。コミットする） |
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`site/config.json`（`--strict` は Releases も照らす） | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bun scripts/media.ts push --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
@@ -76,4 +77,4 @@ npm run stills:compare -- --base-install --head origin/dependabot/npm_and_yarn/<
 
 - 基準の版を一時の worktree に作って同じ静止画（場面の終わり）を書き出し、ffmpeg の PSNR で比べる。同じ絵は inf。45dB（`--threshold`）より低いと「差あり」になり、`.work/stills-compare/diff/` に「基準・今・差を強めた絵」を並べた画像を出して 1 で終わる
 - 既定では基準の worktree に今の node_modules を写すので、依存の違いは比べられない。依存を上げる PR は `--base-install`（基準で `npm ci --ignore-scripts`）と `--head <ref>`（その ref の一時の worktree で `npm ci --ignore-scripts`）で比べる。どちらの側も、その側の Remotion（bundler・renderer・Chrome Headless Shell）を別のプロセスで使って書き出す（`--out` で結果を分けて残せる）
-- 画像はコミットしない（`.work/` の下）。書体を Google Fonts から読むのでネットが要る。書体・Chrome・ネットに左右されるので、CI では流さなくてよい
+- 画像はコミットしない（`.work/` の下）。書体は手元の `engine/fonts/` から読むので、ネットは要らない（基準の版が、書体を Google Fonts から読んでいた前の版なら、その側だけネットが要る）。Chrome の版に左右されるので、CI では流さなくてよい

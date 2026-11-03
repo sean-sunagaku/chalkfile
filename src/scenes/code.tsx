@@ -2,54 +2,30 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { CodeScene, Theme } from '../../engine/core/schema';
-import { WINDOW_LIGHTS } from '../components/app-colors';
+import { textWidth } from '../components/fit';
+import { CodeWindow } from '../components/frame';
+import { italicComments, tokenize } from '../components/syntax';
 import { NoteCard } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useCurrentIndex, useScene } from '../timing';
-import { LEAD } from '../video.config';
+import { LEAD, TYPE, TYPE_MIN } from '../video.config';
 import { defineScene } from './define';
 
-const RX =
-  /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b(?:def|return|if|not|in|for|and|or|try|except|class|async|await|None|True|False|import|from|with|as|elif|else|while|is)\b)|(@[\w.]+)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*(?=\())/gm;
-
-// JSON はキー（: が続く文字列）・値の文字列・true/false/null・数値を塗り分ける
-const RX_JSON = /("(?:[^"\\]|\\.)*"(?=\s*:))|("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm;
-
+/** 1 行を、言語ごとの規則で色分けして描く（規則は src/components/syntax.ts。text は色を付けない） */
 const highlight = (line: string, lang: CodeScene['lang'], SYNTAX: Theme['syntax']): React.ReactNode[] => {
-  const out: React.ReactNode[] = [];
-  let last = 0;
-  const json = lang === 'json';
-  for (const m of line.matchAll(json ? RX_JSON : RX)) {
-    const i = m.index ?? 0;
-    if (i > last) out.push(line.slice(last, i));
-    const color = json
-      ? m[1]
-        ? SYNTAX.fn
-        : m[2]
-          ? SYNTAX.string
-          : m[3]
-            ? SYNTAX.keyword
-            : SYNTAX.number
-      : m[1]
-        ? SYNTAX.comment
-        : m[2]
-          ? SYNTAX.string
-          : m[3]
-            ? SYNTAX.keyword
-            : m[4]
-              ? SYNTAX.deco
-              : m[5]
-                ? SYNTAX.number
-                : SYNTAX.fn;
-    out.push(
-      <span key={i} style={{ color, fontStyle: !json && m[1] ? 'italic' : undefined }}>
-        {m[0]}
-      </span>,
+  const italic = italicComments(lang);
+  let at = 0;
+  return tokenize(line, lang).map((t) => {
+    const key = at;
+    at += t.text.length;
+    return t.kind ? (
+      <span key={key} style={{ color: SYNTAX[t.kind], fontStyle: italic && t.kind === 'comment' ? 'italic' : undefined }}>
+        {t.text}
+      </span>
+    ) : (
+      <React.Fragment key={key}>{t.text}</React.Fragment>
     );
-    last = i + m[0].length;
-  }
-  if (last < line.length) out.push(line.slice(last));
-  return out;
+  });
 };
 
 const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
@@ -65,12 +41,12 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   const fit = Math.floor((CONTENT_BOTTOM - edTop - codeTop - pad * 2 - 6) / codeLines.length / 1.52);
   const hasNotes = s.marks.some((m) => m.note);
   const edW = hasNotes ? 1150 : W - PAD * 2;
-  // 横にもはみ出さないように（英数字は 0.6em、日本語は 1em として最も長い行で決める）
-  const widestEm = Math.max(
-    ...codeLines.map((ln) => [...ln].reduce((w, ch) => w + (/[\x00-\x7F]/.test(ch) ? 0.6 : 1), 0)),
-  );
-  const fitW = Math.floor((edW - 64 - 48) / Math.max(1, widestEm));
-  const fontSize = Math.min(s.fontSize ?? 26, fit, fitW);
+  // 横にもはみ出さないように、いちばん長い行を測って決める（行番号の列と左右の余白を除いた幅に入れる）
+  const sample = 100;
+  const widest = Math.max(1, ...codeLines.map((ln) => textWidth(ln, sample, { fontFamily: MONO, fontWeight: 400 })));
+  const fitW = Math.floor(((edW - 64 - 48) * sample) / widest);
+  // 縮めても、コードの下限より小さくしない（収まらないほど長いコードは、台本の検証が場面を分けるように言う）
+  const fontSize = Math.max(TYPE_MIN.code, Math.min(s.fontSize ?? TYPE.code.code, fit, fitW));
   const lh = Math.round(fontSize * 1.52);
   const show = lineStart(lines, s.showAt ?? 0) - LEAD.code;
   const editorH = Math.min(CONTENT_BOTTOM - edTop, codeTop + pad * 2 + lh * codeLines.length);
@@ -96,46 +72,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
           transform: `translateY(${dropY(enter, 16)}px)`,
         }}
       >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
-            border: `1.5px solid ${C.line2}`,
-            boxShadow: C.shadow,
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              height: 56,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '0 24px',
-              borderBottom: `1.5px solid ${C.codeLine}`,
-              background: C.codeBar,
-            }}
-          >
-            {WINDOW_LIGHTS.editor.map((c) => (
-              <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
-            ))}
-            <div
-              style={{
-                marginLeft: 14,
-                fontFamily: MONO,
-                fontSize: 20,
-                color: C.codeMuted,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {s.file}
-            </div>
-          </div>
+        <CodeWindow title={s.file}>
           <div style={{ position: 'absolute', left: 0, right: 0, top: codeTop - 16 + pad }}>
             {s.marks.map((m, i) => {
               const on = i === activeMark;
@@ -185,7 +122,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                       textAlign: 'right',
                       paddingRight: 22,
                       color: C.codeMuted,
-                      fontSize: fontSize * 0.8,
+                      fontSize: Math.max(TYPE_MIN.code, Math.round(fontSize * 0.8)),
                     }}
                   >
                     {i + 1}
@@ -195,7 +132,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               );
             })}
           </div>
-        </div>
+        </CodeWindow>
       </div>
       {hasNotes
         ? s.marks.map((m, i) => {
@@ -254,7 +191,7 @@ const Note: React.FC<{
           text={m.note ?? ''}
           t={m.tone}
           active={1}
-          size={30}
+          size={TYPE.body.codeNote}
           lineHeight={1.38}
           style={{ height: '100%', boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center' }}
         />

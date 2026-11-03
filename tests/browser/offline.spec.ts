@@ -605,3 +605,28 @@ test('保存中にブラウザを終了しても、途中の講座を保存済�
     await save(page);
   } finally { await context.close(); rmSync(profile, { recursive: true, force: true }); }
 });
+
+test('書体は外のサービスに接続せず、通信断でも保存したバイトと MIME で読める', async ({ page, context, site }) => {
+  const externalFonts: string[] = [];
+  page.on('request', (r) => {
+    if (/fonts\.(?:googleapis|gstatic)\.com/.test(r.url())) externalFonts.push(r.url());
+  });
+  await ready(page, site);
+  const fontDir = path.join(site.dist, 'fonts');
+  const expected = readdirSync(fontDir).filter((f) => f.endsWith('.woff2')).map((f) => ({
+    url: `/fonts/${f}`,
+    bytes: [...readFileSync(path.join(fontDir, f))],
+  }));
+  expect(expected.length).toBeGreaterThan(0);
+  await context.setOffline(true);
+  for (const font of expected) {
+    const got = await page.evaluate(async (url) => {
+      const r = await fetch(url);
+      return { status: r.status, type: r.headers.get('content-type')?.split(';')[0], bytes: [...new Uint8Array(await r.arrayBuffer())] };
+    }, font.url);
+    expect(got, font.url).toEqual({ status: 200, type: 'font/woff2', bytes: font.bytes });
+  }
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => [...document.fonts].some((f) => f.status === 'loaded'))).toBe(true);
+  expect(externalFonts).toEqual([]);
+});

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { IconName, Tone } from '../../engine/core/schema';
 import { alpha, usePalette, WHITE, type VideoPalette } from '../theme';
+import { TYPE } from '../video.config';
 import { ICONS } from './icons';
 
 /** アイコン。色を省くと見出しの文字の色（C.ink） */
@@ -67,7 +68,8 @@ export const Glass: React.FC<{
   );
 };
 
-export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolean; size?: number; style?: React.CSSProperties }> = ({ children, t, mono, size = 22, style }) => {
+/** 札。size は文字の大きさ（src/video.config.ts の TYPE.label から選ぶ） */
+export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolean; size?: number; style?: React.CSSProperties }> = ({ children, t, mono, size = TYPE.label.pill, style }) => {
   const { MONO, SANS, tone } = usePalette();
   const tt = tone(t);
   return (
@@ -114,7 +116,7 @@ const emphasis = ({ C, GRAD, THEME, tone }: VideoPalette, t?: Tone): React.CSSPr
   if (THEME.decor === 'chalk') {
     return { background: `linear-gradient(180deg, transparent 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 92%, transparent 92%)`, color: C.ink };
   }
-  return { color: t ? tt.main : C.accent };
+  return { color: t ? tt.strong : C.accent };
 };
 
 /** **強調** を色つきで出す */

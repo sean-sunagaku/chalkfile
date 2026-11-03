@@ -25,7 +25,7 @@
 |---|---|
 | `id` / `label` / `summary` | 講座の `theme` に書く名前、表示名、一覧ページの紹介文 |
 | `scheme` | `light` か `dark`。図の薄い面（10% か 15%）と、図の文字色の作り方（見出しの色に混ぜるか、白に混ぜるか）が変わる |
-| `fonts` | 本文の書体を並べる（`zen-maru`・`noto`・`inter`）。英字用を先に置くと英字だけその書体になる。コードは JetBrains Mono で固定 |
+| `fonts` | 本文の書体を並べる（`zen-maru`・`noto`・`inter`）。英字用を先に置くと英字だけその書体になる。コードは JetBrains Mono で固定。書体のファイルは下の「書体」 |
 | `color.bg` / `bg2` | 動画とサイトの地（上から下へ bg → bg2） |
 | `color.surface` / `surface2` | カードの面と、一段沈んだ面（表の見出し・サイトの帯） |
 | `color.ink` / `sub` / `muted` | 見出し・本文・補足の文字 |
@@ -53,10 +53,34 @@
   const { C, tone, SANS } = usePalette();
   ```
 
-- 読める名前: `C`（地・文字・線・面・コードの面の色）、`TONES` と `tone(t)`（図の色の組。`main`・`soft`・`deep`・`text`）、`GRAD`・`DISPLAY`・`SYNTAX`・`MESH`、`THEME`（テーマそのもの）、`SANS`・`MONO`（書体）
+- 読める名前: `C`（地・文字・線・面・コードの面の色）、`TONES` と `tone(t)`（図の色の組。`main`・`soft`・`deep`・`text`・`strong`・`on`）、`GRAD`・`DISPLAY`・`SYNTAX`・`MESH`、`THEME`（テーマそのもの）、`SANS`・`MONO`（書体）
+- 図の色を文字に使うときは、本文の大きさなら `text`、太字の大きな数と強調なら `strong`。`main` は形・アイコン・線・面に使う。図の色の面（`main`）の上の文字は `on`（札・丸の中の数・字幕の名前札）。グラデーション（`GRAD`）の面の上の文字は `C.onGrad`
+- 文字の色は、下の「コントラスト」の下限に届くように、パレットが作る。部品で `main` を文字の色にしない
 - 透明度は `alpha(色, 0x55 / 255)`、2 色を混ぜるのは `mix(a, b, t)`（`engine/core/color.ts`）。`${色}55` のように 16 進の透明度をつながない
-- テーマで変えない「そのものの色」（架空のアプリの画面・スマホの枠・窓の信号）は、`src/components/app-colors.ts` にだけ書く
-- 講座サイト（`scripts/site_theme.ts`）も同じパレットから CSS を作る。図の文字色の作り方だけ、動画とサイトで違う（`TONE_TEXT_MIX`。そろえるのは見た目の更新のとき）
+- テーマで変えない「そのものの色」（架空のアプリの画面・スマホの枠・窓の信号）は、`src/components/app-colors.ts` にだけ書く。スマホの枠と窓の信号は 1 種類ずつで、描くのは `src/components/frame.tsx`（`DeviceFrame`・`WindowLights`・`CodeWindow`）
+- 講座サイト（`scripts/site_theme.ts`）も同じパレットから CSS を作る。図の文字色の作り方と補足（`muted`）の濃さは、動画とサイトで違う（`TONE_TEXT_MIX`。動画だけ、下限に届くまで濃くする。講座サイトの色は前の作り方のまま）
+
+## コントラスト
+
+文字と地の色の組ごとに、コントラスト比（WCAG 2.x の式）の下限を決めている。組と下限は `engine/core/contrast.ts` の `themeContrast`、下限の数は `engine/core/theme.ts` の `CONTRAST_MIN`。
+
+| 役割 | 下限 | 組 |
+|---|---|---|
+| 本文 | 4.5 | 見出しと本文（`ink`・`sub`）・補足（`muted`。レクチャーの番号・出典・注意書き・クレジット）・図の色の文字（`text`）と地・面・薄い面・焼き込み字幕・コードの色分け（`syntax`）・コードの行番号と窓の題（`codeMuted`） |
+| 大きい文字 | 3.0 | 太字の大きな数と強調（`strong`。明るい地の強調の主役の色 `accent`）・図の色の面の上の文字（`on`）・主役の色の上の文字（`onAccent`）・まとめの番号（`onGrad`）・大きな番号の塗り（`display`） |
+
+- 動画のパレットは、補足（`muted`）・図の色の文字（`text`・`strong`）・行番号（`codeMuted`）を、下限に届くまで見出しの色（暗い地は白）に寄せて濃くする。届いている色は、テーマの色のまま。図の色の面の上の文字（`on`）は白（暗い地はテーマの `dark.onTone`）で、白で読めない色は見出しの色にする
+- テーマそのものの色（`ink`・`sub`・`syntax`・`display`・`onAccent` など）が下限に届かないと、`npm run validate`（テーマの検証）と `npm test` が止める。新しいテーマは、ここで止まらない色にする
+
+## 書体
+
+- 書体のファイルは `engine/fonts/`（woff2）。台本の全部の文字（全講座・全言語の、動画が描く文字と読む教材の文字）だけを入れたサブセットなので、書き出しにネットは要らない
+- 書体の名前・ファイル・太さ・文字を集める言語は `engine/core/fonts.ts` の `FONTS`。動画は `src/fonts.ts` の `useFonts` が読み込み、読み込み終わってから場面を描く（文字の幅を測る部品が、読み込む前の書体で測らないように）
+- 元の書体は、Google Fonts の配布元（google/fonts）の固定した commit の TTF。出どころ（URL・sha256・版）と、作ったファイルの sha256 は `engine/fonts/fonts.json`、ライセンスの文（SIL Open Font License 1.1。著作権の表示を含む）は隣の `OFL-<書体>.txt`
+- 台本に新しい文字を足したら `npm run fonts` で作り直し、`engine/fonts/` を commit する（元の書体を取ってサブセットにする。uv と、初回だけネットが要る）
+- `npm run validate` は、動画が描く文字が、その動画の書体（テーマと言語の書体と JetBrains Mono）に無いと止める。書体に無い文字は手元の書体で描かれ、書き出す機械で字形が変わるため。元の書体にも無い文字は、台本の文字を別の文字にする
+- 英字の書体（Inter・JetBrains Mono）には、Google Fonts の latin の範囲の文字だけを入れる。範囲の外の文字（矢印・丸の数字など）は、本文の書体で描く
+- 書体を足すときは、`FONTS` と、`scripts/fonts.ts` の `SOURCES`（元の書体の場所・sha256・版）と `LICENSES` に 1 つずつ足し、`npm run fonts` を流す
 
 ## 新しいテーマを作る
 
@@ -74,7 +98,7 @@
 
 ## 確かめること
 
-- 文字の濃さ: 明るい地の上の本文（`sub`）と補足（`muted`）が読めるか。図の色の文字（tone の文字色）が薄すぎないか
+- 文字の濃さ: 上の「コントラスト」の下限に届くか（`npm run validate` が止める）。静止画でも、明るい地の上の本文（`sub`）と補足（`muted`）が読めるか、図の色の文字が薄すぎないかを見る
 - `display` が地に対して濃いか（明るい地で黄色やピンクを使うと読めない）
 - `code` の面の上で `syntax` の色が読めるか
 - 背景の飾りが見出しや右上の講座名と重ならないか（`band` は右上の角、見出しは左）

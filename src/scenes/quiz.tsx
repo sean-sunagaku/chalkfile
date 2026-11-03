@@ -5,7 +5,7 @@ import type { QuizScene } from '../../engine/core/schema';
 import { Glass, gradientText, Pill, Smart } from '../components/ui';
 import { alpha, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';
-import { LEAD } from '../video.config';
+import { LEAD, TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
@@ -49,7 +49,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
           style={{
             fontFamily: SANS,
             fontWeight: 900,
-            fontSize: 150,
+            fontSize: TYPE.display.quizNo,
             lineHeight: 1,
             ...gradientText(DISPLAY),
           }}
@@ -57,12 +57,12 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
           {text.quiz}{s.no}
         </div>
         {course.standalone ? null : (
-          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>
+          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: TYPE.label.quizTotal, color: C.muted, letterSpacing: 4 }}>
             {s.no} / {quizTotal}
           </div>
         )}
         {/* 考える時間だけ出す札。大きな「Q1」の下に置くと、書体によって文字の下の端と重なるので、横に並べる */}
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: TONES.amber.text, opacity: thinkO }}>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.label.quizThink, color: TONES.amber.text, opacity: thinkO }}>
           {text.quizThink}
         </div>
       </div>
@@ -87,7 +87,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
             gap: 40,
           }}
         >
-          <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 54, color: C.ink, lineHeight: 1.35 }}>
+          <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: TYPE.title.question, color: C.ink, lineHeight: 1.35 }}>
             <Smart text={s.question} t="violet" />
           </div>
           <div style={{ position: 'relative', width: 150, height: 150, flexShrink: 0 }}>
@@ -117,8 +117,8 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   justifyContent: 'center',
                   fontFamily: SANS,
                   fontWeight: 900,
-                  fontSize: 64,
-                  color: TONES.amber.main,
+                  fontSize: TYPE.display.quizCountdown,
+                  color: TONES.amber.text,
                 }}
               >
                 {remain}
@@ -146,8 +146,8 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   justifyContent: 'center',
                   fontFamily: SANS,
                   fontWeight: 900,
-                  fontSize: 150,
-                  color: tt.main,
+                  fontSize: TYPE.display.quizStamp,
+                  color: tt.strong,
                   background: C.overlay,
                   boxShadow: `0 0 60px ${alpha(tt.main, 0x88 / 255)}`,
                   lineHeight: 1,
@@ -170,10 +170,10 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
-          <Pill t={ok ? 'mint' : 'coral'} size={30}>
+          <Pill t={ok ? 'mint' : 'coral'} size={TYPE.label.pillAnswer}>
             {ok ? text.quizTrue : text.quizFalse}
           </Pill>
-          <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 40, color: C.ink, lineHeight: 1.45 }}>
+          <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.body.quizExplain, color: C.ink, lineHeight: 1.45 }}>
             <Smart text={s.explain} t={ok ? 'mint' : 'coral'} />
           </div>
         </div>

@@ -1,10 +1,9 @@
 // 架空のアプリの画面と、端末・窓の枠の色（講座のテーマで変えない「そのものの色」）。
-//   MOCK        画面の図（src/scenes/screens.tsx。改善前・改善後のアプリの画面）
-//   PHONE_APP   スマホの画面の流れ（src/scenes/phone.tsx。架空のアプリの画面）
-//   DEVICE      スマホの本体の枠（phone.tsx と screens.tsx で 2 種類ある）
-//   WINDOW_LIGHTS  窓の左上の信号の 3 色（コードと端末の窓、画面の図のブラウザの窓で 2 種類ある）
-// 部品に色を直接書かない決まり（biome の no-hardcoded-color）の、理由のある例外として、色はここだけに書く。
-// 枠と信号が 2 種類ずつあるのは、今の見た目のまま残しているため（1 つにすると見た目が変わるので、見た目の更新 T3A-14 でまとめる）
+//   MOCK           画面の図（src/scenes/screens.tsx。改善前・改善後のアプリの画面）
+//   PHONE_APP      スマホの画面の流れ（src/scenes/phone.tsx。架空のアプリの画面）
+//   DEVICE         スマホの本体の枠（どのスマホも同じ。src/components/frame.tsx の DeviceFrame）
+//   WINDOW_LIGHTS  窓の左上の信号の 3 色（コードと端末の窓も、画面の図のブラウザの窓も同じ。frame.tsx の WindowLights）
+// 部品に色を直接書かない決まり（biome の no-hardcoded-color）の、理由のある例外として、色はここだけに書く
 
 // biome-ignore-start lint/plugin/no-hardcoded-color: 架空のアプリと端末の色（講座のテーマで変えない、そのものの色）
 
@@ -58,28 +57,18 @@ export const PHONE_APP = {
   primary: { app: 'linear-gradient(90deg, #E2477F, #FF7BA8)', done: 'linear-gradient(90deg, #22B07D, #3FD3A0)' },
   onPrimary: 'white',
   secondary: '#8E8299',
+  /** スマホの本体のまわりの光（アプリの色） */
+  glow: 'rgba(255,111,163,0.18)',
 } as const;
 
-/** スマホの本体の枠 */
+/** スマホの本体の枠。本体（と上の切り欠き）・縁・画面が出るまでの下地 */
 export const DEVICE = {
-  /** スマホの画面の流れ（phone.tsx）。本体・縁・光・画面の下地・上の切り欠き */
-  phone: {
-    body: '#05070F',
-    rim: 'rgba(255,255,255,0.22)',
-    glow: 'rgba(255,111,163,0.18)',
-    screen: '#1A1F38',
-    notch: '#05070F',
-  },
-  /** 画面の図のスマホ（screens.tsx）。本体・縁 */
-  mock: { body: '#0B0E18', rim: 'rgba(255,255,255,0.18)' },
+  body: '#05070F',
+  rim: 'rgba(255,255,255,0.2)',
+  screen: '#1A1F38',
 } as const;
 
-/** 窓の左上の信号の 3 色 */
-export const WINDOW_LIGHTS = {
-  /** コードと端末の窓（code.tsx・terminal.tsx） */
-  editor: ['#FF6F7D', '#FFC260', '#4CE2B2'],
-  /** 画面の図のブラウザの窓（screens.tsx） */
-  browser: ['#F2A19B', '#F5D27B', '#9ED8A5'],
-} as const;
+/** 窓の左上の信号の 3 色（閉じる・しまう・広げる） */
+export const WINDOW_LIGHTS = ['#FF6F7D', '#FFC260', '#4CE2B2'] as const;
 
 // biome-ignore-end lint/plugin/no-hardcoded-color: 架空のアプリと端末の色（講座のテーマで変えない、そのものの色）

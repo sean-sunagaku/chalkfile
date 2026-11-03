@@ -5,6 +5,10 @@ import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, usePalette } from '../theme';
 import { dropY, useAppear, useLatestAt } from '../timing';
+import { TYPE, TYPE_MIN } from '../video.config';
+
+/** 等幅で出す列は、本文よりひと回り小さくする（等幅の英数字は幅が広い）。コードの下限より小さくしない */
+const monoSize = (size: number) => Math.max(TYPE_MIN.code, size * 0.92);
 import { defineScene } from './define';
 
 const Row: React.FC<{
@@ -53,7 +57,7 @@ const Row: React.FC<{
             alignItems: 'center',
             fontFamily: mono.includes(i) ? MONO : SANS,
             fontWeight: i === 0 ? 700 : 500,
-            fontSize: mono.includes(i) ? fontSize * 0.92 : fontSize,
+            fontSize: mono.includes(i) ? monoSize(fontSize) : fontSize,
             color: i === 0 || on ? C.ink : C.sub,
             lineHeight: 1.42,
             boxSizing: 'border-box',
@@ -70,7 +74,7 @@ const Row: React.FC<{
 const Table: React.FC<{ s: TableScene }> = ({ s }) => {
   const { SANS, TONES } = usePalette();
   const latest = useLatestAt(s.rows);
-  const fontSize = s.fontSize ?? 30;
+  const fontSize = s.fontSize ?? TYPE.body.table;
   const widths = s.widths ?? s.columns.map(() => 1 / s.columns.length);
   const head = useAppear(0);
   const avail = CONTENT_BOTTOM - CONTENT_TOP - 90;
@@ -87,7 +91,7 @@ const Table: React.FC<{ s: TableScene }> = ({ s }) => {
                 padding: '18px 28px',
                 fontFamily: SANS,
                 fontWeight: 700,
-                fontSize: 24,
+                fontSize: TYPE.label.tableHead,
                 color: TONES.violet.text,
                 letterSpacing: 2,
                 boxSizing: 'border-box',

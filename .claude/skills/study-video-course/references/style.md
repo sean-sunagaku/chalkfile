@@ -3,8 +3,9 @@
 ## 画面
 
 - 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`usePalette()` の `C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う（[theme.md](theme.md) の「部品で色を使う」）
-- 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・焼き込み字幕と見出しの文字の大きさ）は `engine/core/video-config.ts` に 1 か所で持つ（部品は `src/video.config.ts` から読む）。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
-- コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`
+- 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・役割ごとの文字の大きさ・焼き込み字幕と見出しの文字の大きさ）は `engine/core/video-config.ts` に 1 か所で持つ（部品は `src/video.config.ts` から読む）。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
+- 文字と地のコントラスト比は、本文 4.5・大きい文字 3.0 を下限にする（組と作り方は [theme.md](theme.md) の「コントラスト」）。部品は図の色の `main` を文字の色にしない（`text`・`strong`・`on` を使う）
+- コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`。画面の文字は、書体に入っている文字で書く（書体は台本の文字だけを入れたサブセット。新しい文字は `npm run fonts` で足す。元の書体にも無い文字は `npm run validate` が止めるので、別の文字にする。[theme.md](theme.md) の「書体」）
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
 - 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）
 - アイコンは `engine/core/icons.ts` の `ICON_NAMES` の名前（型は `IconName`）から選ぶ。名前は lucide-react の名前ではなく、短い独自の名前（`card`・`idea` など）。足すときは、`ICON_NAMES` と、描くアイコンとの対応 `src/components/icons.ts` の `ICONS` に 1 行ずつ足す（片方だけだと型で止まる）。絵文字は使わない
@@ -35,7 +36,10 @@
 
 ### 文字の量と大きさ
 
-- 画面の本文は 26px 以上を目安。静止画で「小さい」と感じたら、文字を減らすか場面を分ける
+- 文字の大きさは、役割ごとに `engine/core/video-config.ts` の `TYPE` で決める。部品は数を直接書かずに `TYPE` から選ぶ（`tests/type.test.ts` が止める）
+- 役割ごとの下限（`TYPE_MIN`）: 本文 26px・題 30px・札と図の文字 22px・画面の端の文字（出典・注意書き・クレジット）22px・コード 20px・画面の図の中 14px（図ごと拡大して描く前の大きさ）。下限は `tests/type.test.ts` が確かめる
+- 1 行に入れる文字（見出し・字幕・図の箱の名前・カードの題）は、描くときに文字の幅を測り（`@remotion/layout-utils`。`src/components/fit.ts`）、入らなければ縮める。縮めても役割の下限より小さくしない。見出しは 44px、焼き込み字幕は 30px まで縮める（字幕は帯の 2 行に入るまで）。縮めても入らない見込みのものは、`npm run validate` が注意を出すので、文を短くする
+- 静止画で「小さい」と感じたら、文字を減らすか場面を分ける
 - 表は 6 行・3 列まで。コードは 18 行まで（長いときは場面を分けて、光らせる行を絞る）
 - カードの文字は名詞だけにせず、動詞まで書く（「イベント」ではなく「通知を受けてみる」）
 - 1 行 20 文字前後。改行の位置が不自然なら、文を短くする
@@ -94,7 +98,7 @@ VOICEVOX が文脈で間違えやすいもの（Stripe 講座で実際にあっ�
 
 1. 型: `engine/core/schema.ts` に `XxxScene` を書き、`Scene` の union に足す。項目の役目（訳す文字・`at`・`key`・訳さない値）を `engine/core/fields.ts` の `SCENE_FIELDS` に書く（書かないと型で止まる）
 2. 描かない側: `engine/core/scenes.ts` の `SCENE_INFO` に 1 つ足す（`label` は教材の絵コンテの「図解の種類」、`describe` は絵コンテの表示内容）
-3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の大きさ `fit.ts`・箱から箱への矢印 `edge.tsx` など）
+3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の幅と大きさ `fit.ts`・スマホと窓の枠 `frame.tsx`・コードの色分け `syntax.ts`・箱から箱への矢印 `edge.tsx` など）
 4. 登録: `src/scenes/index.ts` の `SCENES` に 1 行（と、その import）を足す。`src/Lecture.tsx` は場面の `kind` でここを引いて描く
 
 あわせて、台本の検証（`engine/core/validate.ts` の `checkBody`。その種類の参照と範囲。書かないと型で止まる）と、全場面の見本（`tests/fixtures/content/all-scenes/X01.ts`。足さないとテストで止まる）にも足し、静止画で確かめる。

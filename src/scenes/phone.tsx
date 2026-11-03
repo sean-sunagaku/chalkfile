@@ -3,10 +3,11 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../engine/core/schema';
 import { DEVICE, PHONE_APP } from '../components/app-colors';
+import { DeviceFrame } from '../components/frame';
 import { Icon, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useScene } from '../timing';
-import { LEAD } from '../video.config';
+import { LEAD, TYPE } from '../video.config';
 import { defineScene } from './define';
 
 /** 架空のアプリの色（講座のテーマではなく、そのアプリの色。src/components/app-colors.ts） */
@@ -27,8 +28,8 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
         fontFamily: SANS,
       }}
     >
-      <div style={{ fontWeight: 900, fontSize: 25, color: A.brand, letterSpacing: 1 }}>{sc.brand}</div>
-      {sc.brandSub ? <div style={{ fontSize: 17, color: A.brandSub, marginTop: 2 }}>{sc.brandSub}</div> : null}
+      <div style={{ fontWeight: 900, fontSize: TYPE.mock.appBrand, color: A.brand, letterSpacing: 1 }}>{sc.brand}</div>
+      {sc.brandSub ? <div style={{ fontSize: TYPE.mock.appBrandSub, color: A.brandSub, marginTop: 2 }}>{sc.brandSub}</div> : null}
       <div
         style={{
           marginTop: 22,
@@ -60,7 +61,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
         ) : null}
         <div
           style={{
-            fontSize: 29,
+            fontSize: TYPE.mock.appTitle,
             fontWeight: 900,
             color: A.ink,
             lineHeight: 1.3,
@@ -71,7 +72,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
         </div>
         <div
           style={{
-            fontSize: 20,
+            fontSize: TYPE.mock.appLead,
             fontWeight: 700,
             color: A.lead[sc.kind],
             fontFamily: sc.leadMono ? MONO : SANS,
@@ -89,7 +90,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
                 display: 'flex',
                 gap: 8,
                 alignItems: 'flex-start',
-                fontSize: 20,
+                fontSize: TYPE.mock.appBody,
                 color: A.body,
                 lineHeight: 1.45,
               }}
@@ -120,14 +121,14 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
-                fontSize: 21,
+                fontSize: TYPE.mock.appButton,
               }}
             >
               {sc.primary}
             </div>
           ) : null}
           {sc.secondary ? (
-            <div style={{ textAlign: 'center', fontSize: 20, color: A.secondary, fontWeight: 700 }}>{sc.secondary}</div>
+            <div style={{ textAlign: 'center', fontSize: TYPE.mock.appLink, color: A.secondary, fontWeight: 700 }}>{sc.secondary}</div>
           ) : null}
         </div>
       </div>
@@ -158,34 +159,11 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
           position: 'absolute',
           left: px,
           top: py,
-          width: pw,
-          height: ph,
           opacity: appear,
           transform: `translateY(${dropY(appear)}px)`,
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 56,
-            background: DEVICE.phone.body,
-            border: `2px solid ${DEVICE.phone.rim}`,
-            boxShadow: `${C.shadow}, 0 0 60px ${DEVICE.phone.glow}`,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            left: 14,
-            top: 14,
-            right: 14,
-            bottom: 14,
-            borderRadius: 44,
-            overflow: 'hidden',
-            background: DEVICE.phone.screen,
-          }}
-        >
+        <DeviceFrame width={pw} height={ph} screen={DEVICE.screen} notch glow={A.glow}>
           {sc ? (
             <div
               style={{ position: 'absolute', inset: 0, transform: `translateX(${(1 - enter) * 60}px)`, opacity: enter }}
@@ -193,19 +171,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
               <Screen sc={sc} />
             </div>
           ) : null}
-          <div
-            style={{
-              position: 'absolute',
-              top: 12,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 110,
-              height: 30,
-              borderRadius: 99,
-              background: DEVICE.phone.notch,
-            }}
-          />
-        </div>
+        </DeviceFrame>
       </div>
       <div
         style={{
@@ -242,21 +208,21 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
                   justifyContent: 'center',
                   fontFamily: MONO,
                   fontWeight: 700,
-                  fontSize: 26,
-                  color: on ? C.onTone : tt.main,
+                  fontSize: TYPE.label.phoneStepNo,
+                  color: on ? tt.on : tt.strong,
                   boxShadow: on ? `0 0 26px ${tt.main}` : undefined,
                 }}
               >
                 {i + 1}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: on ? 42 : 34, color: C.ink }}>{x.title}</div>
+                <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: on ? TYPE.title.phoneStep : TYPE.title.phoneStepDim, color: C.ink }}>{x.title}</div>
                 {on ? (
                   <div
                     style={{
                       fontFamily: SANS,
                       fontWeight: 500,
-                      fontSize: 28,
+                      fontSize: TYPE.body.phoneCaption,
                       color: C.sub,
                       lineHeight: 1.5,
                       opacity: enter,

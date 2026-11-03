@@ -45,7 +45,7 @@ const main = async (argv: string[]) => {
 
 /** その側の静止画を書き出す（書き出せなかったものは failed、バンドルか Chrome が動かなければ fatal） */
 const renderSide = async (job: SideJob): Promise<SideResult> => {
-  // 書体を読む要求が多いという警告（@remotion/google-fonts。書体の読み方を見直すまで出る）は、静止画 1 枚ごとに出て一覧が読めなくなるので、ここでは出さない
+  // 書体を読む要求が多いという警告（@remotion/google-fonts。書体を Google Fonts から読んでいた前の版を基準にしたときに出る）は、静止画 1 枚ごとに出て一覧が読めなくなるので、ここでは出さない
   for (const k of ['log', 'warn'] as const) {
     const print = console[k].bind(console);
     console[k] = (...args: unknown[]) => {
