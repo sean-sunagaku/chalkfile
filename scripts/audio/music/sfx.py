@@ -1,7 +1,7 @@
 """効果音（mono・ピーク -3 dBFS）。sfx/<名前>.wav に書き出す。
 
-名前は台本の SfxId（content/types.ts）と同じ。効果音を足すときは、ここの SFX のほかに、
-content/types.ts の SfxId・scripts/materials.ts の SFX_NAMES・scripts/mix.py の SFX_DB にも足す。
+名前とミックスの音量の正本は content/sfx.ts（足し方も、そこの頭書き）。ここの SFX は、その名前ごとの合成。
+名前が一覧（npm run gen が書く scripts/audio/sfx.json）と合わなければ、build.py が何も作らずに止める。
 """
 
 from __future__ import annotations

@@ -17,7 +17,7 @@ Chalkfile のリポジトリと、そこから作る動画・講座サイトの�
 | 書体（Zen Maru Gothic・Noto Sans JP・Noto Sans SC・Inter・JetBrains Mono） | 動画の文字に焼き込む。サイトは Google Fonts から読み込む | SIL Open Font License 1.1 | 書体のファイルは、このリポジトリに入れていない |
 | BGM・ジングル・効果音 | `scripts/build_music.py` が合成する。素材の `materials` ブランチの `audio/` | このリポジトリで合成したオリジナル（外の音源は使わない）。合成のコードは MIT | — |
 | アイコン（lucide） | 動画の中 | ISC | — |
-| 動画（MP4）とポスター（JPG） | GitHub の Releases（タグは `media-<言語>-<講座 ID>`）と、`content/<講座>/generated/posters/` | 上の物を組み合わせたもの。入っている物ごとに、上の条件に従う | 声のクレジットは、動画の終わりとサイトに出している |
+| 動画（MP4）とポスター（JPG） | GitHub の Releases（タグは `media-<言語>-<講座 ID>`）と、`content/<講座>/generated/posters/` | 上の物を組み合わせたもの。入っている物ごとに、上の条件に従う | 声のクレジットは、動画の終わり・サイト・納品物の README（`npm run chalk -- export`）・読む教材に出している |
 | 動画を作る道具 Remotion | 依存（`remotion`・`@remotion/*`） | [Remotion License](https://www.remotion.dev/license)。個人と小さな会社は無料。会社の規模によっては、有料のライセンスが要る | 自分で動画を書き出すとき |
 
 - サービス名・会社名・製品名は、各社の商標。講座では、取り上げる製品を指すためだけに名前を使う（[DISCLAIMER.md](../../DISCLAIMER.md)）

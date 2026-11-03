@@ -39,7 +39,7 @@
     "build:music": "uv run --locked --group audio python scripts/build_music.py",
     "music:verify": "uv run --locked --group audio python scripts/build_music.py --check",
     "synth": "bun scripts/synth.ts",
-    "mix": "uv run --locked --group audio python scripts/mix.py",
+    "mix": "bun scripts/cli.ts mix",
     "render": "bash scripts/render.sh",
     "stills": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/stills.ts",
     "stills:compare": "bun scripts/stills-compare.ts",

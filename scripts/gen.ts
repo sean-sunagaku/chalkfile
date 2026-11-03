@@ -8,7 +8,10 @@
 //   README.md の講座の表                        <!-- courses:start --> と <!-- courses:end --> の間。講座の登録（COURSES）と timeline から
 //   docs/guide/new-course.md の頭文字の表        <!-- prefixes:start --> と <!-- prefixes:end --> の間。各講座の prefix と order から
 //   docs/guide/commands.md の chalk の表          <!-- cli:start --> と <!-- cli:end --> の間。scripts/cli.ts のコマンドの一覧（npm run chalk -- help の元）から
-// 表のずれは npm run check:docs（scripts/check_docs.ts）も止める。終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
+//   scripts/audio/sfx.json                     Python の道具（mix.py・build_music.py）が読む効果音の一覧。content/sfx.ts から（Git に入れる）
+//   scripts/audio/video_config.json            Python の道具が読む動画の値。src/video.config.ts から（Git に入れる。npm run gen:video-config と同じ）
+// 表のずれは npm run check:docs（scripts/check_docs.ts）も、Python が読む JSON のずれは npm test（tests/handoff.test.ts・video-config.test.ts）も止める。
+// 終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
@@ -16,9 +19,11 @@ import { type Lang, TRANSLATED_LANGS, videoKey } from '../content/i18n';
 import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
 import { commandTable } from './cli';
+import { VIDEO_CONFIG_JSON, videoConfigJson } from './gen_video_config';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { readSiteConfig } from './lib/config';
 import { writeAtomic } from './lib/fsx';
+import { SFX_JSON, sfxJson } from './lib/handoff';
 import { ROOT } from './lib/paths';
 import { readMediaManifest } from './media';
 import { mediaManifestJson } from './media-lists';
@@ -125,6 +130,9 @@ export const generated = (only?: 'media'): Map<string, string> => {
   out.set(WORKER_MEDIA, mediaManifestJson(readMediaManifest()));
   if (only === 'media') return out;
   for (const [file, text] of docOutputs()) out.set(file, text);
+  // Python の道具が読む JSON（Python は TS を読めないので、値を JSON に書き出して渡す）
+  out.set(SFX_JSON, sfxJson());
+  out.set(path.relative(ROOT, VIDEO_CONFIG_JSON), videoConfigJson());
   return out;
 };
 

@@ -9,7 +9,8 @@
 //   <章 ID>.md           章の一式（教材本文・ナレーション台本・絵コンテ・図解と比較例・確認問題・実践課題・要点と参考資料・AI チャットの質問例）
 //   chunks.jsonl         AI 質問チャットが参照する単位（節・図・課題・問題）。id は章 ID・節 ID をそのまま使う
 // 絵コンテの秒数とナレーションの時刻は、Git に入れている timeline（content/<講座>/generated/timeline/<ID>.json）から取る。
-// まだ無ければ秒数は空欄になる。話し手の名前は講座の cast（無ければ役の名前）、声の名前は creditsIn から。Markdown の頭には生成物の印を書く
+// まだ無ければ秒数は空欄になる。話し手の名前は講座の cast（無ければ役の名前）、声の名前は creditsIn から（章の話者と、講座の README の
+// 「動画の声」に、使った全部の声のクレジットを出す）。Markdown の頭には生成物の印を書く
 // 終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
 import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
@@ -61,7 +62,7 @@ const ROLE: Record<VoiceId, string> = { narrator: '講師', announcer: '呼び�
 /** 話し手の名前（講座の cast。無ければ役の名前） */
 const speakerOf = (c: Course, v: VoiceId) => c.cast?.[v]?.name ?? ROLE[v];
 /** その章で使った声の話し手と、声の名前（VOICES の順・重なりなし。名前は creditsIn） */
-const speakersLine = (c: Course, lec: Lecture) => {
+export const speakersLine = (c: Course, lec: Lecture) => {
   const used = new Set(voicesOf(lec));
   const pairs = (Object.keys(VOICES) as VoiceId[]).filter((v) => used.has(v)).map((v) => `${speakerOf(c, v)} = ${creditsIn('ja', [v]).join('・')}`);
   return `話者: ${[...new Set(pairs)].join('、')}。時刻は合成した音声の実測。`;
@@ -185,11 +186,17 @@ const lectureMd = (c: Course, lec: Lecture): string => {
   return L.join('\n');
 };
 
+/** 講座の動画で使った全部の声のクレジット（VOICES の順・重なりなし。名前は creditsIn）。動画がまだ無ければ出さない */
+export const courseVoicesLine = (c: Course): string[] => {
+  const credits = creditsIn('ja', c.lectures.flatMap(voicesOf));
+  return credits.length ? [`- 動画の声: ${credits.join('、')}（章ごとの話者は、各章の「2. ナレーション台本」）。BGM・効果音はプログラムで合成したオリジナル`] : [];
+};
+
 const syllabusMd = (c: Course): string => {
   const y = c.syllabus!;
   const src = sourceMap(c);
   const L: string[] = [];
-  L.push(GENERATED_MARK, '', `# ${c.title}`, '', `${c.subtitle}`, '', `- 講座 ID: \`${c.id}\``, `- 受講者: ${y.audience}`, `- 例に使う架空のサービス: ${y.sample}`, '');
+  L.push(GENERATED_MARK, '', `# ${c.title}`, '', `${c.subtitle}`, '', `- 講座 ID: \`${c.id}\``, `- 受講者: ${y.audience}`, `- 例に使う架空のサービス: ${y.sample}`, ...courseVoicesLine(c), '');
   if (c.disclaimer) L.push(`> ${c.disclaimer}`, '');
   L.push('## 到達目標', '', ...y.outcomes.map((x, i) => `${i + 1}. ${x}`), '', `最後の実践: ${y.finalProject}`, '');
   L.push('## 前提知識', '', ...y.prerequisites.map((x) => `- ${x}`), '');

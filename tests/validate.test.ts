@@ -127,11 +127,9 @@ describe('テーマ（validateTheme）', () => {
 });
 
 describe('名前の一覧が、音の側の一覧と合う', () => {
-  test('効果音は scripts/mix.py の SFX_DB と同じ', () => {
-    const py = readFileSync(path.join(ROOT, 'scripts/mix.py'), 'utf8');
-    const start = py.indexOf('SFX_DB = {');
-    const block = py.slice(start, py.indexOf('}', start));
-    expect([...block.matchAll(/"(\w+)":/g)].map((m) => m[1]).sort()).toEqual([...SFX_IDS].sort());
+  test('効果音は scripts/audio/sfx.json（content/sfx.ts の一覧。mix.py・build_music.py が読む）と同じ', () => {
+    const json = JSON.parse(readFileSync(path.join(ROOT, 'scripts/audio/sfx.json'), 'utf8')) as { sfx: Record<string, unknown> };
+    expect(Object.keys(json.sfx).sort()).toEqual([...SFX_IDS].sort());
   });
   test('声は content/voices.ts の VOICES と同じ', () => expect(Object.keys(VOICES).sort()).toEqual([...VOICE_IDS].sort()));
 });

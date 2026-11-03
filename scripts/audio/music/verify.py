@@ -3,6 +3,7 @@
 - 書き出した音の大きさ（integrated loudness・true peak・sample peak）を測って判定するのは、ここの ffmpeg（ebur128）だけ。
   生成の dsp.lufs()・dsp.true_peak_db() は目標に合わせるための計算で、置き換えると WAV のバイト列が変わるので残している
 - 素材の SHA256SUMS との照合（--check）は、作った WAV が materials ブランチの WAV と 1 バイトも違わないかを見る
+- ffmpeg・ffprobe・git は scripts/audio/common.py の run_ffmpeg・run_tool で流す（失敗したら、何をしていたかと stderr の終わりを出して止める）
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from typing import NamedTuple
 import numpy as np
 from scipy.io import wavfile
 
+from ..common import run_ffmpeg, run_tool
 from .dsp import SR, db, to_samples
 from .paths import MUSIC_DIR, PREVIEW_DIR, ROOT
 from .score import BED_SAMPLES, at
@@ -67,14 +69,22 @@ class Target(NamedTuple):
         return out
 
 
-def run(cmd: list) -> subprocess.CompletedProcess:
-    return subprocess.run([str(c) for c in cmd], capture_output=True, text=True, check=True)
+def run(cmd: list, what: str) -> subprocess.CompletedProcess:
+    """外の道具（ffprobe・git）を流して、出力を受け取る"""
+    return run_tool([str(c) for c in cmd], what=what)
+
+
+def ffmpeg(args: list, what: str) -> subprocess.CompletedProcess:
+    """ffmpeg を流して、出力を受け取る（測った値は stderr に出る）"""
+    return run_ffmpeg([str(a) for a in args], what=what)
 
 
 def ffmpeg_measure(path: Path) -> dict:
     """ffmpeg ebur128 の integrated loudness・sample peak・true peak と、ffprobe の長さ・サンプル数。"""
     af = "ebur128=peak=sample+true"
-    err = run([FFMPEG, "-hide_banner", "-nostats", "-i", path, "-af", af, "-f", "null", "-"]).stderr
+    err = ffmpeg(
+        ["-hide_banner", "-nostats", "-i", path, "-af", af, "-f", "null", "-"], f"{path.name} の音の大きさを測る"
+    ).stderr
     summary = err[err.rfind("Summary:") :]
     i = re.search(r"I:\s+(-?[\d.]+|-inf) LUFS", summary)
     sp = re.search(r"Sample peak:\s+Peak:\s+(-?[\d.]+|-inf) dBFS", summary)
@@ -91,7 +101,8 @@ def ffmpeg_measure(path: Path) -> dict:
             "-of",
             "default=nw=1",
             path,
-        ]
+        ],
+        f"{path.name} の長さを調べる",
     ).stdout
     info = dict(line.split("=", 1) for line in probe.strip().splitlines())
     return {
@@ -112,9 +123,8 @@ def check_loop_seam(bed: Path, workdir: Path) -> dict:
     比較用に、ファイル内部の同じ音楽的位置（33 小節目の頭: キック + クラッシュ）でも同じ値を出す。
     """
     twice = workdir / "bed_x2.wav"
-    run(
+    ffmpeg(
         [
-            FFMPEG,
             "-hide_banner",
             "-loglevel",
             "error",
@@ -130,7 +140,8 @@ def check_loop_seam(bed: Path, workdir: Path) -> dict:
             "-c:a",
             "pcm_s16le",
             twice,
-        ]
+        ],
+        "継ぎ目を調べるために bed.wav を 2 回つなぐ",
     )
     _, data = wavfile.read(str(twice))
     x = data.astype(float) / 32768.0
@@ -155,7 +166,7 @@ def check_loop_seam(bed: Path, workdir: Path) -> dict:
 def make_previews(workdir: Path, twice: Path) -> list[Path]:
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     mp3 = ["-c:a", "libmp3lame", "-b:a", "192k"]
-    base = [FFMPEG, "-hide_banner", "-loglevel", "error", "-y"]
+    base = ["-hide_banner", "-loglevel", "error", "-y"]
     bed, intro = MUSIC_DIR / "bed.wav", MUSIC_DIR / "sting_intro.wav"
     outs = {
         "bed_30s.mp3": ["-i", bed, "-t", "30", "-af", "afade=t=out:st=27:d=3"],
@@ -174,7 +185,7 @@ def make_previews(workdir: Path, twice: Path) -> list[Path]:
     }
     paths = []
     for name, args in outs.items():
-        run(base + args + mp3 + [PREVIEW_DIR / name])
+        ffmpeg(base + args + mp3 + [PREVIEW_DIR / name], f"試聴用の {name} を作る")
         paths.append(PREVIEW_DIR / name)
     return paths
 
@@ -259,7 +270,7 @@ def materials_sums(sums_file: Path | None) -> tuple[dict[str, str], str]:
             f"素材のブランチ {remote}/{branch} が手元に無い。npm run materials:pull で取ってくるか、--sums で SHA256SUMS を渡す"
         )
     sha = found.stdout.strip()
-    text = run(["git", "-C", ROOT, "show", f"{sha}:SHA256SUMS"]).stdout
+    text = run(["git", "-C", ROOT, "show", f"{sha}:SHA256SUMS"], "素材の SHA256SUMS を読む").stdout
     return parse_sums(text), f"{remote}/{branch} @ {sha[:7]}"
 
 
