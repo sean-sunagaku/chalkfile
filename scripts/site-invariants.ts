@@ -1,5 +1,5 @@
 // 組み立てたサイト（site/dist）が守る決まりを、組み立ての最後に確かめる（scripts/site/build.ts の buildSite が呼び、破れていれば止める）。
-// これまでは、破れていても公開して、利用者が「保存」を押したときや、新しい SW の install のときに初めて分かっていた（W-04・W-30）。
+// これまでは、破れていても公開して、利用者が「保存」を押したときや、新しい SW の install のときに初めて分かっていた。
 //   1. Workers の静的 assets の上限（ファイルの数・1 ファイルの大きさ。site/limits.ts）に収まり、MP4 が入っていない
 //   2. HTML に置き換えの印（__X__・{{x}}・版の印）が残っていない。JSON のデータ（<script type="application/json">）は JSON として読める
 //   3. CSP の script-src のハッシュの数と、ページで実際に動く script の数が合い、どの script のハッシュも CSP にある。

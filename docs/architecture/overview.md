@@ -28,7 +28,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  │                             ＋ content/<講座>/generated/media.<言語>.json（その講座の動画の一覧。追跡）
  ├─ scripts/gen.ts（npm run gen）→ worker/src/generated/media-manifest.json（全講座の動画の一覧。Worker の許可リスト。手元だけ）
  ├─ scripts/build_materials.ts（site/data も読む）→ docs/courses/（読む教材。追跡）
- └─ scripts/build_site.ts（site/data・講座のフォルダのポスターと動画の一覧を読む）→ site/dist
+ └─ scripts/build_site.ts（site/data・講座のフォルダのポスターと動画の一覧を読む。本体は scripts/site/ の buildSite）→ site/dist
        └→ .github/workflows/deploy.yml（main への push）→ gen.ts --media → wrangler deploy → https://chalkfile.com/
 
 旧 https://sean-sunagaku.github.io/chalkfile/ ＝ gh-pages ブランチ（新しいサイトへの案内だけ。scripts/legacy/deploy_pages.sh）
@@ -89,7 +89,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |
-| `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
+| `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`。テストのサーバーは `browser-server.ts` と `e2e/`）・テストの入力（`fixtures/`。合成の講座は `fixtures/content/site-sample`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
 | `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
 | `.claude/skills/` | Claude Code のスキル（作り方・書き方・調べ方・テーマの作り方）。AI 共通のきまりは直下の `AGENTS.md` |
 | `.github/` | CI（`workflows/`）・Dependabot・CODEOWNERS・PR のひな形 |
