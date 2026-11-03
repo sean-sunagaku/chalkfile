@@ -463,8 +463,9 @@ const SIGNALS = Object.keys(SIGNAL_EXIT) as Sig[];
 
 /**
  * Ctrl-C（SIGINT）・SIGTERM・SIGHUP を受けたら、書き出しを取り消す（signal を止める）。2 回目は、すぐに終える。
- * Remotion のブラウザは、開くときに自分の受け手を足し（SIGINT ではすぐに process.exit する）、閉じるときに外す。bun（1.3 で確かめた）は、
- * 受け手を 1 つ外すと、残した受け手も効かなくなることがあるので、Remotion が触ったあとに settle で外し直し、この道具の受け手を付け直す
+ * Remotion のブラウザは、開くときに自分の受け手を足し（SIGINT ではすぐに process.exit する）、閉じるときに外す。bun は、受け手を
+ * 1 つ外すと、残した受け手も効かなくなることがある（macOS の 1.3.6 で起きた。Linux の 1.4.4 では起きなかった）ので、Remotion が
+ * 触ったあとに settle で外し直し、この道具の受け手を付け直す
  */
 const stopper = () => {
   const ac = new AbortController();
