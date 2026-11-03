@@ -67,7 +67,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 保存（アプリ内に保存） | 学ぶ人が講座を選んでブラウザに保存し、通信なしで見られるようにする仕組み（PWA） | `site/sw.ts`・`site/offline-client.ts`。設計は [保存の設計](offline.md) |
 | 保存版 | 保存した講座の教材と動画の一式。新しい版に替えるのは、学ぶ人が選んだときだけ | 同上 |
 | サイトの版 | 講座のページの版。変わると、保存した人に「新しい版」を案内する | `scripts/build_site.ts` の `pageVersion` |
-| 旧 Pages | 前の公開先 `sean-sunagaku.github.io/chalkfile/`（`gh-pages` ブランチ）。新しいサイトへの案内を出す | `scripts/deploy_pages.sh`・`scripts/build_migration.ts`・`site/legacy-sw.ts` |
+| 旧 Pages | 前の公開先の GitHub Pages のサイト（`gh-pages` ブランチ。場所と終える日は [ADR](../adr/2026-11-02-legacy-pages-end-date.md)）。今は新しいサイトへの案内だけを出す | `scripts/legacy/deploy_pages.sh`・`scripts/build_migration.ts`・`site/legacy-sw.ts` |
 
 ## 言語
 
