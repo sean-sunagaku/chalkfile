@@ -4,7 +4,7 @@
 //   siteMode: どちらのサイトか（playwright.config.ts の project が決める。ci は合成の講座、real は本物の講座）
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 import type { CourseManifest } from '../../site/offline-shared';
 import type { SiteMode, SiteSession } from '../e2e/site';
 
@@ -32,19 +32,6 @@ export const test = base.extend<{ site: SiteSession }, { siteMode: SiteMode }>({
   },
 });
 export { expect };
-
-/**
- * ページを開き、SW が動き出してから開き直す（一覧のページの初めの案内を確かめるテスト用）。
- * 初めて開いたとき、SW が動き出す前（register のあと、ready の前）に pageshow が保存状態を問い合わせると、
- * 「保存機能を準備できません」が出て、そのあと初めの案内で上書きされない競合がある（site/offline-client.ts の refresh）。
- * 遅い CI の runner で出る。直すとページの版が変わるので、ページを変える回で直し、そのときにこの開き直しをやめて、
- * 初めて開いたときを確かめるテストを足す
- */
-export const openWithActiveWorker = async (page: Page, url: string) => {
-  await page.goto(url);
-  await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.active, null, { timeout: 60000 });
-  await page.reload();
-};
 
 /** 使うブラウザ（既定は入れてある Chrome。CI は PW_CHANNEL=chromium で Playwright の Chromium） */
 export const channel = process.env.PW_CHANNEL ?? 'chrome';
