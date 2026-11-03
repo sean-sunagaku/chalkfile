@@ -9,7 +9,7 @@
 //   docs/guide/new-course.md の頭文字の表        <!-- prefixes:start --> と <!-- prefixes:end --> の間。各講座の prefix と order から
 //   docs/guide/commands.md の chalk の表          <!-- cli:start --> と <!-- cli:end --> の間。scripts/cli.ts のコマンドの一覧（npm run chalk -- help の元）から
 //   scripts/audio/sfx.json                     Python の道具（mix.py・build_music.py）が読む効果音の一覧。content/sfx.ts から（Git に入れる）
-//   scripts/audio/video_config.json            Python の道具が読む動画の値。src/video.config.ts から（Git に入れる。npm run gen:video-config と同じ）
+//   scripts/audio/video_config.json            Python の道具が読む動画の値。engine/core/video-config.ts から（Git に入れる。npm run gen:video-config と同じ）
 // 表のずれは npm run check:docs（scripts/check_docs.ts）も、Python が読む JSON のずれは npm test（tests/handoff.test.ts・video-config.test.ts）も止める。
 // 終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
 import { existsSync, readFileSync } from 'node:fs';
