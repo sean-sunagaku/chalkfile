@@ -1,9 +1,16 @@
 // 道具の部品（scripts/lib/）の単体テスト。ファイルは一時のフォルダにだけ書く
 import { afterAll, describe, expect, test } from 'bun:test';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { EXIT, exitCodeOf, MissingError, readArgs, UsageError } from '../scripts/lib/args';
+import { readSiteConfig } from '../scripts/lib/config';
 import { withLock, writeAtomic } from '../scripts/lib/fsx';
+import { sha256File } from '../scripts/lib/hash';
+import { pool } from '../scripts/lib/pool';
+import { redact, run, runOrThrow, tailOf } from '../scripts/lib/proc';
+import { wavSeconds } from '../scripts/lib/wav';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-lib-test-'));
@@ -133,5 +140,124 @@ for (let i = 0; i < 8; i++)
     expect(lines).toHaveLength(1);
     // 人のロックは消さない
     expect(JSON.parse(readFileSync(lock, 'utf8')).token).toBe('other');
+  });
+});
+
+describe('readArgs（node:util の parseArgs を strict で読む）', () => {
+  const options = {
+    write: { type: 'boolean' },
+    base: { type: 'string', default: 'origin/main' },
+    course: { type: 'string', multiple: true },
+  } as const;
+  test('値・既定・くり返し・-h を読む。= の書き方も、分けた書き方も読む', () => {
+    const r = readArgs(['--write', '--course', 'a', '--course=b', '--base=HEAD^1', 'L01', '-h'], options, {
+      positionals: true,
+    });
+    expect(r.values).toEqual({ write: true, base: 'HEAD^1', course: ['a', 'b'], help: true });
+    expect(r.positionals).toEqual(['L01']);
+    expect(readArgs([], options).values).toEqual({ base: 'origin/main' });
+  });
+  test('知らない引数・値の足りない引数・取らない引数は、使い方の誤り（終了コード 2）にする', () => {
+    const errorOf = (args: string[], positionals = false) => {
+      try {
+        readArgs(args, options, { positionals });
+      } catch (e) {
+        return { code: exitCodeOf(e), message: (e as Error).message };
+      }
+      throw new Error('止まらなかった');
+    };
+    expect(errorOf(['--nope'])).toEqual({ code: EXIT.usage, message: '知らない引数: --nope（使い方は --help）' });
+    expect(errorOf(['--base']).code).toBe(EXIT.usage);
+    expect(errorOf(['--write=1']).code).toBe(EXIT.usage);
+    expect(errorOf(['L01'])).toEqual({
+      code: EXIT.usage,
+      message: 'この道具は、この引数を取らない: L01（使い方は --help）',
+    });
+  });
+  test('終了コード: 使い方の誤りは 2、前提が足りないのは 3、ほかの失敗は 1', () => {
+    expect([new UsageError('x'), new MissingError('x'), new Error('x'), 'x'].map(exitCodeOf)).toEqual([2, 3, 1, 1]);
+  });
+});
+
+describe('proc（外の道具の流し方と、伏せ字）', () => {
+  test('token・Authorization・署名つきの URL の query を伏せる', () => {
+    const token = `ghp_${'a'.repeat(36)}`;
+    const out = redact(
+      `HTTP 401 ${token}\nAuthorization: Bearer abc.def\nGET https://example.com/x?X-Amz-Signature=secret&a=1 github_pat_${'b'.repeat(30)}`,
+    );
+    for (const secret of [token, 'abc.def', 'X-Amz-Signature=secret', 'b'.repeat(30)])
+      expect(out).not.toContain(secret);
+    expect(out).toContain('https://example.com/x?［伏せた］');
+  });
+  test('stderr の終わりの行を、伏せてから 1 行にする', () => {
+    const text = ['1', '2', '3', '4', '5', `6 ghp_${'c'.repeat(36)}`].join('\n');
+    expect(tailOf(text)).toBe('2 / 3 / 4 / 5 / 6 ［伏せた token］');
+    expect(tailOf('x'.repeat(900), 5, 10)).toBe('x'.repeat(10));
+  });
+  test('終了コードと出力を返し、時間切れを知らせ、道具が無ければ前提が足りない（3）にする', () => {
+    expect(run('sh', ['-c', 'echo out; echo err >&2; exit 4'])).toEqual({
+      code: 4,
+      stdout: 'out\n',
+      stderr: 'err\n',
+      timedOut: false,
+    });
+    expect(run('sh', ['-c', 'cat'], { input: 'in' }).stdout).toBe('in');
+    expect(run('sh', ['-c', 'sleep 5'], { timeoutMs: 100 }).timedOut).toBe(true);
+    expect(() => run('chalkfile-no-such-tool', [])).toThrow(MissingError);
+  });
+  test('runOrThrow は、失敗したら何が失敗したかと、伏せた stderr の終わりを付けて止める', () => {
+    expect(runOrThrow('sh', ['-c', 'printf ok'])).toBe('ok');
+    expect(() =>
+      runOrThrow('sh', ['-c', `echo "bad ghp_${'d'.repeat(36)}" >&2; exit 3`], { what: '試しの道具' }),
+    ).toThrow('試しの道具 が失敗した（終了コード 3）: bad ［伏せた token］');
+  });
+});
+
+describe('hash・pool・wav・config', () => {
+  test('sha256File は、1 MiB より大きいファイルも、全体を読んだときと同じ値を出す', () => {
+    const file = path.join(tmp(), 'big.bin');
+    const data = Buffer.alloc(3 * 1024 * 1024 + 17, 7);
+    writeFileSync(file, data);
+    expect(sha256File(file)).toBe(createHash('sha256').update(data).digest('hex'));
+  });
+  test('pool は、同時に n 本までで流し、全部を 1 回ずつ流す', async () => {
+    let running = 0;
+    let most = 0;
+    const seen: number[] = [];
+    await pool([1, 2, 3, 4, 5, 6, 7], 3, async (x) => {
+      running++;
+      most = Math.max(most, running);
+      await Bun.sleep(5);
+      seen.push(x);
+      running--;
+    });
+    expect(most).toBe(3);
+    expect(seen.sort()).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    await pool([], 3, async () => {
+      throw new Error('呼ばない');
+    });
+  });
+  test('wavSeconds は、fmt と data のチャンクから長さを出す（48kHz・モノラル・16bit の 1.5 秒）', () => {
+    const data = 48000 * 2 * 1.5;
+    const head = Buffer.alloc(44);
+    head.write('RIFF', 0);
+    head.writeUInt32LE(36 + data, 4);
+    head.write('WAVEfmt ', 8);
+    head.writeUInt32LE(16, 16);
+    head.writeUInt16LE(1, 20);
+    head.writeUInt16LE(1, 22);
+    head.writeUInt32LE(48000, 24);
+    head.writeUInt32LE(96000, 28);
+    head.writeUInt16LE(2, 32);
+    head.writeUInt16LE(16, 34);
+    head.write('data', 36);
+    head.writeUInt32LE(data, 40);
+    expect(wavSeconds(Buffer.concat([head, Buffer.alloc(data)]))).toBe(1.5);
+    expect(() => wavSeconds(head.subarray(0, 36))).toThrow('data チャンクが無い');
+  });
+  test('readSiteConfig は、site/config.json を読む（公開する言語を持つ）', () => {
+    const config = readSiteConfig();
+    expect(config.publishLangs).toContain('ja');
+    expect(config.baseUrl.startsWith('https://')).toBe(true);
   });
 });

@@ -35,11 +35,12 @@
 //   見つけた所が、台本の文字列の中の text の所に収まるときだけ外れる（同じ文字列のほかの所・ほかの規則は、そのまま見る）。
 //   外せるのは injection・html・http・email・phone。見えない文字・制御文字・秘密情報の形・禁止語は外せない。
 //   前の書き方（文字列だけ。含めば全部の点検を飛ばしていた）は、どの規則を外すつもりかが分からないので読み替えず、止めて書き直しを促す
+// 終了コード: 0 止めるものなし・1 止めるものがある・2 使い方の誤り・3 前提が足りない（--require-denylist で禁止語の一覧が無い）
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, type Stats } from 'node:fs';
 import path from 'node:path';
-
-const ROOT = path.resolve(import.meta.dir, '..');
+import { EXIT, readArgs, runMain, showHelp } from './lib/args';
+import { ROOT } from './lib/paths';
 
 type Level = 'error' | 'warn';
 /** 規則の名前。出力の［］の中と、scripts/content-allow.json の rule に使う */
@@ -507,30 +508,26 @@ export const checkFiles = (out: Finding[], { root = ROOT, deny }: { root?: strin
 
 /** 見つけるべき例を見つけ、見逃すべき例を見逃すか。例と確かめ方は tests/check-content.test.ts にあり、bun test で流す（CI はこの入口から呼ぶ） */
 const SELF_TEST = 'tests/check-content.test.ts';
-const selfTest = () => {
+const selfTest = (): number => {
   const r = Bun.spawnSync([process.execPath, 'test', path.join(ROOT, SELF_TEST)], { cwd: ROOT, stdin: 'ignore', stdout: 'inherit', stderr: 'inherit' });
   console.log(r.exitCode === 0 ? `点検の点検: ${SELF_TEST} の例が全部合った` : `点検の点検: 合わない例がある（${SELF_TEST}。上の bun test の出力を見る）`);
-  process.exit(r.exitCode === 0 ? 0 : 1);
+  return r.exitCode === 0 ? 0 : 1;
 };
 
 /* ───────────── 実行 ───────────── */
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  const unknown = args.filter((a) => a !== '--self-test' && a !== '--require-denylist');
-  if (unknown.length) {
-    console.error(`知らない引数です: ${unknown.join(' ')}（使えるのは --self-test と --require-denylist）`);
-    process.exit(2);
-  }
-  if (args.includes('--self-test')) selfTest();
+const main = async (argv: string[]) => {
+  const { values } = readArgs(argv, { 'self-test': { type: 'boolean' }, 'require-denylist': { type: 'boolean' } });
+  if (values.help) return showHelp(import.meta.filename);
+  if (values['self-test']) return selfTest();
   // ローカルの禁止語の一覧が無いと、非公開の名前が入っても止まらない。手元でははっきり警告し、CI（一覧を置かない）では注意だけにする
   const ci = process.env.CI === 'true';
   const { shared, local } = denylistPaths();
   const places = [...(shared ? [`    ${shared}（同じ clone の全部の worktree が読む）`] : []), `    ${local}（この作業フォルダだけ）`];
   const terms = denylistTerms();
-  if (!terms.length && args.includes('--require-denylist')) {
+  if (!terms.length && values['require-denylist']) {
     console.error(['止める  ローカルの禁止語の一覧が無いので止めます（--require-denylist）。1 行 1 語の一覧を、次のどちらかに置いてください', ...places].join('\n'));
-    process.exit(1);
+    return EXIT.missing;
   }
   const out: Finding[] = [];
   const allow = allowList();
@@ -554,5 +551,7 @@ if (import.meta.main) {
       '  1 行 1 語の一覧を、次のどちらかに置く（どちらも Git に入らない）', ...places,
       '  一覧が無いときに止めるには --require-denylist を付ける（手元から公開物を出す前に使う）', bar].join('\n'));
   }
-  process.exit(errors.length ? 1 : 0);
-}
+  return errors.length ? 1 : 0;
+};
+
+if (import.meta.main) await runMain(main);

@@ -11,16 +11,20 @@
 // 消すのは gc だけで、--confirm を付けたときだけ消す。gc は親の無い 1 コミットで置き換え、それまでの履歴を切る（消した素材を履歴にも残さない）。
 // 音声は FLAC（可逆圧縮）で置き、取り出すときに WAV に戻す。SHA256SUMS で、戻した WAV と読みが元と同じかを確かめる。
 // remote・素材のブランチ・main の名前は、環境変数 MATERIALS_REMOTE・MATERIALS_BRANCH・MATERIALS_BASE で差し替えられる。
+// 終了コード: 0 できた・1 失敗（check は足りないものがある）・2 使い方の誤り・3 前提が足りない（push の前の守り・素材のブランチ・道具）
 import { spawn, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { COURSES, coursesIn } from '../content';
 import { LANGS, type Lang } from '../content/i18n';
 import type { Course, Line, SfxId, VoiceId } from '../content/types';
 import { KOKORO, speechIn, VOICES } from '../content/voices';
+import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
+import { sha256File } from './lib/hash';
+import { ROOT } from './lib/paths';
+import { pool } from './lib/pool';
+import { run as runTool } from './lib/proc';
 import { pullMedia } from './media';
 import { ttsKeyIn } from './voices';
 
@@ -50,7 +54,7 @@ export type Repo = {
 };
 
 export const defaultRepo = (): Repo => ({
-  root: path.resolve(import.meta.dir, '..'),
+  root: ROOT,
   remote: process.env.MATERIALS_REMOTE ?? 'origin',
   branch: process.env.MATERIALS_BRANCH ?? 'materials',
   base: process.env.MATERIALS_BASE ?? 'main',
@@ -77,9 +81,8 @@ export type Result = { pushed: boolean; sha: string | null; attempts: number };
 type GitOpts = { env?: Record<string, string>; input?: string };
 /** git を流して、終了コードと出力を返す */
 const run = (root: string, args: string[], opts: GitOpts = {}) => {
-  const r = spawnSync('git', args, { cwd: root, env: { ...process.env, ...opts.env }, input: opts.input, maxBuffer: 256 * 1024 * 1024 });
-  if (r.error) throw r.error;
-  return { code: r.status ?? 1, out: r.stdout.toString(), err: r.stderr.toString() };
+  const r = runTool('git', args, { cwd: root, env: { ...process.env, ...opts.env }, input: opts.input, maxBuffer: 256 * 1024 * 1024 });
+  return { code: r.code, out: r.stdout, err: r.stderr };
 };
 /** git を流して、標準出力を返す。失敗したら、git のエラーを付けて止める */
 const git = (root: string, args: string[], opts: GitOpts = {}): string => {
@@ -92,30 +95,24 @@ const hashFiles = (root: string, files: string[], write: boolean): string[] =>
   files.length ? git(root, ['hash-object', ...(write ? ['-w'] : []), '--no-filters', '--stdin-paths'], { input: `${files.join('\n')}\n` }).split('\n') : [];
 const hashText = (root: string, text: string, write: boolean): string => git(root, ['hash-object', ...(write ? ['-w'] : []), '--stdin'], { input: text });
 
-const sha256Of = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex');
+const sha256Of = sha256File;
 const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)}MB`;
 /** パスの並び（ロケールに左右されないよう、文字コードの順にする） */
 const byPath = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** WAV と FLAC の変換を、ffmpeg で 8 本ずつ並べて流す。FLAC は可逆なので、WAV に戻すと元と同じバイトになる */
-export const ffmpegConvert: Convert = async (jobs, to) => {
-  let next = 0;
-  const worker = async () => {
-    for (let job = jobs[next++]; job; job = jobs[next++]) {
-      const [src, dest] = job;
-      mkdirSync(path.dirname(dest), { recursive: true });
-      const codec = to === 'flac' ? ['-c:a', 'flac', '-compression_level', '8'] : ['-c:a', 'pcm_s16le', '-f', 'wav'];
-      await new Promise<void>((resolve, reject) => {
-        const p = spawn('ffmpeg', ['-nostdin', '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-map_metadata', '-1', '-bitexact', ...codec, dest], {
-          stdio: ['ignore', 'ignore', 'inherit'],
-        });
-        p.on('error', reject);
-        p.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg が失敗した: ${src}`))));
+export const ffmpegConvert: Convert = (jobs, to) =>
+  pool(jobs, 8, async ([src, dest]) => {
+    mkdirSync(path.dirname(dest), { recursive: true });
+    const codec = to === 'flac' ? ['-c:a', 'flac', '-compression_level', '8'] : ['-c:a', 'pcm_s16le', '-f', 'wav'];
+    await new Promise<void>((resolve, reject) => {
+      const p = spawn('ffmpeg', ['-nostdin', '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-map_metadata', '-1', '-bitexact', ...codec, dest], {
+        stdio: ['ignore', 'ignore', 'inherit'],
       });
-    }
-  };
-  await Promise.all(Array.from({ length: 8 }, worker));
-};
+      p.on('error', (e) => reject((e as NodeJS.ErrnoException).code === 'ENOENT' ? new MissingError('ffmpeg が見つからない（入れてから流す。docs/guide/quickstart.md の「前提の道具」）') : e));
+      p.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg が失敗した: ${src}`))));
+    });
+  });
 
 /** ブランチの一部を、一時フォルダに取り出す（git archive を tar に流す。pipefail で、どちらが失敗しても止める） */
 const extract = (root: string, ref: string, paths: string[], dest: string) => {
@@ -515,7 +512,8 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
   const stops = guard(repo);
   if (!check(repo, courses, () => {})) stops.push('素材が足りない。bun scripts/materials.ts check で足りないものを見て、bun scripts/synth.ts と scripts/build_music.py を流してから push する');
   for (const s of stops) log(`${dry ? '注意（push なら、ここで止まる）' : '止める'}: ${s}`);
-  if (stops.length && !dry) throw new Error(stops.join('\n'));
+  // 止める理由は、どれも push の前提（台本のコミット・main の取り込み・手元の素材）が足りないこと
+  if (stops.length && !dry) throw new MissingError(stops.join('\n'));
 
   const local = readLocal(repo, courses);
   const source = `${git(repo.root, ['rev-parse', 'HEAD'])}（${git(repo.root, ['rev-parse', '--abbrev-ref', 'HEAD'])}）`;
@@ -738,7 +736,7 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
   const log = opts.log ?? console.log;
   const convert = opts.convert ?? ffmpegConvert;
   const sha = fetchBranch(repo, repo.branch);
-  if (!sha) throw new Error(`素材のブランチ ${repo.remote}/${repo.branch} が無い`);
+  if (!sha) throw new MissingError(`素材のブランチ ${repo.remote}/${repo.branch} が無い`);
   const inBranch = new Set(listIn(repo, sha, 'tts'));
   const absent = ids.filter((id) => !inBranch.has(id));
   if (absent.length) log(`素材のブランチに無い講座: ${absent.join(', ')}（VOICEVOX で bun scripts/synth.ts を流す）`);
@@ -787,72 +785,45 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
 
 /* ───────────── コマンド ───────────── */
 
-const USAGE = `使い方:
-  bun scripts/materials.ts pull [講座 ID …] [--videos]      素材を .work/tts/ と public/audio/ に取り出す（--videos で Releases の動画も）
-  bun scripts/materials.ts check [講座 ID …]                台本の全部の台詞の音声と、BGM・効果音が手元にあるか
-  bun scripts/materials.ts push [--dry-run] [--message 文]   手元の素材を素材のブランチに足す（消さない。--dry-run は本数だけを出す）
-  bun scripts/materials.ts gc [--keep ref …] [--confirm]    --keep（既定 origin/main）の台本が使わない台詞の音声を一覧にする（--confirm で消す）`;
-
-const HELP = { type: 'boolean', short: 'h' } as const;
-/** 引数を読む（strict。知らない引数があれば、使い方を付けて止める） */
-const parse = <T extends ParseArgsConfig>(config: T) => {
-  try {
-    return parseArgs({ ...config, strict: true });
-  } catch (e) {
-    throw new Error(`引数が読めない: ${e instanceof Error ? e.message : e}\n${USAGE}`);
-  }
-};
-
 /** 講座 ID を、手元の台本の講座から選ぶ（無ければ全部） */
 const pick = (ids: string[]): string[] => {
-  for (const id of ids) if (!COURSES.some((c) => c.id === id)) throw new Error(`講座が無い: ${id}（${COURSES.map((c) => c.id).join(', ')}）`);
+  for (const id of ids) if (!COURSES.some((c) => c.id === id)) throw new UsageError(`講座が無い: ${id}（${COURSES.map((c) => c.id).join(', ')}）`);
   return ids.length ? ids : COURSES.map((c) => c.id);
 };
 
 const main = async (argv: string[]) => {
   const [cmd, ...rest] = argv;
+  if (cmd === '-h' || cmd === '--help' || cmd === 'help') return showHelp(import.meta.filename);
+  if (cmd === undefined) throw new UsageError('コマンドを選ぶ: pull・check・push・gc（使い方は --help）');
   const repo = defaultRepo();
   if (cmd === 'pull') {
-    const { values, positionals } = parse({ args: rest, options: { videos: { type: 'boolean' }, help: HELP }, allowPositionals: true });
-    if (values.help) return console.log(USAGE);
+    const { values, positionals } = readArgs(rest, { videos: { type: 'boolean' } }, { positionals: true });
+    if (values.help) return showHelp(import.meta.filename);
     const ids = pick(positionals);
     await pull(repo, ids);
     if (values.videos) await pullMedia(ids);
     console.log(
       values.videos
-        ? '次は bun scripts/synth.ts（VOICEVOX なしで時刻と字幕を作る）→ bun scripts/build_site.ts'
-        : '次は bun scripts/synth.ts（VOICEVOX なしで時刻を決める）→ uv run --with numpy --with scipy python scripts/mix.py → bash scripts/render.sh → bun scripts/build_site.ts',
+        ? '次は npm run synth（VOICEVOX なしで時刻と字幕を作る）→ npm run build:site'
+        : '次は npm run synth（VOICEVOX なしで時刻を決める）→ npm run mix → npm run render → npm run build:site',
     );
   } else if (cmd === 'check') {
-    const { values, positionals } = parse({ args: rest, options: { help: HELP }, allowPositionals: true });
-    if (values.help) return console.log(USAGE);
-    if (!check(repo, courseKeys(HERE, pick(positionals)))) process.exitCode = 1;
+    const { values, positionals } = readArgs(rest, {}, { positionals: true });
+    if (values.help) return showHelp(import.meta.filename);
+    if (!check(repo, courseKeys(HERE, pick(positionals)))) return 1;
   } else if (cmd === 'push') {
-    const { values } = parse({ args: rest, options: { message: { type: 'string' }, 'dry-run': { type: 'boolean' }, help: HELP } });
-    if (values.help) return console.log(USAGE);
+    const { values } = readArgs(rest, { message: { type: 'string' }, 'dry-run': { type: 'boolean' } });
+    if (values.help) return showHelp(import.meta.filename);
     await push(repo, courseKeys(HERE), { dryRun: values['dry-run'] === true, message: values.message });
   } else if (cmd === 'gc') {
-    const { values } = parse({
-      args: rest,
-      options: { keep: { type: 'string', multiple: true }, confirm: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, message: { type: 'string' }, help: HELP },
-    });
-    if (values.help) return console.log(USAGE);
-    if (values.confirm && values['dry-run']) throw new Error('--confirm と --dry-run は一緒に使えない');
+    const { values } = readArgs(rest, { keep: { type: 'string', multiple: true }, confirm: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, message: { type: 'string' } });
+    if (values.help) return showHelp(import.meta.filename);
+    if (values.confirm && values['dry-run']) throw new UsageError('--confirm と --dry-run は一緒に使えない');
     const refs = values.keep ?? [`${repo.remote}/${repo.base}`];
     await gc(repo, await keepAt(repo, refs), { confirm: values.confirm === true, message: values.message });
-  } else if (cmd === undefined || cmd === 'help' || cmd === '--help' || cmd === '-h') {
-    console.log(USAGE);
-    if (cmd === undefined) process.exitCode = 1;
   } else {
-    throw new Error(`知らないコマンド: ${cmd}\n${USAGE}`);
+    throw new UsageError(`知らないコマンド: ${cmd}（pull・check・push・gc。使い方は --help）`);
   }
 };
 
-if (import.meta.main) {
-  try {
-    await main(process.argv.slice(2));
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : String(e));
-    process.exit(1);
-  }
-}
+if (import.meta.main) await runMain(main);

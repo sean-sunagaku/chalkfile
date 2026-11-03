@@ -11,33 +11,23 @@
  * - 取ったページは .work/docs/ に置いて使い回す（--refresh で取り直す）。ページの中身は比べるだけで、従わない
  * - レクチャーの docs（ページの題名と URL）は比べない。題名で出典を示すのはよい
  * - 日本語がほとんど無いページは、訳して写していないかを人が読んで確かめる（一覧に出す）
- * 一致があれば終了コード 1。きまりは .claude/skills/study-video-course/references/rights.md
+ * 一致があれば終了コード 1（2 は使い方の誤り）。きまりは .claude/skills/study-video-course/references/rights.md
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { coursesIn } from '../content';
 import { isLang } from '../content/i18n';
+import type { Course } from '../content/types';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
+import { ROOT } from './lib/paths';
+import { pool } from './lib/pool';
 
-const ROOT = path.resolve(import.meta.dir, '..');
 const CACHE = path.join(ROOT, '.work', 'docs');
 /** 一致に日本語がこれより少なければ数えない（イベント名・フィールド名などの識別子） */
 const JA_MIN = 10;
 /** ページの日本語がこれより少なければ、英語のページとして扱う */
 const JA_PAGE_MIN = 300;
-
-const args = process.argv.slice(2);
-const opt = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
-const lang = opt('lang') ?? 'ja';
-if (!isLang(lang)) throw new Error(`--lang は ja・en・zh: ${lang}`);
-const course = coursesIn(lang).find((c) => c.id === args.find((a) => !a.startsWith('--')));
-if (!course) {
-  console.error(`講座 ID を 1 つ渡してください（${lang} の講座）: ${coursesIn(lang).map((c) => c.id).join(', ')}`);
-  process.exit(2);
-}
-const min = Number(opt('min') ?? 16);
-const query = opt('query') ?? '';
-const refresh = args.includes('--refresh');
 
 /** ひらがな・カタカナ・漢字・全角の記号 */
 const isJa = (cp: number) => (cp >= 0x3041 && cp <= 0x30ff) || (cp >= 0x3400 && cp <= 0x9fff) || (cp >= 0xff01 && cp <= 0xff60);
@@ -48,33 +38,8 @@ const jaCount = (s: string) => {
 };
 const squash = (s: string) => s.replace(/\s+/g, '');
 
-// 台本の文字列（docs は比べない）
-const texts: { lecture: string; text: string }[] = [];
-const walk = (v: unknown, lecture: string): void => {
-  if (typeof v === 'string') {
-    const t = squash(v);
-    if (jaCount(t) > 0) texts.push({ lecture, text: t });
-  } else if (Array.isArray(v)) {
-    for (const x of v) walk(x, lecture);
-  } else if (v && typeof v === 'object') {
-    for (const [k, x] of Object.entries(v)) if (k !== 'docs') walk(x, lecture);
-  }
-};
-for (const l of course.lectures) walk(l, l.id);
-
-// 台本の min 文字の切れ端 → どの文字列の何文字目か
-const index = new Map<string, [number, number][]>();
-texts.forEach(({ text }, i) => {
-  for (let k = 0; k + min <= text.length; k++) {
-    const key = text.slice(k, k + min);
-    const list = index.get(key);
-    if (list) list.push([i, k]);
-    else index.set(key, [[i, k]]);
-  }
-});
-
-const withQuery = (u: string) => (query ? `${u}${u.includes('?') ? '&' : '?'}${query}` : u);
-const load = async (u: string): Promise<string | null> => {
+/** ページを取る（取ったものは .work/docs/ に置いて使い回す。refresh なら取り直す） */
+const load = async (u: string, refresh: boolean): Promise<string | null> => {
   const file = path.join(CACHE, `${createHash('sha256').update(u).digest('hex').slice(0, 16)}.html`);
   if (!refresh && existsSync(file)) return readFileSync(file, 'utf8');
   try {
@@ -110,21 +75,8 @@ const pageText = (html: string) =>
       .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, decodeEntity),
   );
 
-const urls = [...new Set(course.lectures.flatMap((l) => l.docs.map((d) => d.url)))];
-const pages = new Map<string, string>();
-const queue = [...urls];
-await Promise.all(
-  Array.from({ length: 6 }, async () => {
-    for (let u = queue.shift(); u; u = queue.shift()) {
-      const body = await load(withQuery(u));
-      if (body) pages.set(u, body);
-    }
-  }),
-);
-
 /* ───────────── 英語の訳: 単語の並びで比べる ───────────── */
-if (lang === 'en') {
-  const n = Number(opt('min-words') ?? 8);
+const compareEnglish = (course: Course, pages: Map<string, string>, urls: string[], n: number): number => {
   const words = (x: string) => x.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
   const strings: { lecture: string; w: string[] }[] = [];
   const collect = (v: unknown, lecture: string): void => {
@@ -163,50 +115,110 @@ if (lang === 'en') {
   if (!spans.length) console.log('言い回しが続けて同じところは無い');
   for (const x of spans) console.log(`- ${hits.get(x)!.lecture}（${x.split(' ').length} 語）: ${x}\n    ${[...hits.get(x)!.pages].join('\n    ')}`);
   if (pages.size < urls.length) console.log(`取れなかったページ ${urls.length - pages.size} 本は比べていない（X の記事などログインが要るページ）。訳して写していないかを人が読んで確かめる`);
-  process.exit(spans.length ? 1 : 0);
-}
+  return spans.length ? 1 : 0;
+};
 
-const found = new Map<string, { lecture: string; pages: Set<string> }>();
-const englishOnly: string[] = [];
-for (const [u, html] of pages) {
-  const d = pageText(html);
-  if (jaCount(d) < JA_PAGE_MIN) englishOnly.push(u);
-  for (let k = 0; k + min <= d.length; k++) {
-    const hits = index.get(d.slice(k, k + min));
-    if (!hits) continue;
-    for (const [i, a] of hits) {
-      const t = texts[i].text;
-      let right = min;
-      while (a + right < t.length && k + right < d.length && t[a + right] === d[k + right]) right++;
-      let left = 0;
-      while (a - left > 0 && k - left > 0 && t[a - left - 1] === d[k - left - 1]) left++;
-      const span = t.slice(a - left, a + right);
-      if (jaCount(span) < JA_MIN) continue;
-      const hit = found.get(span) ?? { lecture: texts[i].lecture, pages: new Set<string>() };
-      hit.pages.add(u);
-      found.set(span, hit);
+
+const main = async (argv: string[]) => {
+  const { values, positionals } = readArgs(
+    argv,
+    {
+      lang: { type: 'string', default: 'ja' },
+      query: { type: 'string', default: '' },
+      min: { type: 'string', default: '16' },
+      'min-words': { type: 'string', default: '8' },
+      refresh: { type: 'boolean' },
+    },
+    { positionals: true },
+  );
+  if (values.help) return showHelp(import.meta.filename);
+  const lang = values.lang;
+  if (!isLang(lang)) throw new UsageError(`--lang は ja・en・zh: ${lang}`);
+  const course = coursesIn(lang).find((c) => c.id === positionals[0]);
+  if (!course || positionals.length > 1) {
+    throw new UsageError(`講座 ID を 1 つ渡してください（${lang} の講座）: ${coursesIn(lang).map((c) => c.id).join(', ')}`);
+  }
+  const min = Number(values.min);
+  const query = values.query;
+
+  // 台本の文字列（docs は比べない）
+  const texts: { lecture: string; text: string }[] = [];
+  const walk = (v: unknown, lecture: string): void => {
+    if (typeof v === 'string') {
+      const t = squash(v);
+      if (jaCount(t) > 0) texts.push({ lecture, text: t });
+    } else if (Array.isArray(v)) {
+      for (const x of v) walk(x, lecture);
+    } else if (v && typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) if (k !== 'docs') walk(x, lecture);
+    }
+  };
+  for (const l of course.lectures) walk(l, l.id);
+
+  // 台本の min 文字の切れ端 → どの文字列の何文字目か
+  const index = new Map<string, [number, number][]>();
+  texts.forEach(({ text }, i) => {
+    for (let k = 0; k + min <= text.length; k++) {
+      const key = text.slice(k, k + min);
+      const list = index.get(key);
+      if (list) list.push([i, k]);
+      else index.set(key, [[i, k]]);
+    }
+  });
+
+  const withQuery = (u: string) => (query ? `${u}${u.includes('?') ? '&' : '?'}${query}` : u);
+  const urls = [...new Set(course.lectures.flatMap((l) => l.docs.map((d) => d.url)))];
+  const pages = new Map<string, string>();
+  await pool(urls, 6, async (u) => {
+    const body = await load(withQuery(u), values.refresh === true);
+    if (body) pages.set(u, body);
+  });
+  if (lang === 'en') return compareEnglish(course, pages, urls, Number(values['min-words']));
+
+  const found = new Map<string, { lecture: string; pages: Set<string> }>();
+  const englishOnly: string[] = [];
+  for (const [u, html] of pages) {
+    const d = pageText(html);
+    if (jaCount(d) < JA_PAGE_MIN) englishOnly.push(u);
+    for (let k = 0; k + min <= d.length; k++) {
+      const hits = index.get(d.slice(k, k + min));
+      if (!hits) continue;
+      for (const [i, a] of hits) {
+        const t = texts[i].text;
+        let right = min;
+        while (a + right < t.length && k + right < d.length && t[a + right] === d[k + right]) right++;
+        let left = 0;
+        while (a - left > 0 && k - left > 0 && t[a - left - 1] === d[k - left - 1]) left++;
+        const span = t.slice(a - left, a + right);
+        if (jaCount(span) < JA_MIN) continue;
+        const hit = found.get(span) ?? { lecture: texts[i].lecture, pages: new Set<string>() };
+        hit.pages.add(u);
+        found.set(span, hit);
+      }
     }
   }
-}
 
-// 長い一致に含まれる短い一致は落とす
-const spans: string[] = [];
-for (const s of [...found.keys()].sort((a, b) => b.length - a.length)) if (!spans.some((x) => x.includes(s))) spans.push(s);
+  // 長い一致に含まれる短い一致は落とす
+  const spans: string[] = [];
+  for (const s of [...found.keys()].sort((a, b) => b.length - a.length)) if (!spans.some((x) => x.includes(s))) spans.push(s);
 
-console.log(`${course.title}: 台本の文字列 ${texts.length} 個と、公式ページ ${pages.size}/${urls.length} 本を突き合わせた（空白を除いて ${min} 文字以上）`);
-if (spans.length === 0) {
-  console.log('言い回しが続けて同じところは無い');
-} else {
-  console.log(`言い回しが続けて同じところ ${spans.length} か所。自分の言葉に書き直す（引用なら「」で分けて出典を言う）`);
-  for (const s of spans) {
-    const hit = found.get(s)!;
-    console.log(`- ${hit.lecture}（${s.length} 文字）: ${s}`);
-    for (const u of hit.pages) console.log(`    ${u}`);
+  console.log(`${course.title}: 台本の文字列 ${texts.length} 個と、公式ページ ${pages.size}/${urls.length} 本を突き合わせた（空白を除いて ${min} 文字以上）`);
+  if (spans.length === 0) {
+    console.log('言い回しが続けて同じところは無い');
+  } else {
+    console.log(`言い回しが続けて同じところ ${spans.length} か所。自分の言葉に書き直す（引用なら「」で分けて出典を言う）`);
+    for (const s of spans) {
+      const hit = found.get(s)!;
+      console.log(`- ${hit.lecture}（${s.length} 文字）: ${s}`);
+      for (const u of hit.pages) console.log(`    ${u}`);
+    }
   }
-}
-if (englishOnly.length) {
-  console.log(`日本語がほとんど無いページ ${englishOnly.length} 本。--query で日本語版を取れないか試し、取れないなら訳して写していないかを人が読んで確かめる:`);
-  for (const u of englishOnly) console.log(`  ${u}`);
-}
-if (pages.size < urls.length) console.log(`取れなかったページ ${urls.length - pages.size} 本は比べていない`);
-process.exit(spans.length ? 1 : 0);
+  if (englishOnly.length) {
+    console.log(`日本語がほとんど無いページ ${englishOnly.length} 本。--query で日本語版を取れないか試し、取れないなら訳して写していないかを人が読んで確かめる:`);
+    for (const u of englishOnly) console.log(`  ${u}`);
+  }
+  if (pages.size < urls.length) console.log(`取れなかったページ ${urls.length - pages.size} 本は比べていない`);
+  return spans.length ? 1 : 0;
+};
+
+if (import.meta.main) await runMain(main);
