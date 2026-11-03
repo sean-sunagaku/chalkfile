@@ -18,7 +18,7 @@ clone した手元で、講座の動画とサイトを作り直す。したい�
 | Node.js と npm | 要る | 要る | 要る | 依存を入れる（`npm ci --ignore-scripts`）・Remotion の静止画と Studio・Playwright |
 | bun | 要る | 要る | 要る | TypeScript のスクリプト（動画の書き出しも）と単体テスト |
 | ffmpeg（ffprobe も） | 要る | 要る | 要る | 素材の FLAC を WAV に戻す・音と映像を合わせる・ポスター・書き出した動画を確かめる（ffprobe） |
-| uv | 要る | 要る | — | Python（BGM・効果音・ミックス、英語と中国語の声の Kokoro、聞き取りの Whisper）。Python は uv が用意する |
+| uv | 要る | 要る | — | Python（BGM・効果音・ミックス、英語と中国語の声の Kokoro、聞き取りの Whisper、台本に新しい文字を足したときの書体のサブセット `npm run fonts`）。Python は uv が用意する |
 | python3（手元のもの） | テストを流すとき | テストを流すとき | テストを流すとき | `npm test` の一部が、Python の道具が受け渡しの JSON を読めるかを確かめる（書き出しには要らない） |
 | gh（`gh auth login` 済み） | 要る | 要る | 要る | Releases の動画を取る・置く・照らし合わせる（`media.ts`・`build:site -- --strict`） |
 | VOICEVOX（エンジンが `127.0.0.1:50021`） | 要る | — | — | 日本語の声 |

@@ -34,6 +34,8 @@
 - **書き出しが「書き出し のロックが … 外れない」で止まる**: 同じ作業フォルダで、ほかの書き出しが流れている（`.work/state/render.lock` に持ち主の pid がある）。終わるのを待つ。持ち主のプロセスがもう無いロックは、次の書き出しが取り直す
 - **一時フォルダの `remotion-webpack-bundle-*` をまとめて消さない**: ほかのプロジェクトのものかもしれない（`npm run render` は作業フォルダの `.work/render-tmp/` を使う）。消すなら、中身（bundle.js にこの講座の文字があるか）を確かめて 1 つずつ
 - **書き出しが遅い・CPU を取り合う**: 書き出しは 1 本ずつ流す（2 本を重ねると、それぞれ倍かかる。同じ作業フォルダでは、ロックで 1 つにする）。並列の数は `--jobs <数>`（`CONCURRENCY=<数>`。既定は 8 と CPU の数の小さいほう。CPU の数より多くすると止まる）。待ち方は [lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md) の「並行で作るとき」
+- **`npm run validate` が「書体に無い文字がある」で止まる**: 書体は台本の文字だけを入れたサブセット（`engine/fonts/`）。`npm run fonts` で作り直して commit する。元の書体にも無い文字（「元の書体にも無い」と出る）は、台本の文字を別の文字にする（[theme.md](../../.claude/skills/study-video-course/references/theme.md) の「書体」）
+- **見出し・字幕・図の名前の文字が、思ったより小さい**: 1 行に入らない文字は、描くときに測って縮める（役割の下限まで）。縮めても入らないものは `npm run validate` が注意を出すので、文を短くする（[style.md](../../.claude/skills/study-video-course/references/style.md) の「文字の量と大きさ」）
 - **サイト用の動画が、大きさの上限を超えたと警告が出る**: 長い動画は、上限に収まらないことがある（[lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md) の「台本」）
 
 ## サイトと保存

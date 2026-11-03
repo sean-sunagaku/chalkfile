@@ -41,6 +41,7 @@
     "synth": "bun scripts/synth.ts",
     "mix": "bun scripts/cli.ts mix",
     "render": "bun scripts/cli.ts render",
+    "fonts": "bun scripts/fonts.ts",
     "stills": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/stills.ts",
     "stills:compare": "bun scripts/stills-compare.ts",
     "studio": "remotion studio",
@@ -58,8 +59,9 @@
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",
-    "@remotion/google-fonts": "4.0.539",
-    "lucide-react": "0.511.0",
+    "@remotion/fonts": "4.0.539",
+    "@remotion/layout-utils": "4.0.539",
+    "lucide-react": "1.66.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.539"

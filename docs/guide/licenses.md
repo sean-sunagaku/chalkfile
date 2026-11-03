@@ -14,7 +14,7 @@ Chalkfile のリポジトリと、そこから作る動画・講座サイトの�
 | 日本語の声（VOICEVOX:No.7・VOICEVOX:青山龍星・VOICEVOX:ずんだもん・VOICEVOX:玄野武宏） | 動画の中と、素材の `materials` ブランチ（`tts/`） | MIT ではない。[VOICEVOX の利用規約](https://voicevox.hiroshiba.jp/term/)と、キャラクターごとの音声ライブラリの利用規約に従う | クレジット（`VOICEVOX:ずんだもん` の形）を書く。キャラクターごとの規約は、[VOICEVOX の公式サイト](https://voicevox.hiroshiba.jp/)の各キャラクターのページから開く |
 | 英語と中国語の声（Kokoro-82M・Kokoro-82M-v1.1-zh で、手元で合成した音声） | 動画の中と、素材の `materials` ブランチ（`tts/`） | 合成に使ったモデルの重みとコードは Apache-2.0（hexgrad）。中国語の声のデータは、LongMaoData が許諾したもの（モデルカード） | 動画とサイトに、モデルと声の名前（`Kokoro-82M (af_heart)` の形）を書いている |
 | キャラクター（ずんだもん） | 動画の中（名前と声） | 東北ずん子・ずんだもんプロジェクトの [キャラクター利用の手引き](https://zunko.jp/guideline.html) | 英語版・中国語版のずんだもんの声は、VOICEVOX ではなく Kokoro の声 |
-| 書体（Zen Maru Gothic・Noto Sans JP・Noto Sans SC・Inter・JetBrains Mono） | 動画の文字に焼き込む。サイトは Google Fonts から読み込む | SIL Open Font License 1.1 | 書体のファイルは、このリポジトリに入れていない |
+| 書体（Zen Maru Gothic・Noto Sans JP・Noto Sans SC・Inter・JetBrains Mono） | `engine/fonts/`（台本の文字だけを入れたサブセット。動画の文字に焼き込む）。講座サイトは Google Fonts から読み込む | SIL Open Font License 1.1 | サブセットは OFL の「改変版」なので、隣にライセンスの文（`OFL-<書体>.txt`。著作権の表示を含む）を置き、書体の中の著作権とライセンスの名前も残す。名前は元の書体のまま（予約された名前（Reserved Font Name）があるのは Noto の Source だけで、名前に使っていない）。書体のファイルだけを単独で売らない（OFL の決まり）。元の書体の出どころと sha256 は `engine/fonts/fonts.json` |
 | BGM・ジングル・効果音 | `scripts/build_music.py` が合成する。素材の `materials` ブランチの `audio/` | このリポジトリで合成したオリジナル（外の音源は使わない）。合成のコードは MIT | — |
 | アイコン（lucide） | 動画の中 | ISC | — |
 | 動画（MP4）とポスター（JPG） | GitHub の Releases（タグは `media-<言語>-<講座 ID>`）と、`content/<講座>/generated/posters/` | 上の物を組み合わせたもの。入っている物ごとに、上の条件に従う | 声のクレジットは、動画の終わり・サイト・納品物の README（`npm run chalk -- export`）・読む教材に出している |

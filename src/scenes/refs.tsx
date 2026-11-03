@@ -5,6 +5,7 @@ import { Content } from '../components/content';
 import { Glass, IconBadge } from '../components/ui';
 import { usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const RefCard: React.FC<{ r: RefsScene['refs'][number]; i: number }> = ({ r, i }) => {
@@ -14,12 +15,12 @@ const RefCard: React.FC<{ r: RefsScene['refs'][number]; i: number }> = ({ r, i }
     <div style={{ flex: 1, display: 'flex', opacity: p, transform: `translateY(${dropY(p)}px)` }}>
       <Glass t="cyan" style={{ flex: 1, padding: '44px 46px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         <IconBadge name={i === 0 ? 'file' : 'book'} t={i === 0 ? 'violet' : 'cyan'} size={84} />
-        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 44, color: C.ink }}>{r.title}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: TYPE.title.refTitle, color: C.ink }}>{r.title}</div>
         <div
           style={{
             fontFamily: MONO,
             fontWeight: 500,
-            fontSize: 25,
+            fontSize: TYPE.label.refUrl,
             color: TONES.cyan.text,
             lineHeight: 1.45,
             wordBreak: 'break-all',
@@ -27,7 +28,7 @@ const RefCard: React.FC<{ r: RefsScene['refs'][number]; i: number }> = ({ r, i }
         >
           {r.url}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 30, color: C.sub }}>{r.note}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.refNote, color: C.sub }}>{r.note}</div>
       </Glass>
     </div>
   );

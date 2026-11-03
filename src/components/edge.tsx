@@ -4,8 +4,8 @@ import { useCurrentFrame } from 'remotion';
 import type { Tone } from '../../engine/core/schema';
 import { alpha, H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
-import { LEAD } from '../video.config';
-import { arrowProgress, EDGE_TIMING, GlowDot } from './arrow';
+import { LEAD, TYPE } from '../video.config';
+import { ARROW_TIMING, arrowProgress, GlowDot } from './arrow';
 import { Smart } from './ui';
 
 type Pt = [number, number];
@@ -53,7 +53,7 @@ export const Edge: React.FC<{
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const start = lineStart(lines, at) - LEAD.draw + stagger;
-  const { draw, dot, dotO } = arrowProgress(frame - start, EDGE_TIMING);
+  const { draw, dot, dotO } = arrowProgress(frame - start, ARROW_TIMING);
   if (draw <= 0) return null;
   const [fs, ts] = autoSides(a, b);
   const p0 = anchor(a, fromSide ?? fs);
@@ -114,7 +114,7 @@ export const Edge: React.FC<{
               border: `1.5px solid ${t ? alpha(tt.main, 0x88 / 255) : C.line2}`,
               fontFamily: SANS,
               fontWeight: 700,
-              fontSize: 22,
+              fontSize: TYPE.label.edge,
               color: t ? tt.text : C.sub,
               whiteSpace: 'nowrap',
             }}

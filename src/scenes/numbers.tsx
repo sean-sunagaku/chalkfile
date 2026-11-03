@@ -7,6 +7,7 @@ import { Glass } from '../components/ui';
 import { formatInteger } from '../i18n';
 import { alpha, usePalette } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useScene } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = ({ it, last }) => {
@@ -33,11 +34,11 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
         transform: `translateY(${dropY(p, 14)}px)`,
       }}
     >
-      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: 60, color: tt.main, textAlign: 'center' }}>
+      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: TYPE.display.numberOp, color: tt.strong, textAlign: 'center' }}>
         {it.op}
       </div>
       <div
-        style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: last ? 44 : 38, color: last ? C.ink : C.sub }}
+        style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: last ? TYPE.body.numberTotalLabel : TYPE.body.numberLabel, color: last ? C.ink : C.sub }}
       >
         {it.label}
       </div>
@@ -45,15 +46,15 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
         style={{
           fontFamily: SANS,
           fontWeight: 900,
-          fontSize: last ? 104 : 72,
-          color: last ? tt.main : C.ink,
+          fontSize: last ? TYPE.display.numberTotal : TYPE.display.numberValue,
+          color: last ? tt.strong : C.ink,
           fontVariantNumeric: 'tabular-nums',
           textShadow: last ? `0 0 40px ${alpha(tt.main, 0x66 / 255)}` : undefined,
         }}
       >
         {it.prefix ?? ''}
         {text}
-        <span style={{ fontSize: last ? 52 : 40, marginLeft: 6 }}>{it.suffix}</span>
+        <span style={{ fontSize: last ? TYPE.display.numberTotalUnit : TYPE.display.numberUnit, marginLeft: 6 }}>{it.suffix}</span>
       </div>
     </div>
   );
@@ -74,7 +75,7 @@ const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
         </Glass>
       </div>
       {s.footnote ? (
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 26, color: C.muted, opacity: f }}>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.numberFootnote, color: C.muted, opacity: f }}>
           {s.footnote.text}
         </div>
       ) : null}

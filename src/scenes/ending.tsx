@@ -8,6 +8,7 @@ import { fitSize } from '../components/fit';
 import { Glass, gradientText, Icon } from '../components/ui';
 import { usePalette } from '../theme';
 import { dropY, useAppear, useScene, useText } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
@@ -23,7 +24,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
       {s.next ? (
         <>
           <div
-            style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}
+            style={{ fontFamily: MONO, fontWeight: 700, fontSize: TYPE.label.endingNext, letterSpacing: 8, color: C.muted, opacity: p }}
           >
             {text.next} {unit}
           </div>
@@ -37,7 +38,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
                 style={{
                   fontFamily: SANS,
                   fontWeight: 900,
-                  fontSize: 120,
+                  fontSize: TYPE.display.endingNo,
                   lineHeight: 1,
                   ...gradientText(DISPLAY),
                 }}
@@ -48,7 +49,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
                 style={{
                   fontFamily: SANS,
                   fontWeight: 900,
-                  fontSize: fitSize(s.next.title, 64, 1180),
+                  fontSize: fitSize(s.next.title, { role: 'title', max: TYPE.title.nextTitle, width: 1180, fontFamily: SANS, fontWeight: 900 }),
                   color: C.ink,
                   whiteSpace: 'nowrap',
                 }}
@@ -65,7 +66,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
             style={{
               fontFamily: SANS,
               fontWeight: 900,
-              fontSize: 110,
+              fontSize: TYPE.display.endingDone,
               opacity: p,
               ...gradientText(DISPLAY),
             }}
@@ -73,7 +74,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
             {text.done}
           </div>
           {s.closing ? (
-            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 42, color: C.sub, opacity: q }}>{s.closing}</div>
+            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.title.closing, color: C.sub, opacity: q }}>{s.closing}</div>
           ) : null}
         </>
       )}
@@ -91,7 +92,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
               }}
             />
           ))}
-          <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>
+          <div style={{ fontFamily: MONO, fontSize: TYPE.meta.endingProgress, color: C.muted, marginLeft: 12 }}>
             {text.progress(lecture.no, total)}
           </div>
         </div>
@@ -101,7 +102,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
           position: 'absolute',
           bottom: 0,
           fontFamily: SANS,
-          fontSize: 22,
+          fontSize: TYPE.meta.credits,
           color: C.muted,
           opacity: c,
           textAlign: 'center',
