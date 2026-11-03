@@ -7,7 +7,6 @@ import { docsTitles } from './sources';
 // 事実・数字・画面の正しい名前・出典は日本語の台本と同じ。台詞の数は場面ごとに日本語と同じ（要素の at は日本語のまま）。
 // v を省いた台詞は先生
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const; // この章では涙声を使わない（日本語の台本と同じ）
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 

@@ -1,8 +1,8 @@
 // サイトは assets が先に配信する。Worker を先に通すのは /media/* だけ。
+// Env（binding の型）と ExportedHandler は、wrangler types が wrangler.jsonc から作る worker/worker-configuration.d.ts にある（手で書かない）。
 import manifest from '../../site/media-manifest.json';
 import { allMediaEntries, validateMediaManifest } from '../../site/media-shared';
 import { createMediaHandler } from './media';
-export type Env = { ASSETS: { fetch(request: Request): Promise<Response> } };
 const media = createMediaHandler(allMediaEntries(validateMediaManifest(manifest)));
 
 export default {
@@ -17,4 +17,4 @@ export default {
     }
     return media(request);
   },
-};
+} satisfies ExportedHandler<Env>;

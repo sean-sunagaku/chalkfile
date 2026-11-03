@@ -1,4 +1,4 @@
-import type { CourseManifest, CourseStatus, DownloadProgress } from './offline-shared';
+import type { CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineOperation, OfflineReply, OfflineResults } from './offline-shared';
 import type { SiteText } from './i18n';
 
 type AppData = {
@@ -10,7 +10,6 @@ type AppData = {
   locale: string;
   text: SiteText;
 };
-type Reply = { ok?: boolean; error?: string; courses?: CourseStatus[]; manifest?: CourseManifest; progress?: DownloadProgress };
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 const app = JSON.parse(document.getElementById('pwa-data')!.textContent!) as AppData;
 const T = app.text;
@@ -52,19 +51,21 @@ $('pwaInstall').addEventListener('click', async () => {
   } catch { $('installState').textContent = T.ocInstallMenu; }
 });
 
-function request(type: string, id?: string, progress?: (p: DownloadProgress) => void): Promise<Reply> {
+/** SW に頼み、答えを待つ（SAVE の途中の進み具合は progress に渡す）。頼みごとと答えの形は offline-shared.ts の OfflineRequest・OfflineReply */
+function request<K extends OfflineOperation>(type: K, id?: string, progress?: (p: DownloadProgress) => void): Promise<OfflineResults[K]>;
+function request(type: OfflineOperation, id?: string, progress?: (p: DownloadProgress) => void): Promise<OfflineResults[OfflineOperation]> {
   return new Promise((resolve, reject) => {
     const worker = navigator.serviceWorker.controller ?? registration?.active;
     if (!worker) { reject(new Error(T.ocNoWorker)); return; }
     const channel = new MessageChannel();
     let timer: ReturnType<typeof setTimeout>;
-    const finish = (error?: Error, value?: Reply) => {
+    const finish = (error?: Error, value?: OfflineResults[OfflineOperation]) => {
       clearTimeout(timer);
       channel.port1.close();
       if (error) reject(error); else resolve(value!);
     };
     const extend = () => { clearTimeout(timer); timer = setTimeout(() => finish(new Error(T.ocTimeout)), 150000); };
-    channel.port1.onmessage = (event: MessageEvent<Reply>) => {
+    channel.port1.onmessage = (event: MessageEvent<OfflineReply>) => {
       extend();
       if (event.data.progress) progress?.(event.data.progress);
       else if (event.data.ok) finish(undefined, event.data);
@@ -233,7 +234,8 @@ async function init() {
     message(T.ocNoSupport);
     return;
   }
-  navigator.serviceWorker.addEventListener('message', (event) => {
+  // SW からの知らせ（OfflineBroadcast）。ほかの版の SW からも来るので、項目があるとは限らない
+  navigator.serviceWorker.addEventListener('message', (event: MessageEvent<Partial<OfflineBroadcast> | null>) => {
     if (event.data?.protocol === 1 && event.data?.type === 'CHANGED') void refresh();
   });
   try {

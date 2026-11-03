@@ -12,6 +12,7 @@ import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
 import type { Course, Evidence, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
 import { VIDEO_TEXT } from '../../src/i18n';
+import { assertNever } from './assert';
 import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
 
@@ -314,7 +315,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
       return;
     default:
       // 場面の種類を足したのに、ここで扱っていないと型で止まる（知らない種類は checkScene が先に誤りにする）
-      return s satisfies never;
+      return assertNever(s, '場面の種類');
   }
 };
 

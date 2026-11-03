@@ -6,7 +6,6 @@ import { docsTitles } from './sources';
 // 事実・数字・画面の正しい名前・出典は日本語の台本と同じ。v を省いた台詞は先生
 // 2 段目の図の場面は、長い台詞を分けた（日本語 13・英語 16）ので、図の要素の at を全部書いた（要素が出る台詞は日本語と同じ）
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const;
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
