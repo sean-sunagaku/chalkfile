@@ -5,8 +5,13 @@ import { downloadName, parseMediaPath } from './media-shared';
 import { COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
 import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineReply, OfflineRequest, SavedRecord, SavedVersion } from './offline-shared';
 
-/** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。例 en → /chalkfile-media-en/） */
-declare const __BUILD_CONFIG__: { build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string> };
+/**
+ * 組み立て（scripts/pwa.ts の buildPwa）が入れる設定。mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。
+ * 例 en → /chalkfile-media-en/）。disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts）
+ */
+declare const __BUILD_CONFIG__: {
+  build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string>; disabledRevisions: string[];
+};
 const sw = globalThis as unknown as ServiceWorkerGlobalScope;
 const scope = sw.registration.scope;
 // GitHub Pages の同一 origin にある、ほかのサイトの保存には触れない。
@@ -22,6 +27,8 @@ const deleting = new Set<string>();
 const recordUrl = (id: string) => new URL(`.offline-records/${encodeURIComponent(id)}`, scope).href;
 const assetUrl = (f: Asset) => new URL(f.url, scope).href;
 const mediaRoots = Object.fromEntries(Object.entries(__BUILD_CONFIG__.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
+/** 重大な不具合で無効にした保存版の revision。当たる保存版は消さないが、オンラインではそのページを開かない（route） */
+const disabled = new Set(__BUILD_CONFIG__.disabledRevisions);
 
 /** 保存機能のエラーの文字（ページの言語で返す）。ページの文字は site/i18n.ts */
 const MESSAGES: Record<string, Record<OfflineErrorCode, string>> = {
@@ -158,8 +165,9 @@ async function statuses(): Promise<CourseStatus[]> {
     const r = await readRecord(id);
     const valid = await Promise.all(r.versions.map((v) => complete(v, true)));
     // 読めない記録も「不完全」として、保存し直しを案内する（画面の文字は今の不完全の案内を使う）
-    return { id, saved: r.versions.find((_, i) => valid[i]) ?? null,
-      incomplete: !!r.unreadable || r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null };
+    const saved = r.versions.find((_, i) => valid[i]) ?? null;
+    return { id, saved, incomplete: !!r.unreadable || r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null,
+      disabled: !!saved && disabled.has(saved.manifest.revision) };
   }));
 }
 
@@ -425,6 +433,11 @@ async function route(req: Request): Promise<Response> {
     for (const v of record.versions) {
       const file = v.manifest.files.find((f) => navigation ? f.url === `${id}/` : assetUrl(f) === url.href);
       if (file && await complete(v)) {
+        // 無効にした版のページは、公開中のページが 200 で返ればそれを返す（保存は消さない。画面が更新を案内する）。届かなければ保存版を返す
+        if (navigation && disabled.has(v.manifest.revision)) {
+          const current = await fetch(req).catch(() => null);
+          if (current?.ok) return current;
+        }
         const response = await (await caches.open(v.cache)).match(assetUrl(file));
         if (response) {
           const served = await cachedResponse(req, response);

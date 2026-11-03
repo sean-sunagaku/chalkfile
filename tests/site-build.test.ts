@@ -12,7 +12,7 @@ import type { CourseModule, HeroSnippet } from '../content/course-module';
 import * as REGISTRY from '../content/courses';
 import type { Course } from '../content/types';
 import { bundle } from '../scripts/pwa';
-import { type BuildSiteOptions, buildSite } from '../scripts/site/build';
+import { type BuildSiteOptions, buildSite, disabledRevisionProblems } from '../scripts/site/build';
 import { heroSnippetOf } from '../scripts/site/config';
 import { scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 import { type MediaEntry, mediaFilename } from '../site/media-shared';
@@ -180,6 +180,25 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     expect(data.lectures[0].title).toBe('__TITLE__ {{sep}}');
     const home = readFileSync(path.join(outDir, 'index.html'), 'utf8');
     expect(home).toContain('<h3>見本 &#95;_DOCS_NOTE__ の講座</h3>');
+  });
+});
+
+describe('無効にした保存版の一覧（site/disabled-revisions.ts）', () => {
+  const rev = (c: string) => c.repeat(64);
+  test('sw.js の設定に入れる', async () => {
+    const { outDir } = await buildSample({ disabledRevisions: [rev('a'), rev('b')] });
+    const sw = readFileSync(path.join(outDir, 'sw.js'), 'utf8');
+    expect(sw).toMatch(new RegExp(`disabledRevisions:\\s*\\["${rev('a')}",\\s*"${rev('b')}"\\]`));
+  });
+  test('形の違うもの・重なり・今公開する版は止める', async () => {
+    const current = { id: 'site-sample', revision: rev('c') } as Parameters<typeof disabledRevisionProblems>[1][number];
+    expect(disabledRevisionProblems([rev('a'), 'abc', rev('a'), rev('c')], [current])).toEqual([
+      '無効にした保存版の revision の形が違う（64 字の SHA-256）: abc',
+      `無効にした保存版の revision が重なっている: ${rev('a')}`,
+      `今公開する版を無効にしている（site-sample）: ${rev('c')}。直した版を公開してから、前の版の revision を入れる`,
+    ]);
+    const { result } = await buildSample();
+    await expect(buildSample({ disabledRevisions: [result.manifests[0].revision] })).rejects.toThrow('今公開する版を無効にしている');
   });
 });
 

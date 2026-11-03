@@ -32,6 +32,7 @@ export const DEFAULT_CONTROL: Control = {
   faultTarget: 'video',
   update: false,
   workerUpdate: false,
+  disabledRevisions: [],
   manifestMode: 'normal',
   mediaDown: false,
   legacyPhase: 'old',
@@ -44,6 +45,13 @@ const NO_STATS: Stats = { fullVideoDownloads: 0, fullVideoBytes: 0, manifestRequ
 /** 応答はキャッシュさせない（障害の差し込みを変えたら、すぐ効くように） */
 const NO_STORE: ServeHeaders = { 'Cache-Control': 'no-store' };
 const sha256 = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
+
+/** sw.js の設定の「無効にした保存版の revision」を、revisions にする（組み立てたままの sw.js は空の一覧。形が変わっていたら止める） */
+export const withDisabled = (sw: string, revisions: string[]): string => {
+  const empty = /disabledRevisions:\s*\[\]/g;
+  if (!empty.test(sw)) throw new Error('sw.js に、無効にした保存版の一覧（disabledRevisions: []）が見つからない');
+  return sw.replace(empty, `disabledRevisions:${JSON.stringify(revisions)}`);
+};
 
 export class Session {
   control: Control = { ...DEFAULT_CONTROL };
@@ -168,6 +176,9 @@ export class Session {
     if (target.rel === 'sw.js' && this.control.workerUpdate) {
       const data = Buffer.concat([readFileSync(target.file), Buffer.from('\n// worker更新テスト\n')]);
       return fileResponse(req, target.file, data, NO_STORE);
+    }
+    if (target.rel === 'sw.js' && this.control.disabledRevisions.length) {
+      return fileResponse(req, target.file, Buffer.from(withDisabled(readFileSync(target.file, 'utf8'), this.control.disabledRevisions)), NO_STORE);
     }
     // faultLecture のポスターの全体の取得（Range の無い GET）に、Control の mode の失敗を差し込む（faultTarget が poster のとき）
     if (

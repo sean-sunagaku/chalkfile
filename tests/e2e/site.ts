@@ -18,6 +18,8 @@ export type Control = {
   update: boolean;
   /** sw.js の中身を変えて、SW の更新を起こす */
   workerUpdate: boolean;
+  /** sw.js の設定の「無効にした保存版の revision」（site/disabled-revisions.ts）を、この一覧にした sw.js を配る（空でなければ SW の更新も起きる） */
+  disabledRevisions: string[];
   /** 保存の manifest の取得の失敗（delay-first-fail は、1 回目だけ 3 秒待ってから失敗） */
   manifestMode: 'normal' | 'fail' | 'delay-first-fail';
   /** /media/ の動画を全部 404 にする */

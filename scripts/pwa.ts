@@ -49,8 +49,19 @@ export async function bundle(file: string): Promise<string> {
   return result.outputs[0].text();
 }
 
-/** mediaRoots: 訳の言語の動画のパス（言語 → /media/en/ など。site/config.json の media。sw.js の保存の検査が使う） */
-export async function buildPwa(site: string, dist: string, brand: Theme, courses: string[], shell: Asset[], mediaRoots: Record<string, string> = {}) {
+/**
+ * mediaRoots: 訳の言語の動画のパス（言語 → /media/en/ など。site/config.json の media。sw.js の保存の検査が使う）。
+ * disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts。SW は、当たる保存版のページをオンラインでは開かない）
+ */
+export async function buildPwa(
+  site: string,
+  dist: string,
+  brand: Theme,
+  courses: string[],
+  shell: Asset[],
+  mediaRoots: Record<string, string> = {},
+  disabledRevisions: readonly string[] = [],
+) {
   mkdirSync(path.join(dist, 'icons'), { recursive: true });
   for (const size of [180, 192, 512]) {
     const bytes = icon(size, brand);
@@ -81,7 +92,7 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
   const build = hash(JSON.stringify(shell));
   const result = await Bun.build({
     entrypoints: [path.join(site, 'sw.ts')], target: 'browser',
-    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots }) },
+    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots, disabledRevisions }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));
   writeFileSync(path.join(dist, 'sw.js'), await result.outputs[0].text());

@@ -23,6 +23,11 @@ export type CourseStatus = {
   saved: SavedVersion | null;
   incomplete: boolean;
   progress: DownloadProgress | null;
+  /**
+   * saved の版を、重大な不具合で無効にした（site/disabled-revisions.ts）。オンラインでは公開中のページを開くので、新しい版に更新して
+   * 保存し直すよう案内する。前の SW は送らない（無いときは false と同じ）
+   */
+  disabled?: boolean;
 };
 /** 講座の ID。訳の講座は言語を頭に付ける（en/superagent-comedy）。日本語の講座は付けない */
 export const COURSE_ID = /^(?:[a-z]{2}\/)?[A-Za-z0-9][A-Za-z0-9_-]*$/;

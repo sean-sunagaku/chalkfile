@@ -390,6 +390,55 @@ test('起動用ファイルに JPEG でない画像（PNG）があっても、SW
   await context.setOffline(false);
 });
 
+test('無効の一覧に入れた revision の保存版は、オンラインでは公開中のページを返して更新を案内し、保存は消さない。オフラインでは保存版を返す', async ({ page, context, request, site }) => {
+  await ready(page, site); await save(page);
+  const original = (await status(page, site)).saved;
+  if (!original) throw new Error('保存版がありません');
+  expect((await status(page, site)).disabled).toBe(false);
+  // 直した版（教材のページの更新）を公開し、前の版の revision を無効の一覧に入れた sw.js を配る
+  await control(request, { update: true, disabledRevisions: [original.manifest.revision] });
+  await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
+  await expect(page.locator('#appUpdate')).toBeVisible();
+  // このサイトのタブを全部閉じると、新しい SW が有効になる（有効になる前に開くと、前の SW のページになるので、閉じて待ち直す）
+  const next = await context.newPage();
+  await page.close();
+  await expect.poll(async () => {
+    await next.goto('/');
+    if ((await status(next, site).catch(() => null))?.disabled) return true;
+    await next.goto('about:blank');
+    await next.waitForTimeout(300);
+    return false;
+  }, { timeout: 30000 }).toBe(true);
+  // オンライン: 保存版ではなく公開中のページ。更新して保存するよう案内する。保存版と記録はそのまま
+  const online = await next.goto(site.course.route);
+  expect(online?.fromServiceWorker()).toBeTruthy();
+  await expect(next).toHaveTitle(/更新テスト/);
+  await expect(next.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
+  await expect(next.locator('#offlineSave')).toBeEnabled();
+  const kept = await status(next, site);
+  expect(kept.saved?.manifest.revision).toBe(original.manifest.revision);
+  expect(kept.saved?.cache).toBe(original.cache);
+  expect(await next.evaluate((name) => caches.has(name), original.cache)).toBeTruthy();
+  // オフライン: 保存版のページと動画で開ける
+  await context.setOffline(true);
+  await next.reload();
+  await expect(next).not.toHaveTitle(/更新テスト/);
+  await expect(next.locator('#savedState')).toContainText('保存済み・教材と全動画');
+  await playAndPause(next, seek(site, 30));
+  // オンラインに戻って更新すると、無効の一覧に無い新しい版になり、オンラインでも保存版を開く
+  await context.setOffline(false);
+  await next.goto(site.course.route);
+  await expect(next.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
+  await next.locator('#offlineSave').click();
+  await expect.poll(async () => (await status(next, site)).saved?.manifest.revision).not.toBe(original.manifest.revision);
+  expect((await status(next, site)).disabled).toBe(false);
+  await expect(next.locator('#offlineProgress')).toBeHidden();
+  await context.setOffline(true);
+  await next.reload();
+  await expect(next).toHaveTitle(/更新テスト/);
+  await context.setOffline(false);
+});
+
 test('保存ファイルの欠損を検出し、保存済み表示と再生を止めて再保存できる', async ({ page, context, site }) => {
   await ready(page, site); await save(page);
   const stored = (await status(page, site)).saved!;

@@ -19,6 +19,7 @@ import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../v
 import { copyAssets, thumbnailAssets } from './assets';
 import { realPosterOf, SITE_DIR, siteBase } from './config';
 import { cspHead, splitPageScript, WWW_REDIRECT_SCRIPT } from './csp';
+import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
 import { cleanOutput, listOutput, writeCourse } from './emit';
 import { NOT_FOUND_HTML, writeServingFiles } from './headers';
 import { fillTemplate } from './html';
@@ -52,6 +53,8 @@ export type BuildSiteOptions = {
   posterOf?: (courseId: string, key: string) => string;
   /** 一覧のページの画像のフォルダ（既定は site/assets。写したものは全部、SW の起動用ファイルになる） */
   assetsDir?: string;
+  /** 無効にした保存版の revision（既定は site/disabled-revisions.ts。sw.js の設定に入れる） */
+  disabledRevisions?: readonly string[];
   /** 進み具合の出力（既定は console.log）と注意（既定は console.warn） */
   log?: (line: string) => void;
   warn?: (line: string) => void;
@@ -65,6 +68,23 @@ export type BuildSiteResult = {
   manifests: CourseManifest[];
   /** まだ動画かポスターが無いもの */
   missing: string[];
+};
+
+/**
+ * 無効にした保存版の一覧（site/disabled-revisions.ts）の誤り: revision の形（64 字の SHA-256）・重なり・今公開する版
+ * （無効にすると、直した版を保存した人まで、オンラインでは保存版を開けなくなる）
+ */
+export const disabledRevisionProblems = (revisions: readonly string[], manifests: readonly CourseManifest[]): string[] => {
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const r of revisions) {
+    if (!/^[a-f0-9]{64}$/.test(r)) problems.push(`無効にした保存版の revision の形が違う（64 字の SHA-256）: ${r}`);
+    else if (seen.has(r)) problems.push(`無効にした保存版の revision が重なっている: ${r}`);
+    seen.add(r);
+    const current = manifests.find((m) => m.revision === r);
+    if (current) problems.push(`今公開する版を無効にしている（${current.id}）: ${r}。直した版を公開してから、前の版の revision を入れる`);
+  }
+  return problems;
 };
 
 /** 講座サイトを組み立てる（outDir を書き換える）。安全のための確かめ・公開物の決まりに通らなければ止める */
@@ -217,6 +237,9 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const mediaRoots = Object.fromEntries(
     langs.flatMap((l) => (mediaRootOf(config, l) ? [[l, mediaRootOf(config, l) as string]] : [])),
   );
+  const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
+  const disabledProblems = disabledRevisionProblems(disabledRevisions, manifests);
+  if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
   await buildPwa(
     SITE_DIR,
     dist,
@@ -224,6 +247,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     manifests.map((m) => m.id),
     shell,
     mediaRoots,
+    disabledRevisions,
   );
   writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
 
