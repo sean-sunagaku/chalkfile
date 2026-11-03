@@ -33,7 +33,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 声 | 台詞を読む役（講師の `narrator`・天の声の `tennokoe` など）。日本語は VOICEVOX、英語と中国語は Kokoro-82M の話者に当てる | `content/types.ts` の `VoiceId`。話者と話し方は `scripts/voices.ts` |
+| 声 | 台詞を読む役（講師の `narrator`・天の声の `tennokoe` など）。日本語は VOICEVOX、英語と中国語は Kokoro-82M の話者に当てる | `content/types.ts` の `VoiceId`。話者と話し方は `content/voices.ts`（音声の鍵の計算は `scripts/voices.ts`） |
 | 配役 | 掛け合いの講座で、声ごとに付ける名前と色。焼き込んだ字幕の名前の札と、サイトの台本の「ずんだもん：…」に出る | `Course.cast` |
 | 声の鍵 | 台詞の音声ファイルの名前。文と声の設定から作るので、同じ文・同じ声なら、前に作った音声を使い回す | `scripts/voices.ts` の `ttsKey`・`ttsKeyIn` |
 | 読み | 声に読ませる文。英字をカナに開く辞書は `content/reading.ts`。合成したときの読みは `.work/kana/<key>.txt` で確かめる | `content/reading.ts` |
