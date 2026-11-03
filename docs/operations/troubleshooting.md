@@ -20,9 +20,9 @@
 
 ## 声と読み
 
-- **synth が、知らない英単語で止まる**: `content/reading.ts` の `WORDS` に読みを足す（[style.md](../../.claude/skills/study-video-course/references/style.md)）
-- **台詞の表示を直しても、声が作り直されない**: 声のキャッシュは「読み上げる文と声」で決まる。台詞の表示（`t`）だけを変えても、読み（`s` か、`reading.ts` で開いた文）が同じなら作り直さない
-- **ほかの講座の読みまで変わった**: `reading.ts` は全部の講座で使う。足したら `npm test` で、音声の鍵と読みのスナップショットの食い違い（変わった動画と台詞）を見る。章だけの直しは、台詞の `s` に書く
+- **synth が、知らない英単語で止まる**: 講座の辞書 `content/<講座>/reading.ts` の `words` に読みを足す（どの講座でも同じ読みにしたい語は共通の `content/reading.ts`。[style.md](../../.claude/skills/study-video-course/references/style.md)）
+- **台詞の表示を直しても、声が作り直されない**: 声のキャッシュは「読み上げる文と声」で決まる。台詞の表示（`t`）だけを変えても、読み（`s` か、読みの辞書で開いた文）が同じなら作り直さない
+- **ほかの講座の読みまで変わった**: 共通の辞書 `content/reading.ts` は全部の講座で使う。講座の語は講座の辞書 `content/<講座>/reading.ts` に移す（その講座の台詞にだけ効く）。足したら `npm test`（音声の鍵と読みのスナップショット）と `npm run reading:diff`（main との読みの差分）で、変わった動画と台詞を見る。章だけの直しは、台詞の `s` に書く
 - **読みを直したのに、動画の音が古い**: 書き出す前に `npm run materials:check` で、台本の全部の台詞の声が手元にあるかを見る
 
 ## 書き出し

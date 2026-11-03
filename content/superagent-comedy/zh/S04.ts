@@ -14,7 +14,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness 团队《Exploring Super-agent Design》（2026）';
 
 export const S04: LectureL10n = {
-  source: '8e9011875f71',
+  source: 'e2cadc88fb8e',
   title: '上下文怎么装，以及抢先一步',
   summary:
     '把模型的上下文窗口当作缓存来用的思路。把马上可能用到的先放进去的 Inline，把放不下的放到外面的 Spill，以及顺着 ID 找回以前上下文的 Chain of Recall。还不知道用不用得上，就先在后台开始的抢先一步（推测执行），以及只在有把握时才给出结果的用法。',

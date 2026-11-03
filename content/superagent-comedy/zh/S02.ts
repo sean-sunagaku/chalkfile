@@ -12,7 +12,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const S02: LectureL10n = {
-  source: '0f2266c3b253',
+  source: 'e610748310d5',
   title: '前台与干活分开（两层结构）',
   summary:
     '从“所有事件都放进一个会话”和“每个事件都开新会话”两种方式的弱点出发，认识把 Router 层（前台）和 Worker 层（干活）分开的两层结构。Router 为什么不干活，与 Agent Team 有什么不同，为什么靠批处理前台不容易堵，以及文章的初步实验。',

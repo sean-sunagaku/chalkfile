@@ -64,10 +64,13 @@ jobs:
       - run: npm test
       # 台本と、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）
       - run: npm run validate
+      # 読みの差分: 公開する言語の公開中の動画で、読みが main と変わったのに動画を作り直していなければ止める
+      - name: 読みの差分
+        if: github.event_name == 'pull_request'
+        run: npm run reading:diff -- --base HEAD^1
       - run: bun scripts/check_content.ts --self-test
       - run: bun scripts/check_content.ts
-      # 文書のリンク・アンカー・スキルの説明の長さは止める。古い言葉・一覧の食い違い・生成物の印・使い方は、今は注意だけ
-      # （片付けたら --strict にする）
+      # 文書のリンク・アンカー・スキルの説明の長さ・古い言葉（例外のほか）・生成した表のずれは止める。使い方の行が無いのは注意だけ
       - run: npm run check:docs
       # 読む教材（docs/courses/）が、Git に入れている台本と timeline から作り直したものと同じか（synth は要らない）
       - run: npm run check:materials

@@ -12,7 +12,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const R01: LectureL10n = {
-  source: '0fdd90b1d6f3',
+  source: 'bb9f943d6386',
   title: 'What is Rive?',
   summary:
     'Get the gist of Rive through a back-and-forth between Zundamon and the Teacher: the editor that makes motion and the runtimes that run it, the .riv file, state machines, where it runs, and what to watch out for.',

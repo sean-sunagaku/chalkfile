@@ -2,7 +2,7 @@
 // 純粋なデータと関数だけを置く（Node・React・Remotion に依存しない）。動画（Remotion）・サイトの組み立て・synth が同じものを読む。
 // 台詞ごとの音声ファイルの名前（鍵。node:crypto で作る）は scripts/voices.ts
 import type { Lang, TranslatedLang } from './i18n';
-import { toSpeech, toSpeechZh } from './reading';
+import { readingOf, toSpeech, toSpeechZh } from './reading';
 import type { Lecture, Line, VoiceId } from './types';
 
 /**
@@ -98,14 +98,14 @@ export const lectureCredits = (lecture: Lecture, lang: Lang): string[] => credit
 
 /* ───────────── 読み上げる文 ───────────── */
 
-/** 読み上げる文（英字はカナに開く）。英字が残ったら止める */
+/** 読み上げる文（英字はカナに開く）。台詞の講座の辞書（content/<講座>/reading.ts）と共通の辞書で読む。英字が残ったら止める */
 export const speechOf = (line: Line): string => {
-  const s = toSpeech(line.s ?? line.t);
+  const s = toSpeech(line.s ?? line.t, readingOf(line));
   if (/[A-Za-z]/.test(s)) throw new Error(`英字が残っている: ${s}`);
   return s;
 };
 
-/** 読み上げる文。日本語は英字をカナに開き（reading.ts）、英語と中国語は s か t を読む（強調の ** は外す。中国語は多音字を直す） */
+/** 読み上げる文。日本語は英字をカナに開き（content/reading.ts と講座の辞書）、英語と中国語は s か t を読む（強調の ** は外す。中国語は多音字を直す） */
 export const speechIn = (line: Line, lang: Lang): string => {
   if (lang === 'ja') return speechOf(line);
   const s = (line.s ?? line.t).replace(/\*\*/g, '').trim();

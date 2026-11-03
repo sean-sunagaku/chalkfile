@@ -1,5 +1,6 @@
-// 講座の登録（content/courses.ts に 1 行で並べる）。講座は course.ts、訳は <言語>/course.ts
+// 講座の登録（content/courses.ts に 1 行で並べる）。講座は course.ts、訳は <言語>/course.ts、読みの辞書は reading.ts
 import { defineCourseModule } from '../course-module';
 import { UIUX_ENGINEERS } from './course';
+import { READING } from './reading';
 
-export default defineCourseModule({ course: UIUX_ENGINEERS });
+export default defineCourseModule({ course: UIUX_ENGINEERS, reading: READING });

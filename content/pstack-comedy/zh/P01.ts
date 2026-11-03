@@ -9,7 +9,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const P01: LectureL10n = {
-  source: 'f82fd84b77a0',
+  source: '1dd22a9b4536',
   title: 'pstack 是什么？',
   summary: '作者与思路，上手方法（/add-plugin、/setup-pstack、/poteto-mode），23 本流程手册，主要技能（/tdd、/interrogate、/arena、/unslop），以及使用前的注意。',
   docs: [
