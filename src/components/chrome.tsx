@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
-import type { Course, Evidence, IconName, Tone } from '../../content/types';
+import type { Course, Evidence, IconName, Tone } from '../../engine/core/schema';
 import type { VideoText } from '../i18n';
 import { dropY, ramp, useScene, useText } from '../timing';
 import { HEADING } from '../video.config';

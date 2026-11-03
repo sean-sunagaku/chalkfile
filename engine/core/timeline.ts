@@ -1,13 +1,13 @@
 // 動画 1 本の timeline（場面と台詞が始まるフレーム）のファイルの形・書き方・指紋（React・Remotion・Node に依存しない）。
 // 置き場所は content/<講座>/generated/timeline/<key>.json（engine/core/generated.ts）。scripts/synth.ts が音声の長さを測って書き、
-// Remotion（src/timelines.ts・src/Root.tsx）・台本の検証（engine/core/validate.ts・scripts/validate.ts）・静止画・教材が読む。
+// Remotion（src/project.ts が集め、src/Root.tsx が台本と照らし合わせる）・台本の検証（engine/core/validate.ts・scripts/validate.ts）・静止画・教材が読む。
 // 指紋は「時刻に効く入力」のハッシュで、台本を直したのに合成し直していない動画を、Studio と validate が見つける
-import type { Lang } from '../../content/i18n';
-import type { Lecture } from '../../content/types';
-import { KOKORO, speechIn, VOICES } from '../../content/voices';
-import { STING, VIDEO } from '../../src/video.config';
 import { parseTimelineFile } from './generated';
 import { sha256Hex } from './hash';
+import type { Lang } from './i18n';
+import type { Lecture } from './schema';
+import { STING, VIDEO } from './video-config';
+import { KOKORO, speechIn, VOICES } from './voices';
 
 /** ファイルの形の版。形を変えたら上げる（読む側は、知らない版を誤りにする） */
 export const TIMELINE_SCHEMA = 1;
@@ -30,7 +30,7 @@ export type TimelineFile = {
 export const TIMING = {
   /** 場面の頭から、最初の台詞まで */
   leadIn: 0.45,
-  /** オープニングは、ジングルの「ドン」（src/video.config.ts の STING。今は 2.0 秒）の 0.05 秒あとに呼び込む */
+  /** オープニングは、ジングルの「ドン」（engine/core/video-config.ts の STING。今は 2.0 秒）の 0.05 秒あとに呼び込む */
   openingLeadIn: STING.introHitSec + 0.05,
   /** 台詞の間（これに台詞の pause を足す） */
   gap: 0.3,

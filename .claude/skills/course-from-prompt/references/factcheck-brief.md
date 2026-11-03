@@ -11,7 +11,7 @@ Chalkfile（このリポジトリ）の章立ての講座（例: ナッジ `nudg
 1. 担当する講座の `content/<講座>/syllabus.ts`（受講者・到達目標・章ごとの問いと学習目標）
 2. 講座の `content/<講座>/sources.ts`（講座で共通の出典）
 3. 講座の第 1 章（`N01.ts`・`D01.ts`・`M01.ts` のどれか）。確かめ済みの見本なので、言い方や出典の書き方の基準にする。第 1 章と食い違う主張があれば、どちらが正しいか一次資料で決める
-4. 型 `content/types.ts`（場面の種類と項目の意味を知るため。必要なところだけ）
+4. 型 `engine/core/schema.ts`（場面の種類と項目の意味を知るため。必要なところだけ）
 5. 担当する章のファイル `content/<講座>/<ID>.ts`（全部）
 6. お笑い版の講座なら、[comedy.md](../../study-video-course/references/comedy.md) の「守ること」と、真面目版の同じ章（あれば。事実はそこで決まっている）
 
@@ -58,7 +58,7 @@ Chalkfile（このリポジトリ）の章立ての講座（例: ナッジ `nudg
 ## 直し方（自分で直す）
 
 - 直してよいのは、担当する章のファイル `content/<講座>/<ID>.ts` だけ
-- 触らないもの（直すべき点は報告に書けば、親がまとめて直す）: 講座の `sources.ts`・`syllabus.ts`・`course.ts`、`content/reading.ts`・講座の `reading.ts`・`content/types.ts`・`content/courses.ts`・`content/index.ts`・講座の `index.ts`、`src/`・`scripts/`・`site/`・`docs/`、生成物（`content/<講座>/generated/`）を手で書き換えること
+- 触らないもの（直すべき点は報告に書けば、親がまとめて直す）: 講座の `sources.ts`・`syllabus.ts`・`course.ts`、講座の `reading.ts`・`engine/`（台本の型と共通の読みの辞書）・`content/types.ts`・`content/courses.ts`・`content/index.ts`・講座の `index.ts`、`src/`・`scripts/`・`site/`・`docs/`、生成物（`content/<講座>/generated/`）を手で書き換えること
 - しないこと: `git` のコミット・push、`npm run render`、`npm run mix`（動画の書き出しは親が順番に行う）
 - 同じ講座の別の章を、もう 1 人の担当が同時に直している。その章のファイルは触らない
 - 直すのは、誤り・言い過ぎ・出典の不備・時点・表記の誤りだけ。文体の好み・構成・例の作りは変えない

@@ -238,10 +238,10 @@ describe('道具のコード（import をたどる）', () => {
       'scripts/stages/voice/store.ts',
       'scripts/voices.ts',
       'engine/core/timeline.ts',
-      'src/video.config.ts',
-      'content/voices.ts',
-      'content/reading.ts',
-      'content/i18n.ts',
+      'engine/core/video-config.ts',
+      'engine/core/voices.ts',
+      'engine/core/reading.ts',
+      'engine/core/i18n.ts',
     ])
       expect(files).toContain(f);
     expect(files.filter((f) => /^content\/[^/]+\//.test(f))).toEqual([]);

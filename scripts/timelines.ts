@@ -1,5 +1,5 @@
 // 置いてある timeline（content/<講座>/generated/timeline/<key>.json）を、手元のファイルから読む部品（bun で動く道具が使う）。
-// 形と指紋は engine/core/timeline.ts、置き場所は engine/core/generated.ts。Remotion は src/timelines.ts が同じものを集める
+// 形と指紋は engine/core/timeline.ts、置き場所は engine/core/generated.ts。Remotion は src/project.ts が同じものを集める
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { entriesByKey, timelineEntry, type TimelineEntry } from '../engine/core/timeline';

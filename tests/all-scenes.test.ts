@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { LECTURES } from '../content';
+import { THEMES } from '../content/themes';
 import { describeScene, SCENE_INFO, SCENE_KINDS } from '../engine/core/scenes';
 import { validateCourse, validateTimeline } from '../engine/core/validate';
 import { SCENES } from '../src/scenes';
@@ -12,7 +13,7 @@ describe('全部の場面の見本（tests/fixtures/content/all-scenes）', () =
     expect(SCENE_KINDS).toHaveLength(20);
     expect(lec.scenes.map((s) => s.kind).sort()).toEqual([...SCENE_KINDS].sort());
   });
-  test('台本の検証で、誤りも注意も 0 件', () => expect(validateCourse(ALL_SCENES)).toEqual([]));
+  test('台本の検証で、誤りも注意も 0 件', () => expect(validateCourse(ALL_SCENES, { themes: Object.keys(THEMES) })).toEqual([]));
   test('固定の timeline が台本の形と合い、時刻が前から順に並ぶ', () => {
     const tl = ALL_SCENES_TIMELINE[lec.id];
     expect(tl.fps).toBe(VIDEO.fps);

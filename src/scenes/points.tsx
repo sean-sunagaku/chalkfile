@@ -1,6 +1,6 @@
 // 場面「points」: 要点のカード
 import React from 'react';
-import type { PointsScene } from '../../content/types';
+import type { PointsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { usePalette } from '../theme';

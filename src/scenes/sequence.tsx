@@ -1,7 +1,7 @@
 // 場面「sequence」: やりとりの図（登場人物の縦の線と、横の矢印）
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import type { SequenceScene } from '../../content/types';
+import type { SequenceScene } from '../../engine/core/schema';
 import { arrowProgress, GlowDot, STEP_TIMING } from '../components/arrow';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, H, PAD, usePalette, W } from '../theme';

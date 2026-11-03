@@ -1,6 +1,6 @@
 // 場面「concepts」: 用語のカード
 import React from 'react';
-import type { ConceptsScene } from '../../content/types';
+import type { ConceptsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Pill } from '../components/ui';
 import { usePalette } from '../theme';

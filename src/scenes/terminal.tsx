@@ -1,7 +1,7 @@
 // 場面「terminal」: 端末（コマンドと出力、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { TerminalOut, TerminalScene, Theme } from '../../content/types';
+import type { TerminalOut, TerminalScene, Theme } from '../../engine/core/schema';
 import { terminalText } from '../../engine/core/scenes';
 import { WINDOW_LIGHTS } from '../components/app-colors';
 import { NoteCard } from '../components/ui';

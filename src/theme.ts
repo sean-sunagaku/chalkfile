@@ -4,8 +4,8 @@ import { loadFont as loadNoto } from '@remotion/google-fonts/NotoSansJP';
 import { loadFont as loadNotoSC } from '@remotion/google-fonts/NotoSansSC';
 import { loadFont as loadZenMaru } from '@remotion/google-fonts/ZenMaruGothic';
 import React, { createContext, useContext } from 'react';
-import type { Lang } from '../content/i18n';
-import type { FontKey, Theme } from '../content/types';
+import type { Lang } from '../engine/core/i18n';
+import type { FontKey, Theme } from '../engine/core/schema';
 import { derivePalette, type Palette } from '../engine/core/theme';
 import { CONTENT, VIDEO } from './video.config';
 

@@ -30,7 +30,7 @@ description: ナレーション付きの勉強動画の講座を、調べる →
 
 ### 3. 台本を書く
 
-- 場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、画面と話し方の決まりは [style.md](references/style.md)
+- 場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `engine/core/schema.ts`（台本は `content/types.ts` から読む）、画面と話し方の決まりは [style.md](references/style.md)
 - **お笑い（ずんだもん＝ボケ・先生＝ツッコミ・天の声の掛け合い）を必ず入れ、笑いを優先する**（持ち主の方針）。ずんだもんのボケだけにせず型を混ぜ、ツッコミの大げさな言葉を台詞ですぐ訂正しない。表示は少なくする（副題・前置きを出さない。1 本だけの動画は `standalone: true`）。決まりと見本（W01・R01・P01・S01〜S06）は [comedy.md](references/comedy.md)
 - 読む教材・実践課題・AI チャットの質問例・章の計画まで作る章立ての講座は、レクチャーの `material` と講座の `syllabus`・`sources` を書く（[materials.md](references/materials.md)。見本は `content/nudge-product/`）
 - 英語・中国語の版は、`content/<講座>/<言語>/<ID>.ts` に訳の上書きを書いて重ねる。日本語の台本が正本。お笑いは直訳せず、言語ごとに作り直す（[i18n.md](references/i18n.md)）
@@ -50,7 +50,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 
 公開の前に、全部やる。
 
-- 読み: `.work/kana/<ID>.txt` を全部読む。誤読は台詞の `s` か講座の辞書 `content/<講座>/reading.ts`（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）で直して synth し直す（[style.md](references/style.md) の「読み間違いの直し方」）
+- 読み: `.work/kana/<ID>.txt` を全部読む。誤読は台詞の `s` か講座の辞書 `content/<講座>/reading.ts`（どの講座でも同じ読みにしたい語だけ共通の `engine/core/reading.ts`）で直して synth し直す（[style.md](references/style.md) の「読み間違いの直し方」）
 - 見た目: `npm run stills -- L01 --mid` で `out/stills/` に静止画を書き、全部見る（はみ出し・重なり・小さすぎ）。字幕つきは `--captions`。共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`
 - 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本のファイルだけを渡し、主張ごとに公式で確かめてもらう（[research.md](references/research.md) の「事実確認を別の目でやる」）。お笑い版では、ツッコミを直させない
@@ -67,7 +67,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 | 頼まれたこと | やること |
 |---|---|
 | 台詞を直す | 台本 → synth → kana を見る → mix → render → stills → 公開の順番 |
-| 読み間違いを直す | 講座の辞書 `content/<講座>/reading.ts` の `phrases`（語句）か `words`（英単語）に足す（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）→ `npm test`・`npm run reading:diff` で変わった台詞を見る → synth（読みが変わった台詞だけ作り直す）→ mix → render |
+| 読み間違いを直す | 講座の辞書 `content/<講座>/reading.ts` の `phrases`（語句）か `words`（英単語）に足す（どの講座でも同じ読みにしたい語だけ共通の `engine/core/reading.ts`）→ `npm test`・`npm run reading:diff` で変わった台詞を見る → synth（読みが変わった台詞だけ作り直す）→ mix → render |
 | 図や画面の文字だけ直す | 台本 → stills → render（声は変わらないので synth と mix は要らない） |
 | トンマナを変える | テーマを選ぶか作る → 講座の `theme` を書き換える → `npm run stills -- <ID> --theme=<id>` で試す → 全部の動画を render（[theme.md](references/theme.md)） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
@@ -83,7 +83,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 - 実在の会社やサービスの内部の情報（自分の仕事のコード・テーブル・設計・数字）を台本に入れない。例は架空の「サンプルアプリ」で作る
 - 公式ドキュメントの文章・図・画面写真を写さない、訳して載せない。製品のロゴを使わない。公式・提携と受け取れる書き方をしない（[rights.md](references/rights.md)）
 - パスワード・API キー・Webhook の署名シークレットを台本に書かない（例は `sk_test_...` のような省略か、環境変数）
-- 画面の固定の文字に、絵文字をアイコン代わりに使わない（アイコンは `src/components/icons.ts` の `ICONS` の名前を `icon` に書く）
+- 画面の固定の文字に、絵文字をアイコン代わりに使わない（アイコンは `engine/core/icons.ts` の `ICON_NAMES` の名前を `icon` に書く）
 - 静止画を見ずに書き出さない。読みを見ずに公開しない
 - 動画（`site/media/`・`out/`）を main に commit しない
 - 訳で、事実（説明・数字・名前・クイズの答え・出典）を変えない。出典の文章を訳して載せない

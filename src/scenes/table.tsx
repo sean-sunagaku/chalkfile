@@ -1,6 +1,6 @@
 // 場面「table」: 表
 import React from 'react';
-import type { TableScene } from '../../content/types';
+import type { TableScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, usePalette } from '../theme';

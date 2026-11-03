@@ -1,6 +1,6 @@
 // 場面「compare」: 左右の比較
 import React from 'react';
-import type { CompareScene, CompareSide } from '../../content/types';
+import type { CompareScene, CompareSide } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Icon, IconBadge, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';
