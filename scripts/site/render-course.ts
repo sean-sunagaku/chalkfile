@@ -1,11 +1,13 @@
-// 講座のページ（site/template.html）を描く（純粋）。版の印（scripts/site-version.ts）を入れたまま描き、CSP は呼ぶ側が付ける
+// 講座のページ（site/template.html）を描く（純粋）。印は 1 回の走査で置き換える（scripts/site/html.ts の fillTemplate）。
+// 版の印（scripts/site-version.ts）は入れたまま描き、CSP（__CSP__）は呼ぶ側が付ける
 import { LANG_INFO, type Lang } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
 import { fill, type SiteText } from '../../site/i18n';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
+import { fillTemplate, type Html, html, raw, styleText } from './html';
 import { type LectureModel, plain } from './model';
-import { type CoursesIn, esc, favicon, fillText, headMeta, langNav } from './parts';
+import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } from './parts';
 
 export type CoursePageInput = {
   /** site/template.html の中身 */
@@ -25,11 +27,19 @@ export type CoursePageInput = {
   /** 動画の合計の長さ（分） */
   minutes: number;
   /** 保存機能の部品（parts.ts の appParts） */
-  app: { head: string; panel: string; script: string };
+  app: AppParts;
   /** site/offline.css の中身 */
   offlineCss: string;
   /** ページの中の JSON（model.ts の courseJson） */
-  json: string;
+  json: Html;
+};
+
+/** 根拠の札の説明の続き。{id} の所（最初の 1 つ）に、節 ID の見本を入れる */
+const evidenceHintTail = (text: string): Html => {
+  const at = text.indexOf('{id}');
+  return at < 0
+    ? html`${text}`
+    : html`${text.slice(0, at)}<span class="mono">xx-01-s01</span>${text.slice(at + '{id}'.length)}`;
 };
 
 /** 講座のページの HTML（CSP の印 __CSP__ と版の印は残したまま） */
@@ -39,50 +49,50 @@ export const renderCoursePage = (p: CoursePageInput): string => {
   const cid = `${info.path}${p.course.id}`;
   const url = `${p.base}${cid}/`;
   const firstPoster = `${url}media/${p.lectures[0].key}.jpg`;
-  return fillText(p.template, T)
-    .replace('__LANG__', () => info.html)
-    .replace('__HOME__', () => '../')
-    .replace('__LANG_NAV__', () =>
-      langNav({
-        langs: p.langs,
-        coursesIn: p.coursesIn,
-        lang: p.lang,
-        root: p.root,
-        label: T.langNav,
-        courseId: p.course.id,
+  const marks = {
+    LANG: html`${info.html}`,
+    HOME: html`../`,
+    LANG_NAV: langNav({
+      langs: p.langs,
+      coursesIn: p.coursesIn,
+      lang: p.lang,
+      root: p.root,
+      label: T.langNav,
+      courseId: p.course.id,
+    }),
+    EV_HINT_TAIL: evidenceHintTail(T.evHintTail),
+    NOTE_AT_ZERO: html`${fill(T.noteAt, { t: '00:00' })}`,
+    PWA_HEAD: p.app.head,
+    // site/offline.css（リポジトリのファイル）
+    OFFLINE_CSS: raw(p.offlineCss),
+    OFFLINE_PANEL: p.app.panel,
+    PWA_SCRIPT: p.app.script,
+    TITLE: html`${fill(T.pageTitle, { course: p.course.title, series: p.config.series })}`,
+    HEAD_META: headMeta({
+      series: p.config.series,
+      title: p.course.title,
+      description: fill(T.metaCourse, {
+        headline: plain(p.course.headline),
+        n: p.lectures.length,
+        min: Math.round(p.minutes),
+        extra: p.lectures.some((l) => l.material) ? T.metaExtra : '',
       }),
-    )
-    .replace('__EV_HINT_TAIL__', () => esc(T.evHintTail).replace('{id}', '<span class="mono">xx-01-s01</span>'))
-    .replace('__NOTE_AT_ZERO__', () => esc(fill(T.noteAt, { t: '00:00' })))
-    .replace('__PWA_HEAD__', () => p.app.head)
-    .replace('__OFFLINE_CSS__', () => p.offlineCss)
-    .replace('__OFFLINE_PANEL__', () => p.app.panel)
-    .replace('__PWA_SCRIPT__', () => p.app.script)
-    .replace('__TITLE__', () => esc(fill(T.pageTitle, { course: p.course.title, series: p.config.series })))
-    .replace('__HEAD_META__', () =>
-      headMeta({
-        series: p.config.series,
-        title: p.course.title,
-        description: fill(T.metaCourse, {
-          headline: plain(p.course.headline),
-          n: p.lectures.length,
-          min: Math.round(p.minutes),
-          extra: p.lectures.some((l) => l.material) ? T.metaExtra : '',
-        }),
-        url,
-        image: firstPoster,
-        icon: favicon(p.theme.color.ink, p.theme.color.accent),
-        lang: p.lang,
-        alternates: p.langs
-          .filter((l) => p.coursesIn(l).some((c) => c.id === p.course.id))
-          .map((l) => ({ lang: l, url: `${p.base}${LANG_INFO[l].path}${p.course.id}/` })),
-      }),
-    )
-    .replace('__FONT_LINK__', () => fontLink(p.theme, p.lang))
-    .replace('__THEME_CSS__', () => themeCss(p.theme, p.lang))
-    .replace('__SERIES__', () => esc(p.config.series))
-    .replace('__BRAND_SUB__', () => esc(p.course.title))
-    .replace('__HEADLINE__', () => esc(plain(p.course.headline)))
-    .replace('__DOCS_NOTE__', () => esc(p.course.docsNote))
-    .replace('__COURSE_JSON__', () => p.json);
+      url,
+      image: firstPoster,
+      icon: favicon(p.theme.color.ink, p.theme.color.accent),
+      lang: p.lang,
+      alternates: p.langs
+        .filter((l) => p.coursesIn(l).some((c) => c.id === p.course.id))
+        .map((l) => ({ lang: l, url: `${p.base}${LANG_INFO[l].path}${p.course.id}/` })),
+    }),
+    // 書体の読み込み（scripts/site_theme.ts が作る。URL の & はそのまま）
+    FONT_LINK: raw(fontLink(p.theme, p.lang)),
+    THEME_CSS: styleText(themeCss(p.theme, p.lang)),
+    SERIES: html`${p.config.series}`,
+    BRAND_SUB: html`${p.course.title}`,
+    HEADLINE: html`${plain(p.course.headline)}`,
+    DOCS_NOTE: html`${p.course.docsNote}`,
+    COURSE_JSON: p.json,
+  };
+  return fillTemplate(p.template, { marks, text: textOf(T), keep: ['CSP'] }, 'site/template.html');
 };

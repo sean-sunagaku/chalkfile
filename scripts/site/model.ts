@@ -7,6 +7,7 @@ import type { SiteText } from '../../site/i18n';
 import { type MediaEntry, mediaPath } from '../../site/media-shared';
 import { PAGE_VERSION_MARK } from '../site-version';
 import type { SiteConfig } from '../validate';
+import { type Html, jsonHtml } from './html';
 
 /** 講義のデータ（synth.ts が書く site/data/<key>.json の、サイトが使う所） */
 export type SiteData = {
@@ -127,7 +128,7 @@ export type VideoFor = (lecture: string, kind: MediaEntry['kind']) => MediaEntry
 
 /**
  * ページの中の JSON（template.html の __COURSE_JSON__）。版とポスターの ?v= は版の印のまま（scripts/site-version.ts）。
- * < は < にする（台本の文字が </script> を含んでも、ページの script を閉じない）
+ * < は \u003c にする（html.ts の jsonHtml。台本の文字が </script> を含んでも、ページの script を閉じない）
  */
 export const courseJson = (o: {
   course: Course;
@@ -136,14 +137,14 @@ export const courseJson = (o: {
   config: SiteConfig;
   lectures: LectureModel[];
   video: VideoFor;
-}): string => {
+}): Html => {
   const info = LANG_INFO[o.lang];
   const standard = (id: string) => {
     const e = o.video(id, 'standard');
     if (!e) throw new Error(`動画の一覧がありません: ${o.lang}/${o.course.id}/${id}。先に bun scripts/media.ts push`);
     return e;
   };
-  return JSON.stringify({
+  return jsonHtml({
     course: courseMeta(o.course, o.T, o.config),
     credits: courseCredits(o.course, o.lang),
     pageVersion: PAGE_VERSION_MARK,
@@ -158,5 +159,5 @@ export const courseJson = (o: {
         videoCc: cc ? mediaPath(cc) : '',
       };
     }),
-  }).replace(/</g, '\\u003c');
+  });
 };

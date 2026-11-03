@@ -142,6 +142,31 @@ describe('講座サイトの組み立て（合成の講座）', () => {
       buildSample({ mediaManifest: { schema: 1, entries: sampleMedia(SAMPLE.course).entries.slice(0, 1) } }),
     ).rejects.toThrow('動画の一覧がありません: ja/site-sample/Y02');
   });
+
+  test('台本に置き換えの印（__DOCS_NOTE__・{{tabQuiz}}・__COURSE_JSON__）や </script> を書いても、組み立てが壊れない', async () => {
+    const tricky: Course = {
+      ...SAMPLE.course,
+      title: '見本 __DOCS_NOTE__ の講座',
+      headline: '{{tabQuiz}} と __COURSE_JSON__',
+      docsNote: '__HEADLINE__ と </script><script>alert(1)</script>',
+      lectures: [{ ...SAMPLE.course.lectures[0], title: '__TITLE__ {{sep}}' }, SAMPLE.course.lectures[1]],
+    };
+    const { outDir } = await buildSample({ courses: { ja: [tricky], en: [], zh: [] } });
+    const page = readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8');
+    // 文字は、その場所にそのまま（エスケープし、印に見えなくして）出る。ほかの印の所に差し込まれない
+    expect(page).toContain('<title>見本 &#95;_DOCS_NOTE__ の講座｜Chalkfile</title>');
+    expect(page).toContain('&#95;_HEADLINE__ と &lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(page.split('&#123;{tabQuiz}} と &#95;_COURSE_JSON__').length).toBeGreaterThan(1);
+    // ページで動く script は、組み立てが入れたものだけ（台本の </script><script> は動かない）
+    expect(page.match(/<script>/g)).toHaveLength(3);
+    // ページの JSON には、台本の文字がそのまま入る（画面の JS が文字として出す）
+    const json = /<script id="course-data" type="application\/json">([\s\S]*?)<\/script>/.exec(page)?.[1] ?? '';
+    const data = JSON.parse(json) as { course: { title: string }; lectures: { title: string }[] };
+    expect(data.course.title).toBe('見本 __DOCS_NOTE__ の講座');
+    expect(data.lectures[0].title).toBe('__TITLE__ {{sep}}');
+    const home = readFileSync(path.join(outDir, 'index.html'), 'utf8');
+    expect(home).toContain('<h3>見本 &#95;_DOCS_NOTE__ の講座</h3>');
+  });
 });
 
 describe('一覧のページの最初の画面に出す台本の抜き出し（heroSnippet）', () => {
