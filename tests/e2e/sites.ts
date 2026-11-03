@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { COURSES } from '../../content';
 import type { HeroSnippet } from '../../content/course-module';
 import { localMediaPath, readMediaManifest } from '../../scripts/media';
 import { buildSite } from '../../scripts/site/build';
@@ -40,9 +41,13 @@ export function prepareRealSite(): PreparedSite {
     throw new Error(`${path.relative(ROOT, file)} がありません。先に npm run build:site -- --strict`);
   const manifest = JSON.parse(readFileSync(file, 'utf8')) as CourseManifest;
   const entries = readMediaManifest().entries;
-  const lectures = entries
-    .filter((e) => e.lang === 'ja' && e.course === id && e.kind === 'standard')
-    .map((e) => ({ id: e.lecture, video: localMediaPath(e) }));
+  // レクチャーの並びは台本のとおり（動画の一覧の並びには頼らない）
+  const course = COURSES.find((c) => c.id === id);
+  if (!course) throw new Error(`講座がありません: ${id}`);
+  const lectures = course.lectures.map((l) => ({
+    id: l.id,
+    video: localMediaPath({ lang: 'ja', lecture: l.id, kind: 'standard' }),
+  }));
   return {
     mode: 'real',
     dist,
