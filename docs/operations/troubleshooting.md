@@ -28,6 +28,8 @@
 ## 書き出し
 
 - **Remotion が `public/` を一時フォルダへ写して、ディスクを埋める**: 書き出しのたびに `public/`（声で約 1GB）を写す。映像は音なしで書き出すので、`render.sh` と `stills.ts` は空の `.work/render-public` を渡している
+- **`npm run validate` が「書体に無い文字がある」で止まる**: 書体は台本の文字だけを入れたサブセット（`engine/fonts/`）。`npm run fonts` で作り直して commit する。元の書体にも無い文字（「元の書体にも無い」と出る）は、台本の文字を別の文字にする（[theme.md](../../.claude/skills/study-video-course/references/theme.md) の「書体」）
+- **見出し・字幕・図の名前の文字が、思ったより小さい**: 1 行に入らない文字は、描くときに測って縮める（役割の下限まで）。縮めても入らないものは `npm run validate` が注意を出すので、文を短くする（[style.md](../../.claude/skills/study-video-course/references/style.md) の「文字の量と大きさ」）
 - **書き出し中のフレームで、ディスクが埋まる**: 5 分の動画で 1〜2GB の JPEG を一時フォルダに置く。空きが少ないときは `CHUNK=1200 npm run render -- <ID>`（1,200 フレームずつ書き出して、最後につなぐ）
 - **一時フォルダの `remotion-webpack-bundle-*` をまとめて消さない**: ほかのプロジェクトのものかもしれない。消すなら、中身（bundle.js にこの講座の文字があるか）を確かめて 1 つずつ
 - **書き出しが遅い・CPU を取り合う**: 書き出しは 1 本ずつ流す（2 本を重ねると、それぞれ倍かかる）。並列の数は `CONCURRENCY=<コアの数より少なく>`。待ち方は [lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md) の「並行で作るとき」
