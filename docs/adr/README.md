@@ -76,4 +76,5 @@
 | 2026-11-03 | [台本の文のライセンスは、コードと同じ MIT のままにする](2026-11-03-script-text-license.md) | 採用 |
 | 2026-11-03 | [素材は 1GB までは materials ブランチに置き、超えたら講座ごとの束を Releases に移す](2026-11-03-materials-location.md) | 採用（移るのは合図が出てから） |
 | 2026-11-03 | [Worker の入口を小さなルーターにし、AI チャットの受け口は `/api/*` に足す](2026-11-03-worker-api-shape.md) | 採用（受け口は M4 で入れる） |
+| 2026-11-03 | [外から指される名前と形を凍結し、変えるときは移行を用意してから変える](2026-11-03-frozen-contracts.md) | 採用 |
 | 2026-11-04 | [動画の書き出しは、bun の TS から @remotion/renderer を呼ぶ](2026-11-04-render-with-remotion-renderer.md) | 採用 |

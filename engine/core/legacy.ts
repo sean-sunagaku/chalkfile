@@ -9,7 +9,7 @@
 //   sequence の actors の sub に / があれば等幅にする       subMono: true（等幅にしないなら subMono: false）
 //   phone の lead が ? で始まれば等幅にする                leadMono: true
 //   timeline の title を全角の空白で、札と題に分ける        kicker: '…'（札）と title: '…'（題）
-import type { Lecture, Scene } from '../../content/types';
+import type { Lecture, Scene } from './schema';
 
 export type LegacyUse = { path: string; message: string };
 

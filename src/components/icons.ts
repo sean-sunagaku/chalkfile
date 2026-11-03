@@ -1,6 +1,6 @@
-// アイコンの一覧。台本の icon に書く名前（左）と、描く lucide-react のアイコン（右）を 1 か所に持つ。
-// 名前は lucide-react の名前ではなく、短い独自の名前（card・idea など）。アイコンを足すときは、ここに 1 行（と import）を足すだけ。
-// 型 IconName は、この一覧の名前から作る（content/types.ts が読み、台本の icon を型で確かめる）
+// アイコンの対応。台本の icon に書く名前（左）と、描く lucide-react のアイコン（右）。
+// 名前は lucide-react の名前ではなく、短い独自の名前（card・idea など）。名前の一覧（台本の型 IconName）は engine/core/icons.ts の ICON_NAMES。
+// アイコンを足すときは、ICON_NAMES とここに 1 行ずつ（と import）を足す（片方だけだと、下の satisfies が型で止める）
 import {
   AppWindow,
   Ban,
@@ -76,6 +76,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
+import type { IconName } from '../../engine/core/icons';
 
 export const ICONS = {
   user: User,
@@ -150,7 +151,7 @@ export const ICONS = {
   contrast: Contrast,
   ruler: Ruler,
   input: TextCursorInput,
-} satisfies Record<string, LucideIcon>;
+} satisfies Record<IconName, LucideIcon>;
 
-/** 台本の icon に書ける名前（ICONS の名前） */
-export type IconName = keyof typeof ICONS;
+/** 台本の icon に書ける名前（engine/core/icons.ts の ICON_NAMES） */
+export type { IconName };

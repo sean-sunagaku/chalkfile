@@ -1,7 +1,7 @@
 // 文字と地の色のコントラスト比（WCAG 2.x の相対輝度の式）。テーマの文字と地の組を数で見る。
 // 今は数を出して記録するだけ（tests/engine.test.ts）。下限（本文 4.5・大きい文字 3.0）で止めるのは、見た目の更新（計画の T3A-14）でまとめて行う。
 // 組の色は、描くときと同じパレット（engine/core/theme.ts の derivePalette）から取る。React・Remotion・Node に依存しない
-import type { Theme, Tone } from '../../content/types';
+import type { Theme, Tone } from './schema';
 import { rgb } from './color';
 import { derivePalette } from './theme';
 

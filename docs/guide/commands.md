@@ -107,7 +107,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
 | `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`）。時刻は Git に入れている timeline から読む。消した章の古いファイルも消す |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
-| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表・Python の道具が読む JSON（効果音の一覧 `scripts/audio/sfx.json` は `content/sfx.ts` から、動画の値 `scripts/audio/video_config.json` は `src/video.config.ts` から。どちらも Git に入れる）。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
+| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表・Python の道具が読む JSON（効果音の一覧 `scripts/audio/sfx.json` は `engine/core/sfx.ts` から、動画の値 `scripts/audio/video_config.json` は `engine/core/video-config.ts` から。どちらも Git に入れる）。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 
 ### 見る
 
@@ -154,7 +154,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 - 一部だけ: `npm run synth -- L03 L05`（mix・render も同じ）。訳の動画は `S03.en` のように、まとめて `'S03.*'`・`'*.en'` も渡せる
 - 古くなったものだけ: `npm run chalk -- status` で段ごとの古い単位を見て、`npm run chalk -- build --to <段>` で前の段から順に流す（段と記録は [全体図](../architecture/overview.md) の「段と記録」、流し方は [公開の順番](../operations/publish.md) の「段の状態を見て、古い段だけを流す」）
 - 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。timeline（`content/<講座>/generated/timeline/`）は Git に入っている）
-- 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は講座の辞書 `content/<講座>/reading.ts` に足す（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）
+- 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は講座の辞書 `content/<講座>/reading.ts` に足す（どの講座でも同じ読みにしたい語だけ共通の `engine/core/reading.ts`）
 - 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・読みの辞書・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
 - 見た目: `npm run stills -- L04:3 --mid`（場面の中ほどと終わりを静止画にする）
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`

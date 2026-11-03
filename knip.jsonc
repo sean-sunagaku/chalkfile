@@ -17,6 +17,7 @@
   ],
   "project": [
     "src/**/*.{ts,tsx}",
+    "engine/**/*.ts",
     "content/**/*.ts",
     "scripts/**/*.ts",
     "site/*.ts",

@@ -1,6 +1,6 @@
 // 場面「recap」: まとめ
 import React from 'react';
-import type { RecapScene } from '../../content/types';
+import type { RecapScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';

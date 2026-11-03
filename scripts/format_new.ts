@@ -5,7 +5,8 @@
 //   bun scripts/format_new.ts --write          # 整形する（npm run format:new）
 //   bun scripts/format_new.ts --base HEAD^1    # 比べる相手を変える（CI の pull_request は、マージの commit の 1 つ目の親）
 //                                              # 別の PR の上に積んだ branch では、土台の branch を指す
-// 足したファイル: 比べる相手との分かれ目に無く、今の木にあるファイル（名前を変えただけのものは入れない）と、まだ追跡していないファイル。
+// 足したファイル: 比べる相手との分かれ目に無く、今の木にあるファイル（名前を変えただけのものと、移して元の場所に再 export を残したもの
+// ＝ 中身がほぼ同じ写し（git diff -C）は入れない。全体の整形の日まで、前からあるコードとして扱う）と、まだ追跡していないファイル。
 // 台本（content）・生成物・テストの記録・Biome が扱わない種類（Markdown・YAML・Python など）は、biome.jsonc の対象の外なので飛ばす。
 // 終了コード: 0 整っている（--write は整えた）・1 整っていない・2 使い方の誤り・3 前提が足りない（比べる相手が無い）
 import { existsSync } from 'node:fs';
@@ -30,7 +31,7 @@ const main = (argv: string[]) => {
   const from = found.stdout.trim();
   const files = [
     ...new Set([
-      ...list(git('diff', '--name-only', '--diff-filter=A', '-z', from)),
+      ...list(git('diff', '--name-only', '--diff-filter=A', '-C', '-z', from)),
       ...list(git('ls-files', '--others', '--exclude-standard', '-z')),
     ]),
   ].filter((f) => existsSync(path.join(ROOT, f)));

@@ -1,7 +1,7 @@
 // 場面「opening」: タイトル（ジングルの「ドン」で番号と題が出る）
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
-import type { OpeningScene } from '../../content/types';
+import type { OpeningScene } from '../../engine/core/schema';
 import { CourseMark, unitOf } from '../components/chrome';
 import { fitSize } from '../components/fit';
 import { gradientText, Pill, Smart } from '../components/ui';

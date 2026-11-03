@@ -1,7 +1,8 @@
 // 読みの差分（scripts/reading-diff.ts）。比べる相手と今の台本の読みを比べ、公開する言語の公開中の動画で読みが変わったのに
 // 動画を作り直していなければ止める
 import { describe, expect, test } from 'bun:test';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { VIDEOS } from '../content';
 import { speechIn } from '../content/voices';
@@ -100,22 +101,47 @@ describe('読みの差分（scripts/reading-diff.ts）', () => {
     ).toEqual(['…すせそ日本たちつ…', '…すせそにっぽんたちつ…']);
   });
 
-  test('台本（content/）は、content/ の外を実行時に import しない（読みの差分と materials gc は、content/ だけを取り出して読む）', () => {
-    const outside: string[] = [];
-    const walk = (dir: string) => {
-      for (const f of readdirSync(dir)) {
-        const p = path.join(dir, f);
+  // 取り出した台本は、content/ と engine/core/ だけで読める（読みの差分と materials gc は、この 2 つと scripts/voices.ts を取り出して読む）
+  const importsOf = (dir: string, runtimeOnly: boolean): { file: string; spec: string; to: string }[] => {
+    const out: { file: string; spec: string; to: string }[] = [];
+    const walk = (d: string) => {
+      for (const f of readdirSync(d)) {
+        const p = path.join(d, f);
         if (statSync(p).isDirectory()) walk(p);
-        else if (p.endsWith('.ts'))
-          for (const m of readFileSync(p, 'utf8').matchAll(/^(?:import|export)\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm)) {
-            const to = path.resolve(path.dirname(p), m[1]);
-            if (m[1].startsWith('.') && !to.startsWith(path.join(ROOT, 'content')))
-              outside.push(`${path.relative(ROOT, p)}: ${m[1]}`);
-            if (!m[1].startsWith('.')) outside.push(`${path.relative(ROOT, p)}: ${m[1]}`);
-          }
+        else if (p.endsWith('.ts')) {
+          const rx = runtimeOnly ? /^(?:import|export)\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm : /^(?:import|export)\s+[^;]*?from\s+'([^']+)'/gm;
+          for (const m of readFileSync(p, 'utf8').matchAll(rx))
+            out.push({ file: path.relative(ROOT, p), spec: m[1], to: path.resolve(path.dirname(p), m[1]) });
+        }
       }
     };
-    walk(path.join(ROOT, 'content'));
-    expect(outside).toEqual([]);
+    walk(dir);
+    return out;
+  };
+  const inside = (to: string, ...dirs: string[]) => dirs.some((d) => to === path.join(ROOT, d) || to.startsWith(path.join(ROOT, d) + path.sep));
+
+  test('台本（content/）が実行時に読むのは、content/ と engine/core/ だけ', () => {
+    const outside = importsOf(path.join(ROOT, 'content'), true).filter((x) => !x.spec.startsWith('.') || !inside(x.to, 'content', 'engine/core'));
+    expect(outside.map((x) => `${x.file}: ${x.spec}`)).toEqual([]);
+  });
+
+  test('engine/core/ は、engine/core/ の外を読まない（型も。React・Remotion・Node・content/・src/・scripts/ を読まない）', () => {
+    const outside = importsOf(path.join(ROOT, 'engine/core'), false).filter((x) => !x.spec.startsWith('.') || !inside(x.to, 'engine/core'));
+    expect(outside.map((x) => `${x.file}: ${x.spec}`)).toEqual([]);
+  });
+
+  test('content/ と engine/core/ と scripts/voices.ts だけを写したフォルダで、全部の動画と読みが同じに読める', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-reading-diff-test-'));
+    try {
+      for (const p of ['content', 'engine/core', 'scripts/voices.ts']) cpSync(path.join(ROOT, p), path.join(dir, p), { recursive: true });
+      const index = (await import(path.join(dir, 'content/index.ts'))) as typeof import('../content');
+      const voices = (await import(path.join(dir, 'content/voices.ts'))) as typeof import('../content/voices');
+      // 写したフォルダの台本を読んでいる（今の作業フォルダの台本とは別のもの）
+      expect(index.VIDEOS).not.toBe(VIDEOS);
+      expect(index.VIDEOS.map((v) => v.key)).toEqual(VIDEOS.map((v) => v.key));
+      expect(readingsOf(index.VIDEOS, voices.speechIn)).toEqual(readingsOf(VIDEOS, speechIn));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -1,7 +1,7 @@
 // 場面「timeline」: 時間の流れ
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { TimelineScene } from '../../content/types';
+import type { TimelineScene } from '../../engine/core/schema';
 import { Glass, Pill, Smart } from '../components/ui';
 import { PAD, usePalette, W } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';

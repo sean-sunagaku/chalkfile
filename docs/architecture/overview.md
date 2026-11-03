@@ -2,7 +2,7 @@
 
 Chalkfile は、TypeScript で書いた台本から、声・動画・講座サイト・読む教材を作る。台本（`content/`）が正本で、ほかのものは台本と素材から作り直せる。
 
-- 確かめた時点: 2026-11-04 のコード（生成物を講座のフォルダに移し、段の記録を足したあと）
+- 確かめた時点: 2026-11-04 のコード（生成物を講座のフォルダに移し、段の記録を足し、台本の型と読み込みを engine/core に集めて依存の向きを lint で縛ったあと）
 - 言葉の意味は [用語集](glossary.md)、決めた理由は [ADR](../adr/README.md)
 - コマンドの書き方は [コマンド](../guide/commands.md) と [始め方](../guide/quickstart.md)。ここには写さない
 
@@ -107,11 +107,12 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | `content/courses.ts` | 講座の登録表（1 講座 1 行。`.gitattributes` で `merge=union`）。並びは各講座の `order` で決まる |
 | `content/index.ts` | 登録表から作る講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
 | `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・読みの辞書（`reading.ts`。その講座の台詞にだけ効く）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
-| `content/types.ts`・`lines.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts`・`sfx.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・at に書いた台詞の id を番号に直す読み込み・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット・効果音の一覧（名前とミックスの音量） |
-| `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む）。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
-| `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・timeline の形と指紋 `timeline.ts`・生成物の置き場所 `generated.ts`・テーマのパレット `theme.ts` と色の計算 `color.ts`・色のコントラスト） |
+| `content/themes.ts` | テーマ（色・書体・背景の飾り）の値と一覧（`THEMES`）。項目の意味は `engine/core/schema.ts` の `Theme` |
+| `content/types.ts`・`i18n.ts`・`fields.ts`・`lines.ts`・`reading.ts`・`voices.ts`・`sfx.ts`・`course-module.ts`・`sources-util.ts` | `engine/core/` の再 export だけ（台本と訳の import の行を変えないために残す）。中身を直すのは `engine/core/` の同じ名前のファイル（`types.ts` は `schema.ts`、`sources-util.ts` は `sources.ts`） |
+| `src/` | Remotion の動画。`index.ts` が、中身とのつなぎの `project.ts`（`src/` で `content/` を読むのはここだけ。動画の一覧・テーマ・講座のフォルダの timeline を集める）を `Root.tsx` に渡す。`Root.tsx` は動画ごとのコンポジションを並べ、`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む） |
+| `engine/core/` | React・Remotion・Node に依存しない部品。台本の型 `schema.ts`（アイコンの名前 `icons.ts`）・多言語の重ね方 `i18n.ts` と項目の役目 `fields.ts`・at の読み込み `lines.ts`・読みのエンジンと共通の辞書 `reading.ts`・声の設定とクレジット `voices.ts`・効果音の一覧（名前とミックスの音量）`sfx.ts`・書き方のヘルパー（`course-module.ts` の `defineCourseModule`・`sources.ts`）・台本の形の版 `migrate.ts`・台本の検証 `validate.ts`・timeline の形と指紋 `timeline.ts`・生成物の置き場所 `generated.ts`・動画の決まった値 `video-config.ts` と文字 `video-text.ts`・テーマのパレット `theme.ts`（書体の選び方 `fonts.ts`・色の計算 `color.ts`・コントラスト `contrast.ts`）・古い書き方の読み替え `legacy.ts`・場面の種類の一覧 `scenes.ts` |
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/lib/` は道具の共有の部品（TS の道具が書き、Python の道具が読む JSON の形と版は `lib/handoff.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
-| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）、Python の道具の共有の部品（`common.py`）、TS の道具が書く JSON を読んで形を確かめる部品（`handoff.py`。形の正本は `scripts/lib/handoff.ts`）、`npm run gen` が書き出す効果音の一覧（`sfx.json`。正本は `content/sfx.ts`）と動画の値（`video_config.json`） |
+| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）、Python の道具の共有の部品（`common.py`）、TS の道具が書く JSON を読んで形を確かめる部品（`handoff.py`。形の正本は `scripts/lib/handoff.ts`）、`npm run gen` が書き出す効果音の一覧（`sfx.json`。正本は `engine/core/sfx.ts`）と動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | Worker の入口（`worker/src/app.ts`。パスの頭で受け口を選ぶ）・`/media/` の中継（`media.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）・AI チャットの受け口（`api.ts`。M4 で入れる）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`。テストのサーバーは `browser-server.ts` と `e2e/`）・テストの入力（`fixtures/`。合成の講座は `fixtures/content/site-sample`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
@@ -119,12 +120,32 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | `.claude/skills/` | Claude Code のスキル（講座の作り方・書き方・調べ方・テーマの作り方は `study-video-course`、共通プロンプトからの講座は `course-from-prompt`、サイト・保存・Worker は `chalkfile-engine`）。AI 共通のきまりは直下の `AGENTS.md` |
 | `.github/` | CI（`workflows/`）・Dependabot・CODEOWNERS・PR のひな形 |
 
+## 依存の向き
+
+部品が読んでよいものを、置き場所ごとに決めている。破る import は `biome.jsonc` の `noRestrictedImports` が止め（CI の lint）、決まりが効いているかは `tests/import-rules.test.ts` が確かめる。
+
+| 置き場所 | 読んでよいもの |
+|---|---|
+| `engine/core/` | `engine/core/` の中だけ（型も）。React・Remotion・Node・`content/`・`src/`・`scripts/` を読まない。中身の値（テーマの一覧など）が要るときは、呼ぶ側が引数で渡す |
+| `content/` | `content/` の中（講座の中・講座どうし・`content/` の共通のファイル）と `engine/core/` だけ。npm のパッケージと Node も読まない |
+| `src/` | `src/` の中・`engine/core/`・React・Remotion など。`content/` を読むのは `src/project.ts` だけで、場面と部品は描くものを props と context で受け取る。`scripts/` は読まない |
+| `scripts/` | `src/` の内部を読まない（動画と道具の両方で使うものは `engine/core/` に置く）。動画を書き出すときは、`src/index.ts` をバンドルの入口として渡す |
+
+- 台本と一緒に取り出して読む道具（`scripts/reading-diff.ts` の比べる相手・`scripts/materials.ts` の gc の `--keep`）は、`content/` と `engine/core/`（と `scripts/voices.ts`）だけを取り出す。取り出したものだけで読めることは `tests/reading-diff.test.ts` が確かめる
+
 ## 外から指される名前（変えると壊れる）
+
+凍結していて、変えると `tests/contracts.test.ts` が止める。凍結した名前の一覧は `tests/fixtures/contracts/frozen.json`（足すだけ）、変えるときの手順は [ADR](../adr/2026-11-03-frozen-contracts.md)。
 
 | 名前 | 指している所 |
 |---|---|
 | 講座 ID | サイトの URL（`/<講座 ID>/`、訳は `/<言語>/<講座 ID>/`）・保存の ID・Releases のタグ・素材ブランチのフォルダ |
 | レクチャー ID と動画の key | 動画・ポスター・音・字幕・timeline のファイル名。レクチャー ID の頭文字は講座の `prefix` |
 | 動画のパス（`/media/<言語>/<講座 ID>/<レクチャー ID>[.cc].<SHA-256>.mp4`） | 公開したページと、学ぶ人が保存した講座 |
-| 章 ID・節 ID | 読む教材と `chunks.jsonl`。AI チャットが答えの根拠を指すのに使う |
+| コンポジション ID（`S01-en`） | 動画を書き出す道具（`render.sh`・静止画の道具）。動画の key のドットをハイフンにしたもの |
+| 章 ID・節 ID・図 ID・課題 ID | 読む教材と `chunks.jsonl`。AI チャットが答えの根拠を指すのに使う |
+| 出典の ID | 教材と台本の主張から、講座の出典の一覧を引く |
 | 声の鍵の決め方 | 素材ブランチと声のキャッシュ（`~/.cache/chalkfile/tts`・`.work/tts`）のファイル名。v2（合成のレシピから）→ v1（凍結した前の作り方）の順に探す（`scripts/voices.ts`）。決め方を変えると音声が見つからなくなり、main の CI の `synth.ts --cached-only` が止まる |
+| timeline の形（`schema: 1`） | Remotion・台本の検証・静止画と教材の道具。作業中の別の branch も同じ形で書く |
+| Releases のタグ（`media-<言語>-<講座 ID>`）と動画のファイル名 | 公開したページ・講座の動画の一覧・Worker の許可リスト |
+| 台本の形の版（Course の `schemaVersion`。書かなければ 1） | 作業中の branch の台本。形を変えるときは `engine/core/migrate.ts` で古い形から直す |

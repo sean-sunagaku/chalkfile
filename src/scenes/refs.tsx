@@ -1,6 +1,6 @@
 // 場面「refs」: 参考資料
 import React from 'react';
-import type { RefsScene } from '../../content/types';
+import type { RefsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, IconBadge } from '../components/ui';
 import { usePalette } from '../theme';

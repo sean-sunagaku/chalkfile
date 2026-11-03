@@ -2,7 +2,7 @@
 // React・Remotion・Node に依存しない純粋なデータ（scripts/build_materials.ts と engine/core/validate.ts が読む）。
 // 描く側は src/scenes/<kind>.tsx（defineScene）と、その登録表 src/scenes/index.ts。どちらも Scene['kind'] の全部を
 // 型で網羅するので、場面の種類を足すと、ここと登録表に書くまで型で止まる（足し方は .claude/skills/study-video-course/references/style.md）
-import type { Scene, TerminalOut } from '../../content/types';
+import type { Scene, TerminalOut } from './schema';
 
 export type SceneKind = Scene['kind'];
 /** その種類の場面のデータ（SceneOf<'goals'> は GoalsScene） */

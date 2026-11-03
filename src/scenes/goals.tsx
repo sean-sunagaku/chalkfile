@@ -1,6 +1,6 @@
 // 場面「goals」: ゴールの一覧
 import React from 'react';
-import type { GoalsScene } from '../../content/types';
+import type { GoalsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { usePalette } from '../theme';

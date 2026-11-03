@@ -1,7 +1,7 @@
 // 場面「numbers」: 数字（数え上げる）
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import type { NumbersScene } from '../../content/types';
+import type { NumbersScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass } from '../components/ui';
 import { formatInteger } from '../i18n';

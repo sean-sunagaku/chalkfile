@@ -1,5 +1,5 @@
 // 台本の検証。描く前・声を作る前に、台本の誤りを見つける（React・Remotion・Node に依存しない純粋な関数）。
-//   validateCourse(course)            講座 1 つ（講座の項目と、全部の動画）
+//   validateCourse(course, ctx)       講座 1 つ（講座の項目と、全部の動画）。ctx は台本の外の一覧（テーマの id）
 //   validateCourses(courses)          講座をまたいだもの（頭文字・並び・講座 ID が重ならないか。日本語の講座の一覧を渡す）
 //   validateLecture(lecture, course)  動画 1 本（訳の動画は、訳を重ねたあとのレクチャーと訳の講座を渡す）
 //   validateTimeline(lecture, course, timeline)  synth が書いた timeline が台本の形と合うか（指紋が今の台本と同じか）
@@ -9,18 +9,19 @@
 // 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
 //   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違いと、訳の重ね方の誤り
 //   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い・古い書き方（engine/core/legacy.ts）
-// いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から、字幕と見出しの大きさを src/video.config.ts から読む
-import { AT_KEYS, l10nProblems, videoKey, type Lang } from '../../content/i18n';
-import { THEMES } from '../../content/themes';
-import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
-import { VIDEO_TEXT } from '../../src/i18n';
+// engine/core の外を import しない。台本の外の一覧のうち、中身（content/）にあるもの（テーマの一覧）は、validateCourse を呼ぶ側が渡す（CourseContext）
 import { assertNever } from './assert';
 import { isHex } from './color';
-import { legacyUses } from './legacy';
-import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
-import { SCENE_INFO, SCENE_KINDS } from './scenes';
 import { timelineFile } from './generated';
+import { AT_KEYS, l10nProblems, videoKey, type Lang } from './i18n';
+import { legacyUses } from './legacy';
+import { COURSE_SCHEMA_VERSION, isKnownSchemaVersion, schemaVersionOf } from './migrate';
+import { SCENE_INFO, SCENE_KINDS } from './scenes';
+import { SFX } from './sfx';
+import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from './schema';
 import { timelineFingerprint, type TimelineEntry } from './timeline';
+import { CAPTION, CONTENT, HEADING, VIDEO } from './video-config';
+import { VIDEO_TEXT } from './video-text';
 
 export type Level = 'error' | 'warning';
 
@@ -54,6 +55,7 @@ export const RULES = {
   prefix: 'レクチャー ID の頭文字（prefix）',
   order: '講座の並び（order）',
   'course-id': '講座 ID',
+  schema: '台本の形の版（schemaVersion）',
   'caption-lines': '焼き込み字幕の行数（見込み）',
   'heading-width': '見出しの幅（見込み）',
   style: 'style.md の目安（表・コードの大きさ）',
@@ -67,11 +69,11 @@ export type Issue = { where: string; message: string; level: Level; rule: Rule }
 /* ───────────── 名前の一覧（型と同じものを、実行時に確かめる用に持つ。足し忘れると型で止まる） ───────────── */
 // 場面の種類の一覧は engine/core/scenes.ts の SCENE_INFO（教材の絵コンテと同じ一覧）
 
-/** 効果音（content/sfx.ts の一覧と public/audio/sfx/<名前>.wav） */
-const SFX_SET: Record<SfxId, true> = { pop: true, whoosh: true, chime: true, tick: true, reveal: true, correct: true, type: true, harisen: true, chin: true, drumroll: true, deden: true, zuko: true };
+/** 効果音（engine/core/sfx.ts の一覧から作る。音は public/audio/sfx/<名前>.wav） */
+const SFX_SET = Object.fromEntries(Object.keys(SFX).map((k) => [k, true])) as Record<SfxId, true>;
 export const SFX_IDS = Object.keys(SFX_SET) as SfxId[];
 
-/** 声（content/voices.ts の VOICES と KOKORO） */
+/** 声（engine/core/voices.ts の VOICES と KOKORO） */
 const VOICE_SET: Record<VoiceId, true> = { narrator: true, announcer: true, zundamon: true, 'zundamon-cry': true, tsukkomi: true, tennokoe: true };
 export const VOICE_IDS = Object.keys(VOICE_SET) as VoiceId[];
 
@@ -84,7 +86,7 @@ const has = <K extends string>(set: Record<K, true>, v: unknown): v is K => type
 const names = (set: Record<string, true>) => Object.keys(set).join('・');
 
 /* ───────────── 画面の大きさの見込み ─────────────
- * 大きさは部品と同じ src/video.config.ts の値（T3A-14 で実際に測る形に変える）。文字の幅は見積もりなので、注意にとどめる。
+ * 大きさは部品と同じ engine/core/video-config.ts の値（実際に測る形に変えるのは、見た目の更新のとき）。文字の幅は見積もりなので、注意にとどめる。
  * 半角の英数字と記号は平均 0.5em、ほか（かな・漢字・全角の記号）は 1em と見る。2026-11-02 に、字幕つきの静止画 22 枚（日本語・英語・中国語）と
  * 見出し 4 枚を書き出して、行数と幅がこの見込みと合うことを確かめた（Zen Maru Gothic の英字は約 0.44em、Inter はもう少し広い）
  */
@@ -326,7 +328,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
         });
         const seen = new Set<number>();
         list(sc.notes).forEach((nt, i) => {
-          // blockId（部品の id）は、読み込むとき（content/lines.ts）に block（番号）に直る
+          // blockId（部品の id）は、読み込むとき（engine/core/lines.ts）に block（番号）に直る
           const found = nt?.blockId === undefined ? undefined : blockIds.get(nt.blockId);
           if (nt?.blockId !== undefined && found === undefined) {
             push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].blockId`), `注の blockId「${String(nt.blockId)}」が、この画面の部品に無い（id のある部品は ${[...blockIds.keys()].join('・') || 'なし'}。注の枠と番号が出ない）`);
@@ -380,7 +382,7 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
     walk(value, key, key, (k, v, path) => {
       const at = `${sw} ${s.kind}.${path}`;
       if (AT_KEYS.includes(k) && v !== undefined) {
-        // 台詞の id で書いた at は、読み込むとき（content/lines.ts）に番号に直る。文字のまま残ったものは、場面に無い id
+        // 台詞の id で書いた at は、読み込むとき（engine/core/lines.ts）に番号に直る。文字のまま残ったものは、場面に無い id
         if (typeof v === 'string') push(out, 'error', 'at', at, `台詞の id「${v}」が、この場面の台詞に無い（あるのは ${[...ids].join('・') || 'なし。台詞に id を付ける'}）`);
         else if (typeof v !== 'number' || !Number.isInteger(v)) push(out, 'error', 'at', at, `台詞の番号が整数でない: ${String(v)}`);
         else if (v < 0 || v > lines.length) push(out, 'error', 'at', at, `台詞の番号 ${v} が範囲の外（この場面の台詞は ${lines.length} 個。0〜${lines.length} で書く）`);
@@ -462,7 +464,7 @@ export const validateLecture = (lecture: Lecture, course: Course): Issue[] => {
   const out: Issue[] = [];
   const where = videoWhere(lecture, course);
   const lang: Lang = course.lang ?? 'ja';
-  // 訳の動画は、訳を重ねたときの誤り（content/i18n.ts の localizeLecture が集めたもの）も、この動画の誤りにする
+  // 訳の動画は、訳を重ねたときの誤り（engine/core/i18n.ts の localizeLecture が集めたもの）も、この動画の誤りにする
   for (const p of l10nProblems(lecture)) push(out, 'error', 'l10n', `${where} ${p.where}`, p.message);
   const scenes = list(lecture.scenes);
   if (!scenes.length) push(out, 'error', 'scenes', `${where} scenes`, '場面が無い');
@@ -476,13 +478,24 @@ export const validateLecture = (lecture: Lecture, course: Course): Issue[] => {
   return out;
 };
 
+/**
+ * 講座の検証が読む、台本の外の一覧。core は中身（content/）を読まないので、呼ぶ側（scripts/validate.ts とテスト）が渡す。
+ *   themes: テーマの id（content/themes.ts の THEMES のキー）。講座の theme は、この中のどれかを書く
+ */
+export type CourseContext = { themes: readonly string[] };
+
 /** 講座 1 つ（講座の項目と、全部の動画） */
-export const validateCourse = (course: Course): Issue[] => {
+export const validateCourse = (course: Course, ctx: CourseContext): Issue[] => {
   const out: Issue[] = [];
   const where = courseWhere(course);
   for (const p of l10nProblems(course)) push(out, 'error', 'l10n', `${where} ${p.where}`, p.message);
-  if (course.theme !== undefined && !Object.hasOwn(THEMES, course.theme)) {
-    push(out, 'error', 'theme', `${where} theme`, `テーマ「${course.theme}」が無い（content/themes.ts の THEMES にあるのは ${Object.keys(THEMES).join('・')}）`);
+  // 台本の形の版（書かなければ 1）。読めない版は、読み込み（engine/core/migrate.ts）が今の形に直せていない
+  const version = schemaVersionOf(course);
+  if (!isKnownSchemaVersion(version)) {
+    push(out, 'error', 'schema', `${where} schemaVersion`, `台本の形の版 ${JSON.stringify(version)} を読めない（このエンジンが読めるのは 1〜${COURSE_SCHEMA_VERSION}。新しい形で書いた台本なら、main を取り込んでエンジンを新しくする）`);
+  }
+  if (course.theme !== undefined && !ctx.themes.includes(course.theme)) {
+    push(out, 'error', 'theme', `${where} theme`, `テーマ「${course.theme}」が無い（content/themes.ts の THEMES にあるのは ${ctx.themes.join('・')}）`);
   }
   const dup = <T>(xs: T[], rule: Rule, what: string, w: string) => xs.forEach((x, i) => { xs.indexOf(x) !== i && push(out, 'error', rule, w, `${what} ${String(x)} が重なっている`); });
   dup(list(course.sections).map((s) => s.no), 'section', 'セクションの番号', `${where} sections`);
@@ -601,7 +614,7 @@ export const validateTimeline = (lecture: Lecture, course: Course, timeline: Tim
     at = s.start + s.duration;
   }
   if (at !== timeline.durationInFrames && !out.length) push(out, 'error', 'timeline', `${where} timeline`, `動画の長さ（${timeline.durationInFrames}）が、場面の終わり（${at}）と違う。${fix}`);
-  if (timeline.fps !== undefined && timeline.fps !== VIDEO.fps) push(out, 'error', 'timeline', `${where} timeline`, `timeline の fps（${timeline.fps}）が動画の fps（${VIDEO.fps}。src/video.config.ts）と違う。${fix}`);
+  if (timeline.fps !== undefined && timeline.fps !== VIDEO.fps) push(out, 'error', 'timeline', `${where} timeline`, `timeline の fps（${timeline.fps}）が動画の fps（${VIDEO.fps}。engine/core/video-config.ts）と違う。${fix}`);
   if (timeline.fingerprint !== undefined && !out.length) {
     let now: string;
     try {
@@ -645,7 +658,7 @@ export const validateTimelineFiles = (lecture: Lecture, course: Course, entries:
 
 /* ───────────── テーマ ───────────── */
 
-/** テーマの項目（content/types.ts の Theme）。項目を型に足したのに、ここに書き忘れると型で止まる */
+/** テーマの項目（engine/core/schema.ts の Theme）。項目を型に足したのに、ここに書き忘れると型で止まる */
 const COLOR_KEYS: Record<keyof Theme['color'], true> = { bg: true, bg2: true, surface: true, surface2: true, ink: true, sub: true, muted: true, line: true, line2: true, accent: true, onAccent: true, code: true };
 const SYNTAX_KEYS: Record<keyof Theme['syntax'], true> = { plain: true, comment: true, string: true, keyword: true, deco: true, number: true, fn: true };
 const DARK_KEYS: Record<keyof DarkSurfaces, true> = { glass: true, glass2: true, overlay: true, edge: true, lane: true, track: true, sheen: true, faint: true, onTone: true };

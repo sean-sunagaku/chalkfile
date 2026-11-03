@@ -3,7 +3,7 @@
 Chalkfile のリポジトリと、そこから作る動画・講座サイトの、物ごとのライセンスと使うときの条件。
 
 - リポジトリのライセンスの全文は [LICENSE](../../LICENSE)（MIT）。使っているパッケージと道具のライセンスは [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)、免責は [DISCLAIMER.md](../../DISCLAIMER.md)
-- 声とクレジットの定義は `content/voices.ts`（日本語の声は `VOICES` の `credit`、英語と中国語の声は `KOKORO`）。声を足したら、この表も合わせる
+- 声とクレジットの定義は `engine/core/voices.ts`（日本語の声は `VOICES` の `credit`、英語と中国語の声は `KOKORO`）。声を足したら、この表も合わせる
 
 ## 表
 

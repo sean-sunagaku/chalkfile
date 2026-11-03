@@ -93,6 +93,130 @@
       }
     },
     {
+      // エンジンの部品（engine/core）は、React・Remotion・Node（fs・crypto など）・中身（content/）・動画（src/）・道具（scripts/）に依存しない。
+      // 読んでよいのは同じフォルダのファイル（./）だけ（型も）。中身の値が要るとき（テーマの一覧など）は、呼ぶ側が引数で渡す。
+      // 台本（content/）と一緒に取り出して読む道具がある（scripts/reading-diff.ts・scripts/materials.ts の gc）ので、外を読むと壊れる
+      "includes": ["engine/core/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**", "!./*"],
+                    "message": "engine/core は engine/core の中（./ のファイル）だけを読む。React・Remotion・Node・content/・src/・scripts/ を読まない（中身の値は、呼ぶ側が引数で渡す）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // 台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/types.ts などの共通のファイル）と engine/core/ だけ。
+      // 動画（src/）・道具（scripts/）・サイト（site/）・npm のパッケージ・Node を読まない（型も）。取り出して読む道具（scripts/reading-diff.ts・
+      // scripts/materials.ts の gc）は content/ と engine/core/ だけを取り出す。パスの深さで、content/ の外に出る ../ の数が違うので、深さごとに書く
+      "includes": ["content/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [{ "group": ["**", "!./**", "../**", "!../engine/core/**"], "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない" }]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["content/*/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [{ "group": ["**", "!./**", "!../**", "../../**", "!../../engine/core/**"], "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない" }]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["content/*/*/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [{ "group": ["**", "!./**", "!../**", "../../../**", "!../../../engine/core/**"], "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない" }]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // 動画（src/）が中身（content/）を読むのは src/project.ts だけ（次の override）。場面と部品は、描くものを props と context で受け取る。
+      // 道具（scripts/）も読まない（向きが逆）。src/components/content.tsx（内容の枠の部品）は ./ か ../components/ から読むので当たらない
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../content", "../content/**", "../../content", "../../content/**"],
+                    "message": "src/ で中身（content/）を読むのは src/project.ts だけ。型は engine/core/schema.ts、値は project（createRoot に渡す一式）から受け取る"
+                  },
+                  {
+                    "group": ["../scripts/**", "../../scripts/**"],
+                    "message": "動画（src/）は道具（scripts/）を読まない（道具が動画の部品を読む向きもしない）。両方で使うものは engine/core/ に置く"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // 中身とのつなぎ（src/project.ts）だけは content/ を読む
+      "includes": ["src/project.ts"],
+      "linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
+    },
+    {
+      // 道具（scripts/）は、動画（src/）の内部を読まない。動画と道具の両方で使う値と関数は engine/core/ に置く（動画の決まった値は
+      // engine/core/video-config.ts）。動画を書き出すときは、src/index.ts をバンドルの入口として渡す（import しない）
+      "includes": ["scripts/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../src", "../src/**", "../../src", "../../src/**", "../../../src", "../../../src/**"],
+                    "message": "道具（scripts/）は動画（src/）の内部を読まない。両方で使うものは engine/core/ から読む（動画の決まった値は engine/core/video-config.ts）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["tests/browser/**", "playwright.config.ts"],
       "linter": { "domains": { "playwright": "recommended" } }
     },

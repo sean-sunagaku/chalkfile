@@ -3,7 +3,7 @@
 講座ごとに、色・書体・背景の飾りをテーマとして選べる。テーマは動画（Remotion）と講座サイトの両方に効く。
 
 - テーマの定義: `content/themes.ts`（`THEMES` に並べる）
-- 型: `content/types.ts` の `Theme`
+- 型: `engine/core/schema.ts` の `Theme`
 - 講座への指定: 講座の `course.ts` に `theme: 'indigo'` のように書く。書かなければ既定の `chalkfile`
 - 一覧ページ（`site/dist/index.html`）は既定のテーマで描く
 
