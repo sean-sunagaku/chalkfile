@@ -9,7 +9,7 @@ const values = speechValues();
 const diff = differences(readSnapshot(), values);
 const same = (c: Category) => {
   const found = diff.found[c];
-  if (found.length) throw new Error([`${MEANING[c].title}（tests/fixtures/snapshots と違う）`, ...found, `→ ${MEANING[c].then}`].join('\n'));
+  if (found.length) throw new Error([`${MEANING[c].title}（tests/fixtures/snapshots と違う）`, ...found, `→ ${MEANING[c].next}`].join('\n'));
 };
 
 describe('音声の鍵・読み・訳の指紋のスナップショット', () => {

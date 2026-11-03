@@ -1,0 +1,25 @@
+# Python の道具（scripts/*.py）の lint。CI と同じ点検は npm run lint:py（uvx ruff@0.17.3 check scripts）
+# 規則は、固定した版の ruff の既定（推奨）を使う。ruff の版を上げたら、増えた規則の指摘を見直す。
+# 整形（ruff format）は、TS の全体の整形と同じ日（開いている講座の PR が 0 の日）に行う。それまで流さない。
+# 整形したら、build_music.py の出力が素材の SHA256SUMS と同じか（音が変わらないか）を確かめる。
+
+# 行幅は biome.jsonc にそろえる
+line-length = 120
+# .python-version と pyproject.toml の requires-python に合わせる
+target-version = "py312"
+
+[lint]
+ignore = [
+  # import の並べ替えは、整形の日に一緒に行う
+  "I001",
+  # int(round(x)) の int を外さない。numpy の値が混ざる計算で、整数に戻していることを目で分かるようにしておく
+  "RUF046",
+  # 単語の一覧は "a b c".split() のほうが読みやすい
+  "SIM905",
+]
+
+[lint.per-file-ignores]
+# ffmpeg の終了コードを見ていない（P-23）。失敗の扱いは T3B-07 で直す。check=True を足すと、失敗したときの動きが変わる
+"scripts/mix.py" = ["PLW1510"]
+# pipe() はループの同じ回の中でだけ呼ぶので、ループの変数をあとから読むことが無い
+"scripts/tts_kokoro.py" = ["B023"]

@@ -98,18 +98,18 @@ export const writeSnapshot = (values: VideoValue[], dir = SNAPSHOT_DIR) => {
 
 export type Category = 'videos' | 'keys' | 'speech' | 'fingerprints' | 'credits' | 'keyList';
 /** 値の種類ごとの見出しと、変わったときに要ること（テストと、このスクリプトの表示に使う） */
-export const MEANING: Record<Category, { title: string; then: string }> = {
+export const MEANING: Record<Category, { title: string; next: string }> = {
   videos: {
     title: '動画とスナップショットのファイルが合わない（content/index.ts の VIDEOS と videos/<動画>.json）',
-    then: 'bun scripts/snapshots.ts --update で足す・消す。合成が要るかどうかは鍵の差で分かる（スナップショットに無い鍵の数）',
+    next: 'bun scripts/snapshots.ts --update で足す・消す。合成が要るかどうかは鍵の差で分かる（スナップショットに無い鍵の数）',
   },
-  keys: { title: '音声の鍵（音声ファイルの名前）が変わった', then: '素材の音声が当たらなくなる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
-  speech: { title: '読み（VOICEVOX・Kokoro に渡す文）が変わった', then: '鍵も変わる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
-  fingerprints: { title: '訳の指紋（訳がある台本の指紋）が変わった', then: 'その訳が stale になる（合成は要らない）。わざと変えたなら --update で作り直し、訳を見直して bun scripts/i18n.ts stamp' },
-  credits: { title: '動画の終わりのクレジットが変わった', then: '動画の書き出し直しが要る（音声は同じ）。わざと変えたなら --update で作り直す' },
+  keys: { title: '音声の鍵（音声ファイルの名前）が変わった', next: '素材の音声が当たらなくなる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
+  speech: { title: '読み（VOICEVOX・Kokoro に渡す文）が変わった', next: '鍵も変わる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
+  fingerprints: { title: '訳の指紋（訳がある台本の指紋）が変わった', next: 'その訳が stale になる（合成は要らない）。わざと変えたなら --update で作り直し、訳を見直して bun scripts/i18n.ts stamp' },
+  credits: { title: '動画の終わりのクレジットが変わった', next: '動画の書き出し直しが要る（音声は同じ）。わざと変えたなら --update で作り直す' },
   keyList: {
     title: '鍵の一覧（全部の動画・重なりなし。動画ごとのファイルから求める）が変わった',
-    then: 'スナップショットに無い鍵の台詞は合成が要る。無い鍵が 0 なら、今ある音声を使い回せる（時刻の作り直しだけ）',
+    next: 'スナップショットに無い鍵の台詞は合成が要る。無い鍵が 0 なら、今ある音声を使い回せる（時刻の作り直しだけ）',
   },
 };
 /** found は値の種類ごとの違い。resynth はスナップショットに無い鍵がある動画（「動画（鍵の数）」。合成が要る） */
@@ -190,7 +190,7 @@ export const differences = (saved: Snapshot, values: VideoValue[]): Differences 
 
 /** 違いを表示用の行にする（違いが無ければ空） */
 export const report = ({ found }: Differences): string[] =>
-  (Object.keys(MEANING) as Category[]).flatMap((c) => (found[c].length ? [`■ ${MEANING[c].title}`, ...found[c].map((x) => `  ${x}`), `  → ${MEANING[c].then}`] : []));
+  (Object.keys(MEANING) as Category[]).flatMap((c) => (found[c].length ? [`■ ${MEANING[c].title}`, ...found[c].map((x) => `  ${x}`), `  → ${MEANING[c].next}`] : []));
 
 /* ───────────── 実行 ───────────── */
 

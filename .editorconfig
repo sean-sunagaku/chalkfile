@@ -1,0 +1,21 @@
+# エディタの基本の書き方（TS・JSON・YAML・シェルは 2 スペース、Python は 4 スペース）。TS・JSON の整形の正本は biome.jsonc
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+indent_size = 4
+
+# Markdown は行末の 2 つの空白が改行の意味になるので消さない
+[*.md]
+trim_trailing_whitespace = false
+
+# 生成物（scripts/synth.ts が改行なしで書く。手で直さない）
+[src/generated/*.json]
+insert_final_newline = unset
