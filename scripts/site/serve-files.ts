@@ -3,48 +3,28 @@
 //   静的なファイル: Workers の静的 assets と同じく、ディレクトリは index.html・/ の無いディレクトリは 301・無いページは 404.html を 404
 //                  （wrangler.jsonc の not_found_handling: 404-page）。型は拡張子の対応表（site/mime.ts の contentTypeOf）
 //   /media/: Worker と同じく、動画の一覧にあるものだけ・GET と HEAD だけ・Range と If-Range・?download=1 は attachment
-// python3 -m http.server は Range に答えないので、動画の途中へ飛べない（このファイルの bodyResponse が答える）
+// python3 -m http.server は Range に答えないので、動画の途中へ飛べない（このファイルの bodyResponse が答える。Range の答え方は
+// SW と同じ site/lib/http-range.ts の rangeResponse）
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { type MediaEntry, mediaPath } from '../../site/media-shared';
+import { rangeResponse } from '../../site/lib/http-range';
+import { downloadName, type MediaEntry, mediaPath } from '../../site/media-shared';
 import { contentTypeOf } from '../../site/mime';
-import { byteRange } from '../../site/offline-shared';
 
 /** 応答のヘッダー */
 export type ServeHeaders = Record<string, string>;
 
 /** 中身（ファイルかバイト列）を、HEAD と Range（206・416）に答えて返す。etag を渡すと付け、If-Range が違えば全体を返す */
-export function bodyResponse(req: Request, content: Blob | Uint8Array, headers: ServeHeaders, etag?: string): Response {
+export function bodyResponse(
+  req: Request,
+  content: Blob | Uint8Array,
+  headers: ServeHeaders,
+  etag?: string,
+): Promise<Response> {
   // バイト列は Blob にする（Range のときに slice で切り出す）
   const body = content instanceof Uint8Array ? new Blob([content.slice()]) : content;
-  const size = body.size;
-  const base: ServeHeaders = { ...headers, 'Accept-Ranges': 'bytes', 'Content-Length': String(size) };
-  if (etag) base.ETag = etag;
-  if (req.method === 'HEAD') return new Response(null, { headers: base });
-  const ifRange = req.headers.get('If-Range');
-  const range = byteRange(etag && ifRange && ifRange !== etag ? null : req.headers.get('Range'), size);
-  if (range.kind === 'unsatisfiable') {
-    return new Response(null, {
-      status: 416,
-      headers: { ...base, 'Content-Length': '0', 'Content-Range': `bytes */${size}` },
-    });
-  }
-  if (range.kind === 'partial') {
-    return new Response(body.slice(range.start, range.end + 1), {
-      status: 206,
-      headers: {
-        ...base,
-        'Content-Length': String(range.end - range.start + 1),
-        'Content-Range': `bytes ${range.start}-${range.end}/${size}`,
-      },
-    });
-  }
-  return new Response(body, { headers: base });
+  return rangeResponse(req, body, etag ? { ...headers, ETag: etag } : headers);
 }
-
-/** 単体で保存するときのファイルの名前（Worker と同じ。字幕を焼き込んだ版は .captioned） */
-export const downloadName = (e: Pick<MediaEntry, 'lecture' | 'kind'>) =>
-  `${e.lecture}${e.kind === 'captioned' ? '.captioned' : ''}.mp4`;
 
 /** 動画の一覧の、配るパス（/media/<言語>/<講座>/<ファイル>）から、項目と手元のファイル */
 export type MediaFiles = ReadonlyMap<string, { entry: MediaEntry; file: string }>;
@@ -61,7 +41,7 @@ export const mediaHeaders = (req: Request, entry: MediaEntry, extra: ServeHeader
 };
 
 /** /media/ の動画。一覧に無い・手元に無い動画は 404。GET と HEAD だけ */
-export function mediaResponse(req: Request, media: MediaFiles, extra: ServeHeaders = {}): Response {
+export async function mediaResponse(req: Request, media: MediaFiles, extra: ServeHeaders = {}): Promise<Response> {
   const found = media.get(new URL(req.url).pathname);
   if (!found || !existsSync(found.file)) return new Response('not found', { status: 404 });
   if (!['GET', 'HEAD'].includes(req.method))
@@ -105,7 +85,7 @@ export const fileResponse = (
 ) => bodyResponse(req, body, { 'Content-Type': contentTypeOf(file) ?? 'application/octet-stream', ...extra });
 
 /** 静的なファイルを返す。無いものは、root の 404.html を 404 で返す（無ければ素の 404） */
-export function staticResponse(req: Request, root: string, prefix = '/', extra: ServeHeaders = {}): Response {
+export async function staticResponse(req: Request, root: string, prefix = '/', extra: ServeHeaders = {}): Promise<Response> {
   const target = findStatic(root, new URL(req.url).pathname, prefix);
   if (target.kind === 'file') return fileResponse(req, target.file, undefined, extra);
   return notFoundResponse(target, root, extra);

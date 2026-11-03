@@ -3,7 +3,7 @@ import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { contentTypeOf, MIME, mimeOf, mimeTypeOf } from '../site/mime';
 
-// 拡張子と MIME の対応表（site/mime.ts）。組み立ては site/assets の型をここから付け、知らない拡張子なら止める（W-30）
+// 拡張子と MIME の対応表（site/mime.ts）。組み立ては site/assets の型をここから付け、知らない拡張子なら止める
 describe('拡張子と MIME の対応表', () => {
   test('拡張子から型を付ける（大文字・クエリ・フォルダの場所があっても）', () => {
     expect(mimeOf('assets/hero.jpg')).toBe('image/jpeg');

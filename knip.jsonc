@@ -19,6 +19,7 @@
     "content/**/*.ts",
     "scripts/**/*.ts",
     "site/*.ts",
+    "site/lib/*.ts",
     "worker/src/**/*.ts",
     "tests/**/*.ts",
     "*.ts"

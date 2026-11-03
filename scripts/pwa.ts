@@ -5,7 +5,9 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Theme } from '../content/types';
 import { isLang } from '../content/i18n';
-import { fill, SITE_TEXT } from '../site/i18n';
+import { SITE_TEXT } from '../site/i18n';
+import { fill } from '../site/lib/text';
+import { mimeOf } from '../site/mime';
 import type { Asset } from '../site/offline-shared';
 import { fillTemplate } from './site/html';
 
@@ -47,14 +49,25 @@ export async function bundle(file: string): Promise<string> {
   return result.outputs[0].text();
 }
 
-/** mediaRoots: 訳の言語の動画のパス（言語 → /media/en/ など。site/config.json の media。sw.js の保存の検査が使う） */
-export async function buildPwa(site: string, dist: string, brand: Theme, courses: string[], shell: Asset[], mediaRoots: Record<string, string> = {}) {
+/**
+ * mediaRoots: 訳の言語の動画のパス（言語 → /media/en/ など。site/config.json の media。sw.js の保存の検査が使う）。
+ * disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts。SW は、当たる保存版のページをオンラインでは開かない）
+ */
+export async function buildPwa(
+  site: string,
+  dist: string,
+  brand: Theme,
+  courses: string[],
+  shell: Asset[],
+  mediaRoots: Record<string, string> = {},
+  disabledRevisions: readonly string[] = [],
+) {
   mkdirSync(path.join(dist, 'icons'), { recursive: true });
   for (const size of [180, 192, 512]) {
     const bytes = icon(size, brand);
     const url = `icons/icon-${size}.png`;
     writeFileSync(path.join(dist, url), bytes);
-    shell.push(asset(url, bytes, 'image/png'));
+    shell.push(asset(url, bytes, mimeOf(url)));
   }
   const manifest = JSON.stringify({
     id: './', name: 'Chalkfile', short_name: 'Chalkfile', lang: 'ja', start_url: './', scope: './', display: 'standalone',
@@ -63,7 +76,7 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
     icons: [192, 512].map((s) => ({ src: `icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any maskable' })),
   }, null, 2);
   writeFileSync(path.join(dist, 'manifest.webmanifest'), manifest);
-  shell.push(asset('manifest.webmanifest', Buffer.from(manifest), 'application/manifest+json'));
+  shell.push(asset('manifest.webmanifest', Buffer.from(manifest), mimeOf('manifest.webmanifest')));
   // 未保存のページは 1 つで全部の言語を並べる（{{ja.key}} を site/i18n.ts の文字にする。エスケープは fillTemplate）。
   // __ROOT__ は、SW が配るときにアプリの場所にする（sw.ts の fallback）
   const text = (k: string) => {
@@ -77,9 +90,10 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
   writeFileSync(path.join(dist, 'offline/index.html'), offline);
   shell.push(asset('offline/', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
+  // sw.js は縮める（ページに入らないので、縮めてもページの版は変わらない。offline-client はページに入るので、ここでは縮めない）
   const result = await Bun.build({
-    entrypoints: [path.join(site, 'sw.ts')], target: 'browser',
-    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots }) },
+    entrypoints: [path.join(site, 'sw.ts')], target: 'browser', minify: true,
+    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots, disabledRevisions }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));
   writeFileSync(path.join(dist, 'sw.js'), await result.outputs[0].text());

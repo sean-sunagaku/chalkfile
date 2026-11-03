@@ -46,6 +46,7 @@ const open = async (mode: SiteMode): Promise<SiteSession> => {
     course: site.course,
     legacyVideo: site.legacy.video,
     videoSeconds: site.videoSeconds,
+    shellPng: site.shellPng,
   };
 };
 
