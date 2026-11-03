@@ -15,6 +15,7 @@ import path from 'node:path';
 import type { ParseArgsConfig } from 'node:util';
 import { VIDEOS, type Video } from '../content';
 import { isLang, LANGS } from '../content/i18n';
+import { THEMES } from '../content/themes';
 import { EXIT, headerOf, readArgs, runMain, UsageError } from './lib/args';
 import { readSiteConfig } from './lib/config';
 import { ROOT } from './lib/paths';
@@ -319,7 +320,7 @@ export const COMMANDS: Command[] = [
   {
     name: 'stills',
     usage:
-      '[動画[:場面][@フレーム]…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]',
+      '[動画[:場面,…]・動画@フレーム…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]',
     summary: '確かめるための静止画（out/stills/）',
     old: ['npm run stills'],
     file: 'scripts/stills.ts',
@@ -334,8 +335,16 @@ export const COMMANDS: Command[] = [
     positionals: true,
     dry: 'plan',
     steps: ({ values, positionals }) => {
-      // 場面（:3,6）とフレーム（@120）を付けた名前は、そのまま渡す。ほかは --course・--video・--lang と一緒に選ぶ
+      // 場面（:3,6）とフレーム（@120）を付けた名前は、そのまま渡す（動画が台本にあるかは、ここで確かめる。場面とフレームの範囲は
+      // stills.ts が timeline で確かめる）。ほかは --course・--video・--lang と一緒に選ぶ
       const exact = positionals.filter((p) => /[:@]/.test(p));
+      for (const p of exact) {
+        const id = p.split(/[:@]/)[0];
+        if (!VIDEOS.some((v) => v.key === id)) throw new UsageError(`動画が無い: ${id}（例: L01:3・S03.en@120）`);
+      }
+      const theme = strings(values.theme)[0];
+      if (theme && !Object.hasOwn(THEMES, theme))
+        throw new UsageError(`テーマが無い: ${theme}（${Object.keys(THEMES).join('・')}）`);
       const rest = positionals.filter((p) => !/[:@]/.test(p));
       const picked =
         rest.length || !exact.length || strings(values.course).length || strings(values.video).length
@@ -357,7 +366,8 @@ export const COMMANDS: Command[] = [
   {
     name: 'export',
     usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>]',
-    summary: '章ごとの完成動画・字幕・音・教材を out/deliverables/ にまとめる',
+    summary:
+      '章ごとの完成動画・字幕・音・教材と声のクレジットを out/deliverables/ にまとめる（要るファイルが欠けていたら、何も書かずに止める）',
     old: ['bun scripts/export_deliverables.ts'],
     file: 'scripts/export_deliverables.ts',
     options: { ...TARGET, ...DRY },

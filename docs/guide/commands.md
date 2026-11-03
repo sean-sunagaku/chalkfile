@@ -30,8 +30,8 @@
 | `music build [--only <名前>…] [--skip-verify] [--check]` | BGM・ジングル・効果音（public/audio/）。--check は素材と同じ音ができるかだけを見る | `npm run build:music`・`npm run music:verify` |
 | `mix [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 音のミックス（public/audio/mix/）。先に voice synth | `npm run mix` |
 | `render [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>]` | 動画とポスター。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画） | `npm run render`・`CAPTIONS=1 bash scripts/render.sh` |
-| `stills [動画[:場面][@フレーム]…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]` | 確かめるための静止画（out/stills/） | `npm run stills` |
-| `export [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 章ごとの完成動画・字幕・音・教材を out/deliverables/ にまとめる | `bun scripts/export_deliverables.ts` |
+| `stills [動画[:場面,…]・動画@フレーム…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]` | 確かめるための静止画（out/stills/） | `npm run stills` |
+| `export [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 章ごとの完成動画・字幕・音・教材と声のクレジットを out/deliverables/ にまとめる（要るファイルが欠けていたら、何も書かずに止める） | `bun scripts/export_deliverables.ts` |
 | `docs build [--course <ID>] [--check]` | 読む教材（docs/courses/）を台本と timeline から作る。--check は書かずに、ずれだけを見る | `npm run build:materials`・`npm run check:materials` |
 | `materials pull [--course <ID>] [--videos]` | 素材（台詞の声は共有のキャッシュへ。BGM・効果音）を取り出す。--videos は Releases の動画も | `npm run materials:pull` |
 | `materials check [--course <ID>]` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか | `npm run materials:check` |
@@ -96,14 +96,14 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
 | `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
-| `npm run mix` | 音のミックス（`public/audio/mix/`） |
+| `npm run mix` | 音のミックス（`public/audio/mix/`）。中は `npm run chalk -- mix` と同じで、選ばなければ公開する言語の全部の動画（`-- L01 S01.en`・`-- --course <講座 ID>` で選ぶ）。始める前に、設計図の形と、要る声・BGM・効果音がそろっているかを見る |
 | `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
-| `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
+| `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`-- L04@120`・`--theme=<id>`・`--captions`。動画・場面・フレームの形と範囲は、バンドルを作る前に確かめる（timeline の無い動画は止める） |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
 | `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`）。時刻は Git に入れている timeline から読む。消した章の古いファイルも消す |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
-| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
+| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表・Python の道具が読む JSON（効果音の一覧 `scripts/audio/sfx.json` は `content/sfx.ts` から、動画の値 `scripts/audio/video_config.json` は `src/video.config.ts` から。どちらも Git に入れる）。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 
 ### 見る
 
@@ -139,7 +139,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `uv run --locked --script scripts/check_speech.py <key…>` | 訳の声を Whisper で聞き取り直す |
 | `bun scripts/check_overlap.ts <講座 ID>` | 台本と出典の公式ページで、言い回しが続けて同じところを探す（ネットにつなぐ。`--query=locale=ja-JP`・`--lang=en`） |
 | `bun scripts/snapshots.ts`（`--update`） | 音声の鍵と読みのスナップショットと比べる（作り直す） |
-| `bun scripts/export_deliverables.ts <ID…>` | 章ごとの完成動画・字幕・音・教材を `out/deliverables/` にまとめる |
+| `bun scripts/export_deliverables.ts <ID…>` | 章ごとの完成動画・字幕・音・教材と、その動画で使った全部の声のクレジット（README）を `out/deliverables/` にまとめる。要るファイルが欠けていたら、何も書かずに、欠けたものと作り方を出して止める（終了コード 3） |
 | `bun scripts/check_delivery.ts site/dist` | 公開物の点検（秘密情報・MP4・大きさ） |
 | `bun scripts/smoke_worker.ts [URL]` | 手元の Worker の smoke（[公開の順番](../operations/publish.md) の「手元の Worker で確かめる」） |
 | `bun scripts/verify_public.ts` | 公開したサイトのトップと、全部の動画の Range |

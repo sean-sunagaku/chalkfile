@@ -17,20 +17,20 @@ curl -s http://127.0.0.1:50021/version
 
 | コマンド | 入力 | 出力 |
 |---|---|---|
-| `npm run gen:video-config` | `src/video.config.ts` | `scripts/audio/video_config.json`（mix.py・build_music.py が読む動画の値。コミットする） |
-| `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/music/`（合成のコード）、`scripts/audio/video_config.json` | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
+| `npm run gen:video-config`（`npm run gen` も作る） | `src/video.config.ts` | `scripts/audio/video_config.json`（mix.py・build_music.py が読む動画の値。コミットする） |
+| `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/music/`（合成のコード）、`scripts/audio/video_config.json`、効果音の一覧 `scripts/audio/sfx.json`（合成する効果音と名前が合うか） | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
 | `uv run --locked --group audio python scripts/build_music.py --check`（`npm run music:verify`） | 合成のコード、手元の `origin/materials` の `SHA256SUMS` | 作り直した WAV が素材と同じバイト列か（`public/audio/` には書かない） |
 | `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |
-| `uv run --locked --group audio python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav` |
+| `uv run --locked --group audio python scripts/mix.py <ID…>`（`npm run mix` は選んだ動画か、公開する言語の全部を渡す） | `.work/plan/`、声、BGM、効果音の一覧 `scripts/audio/sfx.json`、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav`。始める前に、設計図の形（`scripts/audio/handoff.py`）と、要る声・BGM・効果音がそろっているかを見る |
 | `bash scripts/render.sh [ID…]`（`npm run render`） | `src/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター `content/<講座>/generated/posters/<id>.jpg`。`CAPTIONS=1` で `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用） |
 | `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`site/config.json`（`--strict` は Releases も照らす） | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bun scripts/media.ts push --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
 | `bun scripts/media.ts pull [講座 ID…]` | 動画の一覧、Releases | `site/media/`（SHA-256 を確かめる。手元の違う動画は上書きしない） |
-| `bun scripts/gen.ts`（`npm run gen`） | 講座の登録と、講座のフォルダの動画の一覧・timeline | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表 |
+| `bun scripts/gen.ts`（`npm run gen`） | 講座の登録と、講座のフォルダの動画の一覧・timeline、`content/sfx.ts`、`src/video.config.ts` | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表、Python の道具が読む `scripts/audio/sfx.json` と `video_config.json`（コミットする） |
 | `bash scripts/legacy/deploy_pages.sh`（持ち主だけ。旧 Pages の移行の案内のときだけ） | `site/migration-dist/`（`scripts/build_migration.ts` が作る） | 旧 Pages の `gh-pages` ブランチ（新しいサイトへの案内だけ） |
 | `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は Releases の動画も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
 | `bun scripts/materials.ts push [--dry-run]` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（リモートの素材に足すだけ。前の版を親にしたコミット） |
@@ -48,7 +48,7 @@ VOICEVOX と Kokoro の出力（台詞の声）と BGM・効果音は、作り�
 
 ## 確かめ方
 
-- 台本: `npm run validate`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
+- 台本: `npm run validate`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）と、講座のページに出ない声のクレジット（注意）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
 - 読み: `.work/kana/<id>.txt`
 - 見た目: `npm run stills -- L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
 - 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `content/stripe-billing/generated/timeline/L04.json` の `durationInFrames / 30` と合う
