@@ -89,6 +89,18 @@ wwwも同じWorkerのCustom Domainで管理する。HTMLはassetsで返し、そ
 | `status` | 上流が 200・206・416・404・redirect 以外を返した（403・429・5xx など） | 502 |
 | `network` | 上流につながらなかった（DNS・切断・時間切れ）。`host` はつなごうとした先 | 502 |
 
+## 手元の smoke
+
+`wrangler dev` は手元の workerd で動き、Cloudflare の認証は要らない（空の HOME・token なしで起動して確かめた）。既定では routes の先頭（`chalkfile.com`）を `request.url` と Host にするので、www を Host ヘッダーで試すために `--infer-origin-from-routes=false` を付ける。
+
+```bash
+bun scripts/synth.ts --cached-only && bun scripts/build_site.ts --strict
+npx --no-install wrangler dev --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で
+bun scripts/smoke_worker.ts http://127.0.0.1:8787/
+```
+
+HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る。ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 を見る。CI にはまだ入れていない。
+
 ## 旧 GitHub Pages の切替
 
 `bash scripts/deploy_pages.sh` は移行案内だけを出す。最新main・cleanなcheckout・公開先の全動画Range・ブラウザのCSP/SW確認に通らないと止まる。見ていた旧gh-pages SHAを指定したforce-with-leaseを使い、ローカルの `refs/chalkfile-backups/gh-pages-<main SHA>` に復旧参照を残す。通常のサイトとMP4をgh-pagesへ公開し直す用途には使わない。
