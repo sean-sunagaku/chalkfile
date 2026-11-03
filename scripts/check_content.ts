@@ -164,7 +164,10 @@ const globalOf = new Map<RegExp, RegExp>();
 /** rx が text の中で見つかる所のうち、許可で外れない最初の所 */
 const firstHit = (rx: RegExp, text: string, rule: Rule, allow: AllowEntry[]) => {
   let g = globalOf.get(rx);
-  if (!g) globalOf.set(rx, (g = new RegExp(rx.source, `${rx.flags.replace('g', '')}g`)));
+  if (!g) {
+    g = new RegExp(rx.source, `${rx.flags.replace('g', '')}g`);
+    globalOf.set(rx, g);
+  }
   for (const m of text.matchAll(g)) if (!allowedAt(text, rule, m.index, m.index + m[0].length, allow)) return m;
   return undefined;
 };
