@@ -3,12 +3,13 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { QuizScene } from '../../content/types';
 import { Glass, Pill, Smart } from '../components/ui';
-import { C, CONTENT_TOP, DISPLAY, MONO, PAD, SANS, TONES } from '../theme';
+import { CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
+  const { C, DISPLAY, MONO, SANS, TONES } = usePalette();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { lines, lecture, course } = useScene();

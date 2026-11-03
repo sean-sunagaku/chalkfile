@@ -3,7 +3,7 @@ import React from 'react';
 import type { PointsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { C, MONO, SANS, tone } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -14,6 +14,7 @@ const PointCard: React.FC<{
   active: boolean;
   tall: boolean;
 }> = ({ item, index, numbered, active, tall }) => {
+  const { C, MONO, SANS, tone } = usePalette();
   const p = useAppear(item.at);
   const tt = tone(item.tone);
   return (

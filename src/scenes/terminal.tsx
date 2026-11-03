@@ -1,21 +1,22 @@
 // 場面「terminal」: 端末（コマンドと出力、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { TerminalOut, TerminalScene } from '../../content/types';
+import type { TerminalOut, TerminalScene, Theme } from '../../content/types';
 import { terminalText } from '../../engine/core/scenes';
 import { Glass, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, mix, MONO, PAD, SANS, SYNTAX } from '../theme';
+import { CONTENT_BOTTOM, CONTENT_TOP, mix, PAD, usePalette } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 /** 出力の行の色（書かなければ薄い色。ok は成功、info は目を向けてほしい行） */
-const outColor = (o: TerminalOut) => {
+const outColor = (o: TerminalOut, SYNTAX: Theme['syntax']) => {
   const t = typeof o === 'string' ? undefined : o.tone;
   return t === 'ok' ? SYNTAX.string : t === 'info' ? SYNTAX.fn : SYNTAX.comment;
 };
 
 const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
+  const { C, MONO, SYNTAX } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const box = useAppear(0);
@@ -113,7 +114,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
                     key={k}
                     style={{
                       whiteSpace: 'pre',
-                      color: outColor(o),
+                      color: outColor(o, SYNTAX),
                       opacity: outO,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -142,6 +143,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
 };
 
 const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> = ({ at, text, y, left }) => {
+  const { C, SANS } = usePalette();
   const p = useAppear(at, 10);
   const on = useActiveLine() === at;
   return (

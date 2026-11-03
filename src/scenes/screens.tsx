@@ -2,7 +2,7 @@
 import React from 'react';
 import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../content/types';
 import { Icon, Pill, Rich } from '../components/ui';
-import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, PAD, SANS, tone } from '../theme';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, useAppear, useText } from '../timing';
 import { defineScene } from './define';
 
@@ -194,32 +194,36 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
   }
 };
 
-const NoteDot: React.FC<{ n: number; t: Tone; p: number; size?: number }> = ({ n, t, p, size = 38 }) => (
-  <div
-    style={{
-      width: size,
-      height: size,
-      borderRadius: 99,
-      background: tone(t).main,
-      color: C.onTone,
-      fontFamily: SANS,
-      fontWeight: 900,
-      fontSize: size * 0.52,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      opacity: p,
-      transform: `scale(${0.6 + 0.4 * p})`,
-      boxShadow: `0 0 0 4px ${alpha(tone(t).main, 0.22)}`,
-    }}
-  >
-    {n}
-  </div>
-);
+const NoteDot: React.FC<{ n: number; t: Tone; p: number; size?: number }> = ({ n, t, p, size = 38 }) => {
+  const { C, SANS, tone } = usePalette();
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 99,
+        background: tone(t).main,
+        color: C.onTone,
+        fontFamily: SANS,
+        fontWeight: 900,
+        fontSize: size * 0.52,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        opacity: p,
+        transform: `scale(${0.6 + 0.4 * p})`,
+        boxShadow: `0 0 0 4px ${alpha(tone(t).main, 0.22)}`,
+      }}
+    >
+      {n}
+    </div>
+  );
+};
 
 /** 画面 1 枚（窓の枠・部品・部品の右の番号） */
 const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; h: number; zoom?: number }> = ({ sc, device, w, h, zoom = 1 }) => {
+  const { C, SANS } = usePalette();
   const phone = device === 'phone';
   return (
     <div
@@ -268,6 +272,7 @@ const BlockWithNote: React.FC<{ b: MockBlock; notes: NonNullable<MockScreen['not
 );
 
 const NoteOnBlock: React.FC<{ n: NonNullable<MockScreen['notes']>[number]; t: Tone; k: number }> = ({ n, t, k }) => {
+  const { tone } = usePalette();
   const p = useAppear(n.at);
   return (
     <>
@@ -289,6 +294,7 @@ const NoteList: React.FC<{ sc: MockScreen; size: number }> = ({ sc, size }) => (
 );
 
 const NoteRow: React.FC<{ n: NonNullable<MockScreen['notes']>[number]; t: Tone; size: number }> = ({ n, t, size }) => {
+  const { C, SANS } = usePalette();
   const p = useAppear(n.at);
   return (
     <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', opacity: p, transform: `translateY(${dropY(p, 12)}px)` }}>

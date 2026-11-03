@@ -2,7 +2,7 @@
 import React from 'react';
 import type { TableScene } from '../../content/types';
 import { Glass, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES, tone } from '../theme';
+import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -14,6 +14,7 @@ const Row: React.FC<{
   on: boolean;
   h: number;
 }> = ({ r, widths, mono, fontSize, on, h }) => {
+  const { C, MONO, SANS, tone } = usePalette();
   const p = useAppear(r.at);
   const tt = tone(r.tone ?? 'slate');
   return (
@@ -66,6 +67,7 @@ const Row: React.FC<{
 };
 
 const Table: React.FC<{ s: TableScene }> = ({ s }) => {
+  const { SANS, TONES } = usePalette();
   const active = useActiveLine();
   const fontSize = s.fontSize ?? 30;
   const widths = s.widths ?? s.columns.map(() => 1 / s.columns.length);

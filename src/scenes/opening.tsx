@@ -5,7 +5,7 @@ import type { OpeningScene } from '../../content/types';
 import { CourseMark, unitOf } from '../components/chrome';
 import { fitSize } from '../components/fit';
 import { Pill, Smart } from '../components/ui';
-import { alpha, C, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME } from '../theme';
+import { alpha, PAD, usePalette } from '../theme';
 import { dropY, useScene } from '../timing';
 import { frames, STING } from '../video.config';
 import { defineScene } from './define';
@@ -14,6 +14,7 @@ import { defineScene } from './define';
 const HIT_FRAME = frames(STING.introHitSec);
 
 const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
+  const { C, DISPLAY, GRAD, MESH, MONO, SANS, THEME } = usePalette();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { lecture, course } = useScene();

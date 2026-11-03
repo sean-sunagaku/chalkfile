@@ -7,11 +7,12 @@ import { fitSize } from '../components/fit';
 import { Glass, Icon } from '../components/ui';
 import credits from '../generated/credits.json';
 import lectureCredits from '../generated/lecture-credits.json';
-import { C, DISPLAY, GRAD, MONO, SANS, TONES } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useAppear, useScene, useText } from '../timing';
 import { defineScene } from './define';
 
 const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
+  const { C, DISPLAY, GRAD, MONO, SANS, TONES } = usePalette();
   const { lecture, course, lang } = useScene();
   const text = useText();
   const key = lang === 'ja' ? lecture.id : `${lecture.id}.${lang}`;

@@ -7,7 +7,7 @@ import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
 import { SCENES } from './scenes';
-import { alpha, applyTheme, H, ThemeProvider, usePalette, videoPalette } from './theme';
+import { alpha, H, ThemeProvider, usePalette, videoPalette } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
 import { CAPTION, frames, LEAD } from './video.config';
 
@@ -127,8 +127,6 @@ export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: strin
   // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
   const th = themeOf(theme || course.theme);
   const { SANS } = videoPalette(th, lang);
-  // まだ usePalette に移していない場面のために、移すあいだだけ変数も差し替える
-  applyTheme(th, true, lang);
   const scenes = lecture.scenes.map((s, i) => {
     const st = tl.scenes[i];
     return (

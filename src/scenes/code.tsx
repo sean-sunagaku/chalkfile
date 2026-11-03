@@ -1,9 +1,9 @@
 // 場面「code」: コード（光らせる行と、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { CodeScene } from '../../content/types';
+import type { CodeScene, Theme } from '../../content/types';
 import { Glass, Smart } from '../components/ui';
-import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, H, mix, MONO, PAD, SANS, SYNTAX, tone, W } from '../theme';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, mix, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
@@ -14,7 +14,7 @@ const RX =
 // JSON はキー（: が続く文字列）・値の文字列・true/false/null・数値を塗り分ける
 const RX_JSON = /("(?:[^"\\]|\\.)*"(?=\s*:))|("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm;
 
-const highlight = (line: string, lang: CodeScene['lang']): React.ReactNode[] => {
+const highlight = (line: string, lang: CodeScene['lang'], SYNTAX: Theme['syntax']): React.ReactNode[] => {
   const out: React.ReactNode[] = [];
   let last = 0;
   const json = lang === 'json';
@@ -52,6 +52,7 @@ const highlight = (line: string, lang: CodeScene['lang']): React.ReactNode[] => 
 };
 
 const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
+  const { C, MONO, SYNTAX, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const active = useActiveLine();
@@ -195,7 +196,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                   >
                     {i + 1}
                   </span>
-                  <span style={{ color: SYNTAX.plain }}>{highlight(ln, s.lang)}</span>
+                  <span style={{ color: SYNTAX.plain }}>{highlight(ln, s.lang, SYNTAX)}</span>
                 </div>
               );
             })}
@@ -224,6 +225,7 @@ const Note: React.FC<{
   out: number | null;
   h: number;
 }> = ({ m, y, center, left, out, h }) => {
+  const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   const p = useAppear(m.at, 2);
   const o =

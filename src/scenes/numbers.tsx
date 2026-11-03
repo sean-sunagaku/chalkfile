@@ -3,11 +3,12 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { NumbersScene } from '../../content/types';
 import { Glass } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, SANS, tone } from '../theme';
+import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, lineStart, useAppear, useScene } from '../timing';
 import { defineScene } from './define';
 
 const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = ({ it, last }) => {
+  const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const p = useAppear(it.at);
@@ -56,6 +57,7 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
 };
 
 const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
+  const { C, SANS } = usePalette();
   const f = useAppear(s.footnote?.at ?? 99);
   // 枠は最初の数字と一緒に出す（数字の前の台詞の間、空の枠を見せない）
   const box = useAppear(Math.min(...s.items.map((it) => it.at)));

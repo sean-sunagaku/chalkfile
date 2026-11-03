@@ -2,11 +2,12 @@
 import React from 'react';
 import type { CompareScene, CompareSide } from '../../content/types';
 import { Glass, Icon, IconBadge, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, GRAD, H, PAD, SANS, tone } from '../theme';
+import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
 import { defineScene } from './define';
 
 const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) => {
+  const { C, SANS, tone } = usePalette();
   const p = useAppear(side.at);
   const tt = tone(side.tone);
   return (
@@ -51,6 +52,7 @@ const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) =
 };
 
 const SideItem: React.FC<{ text: string; at: number; k: number; t: CompareSide['tone'] }> = ({ text, at, k, t }) => {
+  const { C, SANS, tone } = usePalette();
   const p = useAppear(at, k * 6);
   const tt = tone(t);
   return (
@@ -82,6 +84,7 @@ const SideItem: React.FC<{ text: string; at: number; k: number; t: CompareSide['
 };
 
 const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
+  const { C, GRAD, SANS, tone } = usePalette();
   const v = useAppear(s.verdict?.at ?? 99);
   const vt = tone(s.verdict?.tone ?? 'violet');
   return (

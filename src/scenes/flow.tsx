@@ -3,7 +3,7 @@ import React from 'react';
 import type { FlowScene, Tone } from '../../content/types';
 import { Edge, type Box } from '../components/edge';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { C, MONO, SANS, TONES } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
 import { defineScene } from './define';
 
@@ -17,6 +17,7 @@ const NodeCard: React.FC<{
   mono?: boolean;
   focus: number;
 }> = ({ label, sub, icon, t, box, at, mono, focus }) => {
+  const { C, MONO, SANS } = usePalette();
   const p = useAppear(at);
   // 箱の幅に収まるよう、見出しの文字を小さくする
   const avail = box.w - 44 - (icon ? 72 : 0);
@@ -115,6 +116,7 @@ const GroupBox: React.FC<{ label: string; x: number; y: number; w: number; h: nu
   tone: t,
   at,
 }) => {
+  const { SANS, TONES } = usePalette();
   const p = useAppear(at);
   const tt = TONES[t];
   return (

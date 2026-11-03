@@ -3,12 +3,13 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { SequenceScene } from '../../content/types';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { C, H, MONO, PAD, SANS, tone, W } from '../theme';
+import { H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
+  const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const active = useActiveLine();
@@ -132,6 +133,7 @@ const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number
   w,
   top,
 }) => {
+  const { C, MONO, SANS } = usePalette();
   const p = useAppear(0);
   return (
     <div

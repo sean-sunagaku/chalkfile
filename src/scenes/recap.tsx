@@ -3,11 +3,12 @@ import React from 'react';
 import type { RecapScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
-import { alpha, C, GRAD, MONO, SANS, THEME } from '../theme';
+import { alpha, usePalette } from '../theme';
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
 const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean }> = ({ text, at, i, active }) => {
+  const { C, GRAD, MONO, SANS, THEME } = usePalette();
   const p = useAppear(at);
   return (
     <div style={{ opacity: p, transform: `translateY(${dropY(p)}px)` }}>

@@ -3,7 +3,7 @@ import React from 'react';
 import type { GoalsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
-import { C, MONO, SANS, TONES } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -13,6 +13,7 @@ const GoalRow: React.FC<{ text: string; at: number; index: number; active: boole
   index,
   active,
 }) => {
+  const { C, MONO, SANS, TONES } = usePalette();
   const p = useAppear(at);
   const draw = useAppear(at, 6, 24);
   return (

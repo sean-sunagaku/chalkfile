@@ -3,7 +3,7 @@ import React from 'react';
 import type { StatesScene } from '../../content/types';
 import { Edge, type Box } from '../components/edge';
 import { Pill } from '../components/ui';
-import { C, MONO, SANS, TONES } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
 import { defineScene } from './define';
 
@@ -32,6 +32,7 @@ const States: React.FC<{ s: StatesScene }> = ({ s }) => {
 };
 
 const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: number }> = ({ n, box, focus }) => {
+  const { C, MONO, SANS, TONES } = usePalette();
   const p = useAppear(n.at);
   const tt = TONES[n.tone];
   const start = n.key === 'start';

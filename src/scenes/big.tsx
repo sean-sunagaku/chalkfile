@@ -5,11 +5,12 @@ import type { BigScene } from '../../content/types';
 import { Content } from '../components/content';
 import { textWidth } from '../components/fit';
 import { IconBadge, Rich, Smart } from '../components/ui';
-import { C, SANS, tone } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
 import { defineScene } from './define';
 
 const Big: React.FC<{ s: BigScene }> = ({ s }) => {
+  const { C, SANS, tone } = usePalette();
   const k = useAppear(0);
   const t = useAppear(s.textAt ?? 0, 2, 24);
   const sub = useAppear(s.subAt ?? s.textAt ?? 0, 8);

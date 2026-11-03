@@ -3,12 +3,13 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../content/types';
 import { Icon, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES } from '../theme';
+import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, lineStart, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
+  const { MONO, SANS } = usePalette();
   const done = sc.kind === 'done';
   return (
     <div
@@ -133,6 +134,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
 };
 
 const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
+  const { C, MONO, SANS, TONES } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const appear = useAppear(0);

@@ -3,11 +3,12 @@ import React from 'react';
 import type { ConceptsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Pill } from '../components/ui';
-import { C, SANS, tone } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
 const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean }> = ({ card, active }) => {
+  const { C, SANS, tone } = usePalette();
   const p = useAppear(card.at);
   const tt = tone(card.tone);
   return (
