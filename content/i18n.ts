@@ -3,7 +3,11 @@
 //   content/<講座>/<言語>/course.ts    講座の訳（CourseL10n）。講座名・セクション・配役の名前・出典の説明と、レクチャーの訳を並べる
 // 場面・カード・表の行などは、日本語の台本と同じ順番・同じ数で上書きする（色・アイコン・座標・URL は日本語の台本のものを使う）。
 // 台詞（lines）だけは丸ごと置き換える（お笑いは直訳せず、言語ごとに作り直すので、数も変わってよい）。
-import type { Course, Lecture, Line, Scene, Source, VoiceId } from './types';
+// 日本語の台本の at が台詞の id なら、訳の台詞に同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい（重ねたあとで番号に直す。content/lines.ts）
+import { AT_KEYS, resolveLecture } from './lines';
+import type { At, AuthoredCourse, AuthoredLecture, Course, Lecture, Line, Scene, Source, VoiceId } from './types';
+
+export { AT_KEYS };
 
 /** 講座の言語。ja が正本。zh は簡体字（zh-Hans） */
 export type Lang = 'ja' | 'en' | 'zh';
@@ -38,8 +42,11 @@ type Primitive = string | number | boolean | null | undefined;
 /** 上書き。オブジェクトは一部だけ書けばよく、配列は日本語の台本と同じ数で、順に重ねる */
 export type Override<T> = T extends Primitive ? T : T extends (infer U)[] ? Override<U>[] : { [K in keyof T]?: Override<T[K]> };
 
-/** 場面の上書き。kind は日本語の台本の場面と同じものを書く（取り違えを止める）。台詞は丸ごと書く */
-export type SceneL10n = { [K in Scene['kind']]: Omit<Override<Extract<Scene, { kind: K }>>, 'kind' | 'lines'> & { kind: K; lines: Line[] } }[Scene['kind']];
+/**
+ * 場面の上書き。kind は日本語の台本の場面と同じものを書く（取り違えを止める）。台詞は丸ごと書く。
+ * at は台詞の番号か、訳の台詞の id（台本と同じく At）
+ */
+export type SceneL10n = { [K in Scene['kind']]: Omit<Override<Extract<Scene<At>, { kind: K }>>, 'kind' | 'lines'> & { kind: K; lines: Line[] } }[Scene['kind']];
 
 export type LectureL10n = {
   /** 訳したときの、日本語の台本の指紋（bun scripts/i18n.ts stamp が書く）。台本が変わると bun scripts/i18n.ts status が知らせる */
@@ -86,8 +93,6 @@ export type CourseL10n = {
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 /** 丸ごと置き換える配列（数が変わってよい） */
 const REPLACE = new Set(['lines', 'takeaways']);
-/** 台詞の番号（何番目の台詞の頭で出すか）を書く項目。台本の検証（engine/core/validate.ts）も、この一覧で at の範囲を見る */
-export const AT_KEYS: readonly string[] = ['at', 'textAt', 'subAt', 'revealAt', 'showAt'];
 
 const merge = (base: unknown, over: unknown, where: string, key = ''): unknown => {
   if (over === undefined) return base;
@@ -104,7 +109,10 @@ const merge = (base: unknown, over: unknown, where: string, key = ''): unknown =
   return over;
 };
 
-/** 台詞の数が日本語と違う場面で、上書きに書いていない at（日本語の台詞の番号のまま）を探す */
+/**
+ * 台詞の数が日本語と違う場面で、上書きに書いていない at（日本語の台詞の番号のまま）を探す。
+ * 日本語の台本の at が台詞の id なら探さない（訳の台詞の同じ id に付く。無ければ台本の検証が誤りにする）
+ */
 const missingAt = (base: unknown, over: unknown, where: string, out: string[]) => {
   if (Array.isArray(base)) {
     base.forEach((b, i) => {
@@ -122,7 +130,7 @@ const missingAt = (base: unknown, over: unknown, where: string, out: string[]) =
 };
 
 /** 出す番号（at）が、その場面の台詞の数を超えていないか */
-const atOutOfRange = (scene: Scene, where: string, out: string[]) => {
+const atOutOfRange = (scene: Scene<At>, where: string, out: string[]) => {
   const walk = (v: unknown, path: string) => {
     if (Array.isArray(v)) {
       v.forEach((x, i) => {
@@ -140,7 +148,8 @@ const atOutOfRange = (scene: Scene, where: string, out: string[]) => {
   walk(scene, where);
 };
 
-export const localizeLecture = (base: Lecture, tr: LectureL10n, lang: TranslatedLang, course: Course): Lecture => {
+/** 動画 1 本の訳。日本語の台本（at の id を番号に直す前のもの）に訳を重ね、重ねたあとで at の id を番号に直す */
+export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, lang: TranslatedLang, course: Pick<Course, 'sections'>): Lecture => {
   const where = `${base.id}.${lang}`;
   if (tr.scenes.length !== base.scenes.length) throw new Error(`${where}: 場面の数が日本語の台本と合わない（台本 ${base.scenes.length}・訳 ${tr.scenes.length}）`);
   const problems: string[] = [];
@@ -149,14 +158,14 @@ export const localizeLecture = (base: Lecture, tr: LectureL10n, lang: Translated
     if (o.kind !== s.kind) throw new Error(`${where} 場面 ${i + 1}: 種類が日本語の台本と違う（台本 ${s.kind}・訳 ${o.kind}）`);
     if (!o.lines.length) throw new Error(`${where} 場面 ${i + 1}: 台詞が無い`);
     if (o.lines.length !== s.lines.length) missingAt(s, o, `場面 ${i + 1}`, problems);
-    const scene = merge(s, o, `${where} 場面 ${i + 1}`) as Scene;
+    const scene = merge(s, o, `${where} 場面 ${i + 1}`) as Scene<At>;
     atOutOfRange(scene, `場面 ${i + 1}`, problems);
     return scene;
   });
   if (problems.length) throw new Error(`${where}: 台詞の数が日本語と違う場面は、画面の要素の at（何番目の台詞で出すか）も書く\n  ${problems.join('\n  ')}`);
   if (base.caution && !tr.caution) throw new Error(`${where}: 日本語の台本に注意書き（caution）があるので、訳も書く`);
   const sectionTitle = tr.section?.title ?? course.sections.find((x) => x.no === base.section.no)?.title ?? base.section.title;
-  return {
+  return resolveLecture({
     ...base,
     title: tr.title,
     summary: tr.summary,
@@ -168,10 +177,11 @@ export const localizeLecture = (base: Lecture, tr: LectureL10n, lang: Translated
     scenes,
     // 読む教材は、まだ日本語だけ（訳の講座には出さない）
     material: undefined,
-  };
+  });
 };
 
-export const localizeCourse = (base: Course, tr: CourseL10n, lang: TranslatedLang): Course => {
+/** 講座の訳。日本語の講座（at の id を番号に直す前のもの）に訳を重ねる */
+export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: TranslatedLang): Course => {
   const where = `${base.id}.${lang}`;
   if (tr.sections.length !== base.sections.length) throw new Error(`${where}: セクションの数が合わない`);
   const sections = base.sections.map((s, i) => ({ no: s.no, title: tr.sections[i].title }));
@@ -217,7 +227,7 @@ const CJK_PUNCT = /[\u3000-\u303F\uFF01-\uFF65]/;
  * base（日本語の講座）を渡すと、zh は、同じ場所の日本語とまったく同じで漢字が 3 字以上の文（仮名の無い見出しや文が訳されずに残ったもの）も探す。
  * 1〜2 字の語（人・秒・命令）は中国語でも同じ字を使うので数えない
  */
-export const untranslated = (course: Course, lang: TranslatedLang, base?: Course): string[] => {
+export const untranslated = (course: Course, lang: TranslatedLang, base?: AuthoredCourse): string[] => {
   const out: string[] = [];
   const hanCount = (s: string) => s.match(new RegExp(HAN.source, 'g'))?.length ?? 0;
   const bad = (s: string, ja: unknown) => KANA.test(s) || (lang === 'en' && (HAN.test(s) || CJK_PUNCT.test(s))) || (lang === 'zh' && s === ja && hanCount(s) >= 3);

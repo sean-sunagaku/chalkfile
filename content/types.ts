@@ -1,7 +1,17 @@
 // 講座の台本と画面構成のデータ型。
 // 画面の要素は `at`（その場面の何番目の台詞の頭で出すか、0 始まり）でナレーションに同期させる。
+// at は台詞の番号のほかに、同じ場面の台詞の id（Line の id）でも書ける（At）。id で書いた台本の型は AuthoredLecture・AuthoredCourse。
+// 読み込むとき（content/index.ts）に id を番号に直すので、描く側・声を作る側が受け取るのは、at が番号の Lecture・Course だけ
 import type { IconName } from '../src/components/icons';
 import type { Lang } from './i18n';
+
+/**
+ * 画面の要素を出す台詞。その場面の何番目の台詞の頭で出すか（0 始まり）か、同じ場面の台詞の id（Line の id）。
+ * id で書くと、台詞を足したり並べ替えたりしても、要素は同じ台詞に付いたまま動く（番号を数え直さなくてよい）。
+ * 読み込むときに番号に直してから、台本の検証（engine/core/validate.ts）にかける。場面の型の A は at の型で、
+ * 台本に書く形（AuthoredScene など）は At、読み込んだあと（Scene など）は number
+ */
+export type At = number | string;
 
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
 
@@ -18,6 +28,11 @@ export type SfxId = 'pop' | 'whoosh' | 'chime' | 'tick' | 'reveal' | 'correct' |
 export type { IconName };
 
 export type Line = {
+  /**
+   * この台詞の名前（同じ場面の中で重ねない）。画面の要素の at に書くと、その台詞の頭で出す。
+   * 訳では、対応する台詞に同じ id を付ければ、訳の台詞の数が日本語と違っても at を書き直さなくてよい
+   */
+  id?: string;
   /** 画面の台本・字幕に出す文 */
   t: string;
   /** 読み上げ用の文。省略すると t を辞書で開いたもの */
@@ -58,19 +73,19 @@ export type OpeningScene = Base & {
   subtitle?: string;
 };
 
-export type GoalsScene = Base & {
+export type GoalsScene<A extends At = number> = Base & {
   kind: 'goals';
-  items: { text: string; at: number }[];
+  items: { text: string; at: A }[];
 };
 
-export type PointsScene = Base & {
+export type PointsScene<A extends At = number> = Base & {
   kind: 'points';
-  items: { title: string; body?: string; at: number; tone?: Tone; icon?: IconName }[];
+  items: { title: string; body?: string; at: A; tone?: Tone; icon?: IconName }[];
   columns?: 1 | 2 | 3 | 4;
   numbered?: boolean;
 };
 
-export type ConceptCard = {
+export type ConceptCard<A extends At = number> = {
   key: string;
   en: string;
   ja: string;
@@ -78,16 +93,16 @@ export type ConceptCard = {
   idPrefix?: string;
   tone: Tone;
   icon: IconName;
-  at: number;
+  at: A;
 };
 
-export type ConceptsScene = Base & {
+export type ConceptsScene<A extends At = number> = Base & {
   kind: 'concepts';
-  cards: ConceptCard[];
+  cards: ConceptCard<A>[];
   columns?: 2 | 3 | 4;
 };
 
-export type SequenceScene = Base & {
+export type SequenceScene<A extends At = number> = Base & {
   kind: 'sequence';
   actors: {
     key: string;
@@ -102,13 +117,13 @@ export type SequenceScene = Base & {
     from: string;
     to: string;
     label: string;
-    at: number;
+    at: A;
     dashed?: boolean;
     tone?: Tone;
   }[];
 };
 
-export type FlowNode = {
+export type FlowNode<A extends At = number> = {
   key: string;
   label: string;
   sub?: string;
@@ -119,19 +134,19 @@ export type FlowNode = {
   h?: number;
   tone: Tone;
   icon?: IconName;
-  at: number;
+  at: A;
   mono?: boolean;
 };
 
-export type FlowScene = Base & {
+export type FlowScene<A extends At = number> = Base & {
   kind: 'flow';
-  nodes: FlowNode[];
-  groups?: { label: string; x: number; y: number; w: number; h: number; tone: Tone; at: number }[];
+  nodes: FlowNode<A>[];
+  groups?: { label: string; x: number; y: number; w: number; h: number; tone: Tone; at: A }[];
   edges: {
     from: string;
     to: string;
     label?: string;
-    at: number;
+    at: A;
     tone?: Tone;
     dashed?: boolean;
     /** 曲げ（正で右回りに膨らむ） */
@@ -141,10 +156,10 @@ export type FlowScene = Base & {
     labelDx?: number;
     labelDy?: number;
   }[];
-  focus?: { keys: string[]; at: number }[];
+  focus?: { keys: string[]; at: A }[];
 };
 
-export type StatesScene = Base & {
+export type StatesScene<A extends At = number> = Base & {
   kind: 'states';
   nodes: {
     key: string;
@@ -153,7 +168,7 @@ export type StatesScene = Base & {
     x: number;
     y: number;
     tone: Tone;
-    at: number;
+    at: A;
     badge?: string;
     /**
      * 箱の見た目。start は始まりの見た目（点線の枠・ごく薄い面・太い本文の書体）、state（既定）は状態の見た目（等幅の書体）。
@@ -165,72 +180,72 @@ export type StatesScene = Base & {
     from: string;
     to: string;
     label: string;
-    at: number;
+    at: A;
     bend?: number;
     fromSide?: 'l' | 'r' | 't' | 'b';
     toSide?: 'l' | 'r' | 't' | 'b';
     labelDx?: number;
     labelDy?: number;
   }[];
-  focus?: { keys: string[]; at: number }[];
+  focus?: { keys: string[]; at: A }[];
 };
 
-export type CodeScene = Base & {
+export type CodeScene<A extends At = number> = Base & {
   kind: 'code';
   lang: 'python' | 'ts' | 'bash' | 'json' | 'text';
   file: string;
   code: string;
   /** 行は 1 始まり。at で光らせ、note を横に出す */
-  marks: { from: number; to: number; at: number; note?: string; tone?: Tone }[];
+  marks: { from: number; to: number; at: A; note?: string; tone?: Tone }[];
   /** コード全体を出す台詞 */
-  showAt?: number;
+  showAt?: A;
   fontSize?: number;
 };
 
-export type TableScene = Base & {
+export type TableScene<A extends At = number> = Base & {
   kind: 'table';
   columns: string[];
-  rows: { cells: string[]; at: number; tone?: Tone }[];
+  rows: { cells: string[]; at: A; tone?: Tone }[];
   widths?: number[];
   mono?: number[];
   fontSize?: number;
 };
 
-export type CompareSide = {
+export type CompareSide<A extends At = number> = {
   title: string;
   sub?: string;
   tone: Tone;
   icon?: IconName;
-  at: number;
-  items: { text: string; at: number }[];
+  at: A;
+  items: { text: string; at: A }[];
 };
 
-export type CompareScene = Base & {
+export type CompareScene<A extends At = number> = Base & {
   kind: 'compare';
-  left: CompareSide;
-  right: CompareSide;
-  verdict?: { text: string; at: number; tone?: Tone };
+  left: CompareSide<A>;
+  right: CompareSide<A>;
+  verdict?: { text: string; at: A; tone?: Tone };
 };
 
-export type BigScene = Base & {
+export type BigScene<A extends At = number> = Base & {
   kind: 'big';
   kicker?: string;
   /** **で囲んだ部分を強調色にする */
   text: string;
-  textAt?: number;
+  textAt?: A;
   sub?: string;
-  subAt?: number;
+  subAt?: A;
   tone?: Tone;
   icon?: IconName;
 };
 
-export type NumbersScene = Base & {
+export type NumbersScene<A extends At = number> = Base & {
   kind: 'numbers';
-  items: { label: string; value: number; prefix?: string; suffix?: string; decimals?: number; at: number; tone: Tone; note?: string; op?: '' | '−' | '＝' }[];
-  footnote?: { text: string; at: number };
+  items: { label: string; value: number; prefix?: string; suffix?: string; decimals?: number; at: A; tone: Tone; note?: string; op?: '' | '−' | '＝' }[];
+  footnote?: { text: string; at: A };
 };
 
-export type TimelineScene = Base & {
+export type TimelineScene<A extends At = number> = Base & {
   kind: 'timeline';
   items: {
     key: string;
@@ -239,33 +254,33 @@ export type TimelineScene = Base & {
     title: string;
     sub: string;
     detail?: string;
-    at: number;
+    at: A;
     tone: Tone;
   }[];
-  focus?: { key: string | null; at: number }[];
+  focus?: { key: string | null; at: A }[];
 };
 
-export type QuizScene = Base & {
+export type QuizScene<A extends At = number> = Base & {
   kind: 'quiz';
   no: number;
   question: string;
   answer: boolean;
   explain: string;
-  revealAt: number;
+  revealAt: A;
 };
 
-export type RecapScene = Base & {
+export type RecapScene<A extends At = number> = Base & {
   kind: 'recap';
-  items: { text: string; at: number }[];
+  items: { text: string; at: A }[];
 };
 
-export type RefsScene = Base & {
+export type RefsScene<A extends At = number> = Base & {
   kind: 'refs';
-  refs: { title: string; url: string; note: string; at: number }[];
+  refs: { title: string; url: string; note: string; at: A }[];
 };
 
-export type PhoneScreen = {
-  at: number;
+export type PhoneScreen<A extends At = number> = {
+  at: A;
   title: string;
   /** app はアプリの画面、done は終わりの画面（緑の地にチェック） */
   kind: 'app' | 'done';
@@ -282,16 +297,17 @@ export type PhoneScreen = {
   caption: string;
 };
 
-export type PhoneScene = Base & {
+export type PhoneScene<A extends At = number> = Base & {
   kind: 'phone';
-  screens: PhoneScreen[];
+  screens: PhoneScreen<A>[];
 };
 
 /**
  * 架空のアプリの画面の部品（改善前・改善後の比べに使う）。色は画面のモックの色で、講座のテーマとは別。
- * weak: わざと読みにくい（薄い文字・薄い線）。改善前の悪い例を描くとき
+ * weak: わざと読みにくい（薄い文字・薄い線）。改善前の悪い例を描くとき。
+ * id: 部品の名前（同じ画面の中で重ねない）。注（MockNote）の blockId で、番号を数えずに指せる
  */
-export type MockBlock =
+export type MockBlock = { id?: string } & (
   | { type: 'title'; text: string; weak?: boolean }
   | { type: 'text'; text: string; weak?: boolean; small?: boolean }
   | { type: 'field'; label?: string; placeholder?: string; value?: string; error?: string; hint?: string; required?: boolean; weak?: boolean }
@@ -304,28 +320,41 @@ export type MockBlock =
   | { type: 'list'; items: string[]; weak?: boolean }
   | { type: 'badge'; text: string }
   | { type: 'divider' }
-  | { type: 'spacer'; h: number };
+  | { type: 'spacer'; h: number }
+);
 
-export type MockScreen = {
+/** 部品の右に出す番号つきの注。指す部品は、block か blockId のどちらかで書く（両方が無い・食い違うと、台本の検証が誤りにする） */
+export type MockNote<A extends At = number> = {
+  n: number;
+  text: string;
+  /** 注を付ける部品の番号（blocks の番号。0 始まり） */
+  block?: number;
+  /** 注を付ける部品の id（MockBlock の id）。読み込むときに block に直す */
+  blockId?: string;
+  at: A;
+  tone?: Tone;
+};
+
+export type MockScreen<A extends At = number> = {
   /** 画面の上の札（例: 改善前） */
   label: string;
   tone: Tone;
   /** 窓の題（ブラウザのタブ・アプリの見出し） */
   title?: string;
   blocks: MockBlock[];
-  /** 部品の右に出す番号つきの注。block は blocks の番号（0 始まり） */
-  notes?: { n: number; text: string; block: number; at: number; tone?: Tone }[];
-  at: number;
+  /** 部品の右に出す番号つきの注（MockNote） */
+  notes?: MockNote<A>[];
+  at: A;
 };
 
 /** 同じ画面の改善前と改善後を並べる（right を省くと 1 枚と注の一覧） */
-export type ScreensScene = Base & {
+export type ScreensScene<A extends At = number> = Base & {
   kind: 'screens';
   device?: 'browser' | 'phone';
   /** 画面の中身の拡大率（部品が少ない画面は大きくして読みやすくする）。既定はスマホ 1.3・ブラウザ 1.1 */
   zoom?: number;
-  left: MockScreen;
-  right?: MockScreen;
+  left: MockScreen<A>;
+  right?: MockScreen<A>;
 };
 
 /** 端末の出力の色。書かなければ薄い色（コードのコメントの色）。ok: 成功した行（文字列の色）、info: 目を向けてほしい行（関数の色） */
@@ -333,10 +362,10 @@ export type TerminalTone = 'ok' | 'info';
 /** 端末の出力の 1 行。文字だけなら薄い色で出す。色を付けるときは { text, tone } と書く */
 export type TerminalOut = string | { text: string; tone?: TerminalTone };
 
-export type TerminalScene = Base & {
+export type TerminalScene<A extends At = number> = Base & {
   kind: 'terminal';
   title: string;
-  entries: { cmd?: string; out?: TerminalOut[]; at: number; note?: string }[];
+  entries: { cmd?: string; out?: TerminalOut[]; at: A; note?: string }[];
 };
 
 export type EndingScene = Base & {
@@ -346,27 +375,31 @@ export type EndingScene = Base & {
   closing?: string;
 };
 
-export type Scene =
+/** 場面。A は at の型（読み込んだあとは number。台本に書く形は AuthoredScene） */
+export type Scene<A extends At = number> =
   | OpeningScene
-  | GoalsScene
-  | PointsScene
-  | ConceptsScene
-  | SequenceScene
-  | FlowScene
-  | StatesScene
-  | CodeScene
-  | TableScene
-  | CompareScene
-  | BigScene
-  | NumbersScene
-  | TimelineScene
-  | QuizScene
-  | RecapScene
-  | RefsScene
-  | PhoneScene
-  | ScreensScene
-  | TerminalScene
+  | GoalsScene<A>
+  | PointsScene<A>
+  | ConceptsScene<A>
+  | SequenceScene<A>
+  | FlowScene<A>
+  | StatesScene<A>
+  | CodeScene<A>
+  | TableScene<A>
+  | CompareScene<A>
+  | BigScene<A>
+  | NumbersScene<A>
+  | TimelineScene<A>
+  | QuizScene<A>
+  | RecapScene<A>
+  | RefsScene<A>
+  | PhoneScene<A>
+  | ScreensScene<A>
+  | TerminalScene<A>
   | EndingScene;
+
+/** 台本に書く形の場面（at に台詞の id、注に blockId も書ける）。読み込むと Scene になる */
+export type AuthoredScene = Scene<At>;
 
 export type QuizItem = { q: string; choices: string[]; answer: number; explain: string };
 
@@ -509,7 +542,8 @@ export type Syllabus = {
   chapters: PlannedChapter[];
 };
 
-export type Lecture = {
+/** 動画 1 本。A は at の型（読み込んだあとは number。台本に書く形は AuthoredLecture） */
+export type Lecture<A extends At = number> = {
   id: string; // 例: 'L01'。講座の頭文字（Course の prefix）と 2 桁の番号。講座をまたいで重ならない
   no: number;
   section: { no: number; title: string };
@@ -523,13 +557,16 @@ export type Lecture = {
   takeaways: string[];
   /** 動画の右下に出し続け、サイトにも出す注意書き（法律・税・規約など、判断を専門家や公式に委ねる話のとき） */
   caution?: string;
-  scenes: Scene[];
+  scenes: Scene<A>[];
   /** 読む教材・実践課題・AI チャットの質問例（講座サイトのタブと docs/ の Markdown に出る） */
   material?: ChapterMaterial;
 };
 
-/** 講座 1 つ分（講座サイト 1 枚と、動画の右上の講座名） */
-export type Course = {
+/** 台本に書く形の動画（at に台詞の id も書ける）。id で at を書く台本は、この型にする。読み込むと Lecture になる */
+export type AuthoredLecture = Lecture<At>;
+
+/** 講座 1 つ分（講座サイト 1 枚と、動画の右上の講座名）。A は at の型（台本に書く形は AuthoredCourse） */
+export type Course<A extends At = number> = {
   id: string; // 例: 'stripe-billing'。サイトの URL（/<id>/）になる
   /**
    * レクチャー ID の頭文字（英大文字 1 字。例: 'G'）。ID は頭文字と 2 桁の番号（G01）。講座をまたいで重ねない
@@ -546,7 +583,7 @@ export type Course = {
   /** サイト冒頭の一文 */
   headline: string;
   sections: { no: number; title: string }[];
-  lectures: Lecture[];
+  lectures: Lecture<A>[];
   /** 「公式ドキュメント」タブの前置き */
   docsNote: string;
   /** フッターのクレジットの後ろに足す、台本のもと */
@@ -577,6 +614,9 @@ export type Course = {
     searchHint?: string;
   };
 };
+
+/** 台本に書く形の講座（動画の at に台詞の id も書ける）。id で at を書く動画を入れる講座は、この型にする。読み込むと Course になる */
+export type AuthoredCourse = Course<At>;
 
 /** 本文の書体。並べた順に使う（英字用の書体を先に置くと、英字だけその書体になる）。noto-sc は中国語（簡体字）の講座で日本語の書体の代わりに使う */
 export type FontKey = 'zen-maru' | 'noto' | 'inter' | 'noto-sc';

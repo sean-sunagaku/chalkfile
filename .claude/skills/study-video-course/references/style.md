@@ -25,6 +25,11 @@
 ### 台詞に合わせて出す
 
 - 要素の `at` は「その場面の何番目の台詞の頭で出すか」（0 始まり）。1 つの台詞で出す要素は 1 つにする
+- `at` は、同じ場面の台詞の `id` でも書ける。台詞に `id: 'price'` を付け、要素に `at: 'price'` と書く。id で書くと、台詞を足したり並べ替えたりしても、要素は同じ台詞に付いたまま動く（番号を数え直さなくてよい）。`textAt`・`subAt`・`revealAt`・`showAt`・`focus` の `at` も同じ
+  - id で at を書く動画は、型を `AuthoredLecture`、その講座を `AuthoredCourse` にする（`content/types.ts`）。見本は `tests/fixtures/content/line-ids/`
+  - 画面の図（`screens`）の注は、部品の番号（`block`）の代わりに、部品の `id` を `blockId` で指せる
+  - 読み込むとき（`content/index.ts`）に番号に直す。場面に無い id・重なった id は、`npm run validate` が止める（Studio はその動画だけを止める）
+  - 番号で書いた今までの台本は、そのまま動く
 - 出す順 = 読む順 = 上から下・左から右
 - 要素が出る台詞には効果音 `pop`、一番言いたい台詞に `chime`、答え合わせに `reveal`、正解に `correct`。毎回は鳴らさない
 

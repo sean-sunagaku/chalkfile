@@ -29,6 +29,7 @@ export const RULES = {
   scenes: '場面の並び',
   kind: '場面の種類',
   lines: '台詞',
+  'line-id': '台詞の id',
   at: '台詞の番号（at）',
   key: 'key の抜けと重なり',
   ref: '矢印・focus の行き先',
@@ -171,6 +172,20 @@ const checkEmphasis = (text: string, rich: boolean, where: string, out: Issue[])
   else if (n % 2) push(out, 'warning', 'emphasis', where, `強調の ** が閉じていない（${n} 個）`);
 };
 
+/** 場面の台詞の id の一覧。空の id と、同じ場面の中の重なりは誤り（at がどの台詞を指すか決まらない） */
+const lineIds = (lines: Line[], sw: string, out: Issue[]): Set<string> => {
+  const seen = new Set<string>();
+  lines.forEach((ln, k) => {
+    const id: unknown = ln?.id;
+    if (id === undefined) return;
+    const w = `${sw} lines[${k}].id`;
+    if (typeof id !== 'string' || !id.trim()) push(out, 'error', 'line-id', w, `台詞の id は空でない文字で書く（書いたのは ${JSON.stringify(id)}）`);
+    else if (seen.has(id)) push(out, 'error', 'line-id', w, `台詞の id「${id}」が、同じ場面の中で重なっている（at がどの台詞を指すか決まらない）`);
+    else seen.add(id);
+  });
+  return seen;
+};
+
 const checkLine = (line: Line, k: number, sw: string, course: Course, out: Issue[]) => {
   const w = `${sw} lines[${k}]`;
   if (typeof line?.t !== 'string' || !line.t.trim()) push(out, 'error', 'lines', `${w}.t`, '台詞が空（字幕も声も作れない）');
@@ -300,9 +315,25 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
         if (!sc) continue;
         const blocks = list(sc.blocks).length;
         if (!blocks) push(out, 'error', 'empty', w(`${side}.blocks`), '画面の部品（blocks）が無い');
+        const blockIds = new Map<string, number>();
+        list(sc.blocks).forEach((b, i) => {
+          const id: unknown = b?.id;
+          if (id === undefined) return;
+          if (typeof id !== 'string' || !id.trim()) push(out, 'error', 'mock-notes', w(`${side}.blocks[${i}].id`), `部品の id は空でない文字で書く（書いたのは ${JSON.stringify(id)}）`);
+          else if (blockIds.has(id)) push(out, 'error', 'mock-notes', w(`${side}.blocks[${i}].id`), `部品の id「${id}」が、同じ画面の中で重なっている（注の blockId がどの部品を指すか決まらない）`);
+          else blockIds.set(id, i);
+        });
         const seen = new Set<number>();
         list(sc.notes).forEach((nt, i) => {
-          if (!isInt(nt?.block) || nt.block < 0 || nt.block >= blocks) {
+          // blockId（部品の id）は、読み込むとき（content/lines.ts）に block（番号）に直る
+          const found = nt?.blockId === undefined ? undefined : blockIds.get(nt.blockId);
+          if (nt?.blockId !== undefined && found === undefined) {
+            push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].blockId`), `注の blockId「${String(nt.blockId)}」が、この画面の部品に無い（id のある部品は ${[...blockIds.keys()].join('・') || 'なし'}。注の枠と番号が出ない）`);
+          } else if (found !== undefined && nt.block !== found) {
+            push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].blockId`), `注の block（${String(nt.block)}）と blockId「${nt.blockId}」（${found} 番目の部品）が、違う部品を指している（どちらか 1 つにする）`);
+          } else if (nt?.block === undefined) {
+            push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].block`), '注を付ける部品が無い（block か blockId を書く。注の枠と番号が出ない）');
+          } else if (!isInt(nt.block) || nt.block < 0 || nt.block >= blocks) {
             push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].block`), `注の block（${String(nt?.block)}）が部品の範囲（0〜${blocks - 1}）の外（注の枠と番号が出ない）`);
           }
           if (seen.has(nt?.n)) push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].n`), `注の番号 ${nt.n} が、同じ画面の中で重なっている`);
@@ -340,6 +371,7 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
   const lines = list(s.lines);
   if (!lines.length) push(out, 'error', 'lines', `${sw} lines`, '台詞が無い（場面は台詞で進むので、1 つは書く）');
   lines.forEach((ln, k) => { checkLine(ln, k, sw, course, out); });
+  const ids = lineIds(lines, sw, out);
   if (s.hold !== undefined && !(typeof s.hold === 'number' && s.hold >= 0)) push(out, 'error', 'hold', `${sw} hold`, `hold は 0 以上の秒（書いたのは ${String(s.hold)}）`);
   if (s.evidence !== undefined && !has(EVIDENCE_SET, s.evidence)) push(out, 'error', 'evidence', `${sw} evidence`, `根拠の種類「${String(s.evidence)}」が無い（あるのは ${names(EVIDENCE_SET)}）`);
   for (const [key, value] of Object.entries(s)) {
@@ -347,7 +379,9 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
     walk(value, key, key, (k, v, path) => {
       const at = `${sw} ${s.kind}.${path}`;
       if (AT_KEYS.includes(k) && v !== undefined) {
-        if (typeof v !== 'number' || !Number.isInteger(v)) push(out, 'error', 'at', at, `台詞の番号が整数でない: ${String(v)}`);
+        // 台詞の id で書いた at は、読み込むとき（content/lines.ts）に番号に直る。文字のまま残ったものは、場面に無い id
+        if (typeof v === 'string') push(out, 'error', 'at', at, `台詞の id「${v}」が、この場面の台詞に無い（あるのは ${[...ids].join('・') || 'なし。台詞に id を付ける'}）`);
+        else if (typeof v !== 'number' || !Number.isInteger(v)) push(out, 'error', 'at', at, `台詞の番号が整数でない: ${String(v)}`);
         else if (v < 0 || v > lines.length) push(out, 'error', 'at', at, `台詞の番号 ${v} が範囲の外（この場面の台詞は ${lines.length} 個。0〜${lines.length} で書く）`);
       }
       // 画面の図の部品（blocks）の tone は注意の帯の種類（error・info・warn・success）、端末の出力（out）の tone は ok・info で、図の色ではない

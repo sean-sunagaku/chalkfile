@@ -7,7 +7,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { COURSES, coursesIn, TRANSLATIONS } from '../content';
+import { AUTHORED_COURSES, COURSES, coursesIn, TRANSLATIONS } from '../content';
 import { localizeLecture, TRANSLATED_LANGS, untranslated, type LectureL10n, type TranslatedLang } from '../content/i18n';
 import type { Course, Lecture } from '../content/types';
 import { checkText } from './check_content';
@@ -70,14 +70,15 @@ if (import.meta.main) {
   } else if (cmd === 'try') {
     // 講座の訳（course.ts）に並べる前の、レクチャーの訳を 1 本だけ確かめる（章ごとに並行して訳すとき）
     const [courseId, lang, id] = args as [string, TranslatedLang, string];
-    const course = COURSES.find((c) => c.id === courseId);
+    // 訳は、at の id を番号に直す前の日本語の台本に重ねる（content/index.ts の coursesIn と同じ）
+    const course = AUTHORED_COURSES.find((c) => c.id === courseId);
     const base = course?.lectures.find((l) => l.id === id);
     if (!course || !base || !TRANSLATED_LANGS.includes(lang)) throw new Error('使い方: bun scripts/i18n.ts try <講座 ID> <en|zh> <レクチャー ID>');
     const mod = (await import(path.join(ROOT, 'content', courseId, lang, `${id}.ts`))) as Record<string, LectureL10n>;
     const tr = mod[id];
     if (!tr) throw new Error(`content/${courseId}/${lang}/${id}.ts が ${id} を export していない`);
     // セクションの名前は講座の訳で決まるので、ここでは仮の名前にする
-    const shell: Course = { ...course, sections: course.sections.map((x) => ({ ...x, title: `section ${x.no}` })) };
+    const shell: Course = { ...course, sections: course.sections.map((x) => ({ ...x, title: `section ${x.no}` })), lectures: [] };
     const lec = localizeLecture(base, tr, lang, shell);
     const problems = untranslated({ ...shell, lectures: [lec], title: 'x', subtitle: 'x', headline: 'x', docsNote: 'x', sourceNote: 'x', disclaimer: 'x', cast: undefined, sources: undefined, ui: undefined, links: undefined } as Course, lang, { ...course, lectures: [base] });
     const findings: { level: string; where: string; what: string; sample: string }[] = [];

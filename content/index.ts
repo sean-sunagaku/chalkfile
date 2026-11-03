@@ -1,15 +1,20 @@
 // 講座の一覧（COURSES）・訳の一覧（TRANSLATIONS）・動画の一覧（VIDEOS）。講座は content/courses.ts の登録表（1 講座 1 行）から集め、
-// Course の order の順に並べる。講座を足すときは、講座のフォルダ（台本・course.ts・index.ts）を作り、content/courses.ts に 1 行を足す
+// Course の order の順に並べる。講座を足すときは、講座のフォルダ（台本・course.ts・index.ts）を作り、content/courses.ts に 1 行を足す。
+// 台本の at に書いた台詞の id は、ここで番号に直す（content/lines.ts）。訳は、番号に直す前の日本語の台本に重ねてから直す
 import type { CourseModule } from './course-module';
 import * as REGISTRY from './courses';
 import { LANGS, localizeCourse, parseVideoKey, videoKey, type CourseL10n, type Lang, type TranslatedLang } from './i18n';
-import type { Course, Lecture } from './types';
+import { resolveCourse } from './lines';
+import type { AuthoredCourse, Course, Lecture } from './types';
 
 /** 登録した講座（order の順。同じ order なら講座 ID の順。order の重なりは npm run validate が止める） */
 const MODULES: CourseModule[] = (Object.values(REGISTRY) as CourseModule[]).sort((a, b) => a.course.order - b.course.order || (a.course.id < b.course.id ? -1 : a.course.id > b.course.id ? 1 : 0));
 
-/** 日本語の講座（一覧のページの並び） */
-export const COURSES: Course[] = MODULES.map((m) => m.course);
+/** 台本に書いたままの日本語の講座（at に台詞の id が残っている）。訳を重ねる元と、訳のひな形に使う */
+export const AUTHORED_COURSES: AuthoredCourse[] = MODULES.map((m) => m.course);
+
+/** 日本語の講座（一覧のページの並び。at は台詞の番号に直したもの） */
+export const COURSES: Course[] = AUTHORED_COURSES.map(resolveCourse);
 
 /** 動画を作るときは、全講座のレクチャーをまとめて扱う（ID は講座をまたいで重ならないようにする） */
 export const LECTURES: Lecture[] = COURSES.flatMap((c) => c.lectures);
@@ -42,7 +47,7 @@ export const coursesIn = (lang: Lang): Course[] => {
   if (!list) {
     const tr = TRANSLATIONS[lang];
     for (const id of Object.keys(tr)) if (!COURSES.some((c) => c.id === id)) throw new Error(`訳の講座が日本語の講座に無い: ${lang}/${id}`);
-    list = COURSES.filter((c) => tr[c.id]).map((c) => localizeCourse(c, tr[c.id], lang));
+    list = AUTHORED_COURSES.filter((c) => tr[c.id]).map((c) => localizeCourse(c, tr[c.id], lang));
     localized.set(lang, list);
   }
   return list;

@@ -24,7 +24,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 章 ID・節 ID | 読む教材の章（`nudge-01`）と節（`nudge-01-s02`）の名前。レクチャー ID（`N01`）とは別の名前。AI チャットが答えの根拠を指すのに使うので、公開したら変えない | `ChapterMaterial.id`・`MaterialSection.id` |
 | 場面 | 動画の中の 1 画面ぶん。種類（`kind`）ごとに描き方が決まっている | `content/types.ts` の `Scene` |
 | 台詞 | 場面の中の 1 つの発話。`t` は画面の台本と字幕に出す文、`s` は読み上げだけを変えたいときの文、`v` は声 | `content/types.ts` の `Line` |
-| `at` | 画面の要素を、その場面の何番目の台詞の頭で出すか（0 から数える） | `content/types.ts` の頭の説明 |
+| `at` | 画面の要素を、その場面の何番目の台詞の頭で出すか（0 から数える）。同じ場面の台詞の `id` でも書ける（読み込むときに番号に直す） | `content/types.ts` の `At` |
 | 動画 | レクチャー 1 本を、1 つの言語で作ったもの。日本語と訳は、別の動画として扱う | `content/index.ts` の `Video`・`VIDEOS` |
 | 動画の key | 動画の名前。日本語はレクチャー ID のまま（`S01`）、訳は言語を付ける（`S01.en`）。timeline・音・字幕・動画のファイル名に使う | `content/i18n.ts` の `videoKey` |
 | コンポジション ID | Remotion の中での動画の名前。ドットが使えないので、`S01.en` は `S01-en` になる | `content/i18n.ts` の `compositionId` |
