@@ -419,8 +419,7 @@ const durationsFor = (paths: Iterable<string>, sums: Map<string, string>, local:
 };
 
 /** 講座の説明から、README の表の「中身」の欄を作る */
-const describe = (about: string) =>
-  `${about}の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素）。v2 の鍵で作った声は、声の記録（.meta.json。合成のレシピとエンジンの版）も`;
+const describe = (about: string) => `${about}の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素）`;
 
 /** 素材の README。木の中身から作り、push した台本のコミットには左右されない（同じ素材なら同じ README になり、push しない） */
 const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, previous: Map<string, string>) => {
@@ -452,6 +451,7 @@ const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, prev
 
 - \`bun scripts/materials.ts push\` は足すだけです。手元の素材を足すか上書きし、手元の台本に無い講座や台詞の素材は消さずに残します。コミットは前の版を親にするので、送るのは新しい素材だけで、前の版にも戻せます
 - 消すのは \`bun scripts/materials.ts gc\` だけです。\`--keep\` の ref（既定 origin/main）の台本が使わない素材を一覧にし、\`--confirm\` を付けたときだけ消します。gc は親の無い 1 コミットで置き換え、それまでの履歴を切ります
+- 台詞の音声の名前は声の鍵です（v2 は読み上げる文と合成のレシピから、v1 は前の作り方）。v2 の鍵で作った声は、読みの隣に声の記録（\`.meta.json\`。合成のレシピとエンジンの版）を置きます
 
 素材があれば、台詞を変えていない章は VOICEVOX なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せます。手順はリポジトリの docs/guide/quickstart.md の「B. 素材から作る」です。
 
