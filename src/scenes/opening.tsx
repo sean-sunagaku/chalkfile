@@ -6,7 +6,7 @@ import { CourseMark, unitOf } from '../components/chrome';
 import { fitSize } from '../components/fit';
 import { gradientText, Pill, Smart } from '../components/ui';
 import { alpha, PAD, usePalette } from '../theme';
-import { dropY, ramp, useScene } from '../timing';
+import { dropY, ramp, useScene, useText } from '../timing';
 import { frames, STING } from '../video.config';
 import { defineScene } from './define';
 
@@ -18,6 +18,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { lecture, course } = useScene();
+  const text = useText();
   const hit = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 14, mass: 0.7 }, durationInFrames: 40 });
   const soft = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 200 }, durationInFrames: 26 });
   const early = ramp(frame, 4, 28);
@@ -36,7 +37,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const titleLines = s.titleLines ?? [s.title];
   const sub2 = spring({ frame: frame - HIT_FRAME - 12, fps, config: { damping: 200 }, durationInFrames: 24 });
   const no = String(lecture.no).padStart(2, '0');
-  const { label: unit, total } = unitOf(course);
+  const { label: unit, total } = unitOf(course, text);
   const solo = course.standalone === true;
   return (
     <>

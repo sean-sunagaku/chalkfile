@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test';
+import { LANGS } from '../content/i18n';
 import { CHALKFILE, NIGHT, THEMES } from '../content/themes';
 import type { Theme } from '../content/types';
 import { alpha, mix } from '../engine/core/color';
 import { contrastRatio, contrastSummary, luminance, themeContrast } from '../engine/core/contrast';
 import { derivePalette, TONE_TEXT_MIX } from '../engine/core/theme';
 import { validateTheme } from '../engine/core/validate';
+import { formatInteger, VIDEO_TEXT } from '../src/i18n';
 import { lineEnd, lineStart } from '../src/timing';
 import paletteJson from './fixtures/palette/themes.json';
 
@@ -165,5 +167,19 @@ describe('コントラスト比（engine/core/contrast.ts）', () => {
     expect(ratio('chalkfile', 'tone.main/surface:amber')).toBeCloseTo(2.76, 2);
     expect(ratio('indigo', 'tone.main/surface:amber')).toBeCloseTo(2.54, 2);
     expect(ratio('night', 'caption/tone.main:amber')).toBeCloseTo(1.6, 2);
+  });
+});
+
+describe('動画の決まった文字と数の書き方（src/i18n.ts）', () => {
+  test('決まった英字（動画の呼び名・NEXT・Q）は、今は全部の言語で前の部品と同じ英字（訳すのは見た目の更新のとき）', () => {
+    for (const lang of LANGS) {
+      const { unit, next, quiz } = VIDEO_TEXT[lang];
+      expect({ unit, next, quiz }).toEqual({ unit: { LECTURE: 'LECTURE', CHAPTER: 'CHAPTER' }, next: 'NEXT', quiz: 'Q' });
+    }
+  });
+  test("整数の書き方は、どの言語でも前の toLocaleString('ja-JP') と同じ（3 桁ごとのカンマ）", () => {
+    for (const lang of LANGS) {
+      for (const n of [0, 7, 999, 1000, 12345, 1234567, -1500]) expect(formatInteger(n, lang)).toBe(n.toLocaleString('ja-JP'));
+    }
   });
 });

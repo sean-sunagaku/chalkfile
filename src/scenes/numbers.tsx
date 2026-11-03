@@ -4,6 +4,7 @@ import { useCurrentFrame } from 'remotion';
 import type { NumbersScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass } from '../components/ui';
+import { formatInteger } from '../i18n';
 import { alpha, usePalette } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useScene } from '../timing';
 import { defineScene } from './define';
@@ -11,14 +12,15 @@ import { defineScene } from './define';
 const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = ({ it, last }) => {
   const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
-  const { lines } = useScene();
+  const { lines, lang } = useScene();
   const p = useAppear(it.at);
   const start = lineStart(lines, it.at);
   const c = ramp(frame - start, 0, 26);
   const eased = 1 - Math.pow(1 - c, 3);
   const v = it.value * eased;
   const tt = tone(it.tone);
-  const text = it.decimals ? v.toFixed(it.decimals) : Math.round(v).toLocaleString('ja-JP');
+  // 整数は動画の言語の書き方で区切る。小数は toFixed のまま（Intl にすると、数え上げの途中の丸めが変わることがある）
+  const text = it.decimals ? v.toFixed(it.decimals) : formatInteger(Math.round(v), lang);
   return (
     <div
       style={{

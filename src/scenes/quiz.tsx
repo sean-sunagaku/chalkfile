@@ -54,7 +54,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
             ...gradientText(DISPLAY),
           }}
         >
-          Q{s.no}
+          {text.quiz}{s.no}
         </div>
         {course.standalone ? null : (
           <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>

@@ -2,6 +2,7 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../content/types';
+import type { VideoText } from '../i18n';
 import { dropY, ramp, useScene, useText } from '../timing';
 import { HEADING } from '../video.config';
 import { Icon } from './ui';
@@ -174,14 +175,18 @@ const EvidenceChip: React.FC<{ kind: Evidence; p: number }> = ({ kind, p }) => {
   );
 };
 
-/** 動画の呼び名（LECTURE か CHAPTER）と、講座の全体の本数（計画にある章も数える。訳の講座は訳したレクチャーの数） */
-export const unitOf = (course: Course) => ({ label: course.unitLabel ?? 'LECTURE', total: course.syllabus?.chapters.length ?? course.lectures.length });
+/** 動画の呼び名（LECTURE か CHAPTER。文字は src/i18n.ts の VIDEO_TEXT）と、講座の全体の本数（計画にある章も数える。訳の講座は訳したレクチャーの数） */
+export const unitOf = (course: Course, text: VideoText) => ({
+  label: text.unit[course.unitLabel ?? 'LECTURE'],
+  total: course.syllabus?.chapters.length ?? course.lectures.length,
+});
 
 /** 場面の見出し（ヘッダー） */
 export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   const { C, GRAD, MONO, SANS } = usePalette();
   const frame = useCurrentFrame();
   const { lecture, scene, course } = useScene();
+  const text = useText();
   const p = ramp(frame, 0, 16);
   const bar = ramp(frame, 6, 30);
   const chip = ramp(frame, 14, 30);
@@ -192,7 +197,7 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
           <div />
         ) : (
           <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 21, letterSpacing: 5, color: C.muted }}>
-            {unitOf(course).label} {String(lecture.no).padStart(2, '0')}
+            {unitOf(course, text).label} {String(lecture.no).padStart(2, '0')}
             <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>{lecture.title}</span>
           </div>
         )}

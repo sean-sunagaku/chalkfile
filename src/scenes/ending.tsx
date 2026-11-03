@@ -16,7 +16,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
   const { lecture, course, lang } = useScene();
   const text = useText();
   const key = lang === 'ja' ? lecture.id : `${lecture.id}.${lang}`;
-  const { label: unit, total } = unitOf(course);
+  const { label: unit, total } = unitOf(course, text);
   const p = useAppear(0);
   const q = useAppear(0, 14);
   const c = useAppear(0, 26);
@@ -27,7 +27,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
           <div
             style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}
           >
-            NEXT {unit}
+            {text.next} {unit}
           </div>
           <div style={{ opacity: q, transform: `translateY(${dropY(q)}px)` }}>
             <Glass
