@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../content';
 import type { Course, Evidence, Figure, Lecture, Scene, Source } from '../content/types';
+import { assertNever } from '../engine/core/assert';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const OUT = path.join(ROOT, 'docs/courses');
@@ -115,6 +116,9 @@ const describe = (s: Scene): string => {
       return s.entries.map((x) => x.cmd ?? (x.out ?? []).join(' ')).join('／');
     case 'ending':
       return s.next ? `次: 第 ${s.next.no} 章「${s.next.title}」` : (s.closing ?? 'おつかれさまでした');
+    default:
+      // 場面の種類を足したのに、ここで扱っていないと型で止まる
+      return assertNever(s, '場面の種類');
   }
 };
 
