@@ -7,12 +7,12 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../../content';
 import type { HeroSnippet } from '../../content/course-module';
-import { resolveCourse } from '../../content/lines';
 import { localMediaPath, readMediaManifest } from '../../scripts/media';
 import { buildSite } from '../../scripts/site/build';
 import { type MediaFiles, mediaFilesOf } from '../../scripts/site/serve-files';
 import { type MediaEntry, mediaFilename } from '../../site/media-shared';
 import type { CourseManifest } from '../../site/offline-shared';
+import { resolveCourse } from '../../content/lines';
 import SAMPLE from '../fixtures/content/site-sample';
 import type { SiteMode, SiteSession } from './site';
 

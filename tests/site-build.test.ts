@@ -10,20 +10,21 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseModule, HeroSnippet } from '../content/course-module';
 import * as REGISTRY from '../content/courses';
-import { resolveCourse } from '../content/lines';
 import type { Course } from '../content/types';
 import { bundle } from '../scripts/pwa';
 import { type BuildSiteOptions, buildSite } from '../scripts/site/build';
 import { heroSnippetOf } from '../scripts/site/config';
 import { scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 import { type MediaEntry, mediaFilename } from '../site/media-shared';
+import { resolveCourse } from '../content/lines';
 import SAMPLE from './fixtures/content/site-sample';
+
+/** 合成の講座（台本に書いたままの形を、番号に直したもの） */
+const SAMPLE_COURSE = resolveCourse(SAMPLE.course);
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const FIXTURE = path.join(ROOT, 'tests/fixtures/content/site-sample');
 const SNAPSHOT = path.join(FIXTURE, 'snapshot.json');
-/** 合成の講座（at を台詞の番号に直したもの。content/index.ts と同じ読み込み） */
-const SAMPLE_COURSE: Course = resolveCourse(SAMPLE.course);
 
 const dirs: string[] = [];
 afterAll(() => {
