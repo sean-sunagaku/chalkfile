@@ -334,7 +334,7 @@ const LOCAL_URL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?\/?$/;
 const isPortArgs = (rest: string[]) =>
   !rest.length || (rest.length === 1 && /^--port=\d{1,5}$/.test(rest[0])) || (rest.length === 2 && rest[0] === '--port' && /^\d{1,5}$/.test(rest[1]));
 export const checkLaunch = (where: string, text: string, out: Finding[]) => {
-  const stop = (what: string) => out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' });
+  const stop = (what: string) => { out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' }); };
   let value: unknown;
   try {
     value = Bun.JSONC.parse(text);
@@ -376,7 +376,7 @@ const VSCODE_RISKY: RegExp[] = [
   /(^|\.)\w*(paths?|bin|tsdk|runtime|command\w*|executable\w*|interpreter\w*|shell\w*|env|envfile)$/i,
 ];
 const checkVscodeSettings = (where: string, text: string, out: Finding[]) => {
-  const stop = (what: string) => out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' });
+  const stop = (what: string) => { out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' }); };
   let value: unknown;
   try {
     value = Bun.JSONC.parse(text);
@@ -391,7 +391,7 @@ const checkVscodeSettings = (where: string, text: string, out: Finding[]) => {
 
 /** bunfig.toml で止める項目: preload（bun を使うたびに先に動く。[test] の中も）と plugins。[test] root などは置いてよい */
 const checkBunfig = (where: string, text: string, out: Finding[]) => {
-  const stop = (what: string) => out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' });
+  const stop = (what: string) => { out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' }); };
   let value: unknown;
   try {
     value = Bun.TOML.parse(text);
@@ -419,7 +419,8 @@ const checkPackageJson = (where: string, text: string, out: Finding[]) => {
   try {
     pkg = JSON.parse(text);
   } catch {
-    return out.push({ level: 'error', where, what: 'package.json が JSON として読めない', sample: '', rule: 'install-script' });
+    out.push({ level: 'error', where, what: 'package.json が JSON として読めない', sample: '', rule: 'install-script' });
+    return;
   }
   if (!isObject(pkg)) return;
   const scripts = isObject(pkg.scripts) ? pkg.scripts : {};
