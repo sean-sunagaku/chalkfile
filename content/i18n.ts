@@ -4,7 +4,8 @@
 // 場面・カード・表の行などは、日本語の台本と同じ順番・同じ数で上書きする（色・アイコン・座標・URL は日本語の台本のものを使う）。
 // 台詞（lines）だけは丸ごと置き換える（お笑いは直訳せず、言語ごとに作り直すので、数も変わってよい）。
 // 日本語の台本の at が台詞の id なら、訳の台詞に同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい（重ねたあとで番号に直す。content/lines.ts）
-import { AT_KEYS, resolveLecture } from './lines';
+import { AT_KEYS, COURSE_FIELDS, fieldShape, isListShape, keyFieldOf, LECTURE_FIELDS, type Shape, sceneShape, type Visit, walkCourse, walkLecture } from './fields';
+import { resolveLecture } from './lines';
 import type { At, AuthoredCourse, AuthoredLecture, Course, Lecture, Line, Scene, Source, VoiceId } from './types';
 
 export { AT_KEYS };
@@ -89,104 +90,148 @@ export type CourseL10n = {
 };
 
 /* ───────────── 重ね方 ───────────── */
+// 重ね方は、項目の役目（content/fields.ts）にそって決める。
+//   台詞（lines）・要点（takeaways）は丸ごと置き換える
+//   key を持つ配列（cards・nodes・actors・timeline の items・画面の図の部品の id）は、訳の項目に key を書けば key で重ね、書かなければ位置で重ねる
+//   ほかの配列は位置で重ね、数が日本語と違えば誤りにする
+// 誤りは投げずに、動画（講座）ごとに集める（l10nProblems）。台本の検証がその動画の誤りとして出し、Studio はその動画だけを止める
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
-/** 丸ごと置き換える配列（数が変わってよい） */
-const REPLACE = new Set(['lines', 'takeaways']);
 
-const merge = (base: unknown, over: unknown, where: string, key = ''): unknown => {
-  if (over === undefined) return base;
+/** 訳を重ねたときの誤り 1 つ。where は動画（講座）の中の場所（場面 2 concepts.cards[0].at など）、message は直し方 */
+export type L10nProblem = { where: string; message: string };
+const PROBLEMS = new WeakMap<object, L10nProblem[]>();
+
+/**
+ * 訳の動画（訳の講座）を作ったときの誤り。台本の検証（engine/core/validate.ts）が、その動画（講座）の誤りとして出す。
+ * 誤りがあっても、訳の動画は作る（直せる所まで重ね、重ねられない所は日本語の台本のまま）。動画の一覧から消さないので、Studio はその動画の場所に誤りを出せる
+ */
+export const l10nProblems = (x: Lecture | Course): readonly L10nProblem[] => PROBLEMS.get(x) ?? [];
+
+/** 重ねるときの文脈。linesDiffer: 台詞の数が日本語と違う場面（数の at を訳で書き直さないと、違う台詞で出る） */
+type Ctx = { problems: L10nProblem[]; linesDiffer: boolean };
+
+/** 訳で書き直していない数の at（台詞の数が日本語と違う場面だけ。id の at は、訳の台詞の同じ id に付くので見ない） */
+const numericAts = (base: unknown, where: string, ctx: Ctx, top = false) => {
+  if (!ctx.linesDiffer) return;
+  if (Array.isArray(base)) {
+    base.forEach((b, i) => { numericAts(b, `${where}[${i}]`, ctx); });
+    return;
+  }
+  if (!isObj(base)) return;
+  for (const [k, v] of Object.entries(base)) {
+    if (top && k === 'lines') continue;
+    if (AT_KEYS.includes(k) && typeof v === 'number') ctx.problems.push({ where: `${where}.${k}`, message: MISSING_AT });
+    else numericAts(v, `${where}.${k}`, ctx);
+  }
+};
+const MISSING_AT = '台詞の数が日本語と違う場面なので、画面の要素の at（何番目の台詞で出すか）も訳に書く（日本語の台本の at を台詞の id で書けば、訳の台詞に同じ id を付けるだけでよい）';
+
+/** key で重ねる配列（訳の項目の key で、日本語の台本の項目を引く。並びは日本語の台本のまま） */
+const mergeByKey = (base: unknown[], over: unknown[], key: string, where: string, item: Shape | undefined, ctx: Ctx): unknown[] => {
+  const index = new Map<unknown, number>();
+  base.forEach((b, i) => { if (isObj(b) && b[key] !== undefined && !index.has(b[key])) index.set(b[key], i); });
+  const byBase = new Map<number, unknown>();
+  over.forEach((o, i) => {
+    const k = isObj(o) ? o[key] : undefined;
+    const at = index.get(k);
+    if (at === undefined) ctx.problems.push({ where: `${where}[${i}].${key}`, message: `${key}「${String(k)}」が、日本語の台本に無い（あるのは ${[...index.keys()].join('・') || 'なし'}）` });
+    else if (byBase.has(at)) ctx.problems.push({ where: `${where}[${i}].${key}`, message: `${key}「${String(k)}」を、訳に 2 回書いている` });
+    else byBase.set(at, o);
+  });
+  const missing = base.filter((_, i) => !byBase.has(i)).map((b) => String(isObj(b) ? b[key] : b));
+  if (missing.length) ctx.problems.push({ where, message: `訳に無い ${key}: ${missing.join('・')}（key で重ねる配列は、日本語の台本の項目を全部書く）` });
+  return base.map((b, i) => {
+    if (byBase.has(i)) return merge(b, byBase.get(i), `${where}[${i}]`, item, ctx);
+    numericAts(b, `${where}[${i}]`, ctx);
+    return b;
+  });
+};
+
+const merge = (base: unknown, over: unknown, where: string, shape: Shape | undefined, ctx: Ctx, top = false): unknown => {
+  if (over === undefined) {
+    numericAts(base, where, ctx, top);
+    return base;
+  }
   if (Array.isArray(over)) {
-    if (REPLACE.has(key) || !Array.isArray(base)) return over;
-    if (over.length !== base.length) throw new Error(`${where}: 日本語の台本と数が合わない（台本 ${base.length}・訳 ${over.length}）`);
-    return over.map((o, i) => (isObj(o) && isObj(base[i]) ? merge(base[i], o, `${where}[${i}]`) : o));
+    const list = isListShape(shape) ? shape : undefined;
+    if (list?.$replace || !Array.isArray(base)) return over;
+    const key = keyFieldOf(list?.$list);
+    const keyed = key ? over.filter((o) => isObj(o) && o[key] !== undefined).length : 0;
+    if (key && keyed) {
+      if (keyed === over.length) return mergeByKey(base, over, key, where, list?.$list, ctx);
+      ctx.problems.push({ where, message: `訳の項目の ${key} は、全部に書くか、全部に書かない（書いた項目は ${key} で、書かない項目は位置で重ねるので、混ぜると決まらない）` });
+      return base;
+    }
+    if (over.length !== base.length) {
+      ctx.problems.push({ where, message: `日本語の台本と数が合わない（台本 ${base.length}・訳 ${over.length}）` });
+      return base;
+    }
+    return over.map((o, i) => (isObj(o) && isObj(base[i]) ? merge(base[i], o, `${where}[${i}]`, list?.$list, ctx) : o));
   }
   if (isObj(over) && isObj(base)) {
     const out: Record<string, unknown> = { ...base };
-    for (const [k, v] of Object.entries(over)) out[k] = merge(base[k], v, `${where}.${k}`, k);
+    // 訳に書いていない項目の中の、数の at（台詞の数が違う場面だけ）
+    for (const [k, v] of Object.entries(base)) {
+      if (over[k] !== undefined || (top && k === 'lines')) continue;
+      if (AT_KEYS.includes(k) && typeof v === 'number') {
+        if (ctx.linesDiffer) ctx.problems.push({ where: `${where}.${k}`, message: MISSING_AT });
+      } else numericAts(v, `${where}.${k}`, ctx);
+    }
+    for (const [k, v] of Object.entries(over)) if (v !== undefined) out[k] = merge(base[k], v, `${where}.${k}`, fieldShape(shape, base, k), ctx);
     return out;
   }
   return over;
 };
 
-/**
- * 台詞の数が日本語と違う場面で、上書きに書いていない at（日本語の台詞の番号のまま）を探す。
- * 日本語の台本の at が台詞の id なら探さない（訳の台詞の同じ id に付く。無ければ台本の検証が誤りにする）
- */
-const missingAt = (base: unknown, over: unknown, where: string, out: string[]) => {
-  if (Array.isArray(base)) {
-    base.forEach((b, i) => {
-      missingAt(b, Array.isArray(over) ? over[i] : undefined, `${where}[${i}]`, out);
-    });
-    return;
-  }
-  if (!isObj(base)) return;
-  for (const [k, v] of Object.entries(base)) {
-    if (k === 'lines') continue;
-    const o = isObj(over) ? over[k] : undefined;
-    if (AT_KEYS.includes(k) && typeof v === 'number' && o === undefined) out.push(`${where}.${k}`);
-    else missingAt(v, o, `${where}.${k}`, out);
-  }
-};
-
-/** 出す番号（at）が、その場面の台詞の数を超えていないか */
-const atOutOfRange = (scene: Scene<At>, where: string, out: string[]) => {
-  const walk = (v: unknown, path: string) => {
-    if (Array.isArray(v)) {
-      v.forEach((x, i) => {
-        walk(x, `${path}[${i}]`);
-      });
-      return;
-    }
-    if (!isObj(v)) return;
-    for (const [k, x] of Object.entries(v)) {
-      if (k === 'lines') continue;
-      if (AT_KEYS.includes(k) && typeof x === 'number' && (x < 0 || x > scene.lines.length)) out.push(`${path}.${k}=${x}（台詞は ${scene.lines.length}）`);
-      else walk(x, `${path}.${k}`);
-    }
-  };
-  walk(scene, where);
-};
-
 /** 動画 1 本の訳。日本語の台本（at の id を番号に直す前のもの）に訳を重ね、重ねたあとで at の id を番号に直す */
-export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, lang: TranslatedLang, course: Pick<Course, 'sections'>): Lecture => {
-  const where = `${base.id}.${lang}`;
-  if (tr.scenes.length !== base.scenes.length) throw new Error(`${where}: 場面の数が日本語の台本と合わない（台本 ${base.scenes.length}・訳 ${tr.scenes.length}）`);
-  const problems: string[] = [];
-  const scenes = base.scenes.map((s, i) => {
+export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, course: Pick<Course, 'sections'>): Lecture => {
+  const problems: L10nProblem[] = [];
+  const ctx = (linesDiffer: boolean): Ctx => ({ problems, linesDiffer });
+  const sameCount = tr.scenes.length === base.scenes.length;
+  if (!sameCount) problems.push({ where: 'scenes', message: `場面の数が日本語の台本と合わない（台本 ${base.scenes.length}・訳 ${tr.scenes.length}）` });
+  const scenes = base.scenes.map((s, i): Scene<At> => {
     const o = tr.scenes[i];
-    if (o.kind !== s.kind) throw new Error(`${where} 場面 ${i + 1}: 種類が日本語の台本と違う（台本 ${s.kind}・訳 ${o.kind}）`);
-    if (!o.lines.length) throw new Error(`${where} 場面 ${i + 1}: 台詞が無い`);
-    if (o.lines.length !== s.lines.length) missingAt(s, o, `場面 ${i + 1}`, problems);
-    const scene = merge(s, o, `${where} 場面 ${i + 1}`) as Scene<At>;
-    atOutOfRange(scene, `場面 ${i + 1}`, problems);
-    return scene;
+    const where = `場面 ${i + 1} ${s.kind}`;
+    if (!sameCount || !o) return s;
+    if (o.kind !== s.kind) {
+      problems.push({ where: `場面 ${i + 1}`, message: `種類が日本語の台本と違う（台本 ${s.kind}・訳 ${o.kind}）` });
+      return s;
+    }
+    if (!o.lines?.length) {
+      problems.push({ where: `${where} lines`, message: '台詞が無い' });
+      return s;
+    }
+    return merge(s, o, where, sceneShape(s.kind), ctx(o.lines.length !== s.lines.length), true) as Scene<At>;
   });
-  if (problems.length) throw new Error(`${where}: 台詞の数が日本語と違う場面は、画面の要素の at（何番目の台詞で出すか）も書く\n  ${problems.join('\n  ')}`);
-  if (base.caution && !tr.caution) throw new Error(`${where}: 日本語の台本に注意書き（caution）があるので、訳も書く`);
+  if (base.caution && !tr.caution) problems.push({ where: 'caution', message: '日本語の台本に注意書き（caution）があるので、訳も書く' });
   const sectionTitle = tr.section?.title ?? course.sections.find((x) => x.no === base.section.no)?.title ?? base.section.title;
-  return resolveLecture({
+  const lecture = resolveLecture({
     ...base,
     title: tr.title,
     summary: tr.summary,
     section: { no: base.section.no, title: sectionTitle },
-    docs: merge(base.docs, tr.docs, `${where}.docs`) as Lecture['docs'],
-    quiz: merge(base.quiz, tr.quiz, `${where}.quiz`) as Lecture['quiz'],
+    docs: merge(base.docs, tr.docs, 'docs', LECTURE_FIELDS.docs, ctx(false)) as Lecture['docs'],
+    quiz: merge(base.quiz, tr.quiz, 'quiz', LECTURE_FIELDS.quiz, ctx(false)) as Lecture['quiz'],
     takeaways: tr.takeaways,
     caution: tr.caution,
     scenes,
     // 読む教材は、まだ日本語だけ（訳の講座には出さない）
     material: undefined,
   });
+  // 直すところの無い動画は resolveLecture が同じオブジェクトを返すので、誤りは写しに付ける（日本語の動画に付かないように）
+  const out = lecture === (base as unknown) ? { ...lecture } : lecture;
+  if (problems.length) PROBLEMS.set(out, problems);
+  return out;
 };
 
 /** 講座の訳。日本語の講座（at の id を番号に直す前のもの）に訳を重ねる */
 export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: TranslatedLang): Course => {
-  const where = `${base.id}.${lang}`;
-  if (tr.sections.length !== base.sections.length) throw new Error(`${where}: セクションの数が合わない`);
-  const sections = base.sections.map((s, i) => ({ no: s.no, title: tr.sections[i].title }));
+  const problems: L10nProblem[] = [];
+  if (tr.sections.length !== base.sections.length) problems.push({ where: 'sections', message: `セクションの数が合わない（講座 ${base.sections.length}・訳 ${tr.sections.length}）` });
+  const sections = base.sections.map((s, i) => ({ no: s.no, title: tr.sections[i]?.title ?? s.title }));
   const cast = base.cast
-    ? Object.fromEntries(Object.entries(base.cast).map(([v, c]) => [v, { ...c!, name: tr.cast?.[v as VoiceId]?.name ?? c!.name }]))
+    ? Object.fromEntries(Object.entries(base.cast).flatMap(([v, c]) => (c ? [[v, { ...c, name: tr.cast?.[v as VoiceId]?.name ?? c.name }]] : [])))
     : undefined;
   const sources = base.sources?.map((s) => ({ ...s, ...(tr.sources?.[s.id] ?? {}) }));
   const shell: Course = {
@@ -202,51 +247,39 @@ export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: Trans
     standalone: tr.standalone ?? base.standalone,
     cast,
     ui: { ...(base.ui ?? {}), ...(tr.ui ?? {}) },
-    links: base.links ? (merge(base.links, tr.links, `${where}.links`) as Course['links']) : undefined,
+    links: base.links ? (merge(base.links, tr.links, 'links', COURSE_FIELDS.links, { problems, linesDiffer: false }) as Course['links']) : undefined,
     sources,
     // 章の計画（準備中の章）と読む教材は、まだ日本語だけ
     syllabus: undefined,
     lectures: [],
   };
-  shell.lectures = base.lectures.filter((l) => tr.lectures[l.id]).map((l) => localizeLecture(l, tr.lectures[l.id], lang, shell));
-  for (const id of Object.keys(tr.lectures)) if (!base.lectures.some((l) => l.id === id)) throw new Error(`${where}: 日本語の講座に無いレクチャーの訳: ${id}`);
+  shell.lectures = base.lectures.filter((l) => tr.lectures[l.id]).map((l) => localizeLecture(l, tr.lectures[l.id], shell));
+  for (const id of Object.keys(tr.lectures)) if (!base.lectures.some((l) => l.id === id)) problems.push({ where: `lectures.${id}`, message: `日本語の講座に無いレクチャーの訳: ${id}` });
+  if (problems.length) PROBLEMS.set(shell, problems);
   return shell;
 };
 
 /* ───────────── 訳し残しの点検 ───────────── */
 
-/** 文字として画面・字幕・サイトに出ない項目（色・アイコン・ID・URL・効果音・声・コードの中身） */
-const NOT_TEXT = new Set(['kind', 'key', 'tone', 'icon', 'v', 'sfx', 'sfxAfter', 'bgm', 'url', 'id', 'lang', 'theme', 'from', 'to', 'evidence', 'variant', 'type', 'device', 'unitLabel', 'idPrefix', 'code', 'cmd', 'out', 'file', 'fromSide', 'toSide', 'op', 'mono', 'checked', 's']);
-const KANA = /[\u3040-\u30FF\u31F0-\u31FF\uFF66-\uFF9F]/;
-const HAN = /[\u3400-\u4DBF\u4E00-\u9FFF]/;
+const KANA = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
+const HAN = /[㐀-䶿一-鿿]/;
 /** 日本語・中国語の句読点と全角の記号（英語の文には出さない） */
-const CJK_PUNCT = /[\u3000-\u303F\uFF01-\uFF65]/;
+const CJK_PUNCT = /[　-〿！-･]/;
 
 /**
  * 訳した講座に、日本語のまま残った文字が無いかを探す。en は仮名・漢字・全角の記号、zh は仮名を探す（漢字は中国語でも使う。「・」も仮名の範囲）。
  * base（日本語の講座）を渡すと、zh は、同じ場所の日本語とまったく同じで漢字が 3 字以上の文（仮名の無い見出しや文が訳されずに残ったもの）も探す。
- * 1〜2 字の語（人・秒・命令）は中国語でも同じ字を使うので数えない
+ * 1〜2 字の語（人・秒・命令）は中国語でも同じ字を使うので数えない。
+ * 見るのは訳す文字（content/fields.ts の text）と、形に書いていない項目の文字。色・アイコン・ID・URL・コード・端末の出力・読み上げる文（s）は見ない
  */
 export const untranslated = (course: Course, lang: TranslatedLang, base?: AuthoredCourse): string[] => {
   const out: string[] = [];
   const hanCount = (s: string) => s.match(new RegExp(HAN.source, 'g'))?.length ?? 0;
   const bad = (s: string, ja: unknown) => KANA.test(s) || (lang === 'en' && (HAN.test(s) || CJK_PUNCT.test(s))) || (lang === 'zh' && s === ja && hanCount(s) >= 3);
-  const walk = (v: unknown, ja: unknown, path: string, key = '') => {
-    if (NOT_TEXT.has(key)) return;
-    if (typeof v === 'string') {
-      if (bad(v, ja)) out.push(`${path}: ${v.slice(0, 60)}`);
-      return;
-    }
-    if (Array.isArray(v)) {
-      v.forEach((x, i) => {
-        walk(x, Array.isArray(ja) ? ja[i] : undefined, `${path}[${i}]`, key);
-      });
-      return;
-    }
-    if (isObj(v)) for (const [k, x] of Object.entries(v)) walk(x, isObj(ja) ? ja[k] : undefined, `${path}.${k}`, k);
+  const visit: Visit = (role, v, ja, path) => {
+    if ((role === 'text' || role === undefined) && typeof v === 'string' && bad(v, ja)) out.push(`${path}: ${v.slice(0, 60)}`);
   };
-  const { lectures, ...rest } = course;
-  walk(rest, base, `${course.id}.${lang}`);
-  for (const lec of lectures) walk(lec, base?.lectures.find((l) => l.id === lec.id), `${course.id}.${lang}/${lec.id}`);
+  walkCourse(course, base, `${course.id}.${lang}`, visit);
+  for (const lec of course.lectures) walkLecture(lec, base?.lectures.find((l) => l.id === lec.id), `${course.id}.${lang}/${lec.id}`, visit);
   return out;
 };

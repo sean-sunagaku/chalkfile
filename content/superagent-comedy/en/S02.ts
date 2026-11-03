@@ -10,7 +10,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const S02: LectureL10n = {
-  source: '0f2266c3b253',
+  source: 'e610748310d5',
   title: 'Split the front desk from the work (two layers)',
   summary:
     "Starting from the weak points of putting every event in one session and of starting a new session for every event, learn the two-layer structure: a Router layer (the front desk) and a Worker layer (the work). Why the Router does no work itself, how it differs from an Agent Team, why batching keeps one front desk from jamming easily, and the article's preliminary experiments.",

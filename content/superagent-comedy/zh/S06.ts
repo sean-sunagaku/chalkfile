@@ -15,7 +15,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness 团队《Exploring Super-agent Design》（2026）';
 
 export const S06: LectureL10n = {
-  source: 'e34a842c17b8',
+  source: '03b37a1cee89',
   title: '永不停止的机制，与遗留课题',
   summary:
     '把计算、状态、环境分两步拆开：循环在云端，状态在数据库，环境由就地的守护进程连接。从外面看守的 Watchdog，不只看故障，还看“有没有进展”。文章留下的 4 个课题（扩展方式、没有会话的用法、上下文边界与 A2A、安全），以及本课程的总结。',

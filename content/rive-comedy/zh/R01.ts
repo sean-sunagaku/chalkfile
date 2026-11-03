@@ -12,7 +12,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const R01: LectureL10n = {
-  source: '0fdd90b1d6f3',
+  source: 'bb9f943d6386',
   title: 'Rive 是什么？',
   summary: '通过俊达萌和老师的搞笑对话，快速了解 Rive：制作动画的编辑器与运行动画的运行时、.riv 文件、状态机、支持的环境和注意事项。',
   docs: [{ title: 'Rive 的运行时（官方文档：支持的环境、开源与 MIT 许可证）' }, { title: '状态机（官方文档）' }, { title: '价格方案（官方）' }],

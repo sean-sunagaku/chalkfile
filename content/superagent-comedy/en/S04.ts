@@ -13,7 +13,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness team, "Exploring Super-agent Design" (2026)';
 
 export const S04: LectureL10n = {
-  source: '8e9011875f71',
+  source: 'e2cadc88fb8e',
   title: 'Packing context, and acting ahead',
   summary:
     "Treating the model's context window as a cache. Inline puts in what is likely needed soon, Spill keeps what won't fit outside, and Chain of Recall follows IDs to bring old context back. Acting ahead (speculative execution) starts work in the background before knowing whether it will be used, and shares results only when sure.",

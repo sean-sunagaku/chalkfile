@@ -47,6 +47,9 @@ export type Line = {
   bgm?: 'cut' | 'back';
 };
 
+/** どの種類の場面にもある項目 */
+export type SceneBase = Base;
+
 type Base = {
   /** ヘッダーに出す場面の見出し */
   heading?: string;

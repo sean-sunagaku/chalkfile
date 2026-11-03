@@ -34,7 +34,7 @@ curl -s http://127.0.0.1:50021/version
 | `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/video_config.json` | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
 | `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
-| `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |
+| `bun scripts/i18n.ts status`・`try`・`stamp`・`restamp`・`scaffold`（`npm run i18n -- …`） | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋・訳のひな形（[i18n.md](i18n.md)） |
 | `uv run --locked --group audio python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav` |
 | `bash scripts/render.sh [ID…]` | `src/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（15MB 以下）・`.jpg`（ポスター） |
 | `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |

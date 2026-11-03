@@ -109,7 +109,7 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → learner-offline.md とこのスキルの案内を合わせる |
 | レクチャーを足す | 台本を書く → 講座の `course.ts` の `lectures` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
-| 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → 講座の `index.ts` の `translations` に足す → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
+| 講座を英語・中国語にする | i18n.md → 訳のひな形（`npm run i18n -- scaffold <ID>.<言語>`）→ 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → 講座の `index.ts` の `translations` に足す → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
 | 日本語の台本を直した（訳がある講座） | 日本語を直す → `bun scripts/i18n.ts status` で「台本が変わった」訳を見直す → `stamp` → 訳の動画も synth から作り直す |
 
 ## やらないこと

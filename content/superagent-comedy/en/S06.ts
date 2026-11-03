@@ -12,7 +12,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness team, "Exploring Super-agent Design" (2026)';
 
 export const S06: LectureL10n = {
-  source: 'e34a842c17b8',
+  source: '03b37a1cee89',
   title: 'Never stopping, and what is left to solve',
   summary:
     'Split compute, state and environment in two steps: the loop runs in the cloud, state lives in a database, and daemons connect environments where they are. A Watchdog watches from outside, checking not only for failures but for real progress. Then the four problems the article leaves open (scaling, use without sessions, context boundaries and A2A, security), and a wrap-up of the course.',

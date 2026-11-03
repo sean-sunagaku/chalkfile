@@ -7,10 +7,10 @@
 //   validateTheme(theme)              テーマの色の形（#RRGGBB）と、要る項目（暗い地は面と線の色 dark も）
 // 呼ぶ場所: bun scripts/validate.ts（全講座・全言語）・scripts/synth.ts の最初（対象の動画だけ）・src/Root.tsx（Studio はその動画だけを止める）
 // 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
-//   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い
+//   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違いと、訳の重ね方の誤り
 //   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い・古い書き方（engine/core/legacy.ts）
 // いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から、字幕と見出しの大きさを src/video.config.ts から読む
-import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
+import { AT_KEYS, l10nProblems, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
 import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
 import { VIDEO_TEXT } from '../../src/i18n';
@@ -27,6 +27,7 @@ export type Level = 'error' | 'warning';
 /** 誤りと注意の種類（一覧の内訳と、テストで何が見つかったかを見分けるのに使う） */
 export const RULES = {
   scenes: '場面の並び',
+  l10n: '訳の重ね方',
   kind: '場面の種類',
   lines: '台詞',
   'line-id': '台詞の id',
@@ -461,6 +462,8 @@ export const validateLecture = (lecture: Lecture, course: Course): Issue[] => {
   const out: Issue[] = [];
   const where = videoWhere(lecture, course);
   const lang: Lang = course.lang ?? 'ja';
+  // 訳の動画は、訳を重ねたときの誤り（content/i18n.ts の localizeLecture が集めたもの）も、この動画の誤りにする
+  for (const p of l10nProblems(lecture)) push(out, 'error', 'l10n', `${where} ${p.where}`, p.message);
   const scenes = list(lecture.scenes);
   if (!scenes.length) push(out, 'error', 'scenes', `${where} scenes`, '場面が無い');
   scenes.forEach((s, i) => { checkScene(s, i, where, course, lang, out); });
@@ -477,6 +480,7 @@ export const validateLecture = (lecture: Lecture, course: Course): Issue[] => {
 export const validateCourse = (course: Course): Issue[] => {
   const out: Issue[] = [];
   const where = courseWhere(course);
+  for (const p of l10nProblems(course)) push(out, 'error', 'l10n', `${where} ${p.where}`, p.message);
   if (course.theme !== undefined && !Object.hasOwn(THEMES, course.theme)) {
     push(out, 'error', 'theme', `${where} theme`, `テーマ「${course.theme}」が無い（content/themes.ts の THEMES にあるのは ${Object.keys(THEMES).join('・')}）`);
   }

@@ -26,6 +26,7 @@
     "check:docs": "bun scripts/check_docs.ts",
     "check:materials": "bun scripts/build_materials.ts --check",
     "validate": "bun scripts/validate.ts",
+    "i18n": "bun scripts/i18n.ts",
     "gen": "bun scripts/gen.ts",
     "gen:video-config": "bun scripts/gen_video_config.ts",
     "build:music": "uv run --locked --group audio python scripts/build_music.py",

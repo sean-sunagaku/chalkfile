@@ -258,11 +258,9 @@ const checkContent = async (out: Finding[]) => {
   }
   // 訳し残し（訳の講座に残った日本語の文字）は止める
   for (const lang of TRANSLATED_LANGS) for (const c of coursesIn(lang)) for (const u of untranslated(c, lang, COURSES.find((x: { id: string }) => x.id === c.id))) out.push({ level: 'error', where: u.split(':')[0], what: '訳し残し（日本語のまま）', sample: u.slice(u.indexOf(':') + 2), rule: 'untranslated' });
-  // 訳したあとに日本語の台本が変わった訳は、注意として出す（bun scripts/i18n.ts status で見直して stamp）
-  const { translationRows } = await import(path.join(ROOT, 'scripts/i18n.ts'));
-  for (const r of translationRows() as { state: string; file: string; id: string; lang: string }[]) {
-    if (r.state === 'stale') out.push({ level: 'warn', where: r.file, what: `訳のあとで日本語の台本（${r.id}）が変わった。訳を見直して bun scripts/i18n.ts stamp ${r.id}.${r.lang}`, sample: '', rule: 'stale' });
-  }
+  // 訳したあとに日本語の台本の訳す文字が変わった訳（stale）。公開する言語（site/config.json の publishLangs）なら止め、まだ公開しない言語は注意（scripts/i18n.ts の staleNotices）
+  const { staleNotices, translationRows } = (await import(path.join(ROOT, 'scripts/i18n.ts'))) as typeof import('./i18n');
+  for (const n of staleNotices(translationRows())) out.push({ level: n.level, where: n.file, what: n.message, sample: '', rule: 'stale' });
 };
 
 /* ───────────── Git に入れるファイル ───────────── */

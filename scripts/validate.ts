@@ -229,7 +229,7 @@ export const validateAll = async (): Promise<Report> => {
     }
     issues.push(...publishIssues(COURSES, coursesIn));
   } catch (e) {
-    // 訳の数の食い違いなどは、content/ を読み込むときに止まる（content/i18n.ts の localizeCourse）
+    // 台本の読み込みで止まったとき（訳の重ね方の誤りは止まらずに、その動画の誤りになる。content/i18n.ts の l10nProblems）
     issues.push({ level: 'error', rule: 'scenes', where: 'content/（読み込み）', message: messageOf(e) });
   }
   const errors = issues.filter((x) => x.level === 'error').length;

@@ -6,10 +6,10 @@
 // 直すところが無い動画・場面は、同じオブジェクトをそのまま返す（今までの数で書いた台本は、読み込みの前と後で同じもの）。
 // 直せない id（場面に無い台詞・画面に無い部品・重なった id）は書いたまま残し、台本の検証がその動画の誤りにする（ほかの動画は描ける）。
 // content/ の外を実行時に import しない（scripts/materials.ts の gc と scripts/reading-diff.ts は、content/ だけを取り出して読む）
+import { AT_KEYS } from './fields';
 import type { At, AuthoredCourse, AuthoredLecture, AuthoredScene, Course, Lecture, MockScreen, Scene } from './types';
 
-/** 台詞の番号（何番目の台詞の頭で出すか）を書く項目。台本の検証（engine/core/validate.ts）も、この一覧で at の範囲を見る */
-export const AT_KEYS: readonly string[] = ['at', 'textAt', 'subAt', 'revealAt', 'showAt'];
+export { AT_KEYS };
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
