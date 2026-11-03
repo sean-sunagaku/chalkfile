@@ -195,7 +195,8 @@ export async function deployWorker(o: Options, d: Deps): Promise<Outcome> {
     d.summary(`### 公開（${where}）\n\n- wrangler deploy が止まった。今の版は変わっていない\n`);
     return 'failed';
   }
-  const current = await activeVersion(o, d);
+  // 出したあとは、版を読めなくても確かめと戻しへ進む（ここで止まると、確かめていない版が残る）
+  const current = await activeVersion(o, d).catch(() => '（読めない）');
   d.log(`出した版: ${current}`);
 
   const problems: string[] = [];

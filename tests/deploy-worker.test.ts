@@ -53,6 +53,7 @@ const fake = (f: Fake = {}) => {
       if (f.statusError) return { code: 1, stdout: '', stderr: f.statusError };
       const v = versions.length > 1 ? versions.shift() : versions[0];
       if (v === null) return { code: 1, stdout: '', stderr: 'The Worker chalkfile has no deployments.' };
+      if (v === 'error') return { code: 1, stdout: '', stderr: 'Authentication error [code: 10000]' };
       return {
         code: 0,
         stdout: JSON.stringify({ id: 'd', versions: [{ version_id: v, percentage: 100 }] }),
@@ -158,6 +159,12 @@ describe('Worker を出して、確かめて、通らなければ前の版に戻
     const { deps, ran } = fake({ statusError: 'Authentication error [code: 10000]' });
     await expect(deployWorker(options(), deps)).rejects.toThrow('今の版を読めない');
     expect(ran('wrangler deploy --env')).toHaveLength(0);
+  });
+  test('出したあとで版を読めなくても、確かめて、通らなければ控えた版に戻す', async () => {
+    const { deps, ran } = fake({ versions: ['v-old', 'error', 'v-old'], checks: [1, 1, 1, 1] });
+    expect(await deployWorker(options(), deps)).toBe('rolled-back');
+    expect(ran('verify_public')).toHaveLength(2);
+    expect(ran('rollback')[0].cmd[4]).toBe('v-old');
   });
   test('初めての公開で確かめが通らなければ、戻す版が無いので失敗で終える', async () => {
     const { deps, ran } = fake({ versions: [null, 'v-new'], checks: [1, 1, 1, 1] });
