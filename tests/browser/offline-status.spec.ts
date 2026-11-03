@@ -170,6 +170,35 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
   }
 });
 
+// 初めて開いたとき、SW が動き出す前（register のあと、ready の前）に pageshow が来ても、保存状態は ready のあとにだけ問い合わせる。
+// 前は、その間に問い合わせて「保存機能を準備できません」を出し、初めの案内がそのまま出なかった（遅い回線や CI の runner で起きる）。
+// SW の install が取る起動用ファイルを遅らせて（installDelay）、その間に pageshow を起こす
+for (const where of ['home', 'course'] as const) {
+  test(`初めて開いたとき、SW が動き出す前に pageshow が来ても、初めの案内が出る（${where}）`, async ({ page, request, site }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await control(request, { installDelay: 5000 });
+    await page.goto(where === 'home' ? '/' : site.course.route);
+    await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.installing);
+    const during = await page.evaluate(async () => {
+      window.dispatchEvent(new Event('pageshow'));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return {
+        installing: !!(await navigator.serviceWorker.getRegistration())?.installing,
+        message: document.getElementById('offlineMessage')?.textContent,
+      };
+    });
+    // pageshow は SW が動き出す前に来た。案内は準備中のまま（「保存機能を準備できません」にしない）
+    expect(during).toEqual({ installing: true, message: '保存機能を準備しています…' });
+    const first = where === 'home' ? '保存状態を確認しました' : 'この講座は未保存';
+    await expect(page.locator('#offlineMessage')).toContainText(first);
+    // 動き出したあとの pageshow（bfcache から戻ったときなど）は、今までどおり状態を取り直し、初めの案内を消さない
+    await refresh(page);
+    await expect(page.locator('#offlineMessage')).toContainText(first);
+    expect(errors).toEqual([]);
+  });
+}
+
 test('375pxで未保存の案内がはみ出さない', async ({ page, request, site }) => {
   await control(request);
   await page.setViewportSize({ width: 375, height: 812 });

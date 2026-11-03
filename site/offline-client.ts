@@ -17,6 +17,10 @@ const tt = (k: keyof SiteText, v: Record<string, string | number> = {}) => T[k].
 const root = new URL(app.root, location.href);
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+/**
+ * SW が動き出したあと（navigator.serviceWorker.ready のあと）にだけ入れる。register のあと ready の前（初めて開いて SW を入れている間）は、
+ * controller も active も無いので、状態を問い合わせても「保存機能を準備できません」になる。それまでは問い合わせず、ボタンも押せないままにする
+ */
 let registration: ServiceWorkerRegistration | undefined;
 let latest: CourseManifest | undefined;
 let states: CourseStatus[] = [];
@@ -167,7 +171,7 @@ async function refresh() {
   finally { refreshInProgress = false; }
 }
 async function check() {
-  if (!app.course || !navigator.onLine) return;
+  if (!app.course || !navigator.onLine || !registration) return;
   $<HTMLButtonElement>('offlineCheck').disabled = true;
   const before = messageRevision;
   try {
@@ -239,11 +243,13 @@ async function init() {
     if (event.data?.protocol === 1 && event.data?.type === 'CHANGED') void refresh();
   });
   try {
-    registration = await navigator.serviceWorker.register(new URL('sw.js', root), { scope: root.pathname, updateViaCache: 'none' });
+    const registered = await navigator.serviceWorker.register(new URL('sw.js', root), { scope: root.pathname, updateViaCache: 'none' });
     await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error(T.ocSwTimeout)), 30000))]);
-    const updateNotice = () => { if (registration?.waiting) $('appUpdate').hidden = false; };
+    // ここから問い合わせる（pageshow・visibilitychange・CHANGED の知らせ・online が先に来ても、refresh と check は待つ）
+    registration = registered;
+    const updateNotice = () => { if (registered.waiting) $('appUpdate').hidden = false; };
     updateNotice();
-    registration.addEventListener('updatefound', () => registration?.installing?.addEventListener('statechange', updateNotice));
+    registered.addEventListener('updatefound', () => registered.installing?.addEventListener('statechange', updateNotice));
     await refresh();
     await check();
     // 別タブでの保存・キャンセルも反映する。通常時はフォーカスを戻したときに確認。

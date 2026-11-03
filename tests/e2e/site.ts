@@ -24,6 +24,11 @@ export type Control = {
   manifestMode: 'normal' | 'fail' | 'delay-first-fail';
   /** /media/ の動画を全部 404 にする */
   mediaDown: boolean;
+  /**
+   * SW の install が取る起動用ファイルのうち、オフラインの案内のページ（/offline/。ページは取らない）の応答を、この ms だけ遅らせる。
+   * 初めて開いたときの、SW が動き出す前（register のあと、ready の前）の間を長くする（遅い回線や遅い CI の runner と同じ形）
+   */
+  installDelay: number;
   /** 旧 Pages（site/legacy-config.json の scope）: old は前の公開（tests/fixtures/legacy-pages）、migrated は公開済みの移行の案内（tests/fixtures/legacy-migration） */
   legacyPhase: 'old' | 'migrated';
 };

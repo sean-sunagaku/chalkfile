@@ -35,6 +35,7 @@ export const DEFAULT_CONTROL: Control = {
   disabledRevisions: [],
   manifestMode: 'normal',
   mediaDown: false,
+  installDelay: 0,
   legacyPhase: 'old',
 };
 
@@ -173,6 +174,8 @@ export class Session {
       }
       return fileResponse(req, target.file, Buffer.from(JSON.stringify(this.variant().manifest)), NO_STORE);
     }
+    // オフラインの案内のページを取るのは SW の install だけ。遅らせると、SW が動き出すまでの間が長くなる
+    if (target.rel === 'offline/index.html' && this.control.installDelay > 0) await Bun.sleep(this.control.installDelay);
     if (target.rel === 'sw.js' && this.control.workerUpdate) {
       const data = Buffer.concat([readFileSync(target.file), Buffer.from('\n// worker更新テスト\n')]);
       return fileResponse(req, target.file, data, NO_STORE);
