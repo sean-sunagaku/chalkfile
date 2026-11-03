@@ -134,7 +134,7 @@ npm run build:site         # 講座サイト（site/dist）
 npm run serve              # 手元で見る（http://127.0.0.1:8765/）
 ```
 
-初めての書き出しで Remotion が Chrome Headless Shell をダウンロードしたまま止まるとき（Node.js 26 で、展開が終わらない）は、[pipeline.md のハマりどころ](.claude/skills/study-video-course/references/pipeline.md) の手順で手で展開します。
+初めての書き出しで Remotion が Chrome Headless Shell をダウンロードしたまま止まるとき（Node.js 26 で、展開が終わらない）は、[ハマりどころ](docs/operations/troubleshooting.md) の手順で手で展開します。
 
 一部だけ作り直すときは、`npm run synth -- L03 L05` のように、`--` のあとにレクチャー ID を渡します（mix・render も同じ）。台詞を直したら synth → mix → render → build_site の順に流します。
 
@@ -222,7 +222,7 @@ export const STRIPE_BILLING: Course = {
 
 動画を作り直したら、手元で `bun scripts/check_content.ts --require-denylist` → `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に実行し、マニフェストとポスターをコミットします。mainへのpushまたはmainを選んだActionsの手動実行で、素材取得・キャッシュ済み音声からの講義データ生成・型/単体/安全点検・Releases照合・strict buildを行ってからWranglerで公開します。動画が不足していたら止まります。
 
-設定・最小権限token・production environment・復旧を含む手順は [docs/workers-delivery.md](docs/workers-delivery.md)、実公開の保存・移行・無料枠測定の結果と確認範囲・残作業は [検証記録](docs/workers-verification.md) にあります。API tokenはGitHubのproduction secretにだけ入力し、値を会話やリポジトリへ貼らないでください。
+公開の順番は [docs/operations/publish.md](docs/operations/publish.md)、設定・最小権限token・production environment は [setup.md](docs/operations/setup.md)、復旧は [recovery.md](docs/operations/recovery.md)、実公開の保存・移行・無料枠測定の結果と確認範囲・残作業は [検証記録](docs/workers-verification.md) にあります。API tokenはGitHubのproduction secretにだけ入力し、値を会話やリポジトリへ貼らないでください。
 
 `bash scripts/legacy/deploy_pages.sh` は、旧 https://sean-sunagaku.github.io/chalkfile/ を移行案内だけに置き換える専用手順です。通常公開には使いません。旧保存cacheを残したまま、オンラインでは同じpath/query/hashの新サイトへ案内し、オフラインでは保存版を表示して保存し直しを案内します。保存と学習記録は異なるoriginへ自動移行しません。
 

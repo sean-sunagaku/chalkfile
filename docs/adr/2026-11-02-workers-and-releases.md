@@ -46,5 +46,5 @@
 - 静的なファイルに MP4 を入れない。サイトの組み立ての最後に、ファイルの数と大きさの枠と一緒に確かめる（`scripts/build_site.ts`）
 - 動画は merge の前に Releases に置く。置いた時点で、誰でも取れる
 - 旧 GitHub Pages は、新しいサイトへの案内だけを出す（[移行コードを終える期限](2026-11-02-legacy-pages-end-date.md)）
-- 公開の手順と初回の設定の正本は [workers-delivery.md](../workers-delivery.md)。データの流れは [全体図](../architecture/overview.md)
+- 公開の手順の正本は [公開の順番](../operations/publish.md)、初回の設定は [初回の設定](../operations/setup.md)、配り方の設計は [配信の設計](../architecture/delivery.md)。データの流れは [全体図](../architecture/overview.md)
 - 公式の説明: [Workers の制限](https://developers.cloudflare.com/workers/platform/limits/)・[静的なファイルの料金と制限](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)・[選んだパスで Worker を先に通す](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/)・[Releases について](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)

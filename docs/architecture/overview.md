@@ -31,7 +31,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  └─ scripts/build_site.ts（site/data・site/posters・動画の一覧を読む）→ site/dist
        └→ .github/workflows/deploy.yml（main への push）→ wrangler deploy → https://chalkfile.com/
 
-旧 https://sean-sunagaku.github.io/chalkfile/ ＝ gh-pages ブランチ（新しいサイトへの案内だけ。scripts/deploy_pages.sh）
+旧 https://sean-sunagaku.github.io/chalkfile/ ＝ gh-pages ブランチ（新しいサイトへの案内だけ。scripts/legacy/deploy_pages.sh）
 ```
 
 - 「追跡」は main で Git が追跡するファイル。ほかは `.gitignore` で外していて、手元だけにある
@@ -42,7 +42,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 
 | どこで | すること | 正本 |
 |---|---|---|
-| 手元 | 台本を書き、synth・mix・render で声と動画を作る。動画は `media.ts push` で Releases に、台詞の音声は `materials.ts push` で素材ブランチに置く | 順番は [workers-delivery.md](../workers-delivery.md) の「公開する順番」 |
+| 手元 | 台本を書き、synth・mix・render で声と動画を作る。動画は `media.ts push` で Releases に、台詞の音声は `materials.ts push` で素材ブランチに置く | 順番は [公開の順番](../operations/publish.md) |
 | PR の CI | 型検査・単体テスト・台本とファイルの点検 | `.github/workflows/check.yml` |
 | main の CI | 声も動画も作らない。素材ブランチから声を取り出して、時刻とサイトのデータを作り直す。動画の一覧を Releases と照らし、サイトを組み立てて点検してから、wrangler で出す。出したあと、全部の動画の Range を確かめる | `.github/workflows/deploy.yml` |
 
@@ -61,7 +61,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
             大きさと SHA-256 を確かめてブラウザに保存し、通信なしでも開けるようにする
 ```
 
-- Worker の動きの正本は `worker/src/media.ts`。決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md)
+- Worker の動きの正本は `worker/src/media.ts`。設計は [配信の設計](delivery.md)、決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md)
 - 保存の設計は、今はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md)
 
 ## 置き場所
@@ -72,7 +72,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材から作り直して置き換える。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-ja-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の動画の一覧が決める | render のあと、`media.ts push` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、deploy.yml が組み立てて出す |
-| `gh-pages` ブランチ（旧 `sean-sunagaku.github.io/chalkfile/`） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
+| `gh-pages` ブランチ（旧 `sean-sunagaku.github.io/chalkfile/`） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
 | 手元だけ（`.gitignore`） | `.work/`（声のキャッシュ・ミックスの設計図・読み）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts` |
 | リポジトリの外 | Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 初回に自動で取ってくる |
 

@@ -26,7 +26,7 @@ SWは `/media/` をページのURLより先に判定して講座を決める。�
 
 旧scope `/chalkfile/` の移行は `site/legacy-sw.ts`。install/activateで旧registry/course/shell cacheを削除しない。オンラインの次のページ移動で新サイトへ案内し、オフラインは完全な旧保存版からRange/シークを返して、保存し直しの案内を付ける。新originへの保存・メモ・進捗の自動転送はしない。旧UIの明示削除だけを受け付け、新規保存は新サイトで案内する。
 
-`tests/browser/migration.spec.ts` は本物の旧公開HTML/SWを使い、保存・記録・隣のアプリのcacheが残ることと、query/hashの移動を確認する。旧fixtureの出典は `site/legacy-config.json` と `docs/workers-delivery.md`。
+`tests/browser/migration.spec.ts` は本物の旧公開HTML/SWを使い、保存・記録・隣のアプリのcacheが残ることと、query/hashの移動を確認する。旧fixtureの出典は `site/legacy-config.json` と `docs/architecture/delivery.md`。
 
 ## 保存と更新の約束
 

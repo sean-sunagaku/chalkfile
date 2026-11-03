@@ -1,6 +1,6 @@
 // 手元の wrangler dev に、配信の約束を HTTP とブラウザで確かめる（本番には向けない）。
 // 使い方: bun scripts/smoke_worker.ts [BASE_URL] [--dist site/dist]
-// www は Host ヘッダーで試す。wrangler dev は --infer-origin-from-routes=false で起動する（docs/workers-delivery.md）。
+// www は Host ヘッダーで試す。wrangler dev は --infer-origin-from-routes=false で起動する（docs/operations/publish.md）。
 import { chromium } from '@playwright/test';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';

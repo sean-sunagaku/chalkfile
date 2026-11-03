@@ -61,7 +61,7 @@ uv run --locked --group audio python scripts/mix.py L01 L02     # 音
 CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字幕なし・サイト用の字幕焼き込み・配る用の字幕焼き込み）
 ```
 
-前提のツール、VOICEVOX の起動、ハマりどころは [references/pipeline.md](references/pipeline.md)。
+前提のツールと VOICEVOX の起動は [references/pipeline.md](references/pipeline.md)、ハマりどころは [troubleshooting.md](../../../docs/operations/troubleshooting.md)。
 
 ### 5. 確かめる
 
@@ -79,7 +79,7 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 ### 6. 公開する
 
-動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。具体的な初回設定・公開・復旧は [../../../docs/workers-delivery.md](../../../docs/workers-delivery.md)。
+動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。公開の順番の正本は [publish.md](../../../docs/operations/publish.md)、初回の設定は [setup.md](../../../docs/operations/setup.md)、復旧は [recovery.md](../../../docs/operations/recovery.md)。
 
 新しい講座をReleasesへ置いたときは、全レクチャーの `site/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
 

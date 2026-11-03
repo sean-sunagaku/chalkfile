@@ -75,7 +75,7 @@ async function main() {
     stage = 'CloudflareのCLI認可と対象zone確認';
     const zones = await json(cf(['zones', 'list', '--name', 'chalkfile.com', '--account-id', ACCOUNT]));
     if (!Array.isArray(zones) || zones.length !== 1 || zones[0].name !== 'chalkfile.com' || zones[0].account?.id !== ACCOUNT || zones[0].status !== 'active') throw new Error('対象zoneを一意に確認できません');
-    stage = '最小権限の確認。cf beta.26がWorkers Editorを発行できない場合はdocs/workers-delivery.mdの管理画面手順を使います';
+    stage = '最小権限の確認。cf beta.26がWorkers Editorを発行できない場合はdocs/operations/setup.mdの管理画面手順を使います';
     const groups = await json(cf(['accounts', 'tokens', 'permission-groups', 'list']));
     if (!Array.isArray(groups)) throw new Error('権限一覧の形式が不正です');
     const payload = { name: 'chalkfile-github-production', policies: tokenPolicies(groups, zones[0].id) };
