@@ -1,6 +1,6 @@
 // 場面「screens」: 画面の比較（改善前・改善後。架空のアプリの画面と、部品の右の番号つきの注）
 import React from 'react';
-import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../content/types';
+import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../engine/core/schema';
 import { DEVICE, MOCK, WINDOW_LIGHTS } from '../components/app-colors';
 import { Icon, Pill, Rich } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';

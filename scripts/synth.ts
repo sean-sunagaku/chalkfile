@@ -25,7 +25,7 @@ import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { timelineFile } from '../engine/core/generated';
 import { TIMELINE_SCHEMA, TIMING, timelineFingerprint, timelineJson } from '../engine/core/timeline';
 import { formatIssues, validateLecture } from '../engine/core/validate';
-import { VIDEO } from '../src/video.config';
+import { VIDEO } from '../engine/core/video-config';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { readSiteConfig } from './lib/config';
 import { withLock, writeAtomic } from './lib/fsx';

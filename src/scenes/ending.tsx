@@ -1,7 +1,7 @@
 // 場面「ending」: 次の章の予告（最後の動画は「おつかれさまでした」）とクレジット
 import React from 'react';
-import type { EndingScene } from '../../content/types';
-import { lectureCredits } from '../../content/voices';
+import type { EndingScene } from '../../engine/core/schema';
+import { lectureCredits } from '../../engine/core/voices';
 import { unitOf } from '../components/chrome';
 import { Content } from '../components/content';
 import { fitSize } from '../components/fit';

@@ -1,7 +1,7 @@
 // 場面「phone」: スマホの画面の流れ
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import type { PhoneScene, PhoneScreen } from '../../content/types';
+import type { PhoneScene, PhoneScreen } from '../../engine/core/schema';
 import { DEVICE, PHONE_APP } from '../components/app-colors';
 import { Icon, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';

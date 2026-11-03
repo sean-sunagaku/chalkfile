@@ -1,6 +1,6 @@
 // 場面「flow」: 流れの図（箱と矢印）
 import React from 'react';
-import type { FlowScene, Tone } from '../../content/types';
+import type { FlowScene, Tone } from '../../engine/core/schema';
 import { Edge, type Box } from '../components/edge';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';

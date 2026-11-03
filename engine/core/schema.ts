@@ -624,6 +624,12 @@ export type Course<A extends At = number> = {
 /** 台本に書く形の講座（動画の at に台詞の id も書ける）。id で at を書く動画を入れる講座は、この型にする。読み込むと Course になる */
 export type AuthoredCourse = Course<At>;
 
+/**
+ * 動画 1 本（レクチャー × 言語）。key は日本語なら S01、ほかは S01.en（engine/core/i18n.ts の videoKey）。
+ * 訳の動画の lecture と course は、訳を重ねたもの（その言語の講座）。一覧は content/index.ts の VIDEOS
+ */
+export type Video = { key: string; lang: Lang; lecture: Lecture; course: Course };
+
 /** 本文の書体。並べた順に使う（英字用の書体を先に置くと、英字だけその書体になる）。noto-sc は中国語（簡体字）の講座で日本語の書体の代わりに使う */
 export type FontKey = 'zen-maru' | 'noto' | 'inter' | 'noto-sc';
 

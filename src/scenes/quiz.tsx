@@ -1,7 +1,7 @@
 // 場面「quiz」: ○×クイズ
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
-import type { QuizScene } from '../../content/types';
+import type { QuizScene } from '../../engine/core/schema';
 import { Glass, gradientText, Pill, Smart } from '../components/ui';
 import { alpha, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';

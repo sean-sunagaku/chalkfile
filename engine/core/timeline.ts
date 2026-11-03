@@ -1,6 +1,6 @@
 // 動画 1 本の timeline（場面と台詞が始まるフレーム）のファイルの形・書き方・指紋（React・Remotion・Node に依存しない）。
 // 置き場所は content/<講座>/generated/timeline/<key>.json（engine/core/generated.ts）。scripts/synth.ts が音声の長さを測って書き、
-// Remotion（src/timelines.ts・src/Root.tsx）・台本の検証（engine/core/validate.ts・scripts/validate.ts）・静止画・教材が読む。
+// Remotion（src/project.ts が集め、src/Root.tsx が台本と照らし合わせる）・台本の検証（engine/core/validate.ts・scripts/validate.ts）・静止画・教材が読む。
 // 指紋は「時刻に効く入力」のハッシュで、台本を直したのに合成し直していない動画を、Studio と validate が見つける
 import { parseTimelineFile } from './generated';
 import { sha256Hex } from './hash';

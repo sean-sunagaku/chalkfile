@@ -1,10 +1,11 @@
-// src/video.config.ts の値のうち、Python（scripts/mix.py・scripts/build_music.py）が読むものを scripts/audio/video_config.json に書き出す。
+// 動画の決まった値（engine/core/video-config.ts。部品は src/video.config.ts から読む）のうち、Python（scripts/mix.py・scripts/build_music.py）が
+// 読むものを scripts/audio/video_config.json に書き出す。
 //   bun scripts/gen_video_config.ts           # 書き出す（npm run gen:video-config）。src/video.config.ts を変えたら流してコミットする
 //   bun scripts/gen_video_config.ts --check   # 書き出したものが今の値と合うかだけを見る（ずれていたら 1 で終える）
 // ずれは tests/video-config.test.ts も止める（CI の npm test）
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { PYTHON_CONFIG } from '../src/video.config';
+import { PYTHON_CONFIG } from '../engine/core/video-config';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { writeAtomic } from './lib/fsx';
 import { ROOT } from './lib/paths';
