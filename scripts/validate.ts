@@ -2,6 +2,7 @@
 //   bun scripts/validate.ts             # 誤りの一覧と、注意（warning）の数と内訳
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）
+//   npm run chalk -- validate           # 1 つの入口から、台本とファイルの点検（check_content.ts）と一緒に流す
 // 見るもの
 //   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）・
 //     講座をまたいだもの（レクチャー ID の頭文字・一覧の並び・講座 ID が重ならないか）
@@ -13,7 +14,8 @@
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
 // synth.ts の最初（対象の動画だけ）と Studio（src/Root.tsx。その動画だけ止める）も、同じ台本の検証を使う
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+// 終了コード: 0 誤りなし・1 誤りがある・2 使い方の誤り
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
@@ -21,11 +23,12 @@ import type { Course, Theme } from '../content/types';
 import { formatIssues, RULES, validateCourse, validateCourses, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
 import { mediaListFile, posterFile } from '../engine/core/generated';
 import { mediaKey, type MediaManifest } from '../site/media-shared';
+import { readArgs, runMain, showHelp } from './lib/args';
+import { readSiteConfig, type SiteConfig } from './lib/config';
+import { ROOT } from './lib/paths';
 import { readMediaLists } from './media-lists';
 import { PAGE_VERSION_MARK } from './site-version';
 import { readTimelinesByKey } from './timelines';
-
-const ROOT = path.resolve(import.meta.dir, '..');
 
 /** 公開で止まることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見るので、こちらに置く） */
 export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧' } as const;
@@ -36,9 +39,8 @@ export type Report = { ok: boolean; errors: number; warnings: number; courses: n
 
 /* ───────────── 講座サイトの設定と、公開で止まること ───────────── */
 
-/** site/config.json（scripts/build_site.ts も、この形で読む）。media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ） */
-export type SiteConfig = { series: string; seriesSub: string; baseUrl: string; repoUrl: string; publishLangs: Lang[]; media?: Partial<Record<Lang, { url: string; repo: string }>> };
-export const readSiteConfig = (): SiteConfig => JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')) as SiteConfig;
+/** site/config.json の形と読み方（scripts/build_site.ts も、ここから読む。置き場所は scripts/lib/config.ts） */
+export { readSiteConfig, type SiteConfig };
 
 /** 訳の言語の動画のサイトのパス（/media/en/ など。サイトと同じ origin なので、パスだけで指せる）。日本語と、動画のサイトの無い言語は null */
 export const mediaRootOf = (config: SiteConfig, lang: Lang): string | null => {
@@ -246,22 +248,24 @@ const breakdown = (issues: (Issue | PublishIssue)[]) => {
   return [...n].map(([k, v]) => `${k} ${v}`).join('・');
 };
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  for (const a of args) if (!['--json', '--warnings'].includes(a)) throw new Error(`知らない引数: ${a}（使えるのは --json と --warnings）`);
+const main = async (argv: string[]) => {
+  const { values } = readArgs(argv, { json: { type: 'boolean' }, warnings: { type: 'boolean' } });
+  if (values.help) return showHelp(import.meta.filename);
   const report = await validateAll();
-  if (args.includes('--json')) {
+  if (values.json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
     const errors = report.issues.filter((x) => x.level === 'error');
     const warnings = report.issues.filter((x) => x.level === 'warning');
-    const shown = args.includes('--warnings') ? [...errors, ...warnings] : errors;
+    const shown = values.warnings ? [...errors, ...warnings] : errors;
     // 表示に使うのは level・where・message だけ（rule の種類は問わない）
     if (shown.length) console.log(formatIssues(shown as Issue[]));
     console.log(
       `台本と公開の検証: 誤り ${report.errors} 件・注意 ${report.warnings} 件（${report.courses} 講座・${report.videos} 本の動画・${report.themes} テーマ。訳の講座も数える）`,
     );
-    if (warnings.length) console.log(`注意の内訳: ${breakdown(warnings)}${args.includes('--warnings') ? '' : '（一覧は --warnings）'}`);
+    if (warnings.length) console.log(`注意の内訳: ${breakdown(warnings)}${values.warnings ? '' : '（一覧は --warnings）'}`);
   }
-  process.exit(report.ok ? 0 : 1);
-}
+  return report.ok ? 0 : 1;
+};
+
+if (import.meta.main) await runMain(main);

@@ -4,6 +4,7 @@
 //   bun scripts/snapshots.ts            # 今の台本とスナップショットを比べる（違いを動画と台詞ごとに出す。違えば 1 で終わる）
 //   bun scripts/snapshots.ts --update   # 作り直す（わざと変えたときだけ。作り直したら、PR に「合成し直しが要る」と書く）
 // 置き場所と形は tests/fixtures/snapshots/README.md。動画 1 本に 1 ファイルで、全体の値（鍵の一覧など）は置かずにファイルから求める
+// 終了コード: 0 同じ（--update は作り直した）・1 違う・2 使い方の誤り
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -12,9 +13,10 @@ import { LANGS, parseVideoKey } from '../content/i18n';
 import type { VoiceId } from '../content/types';
 import { creditsIn, speechIn } from '../content/voices';
 import { fingerprint } from './i18n';
+import { readArgs, runMain, showHelp } from './lib/args';
+import { ROOT } from './lib/paths';
 import { ttsKeyIn } from './voices';
 
-const ROOT = path.resolve(import.meta.dir, '..');
 export const SNAPSHOT_DIR = path.join(ROOT, 'tests/fixtures/snapshots');
 
 /** 台詞 1 つ。at は synth.ts の読みの記録（.work/kana）と同じ「s<場面>-<台詞>」 */
@@ -195,12 +197,9 @@ export const report = ({ found }: Differences): string[] =>
 
 /* ───────────── 実行 ───────────── */
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  if (args.some((a) => a !== '--update')) {
-    console.error('使い方: bun scripts/snapshots.ts [--update]（--update はスナップショットを作り直す）');
-    process.exit(1);
-  }
+const main = (argv: string[]) => {
+  const { values: opt } = readArgs(argv, { update: { type: 'boolean' } });
+  if (opt.help) return showHelp(import.meta.filename);
   const values = speechValues();
   const diff = differences(readSnapshot(), values);
   const lines = report(diff);
@@ -212,12 +211,14 @@ if (import.meta.main) {
     `訳の指紋 ${values.filter((v) => v.fingerprint).length} 本`,
   ].join('・');
   for (const l of lines) console.log(l);
-  if (args.includes('--update')) {
+  if (opt.update) {
     writeSnapshot(values);
     console.log(`${lines.length ? '作り直した' : '変わっていない（書き直しただけ）'}: ${path.relative(ROOT, SNAPSHOT_DIR)}/videos（${size}）`);
     if (diff.resynth.length) console.log(`PR に「合成し直しが要る」と書く。スナップショットに無い鍵がある動画（鍵の数）: ${diff.resynth.join(' ')}`);
   } else {
     console.log(lines.length ? `スナップショットと違う。わざと変えたなら bun scripts/snapshots.ts --update（${size}）` : `スナップショットと同じ（${size}）`);
-    process.exit(lines.length ? 1 : 0);
+    return lines.length ? 1 : 0;
   }
-}
+};
+
+if (import.meta.main) await runMain(main);

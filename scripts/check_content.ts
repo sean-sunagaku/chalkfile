@@ -20,7 +20,8 @@
 //        .vscode/settings.json のシェル・実行ファイルの場所・自動で動く tasks の許可、Git の hooks を入れる package.json の項目も
 //      - npm のインストール時スクリプト［install-script］
 //      - Claude Code［claude］: .claude/ に入れてよいのはスキルと launch.json だけ。スキルの頭書きに hooks・allowed-tools を書かない
-//      - .claude/launch.json が起動するのは、決めたコマンドだけ［launch］（LAUNCH_COMMANDS）
+//      - .claude/launch.json が起動するのは、決めたコマンドだけ［launch］（LAUNCH_COMMANDS。npm run で package.json の scripts を起こす。
+//        その scripts の中身も決めたものだけにし、npm が前後に流す pre・post のスクリプトを置かない）
 //      - AI への指示のファイル（CLAUDE.md・AGENTS.md）［agents］: リポジトリの直下にだけ置く。@ で読み込むのはリポジトリの中のファイルだけ
 //        （Claude Code は @<パス> のファイルを開いた人の手元から読んで AI に渡す。~ や / で始まるパス・.. で外に出るパス・.git/・認証ファイルを止める）
 //
@@ -35,11 +36,12 @@
 //   見つけた所が、台本の文字列の中の text の所に収まるときだけ外れる（同じ文字列のほかの所・ほかの規則は、そのまま見る）。
 //   外せるのは injection・html・http・email・phone。見えない文字・制御文字・秘密情報の形・禁止語は外せない。
 //   前の書き方（文字列だけ。含めば全部の点検を飛ばしていた）は、どの規則を外すつもりかが分からないので読み替えず、止めて書き直しを促す
+// 終了コード: 0 止めるものなし・1 止めるものがある・2 使い方の誤り・3 前提が足りない（--require-denylist で禁止語の一覧が無い）
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, type Stats } from 'node:fs';
 import path from 'node:path';
-
-const ROOT = path.resolve(import.meta.dir, '..');
+import { EXIT, readArgs, runMain, showHelp } from './lib/args';
+import { ROOT } from './lib/paths';
 
 type Level = 'error' | 'warn';
 /** 規則の名前。出力の［］の中と、scripts/content-allow.json の rule に使う */
@@ -336,17 +338,25 @@ export const checkPath = (f: string, bytes: number | undefined, out: Finding[]) 
   if (AGENT_FILE.test(f) && f.includes('/')) stop('agents', 'AI への指示のファイル（CLAUDE.md・AGENTS.md）は、リポジトリの直下にだけ置く（下のフォルダのものは、そこで作業するときだけ AI が読むので、見落としやすい）');
 };
 
-/** .claude/launch.json（Claude Code のプレビューが起動するコマンド）で起動してよいもの。後ろに付けてよいのは、port が true のものの --port <番号> だけ */
-export const LAUNCH_COMMANDS: { argv: string[]; port: boolean }[] = [
-  { argv: ['bun', 'scripts/serve.ts'], port: false }, // 講座サイト（番号は環境変数 PORT で変える）
-  { argv: ['npx', 'remotion', 'studio'], port: true }, // Remotion Studio（--config などで別のファイルを読ませない）
-  { argv: ['npx', 'wrangler', 'dev'], port: true }, // Worker を手元で（--remote で Cloudflare のアカウントを使わせない）
+/**
+ * .claude/launch.json（Claude Code のプレビューが起動するコマンド）で起動してよいもの。どれも package.json の scripts を npm run で起こす
+ * （npx は、手元に無い依存をネットから取ってくるので使わない）。script はその scripts の中身で、ほかの中身にすると止める。
+ * 後ろに付けてよいのは、port が true のものの -- --port <番号> だけ（-- が無いと、npm が --port を自分の設定として読む）
+ */
+export const LAUNCH_COMMANDS: { argv: string[]; port: boolean; script: string }[] = [
+  // 講座サイト（番号は環境変数 PORT で変える）
+  { argv: ['npm', 'run', 'serve'], port: false, script: 'bun scripts/serve.ts' },
+  // Remotion Studio（--config などで別のファイルを読ませない）
+  { argv: ['npm', 'run', 'studio'], port: true, script: 'remotion studio' },
+  // Worker を手元で（先に Worker の許可リストを作る。--remote で Cloudflare のアカウントを使わせない）
+  { argv: ['npm', 'run', 'dev:worker'], port: true, script: 'bun scripts/gen.ts --media && wrangler dev' },
 ];
 /** launch.json の 1 つの設定に書いてよい項目。env・cwd などがあると、決めた一覧の外のものが動きうる */
 const LAUNCH_KEYS = ['name', 'runtimeExecutable', 'runtimeArgs', 'port', 'url'];
 const LOCAL_URL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?\/?$/;
 const isPortArgs = (rest: string[]) =>
-  !rest.length || (rest.length === 1 && /^--port=\d{1,5}$/.test(rest[0])) || (rest.length === 2 && rest[0] === '--port' && /^\d{1,5}$/.test(rest[1]));
+  !rest.length ||
+  (rest[0] === '--' && ((rest.length === 2 && /^--port=\d{1,5}$/.test(rest[1])) || (rest.length === 3 && rest[1] === '--port' && /^\d{1,5}$/.test(rest[2]))));
 export const checkLaunch = (where: string, text: string, out: Finding[]) => {
   const stop = (what: string) => { out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' }); };
   let value: unknown;
@@ -377,7 +387,7 @@ export const checkLaunch = (where: string, text: string, out: Finding[]) => {
     const argv = [c.runtimeExecutable, ...(Array.isArray(c.runtimeArgs) ? c.runtimeArgs : c.runtimeArgs === undefined ? [] : [c.runtimeArgs])];
     const ok = argv.every((a) => typeof a === 'string') &&
       LAUNCH_COMMANDS.some(({ argv: cmd, port }) => cmd.every((x, k) => argv[k] === x) && (port ? isPortArgs(argv.slice(cmd.length) as string[]) : argv.length === cmd.length));
-    if (!ok) stop(`${at}の起動コマンドが、決めた一覧の外（${shown(argv.map(String).join(' '))}）。起動してよいのは ${LAUNCH_COMMANDS.map((x) => `${x.argv.join(' ')}${x.port ? ' [--port <番号>]' : ''}`).join('・')}`);
+    if (!ok) stop(`${at}の起動コマンドが、決めた一覧の外（${shown(argv.map(String).join(' '))}）。起動してよいのは ${LAUNCH_COMMANDS.map((x) => `${x.argv.join(' ')}${x.port ? ' [-- --port <番号>]' : ''}`).join('・')}`);
   });
 };
 
@@ -428,7 +438,7 @@ const checkBunfig = (where: string, text: string, out: Finding[]) => {
 const INSTALL_SCRIPTS = ['preinstall', 'install', 'postinstall', 'preprepare', 'prepare', 'postprepare', 'prepublish', 'dependencies'];
 /** 依存のインストール時スクリプトで、Git の hooks を入れる設定 */
 const HOOK_INSTALLERS = ['husky', 'simple-git-hooks'];
-const checkPackageJson = (where: string, text: string, out: Finding[]) => {
+const checkPackageJson = (where: string, text: string, out: Finding[], root: boolean) => {
   let pkg: unknown;
   try {
     pkg = JSON.parse(text);
@@ -443,6 +453,15 @@ const checkPackageJson = (where: string, text: string, out: Finding[]) => {
   }
   for (const k of HOOK_INSTALLERS) {
     if (pkg[k] !== undefined) out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: Git の hooks を入れる設定（${k}）`, sample: '', rule: 'autorun' });
+  }
+  if (!root) return;
+  // .claude/launch.json が npm run で起こす scripts は、決めた中身だけにする。npm がその前後に流す pre・post も置かない
+  for (const { argv, script } of LAUNCH_COMMANDS) {
+    const name = argv[2];
+    if (scripts[name] !== undefined && scripts[name] !== script) out.push({ level: 'error', where, what: `.claude/launch.json が起こす npm run ${name} の中身が、決めたもの（${script}）と違う。変えるなら scripts/check_content.ts の LAUNCH_COMMANDS も直す`, sample: shown(String(scripts[name])), rule: 'launch' });
+    for (const k of [`pre${name}`, `post${name}`]) {
+      if (scripts[k] !== undefined) out.push({ level: 'error', where, what: `.claude/launch.json が起こす npm run ${name} の前後に、npm が流すスクリプト（${k}）は置かない`, sample: shown(String(scripts[k])), rule: 'launch' });
+    }
   }
 };
 
@@ -467,7 +486,7 @@ export const checkFileText = (f: string, text: string, out: Finding[], deny: str
   if (/(^|\/)\.claude\/launch\.json$/.test(f)) checkLaunch(where, text, out);
   if (/(^|\/)\.vscode\/settings\.json$/.test(f)) checkVscodeSettings(where, text, out);
   if (/(^|\/)\.?bunfig\.toml$/.test(f)) checkBunfig(where, text, out);
-  if (/(^|\/)package\.json$/.test(f)) checkPackageJson(where, text, out);
+  if (/(^|\/)package\.json$/.test(f)) checkPackageJson(where, text, out, f === 'package.json');
   if (/(^|\/)\.claude\/skills\/.+\/SKILL\.md$/.test(f)) checkSkill(where, text, out);
   if (AGENT_FILE.test(f)) {
     for (const p of agentImportsOutside(text)) out.push({ level: 'error', where, what: 'AI への指示のファイルが、リポジトリの外か Git に入れないファイルを @ で読み込む（開いた人の手元のファイルが AI に渡る）', sample: shown(p), rule: 'agents' });
@@ -505,30 +524,26 @@ export const checkFiles = (out: Finding[], { root = ROOT, deny }: { root?: strin
 
 /** 見つけるべき例を見つけ、見逃すべき例を見逃すか。例と確かめ方は tests/check-content.test.ts にあり、bun test で流す（CI はこの入口から呼ぶ） */
 const SELF_TEST = 'tests/check-content.test.ts';
-const selfTest = () => {
+const selfTest = (): number => {
   const r = Bun.spawnSync([process.execPath, 'test', path.join(ROOT, SELF_TEST)], { cwd: ROOT, stdin: 'ignore', stdout: 'inherit', stderr: 'inherit' });
   console.log(r.exitCode === 0 ? `点検の点検: ${SELF_TEST} の例が全部合った` : `点検の点検: 合わない例がある（${SELF_TEST}。上の bun test の出力を見る）`);
-  process.exit(r.exitCode === 0 ? 0 : 1);
+  return r.exitCode === 0 ? 0 : 1;
 };
 
 /* ───────────── 実行 ───────────── */
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  const unknown = args.filter((a) => a !== '--self-test' && a !== '--require-denylist');
-  if (unknown.length) {
-    console.error(`知らない引数です: ${unknown.join(' ')}（使えるのは --self-test と --require-denylist）`);
-    process.exit(2);
-  }
-  if (args.includes('--self-test')) selfTest();
+const main = async (argv: string[]) => {
+  const { values } = readArgs(argv, { 'self-test': { type: 'boolean' }, 'require-denylist': { type: 'boolean' } });
+  if (values.help) return showHelp(import.meta.filename);
+  if (values['self-test']) return selfTest();
   // ローカルの禁止語の一覧が無いと、非公開の名前が入っても止まらない。手元でははっきり警告し、CI（一覧を置かない）では注意だけにする
   const ci = process.env.CI === 'true';
   const { shared, local } = denylistPaths();
   const places = [...(shared ? [`    ${shared}（同じ clone の全部の worktree が読む）`] : []), `    ${local}（この作業フォルダだけ）`];
   const terms = denylistTerms();
-  if (!terms.length && args.includes('--require-denylist')) {
+  if (!terms.length && values['require-denylist']) {
     console.error(['止める  ローカルの禁止語の一覧が無いので止めます（--require-denylist）。1 行 1 語の一覧を、次のどちらかに置いてください', ...places].join('\n'));
-    process.exit(1);
+    return EXIT.missing;
   }
   const out: Finding[] = [];
   const allow = allowList();
@@ -552,5 +567,7 @@ if (import.meta.main) {
       '  1 行 1 語の一覧を、次のどちらかに置く（どちらも Git に入らない）', ...places,
       '  一覧が無いときに止めるには --require-denylist を付ける（手元から公開物を出す前に使う）', bar].join('\n'));
   }
-  process.exit(errors.length ? 1 : 0);
-}
+  return errors.length ? 1 : 0;
+};
+
+if (import.meta.main) await runMain(main);

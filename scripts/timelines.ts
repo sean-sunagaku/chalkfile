@@ -3,8 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { entriesByKey, timelineEntry, type TimelineEntry } from '../engine/core/timeline';
-
-const ROOT = path.resolve(import.meta.dir, '..');
+import { ROOT } from './lib/paths';
 
 /** 置いてある timeline のファイル（リポジトリの直下からのパス・名前の順）。root を渡すと、ほかの checkout を読む */
 export const timelineFiles = (root = ROOT): string[] => {

@@ -4,13 +4,12 @@
 //       だけを書き直す。ほかの講座の一覧には触らない（手元の動画が一覧と違えば、知らせるだけ）。前のハッシュの動画は消さず retained に回す
 //   bun scripts/media.ts check            # 全講座の一覧の動画が Releases にあり、大きさと SHA-256 が合うか（手元にあれば手元の動画も）
 //   bun scripts/media.ts pull [講座 ID…]  # 一覧の日本語の動画を、Releases から site/media/ に取り出す（手元の変更は上書きしない）
+//   npm run chalk -- media push|check|pull …   # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 全講座の一覧（Worker の許可リスト）は、npm run gen が講座ごとの一覧をつないで worker/src/generated/media-manifest.json に作る（Git に入れない）
-import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+// gh の認証が要る（push と pull。check も Releases を読む）。終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（gh が無い）
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { parseArgs } from 'node:util';
 import { COURSES, coursesIn } from '../content';
 import { isLang, LANGS, videoKey, type Lang } from '../content/i18n';
 import { mediaListFile, posterFile } from '../engine/core/generated';
@@ -19,45 +18,31 @@ import {
   MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, retainDeadline, retainedWarnings, validateMediaManifest,
   type MediaEntry, type MediaManifest, type RetainedMediaEntry,
 } from '../site/media-shared';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
+import { writeAtomic } from './lib/fsx';
+import { sha256File } from './lib/hash';
+import { ROOT } from './lib/paths';
+import { run, tailOf } from './lib/proc';
 import { mediaManifestJson, readCourseMedia, readMediaLists } from './media-lists';
 
-const ROOT = path.resolve(import.meta.dir, '..');
 export const localMediaPath = (e: Pick<MediaEntry, 'lang' | 'lecture' | 'kind'>, root = ROOT) =>
   path.join(root, 'site/media', `${e.lecture}${e.lang === 'ja' ? '' : `.${e.lang}`}${e.kind === 'captioned' ? '.cc' : ''}.mp4`);
-const digest = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex');
-
 /* ───────────── 講座ごとの一覧 ───────────── */
 
 /** 全講座の動画の一覧（Worker の許可リスト・サイトの組み立て・check・serve が読む）。講座の登録（COURSES）の順につなぐ（scripts/media-lists.ts） */
 export const readMediaManifest = (root = ROOT): MediaManifest => readMediaLists(COURSES.map((c) => c.id), root);
-/** 一時の名前に書いてから置き換える（途中で止まっても、前の中身か新しい中身のどちらかになる） */
-function writeAtomic(file: string, text: string) {
-  mkdirSync(path.dirname(file), { recursive: true });
-  const pending = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
-  writeFileSync(pending, text);
-  renameSync(pending, file);
-}
 
 /* ───────────── GitHub ───────────── */
 
 /** gh を流して標準出力を返す（テストでは偽物に差し替える） */
 export type Gh = (args: string[]) => string;
-/**
- * gh のエラーの出力から、秘密情報に見えるもの（token・Authorization・署名つきの URL の query）を伏せる（P-30）。
- * gh は既存の認証を内部で使う。認証ファイル・token・HTTP header を読み出したり表示したりしない
- */
-export const redact = (text: string) => text
-  .replace(/\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '［伏せた token］')
-  .replace(/(authorization:?\s*)(?:bearer\s+|token\s+|basic\s+)?\S+/gi, '$1［伏せた］')
-  .replace(/(https?:\/\/[^\s"'<>?]+)\?[^\s"'<>]*/g, '$1?［伏せた］');
+/** gh は既存の認証を内部で使う。エラーの出力は、token などを伏せてから出す（scripts/lib/proc.ts の redact） */
 const realGh: Gh = (args) => {
-  try { return execFileSync('gh', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024 }); }
-  catch (e) {
-    // 理由が分かるように gh のエラーの出力も出す（伏せてから、最後の 5 行・500 字まで）
-    const stderr = (e as { stderr?: string | Buffer }).stderr;
-    const detail = redact(String(stderr ?? '')).trim().split('\n').slice(-5).join(' / ').slice(0, 500);
-    throw new Error(`GitHub の操作に失敗しました: ${args[0]} ${args[1]}（認証・権限・通信を確認してください）${detail ? `: ${detail}` : ''}`);
-  }
+  const r = run('gh', args, { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 });
+  if (r.code === 0) return r.stdout;
+  // 理由が分かるように gh のエラーの出力も出す（伏せてから、最後の 5 行・500 字まで）
+  const detail = tailOf(r.stderr);
+  throw new Error(`GitHub の操作に失敗しました: ${args[0]} ${args[1]}（認証・権限・通信を確認してください）${detail ? `: ${detail}` : ''}`);
 };
 type ReleaseAsset = { name: string; size: number; state: string; digest?: string | null };
 function assetsOf(tag: string, gh: Gh): ReleaseAsset[] {
@@ -84,7 +69,7 @@ export function verifyLocalMedia(entries: MediaEntry[], required = false, root =
   for (const e of entries) {
     const file = localMediaPath(e, root);
     if (!existsSync(file)) { if (required) throw new Error(`手元の動画がありません: ${mediaKey(e)}`); continue; }
-    if (statSync(file).size !== e.bytes || digest(file) !== e.sha256) throw new Error(`手元の動画とマニフェストが違います: ${mediaKey(e)}`);
+    if (statSync(file).size !== e.bytes || sha256File(file) !== e.sha256) throw new Error(`手元の動画とマニフェストが違います: ${mediaKey(e)}`);
     checked++;
   }
   return checked;
@@ -155,7 +140,7 @@ export async function pullMedia(courses: string[] = []) {
   for (const e of entries) {
     const file = localMediaPath(e);
     if (!existsSync(file)) missing.push(e);
-    else if (statSync(file).size !== e.bytes || digest(file) !== e.sha256) throw new Error(`既存の動画を上書きしません: ${mediaKey(e)}。手元の変更を保管してから再試行してください。`);
+    else if (statSync(file).size !== e.bytes || sha256File(file) !== e.sha256) throw new Error(`既存の動画を上書きしません: ${mediaKey(e)}。手元の変更を保管してから再試行してください。`);
   }
   const temp = mkdtempSync(path.join(tmpdir(), 'chalkfile-media-pull-'));
   try {
@@ -165,7 +150,7 @@ export async function pullMedia(courses: string[] = []) {
     }
     for (const e of missing) {
       const file = path.join(temp, e.filename);
-      if (statSync(file).size !== e.bytes || digest(file) !== e.sha256) throw new Error(`取得した動画が一致しません: ${mediaKey(e)}`);
+      if (statSync(file).size !== e.bytes || sha256File(file) !== e.sha256) throw new Error(`取得した動画が一致しません: ${mediaKey(e)}`);
     }
     for (const e of missing) { mkdirSync(path.dirname(localMediaPath(e)), { recursive: true }); copyFileSync(path.join(temp, e.filename), localMediaPath(e)); }
     verifyLocalMedia(entries, true);
@@ -200,7 +185,7 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
       const partial = { lang, course: course.id, lecture: l.id, kind };
       const file = localMediaPath(partial, root);
       if (!existsSync(file)) { if (kind === 'captioned') continue; throw new Error(`通常動画がありません: ${course.id}/${videoKey(l.id, lang)}（${path.relative(root, file)}）`); }
-      const sha256 = digest(file);
+      const sha256 = sha256File(file);
       entries.push({ ...partial, bytes: statSync(file).size, sha256, filename: mediaFilename({ ...partial, sha256 }), tag: `media-${lang}-${course.id}` });
     }
     // 一覧から外れた前のハッシュは消さず retained に回す（Release の asset も消さない）
@@ -233,7 +218,8 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
       verifyReleaseAssets(fresh.filter((e) => e.tag === tag), assetsOf(tag, gh));
       log(`${tag}: 新規 ${missing.length} 本（既存のハッシュは保持）`);
     }
-    // 選んだ講座の公開 asset を全部確かめてから、その講座の一覧だけを書き直す（ほかの講座の一覧のファイルには触らない）
+    // 選んだ講座の公開 asset を全部確かめてから、その講座の一覧だけを書き直す（ほかの講座の一覧のファイルには触らない）。
+    // 一覧は、同じフォルダの一時の名前に書いてから置き換える（途中で止まっても、前の一覧か新しい一覧のどちらかになる）
     for (const u of updates) {
       writeAtomic(path.join(root, u.file), mediaManifestJson(u.manifest));
       checkMedia(u.manifest, gh, root, log);
@@ -243,22 +229,36 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
   // ほかの講座で、手元の動画が一覧と違うもの（書き出し直したが push していない、など）。push はしないで知らせる
   for (const e of others(before.entries)) {
     const file = localMediaPath(e, root);
-    if (existsSync(file) && (statSync(file).size !== e.bytes || digest(file) !== e.sha256)) {
+    if (existsSync(file) && (statSync(file).size !== e.bytes || sha256File(file) !== e.sha256)) {
       console.warn(`注意: 手元の動画が一覧と違う（push していない）: ${mediaKey(e)}。その講座を出すなら bun scripts/media.ts push --course ${e.course}`);
     }
   }
 }
 
-if (import.meta.main) {
-  const [command, ...rest] = process.argv.slice(2);
-  const usage = '使い方: bun scripts/media.ts push --course <講座 ID> [--course <講座 ID>…] [--lang ja] | check | pull [講座 ID…]';
-  try {
-    if (command === 'push') {
-      const { values } = parseArgs({ args: rest, options: { course: { type: 'string', multiple: true }, lang: { type: 'string', default: 'ja' } }, strict: true });
-      if (!isLang(values.lang)) throw new Error(`--lang は ${LANGS.join('・')} のどれか: ${values.lang}`);
-      await pushMedia({ courses: values.course ?? [], lang: values.lang });
-    } else if (command === 'check') checkMedia();
-    else if (command === 'pull') await pullMedia(rest);
-    else throw new Error(usage);
-  } catch (e) { console.error(e instanceof Error ? e.message : '動画の処理に失敗しました。'); process.exit(1); }
-}
+/* ───────────── コマンド ───────────── */
+
+const main = async (argv: string[]) => {
+  const [command, ...rest] = argv;
+  if (command === '-h' || command === '--help') return showHelp(import.meta.filename);
+  if (command === undefined) throw new UsageError('コマンドを選ぶ: push・check・pull（使い方は --help）');
+  if (command === 'push') {
+    const { values } = readArgs(rest, { course: { type: 'string', multiple: true }, lang: { type: 'string', default: 'ja' } });
+    if (values.help) return showHelp(import.meta.filename);
+    if (!isLang(values.lang)) throw new UsageError(`--lang は ${LANGS.join('・')} のどれか: ${values.lang}`);
+    if (!values.course?.length) throw new UsageError('push する講座を選んでください: bun scripts/media.ts push --course <講座 ID> [--lang ja]');
+    return pushMedia({ courses: values.course, lang: values.lang });
+  }
+  if (command === 'check') {
+    const { values } = readArgs(rest, {});
+    if (values.help) return showHelp(import.meta.filename);
+    return checkMedia();
+  }
+  if (command === 'pull') {
+    const { values, positionals } = readArgs(rest, {}, { positionals: true });
+    if (values.help) return showHelp(import.meta.filename);
+    return pullMedia(positionals);
+  }
+  throw new UsageError(`知らないコマンド: ${command}（push・check・pull。使い方は --help）`);
+};
+
+if (import.meta.main) await runMain(main);

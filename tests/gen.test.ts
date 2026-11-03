@@ -71,6 +71,6 @@ describe('README の講座の表と、new-course.md の頭文字の表', () => {
 describe('Worker の許可リスト', () => {
   test('講座ごとの動画の一覧をつないだもの（--media だけでも作る）', () => {
     expect(generated('media')).toEqual(new Map([[WORKER_MEDIA, mediaManifestJson(readMediaManifest())]]));
-    expect([...generated().keys()]).toEqual([WORKER_MEDIA, 'README.md', 'docs/guide/new-course.md']);
+    expect([...generated().keys()]).toEqual([WORKER_MEDIA, 'README.md', 'docs/guide/new-course.md', 'docs/guide/commands.md']);
   });
 });

@@ -5,8 +5,7 @@ import path from 'node:path';
 import { LANGS } from '../content/i18n';
 import { mediaListFile, parseMediaListFile } from '../engine/core/generated';
 import { allMediaEntries, mediaKey, validateMediaManifest, type MediaManifest } from '../site/media-shared';
-
-const ROOT = path.resolve(import.meta.dir, '..');
+import { ROOT } from './lib/paths';
 
 /** 講座の、ある言語の動画の一覧（無ければ null）。形と、項目の講座・言語がファイルの置き場所と合うかを確かめる */
 export function readCourseMedia(courseId: string, lang: string, root = ROOT): MediaManifest | null {

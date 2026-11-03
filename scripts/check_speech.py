@@ -15,6 +15,7 @@ synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対�
 
   uv run --locked --script scripts/check_speech.py P01.en P01.zh       # 動画ごと
   uv run --locked --script scripts/check_speech.py --all                # .work/speech/ の全部
+  npm run chalk -- voice speech-check --course <講座 ID>              # 1 つの入口からも流せる
 
 依存の版は頭書きと scripts/check_speech.py.lock で固定する。頭書きを変えたら uv lock --script scripts/check_speech.py でロックも作り直す。
 
@@ -25,6 +26,8 @@ synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対�
 違う読みは content/reading.ts の ZH_PHRASES に足す。
 直し方: 台詞に s（読み上げ用の文）を書いて、bun scripts/synth.ts <key> で作り直す。
 Whisper のモデル（medium、MIT）は初めて使うときに Hugging Face からダウンロードされる。
+聞き取りの記録（.work/speech/heard.json）と報告は、一時の名前に書いてから置き換える（途中で止めても壊れない）。
+終了コード: 0 できた・1 失敗・2 使い方の誤り
 """
 
 from __future__ import annotations
@@ -35,6 +38,14 @@ import sys
 import unicodedata
 import wave
 from pathlib import Path
+
+sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
+
+from audio.common import USAGE, stop, voice_file, wants_help, write_atomic
+
+if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy・Whisper）を読む前に、使い方だけを出す
+    print(__doc__)
+    raise SystemExit(0)
 
 import numpy as np
 from scipy.signal import resample_poly
@@ -85,16 +96,19 @@ def dist(a: list, b: list) -> int:
 
 
 def main() -> None:
+    keys = sys.argv[1:]
+    if keys == ["--all"]:
+        keys = sorted(p.stem for p in SPEECH.glob("*.json"))
+    elif not keys or any(k.startswith("-") for k in keys):
+        stop(USAGE, "使い方: uv run --locked --script scripts/check_speech.py P01.en P01.zh | --all（--help で説明）")
+    if not keys:
+        stop(USAGE, "聞き取る動画が無い（.work/speech/ が空。先に訳の動画で npm run synth -- <key>）")
+
     from faster_whisper import WhisperModel
     from opencc import OpenCC
     from cn2an import an2cn
     from pypinyin import Style, lazy_pinyin, pinyin
 
-    keys = sys.argv[1:]
-    if keys == ["--all"]:
-        keys = sorted(p.stem for p in SPEECH.glob("*.json"))
-    if not keys:
-        raise SystemExit("使い方: uv run --locked --script scripts/check_speech.py P01.en P01.zh | --all")
     t2s = OpenCC("t2s")
     asr = WhisperModel("medium", device="cpu", compute_type="int8")
     # 聞き取りの結果は音声ファイルごとに覚えておく（名前は文と声から決まるので、台詞を直した所だけ聞き直す）
@@ -107,9 +121,11 @@ def main() -> None:
         rows = []
         for ln in data["lines"]:
             if ln["file"] not in heard:
-                segs, _ = asr.transcribe(read16k(ROOT / ln["file"]), language=lang, beam_size=1, condition_on_previous_text=False)
+                # 音声は、共有のキャッシュ → .work/tts の順に探す（記録の鍵は、場所に縛られない名前のまま）
+                segs, _ = asr.transcribe(read16k(voice_file(ROOT, ln["file"])), language=lang, beam_size=1, condition_on_previous_text=False)
                 heard[ln["file"]] = "".join(s.text for s in segs).strip()
-                cache_file.write_text(json.dumps(heard, ensure_ascii=False))
+                # 一時の名前に書いてから置き換える（途中で止めても、聞き取りの記録が壊れない）
+                write_atomic(cache_file, json.dumps(heard, ensure_ascii=False))
             hyp = heard[ln["file"]]
             if lang == "zh":
                 # 中国語の中の英語の語（pstack・poteto mode など）は、中国語の聞き取りでは崩れるので比べない（読みは .work/kana/ の音素で見る）。
@@ -149,7 +165,7 @@ def main() -> None:
             out.extend(f"  {ctx}  {r}" for ctx, r in seen.items())
         text = "\n".join(out)
         print(text, flush=True)
-        (SPEECH / f"{key}.report.txt").write_text(text + "\n")
+        write_atomic(SPEECH / f"{key}.report.txt", text + "\n")
     print(f"要確認 {worst_all} 台詞" if worst_all else "全部の台詞が聞き取れた（誤り率 0.25 以下）")
 
 

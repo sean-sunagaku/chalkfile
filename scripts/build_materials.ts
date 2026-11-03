@@ -3,22 +3,26 @@
 //   bun scripts/build_materials.ts                 # 教材を持つ全講座（消した章・講座の古いファイルも消す）
 //   bun scripts/build_materials.ts nudge-product   # 一部の講座だけ（その講座のフォルダの古いファイルも消す）
 //   bun scripts/build_materials.ts --check         # 書かずに、作り直したものと docs/courses を比べる（違えば一覧を出して 1 で終える。CI の check）
+//   npm run chalk -- docs build [--check]          # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 出力（docs/courses/<講座 ID>/）:
 //   README.md            講座の設計（全体の目次・到達目標・動画構成）
 //   <章 ID>.md           章の一式（教材本文・ナレーション台本・絵コンテ・図解と比較例・確認問題・実践課題・要点と参考資料・AI チャットの質問例）
 //   chunks.jsonl         AI 質問チャットが参照する単位（節・図・課題・問題）。id は章 ID・節 ID をそのまま使う
 // 絵コンテの秒数とナレーションの時刻は、Git に入れている timeline（content/<講座>/generated/timeline/<ID>.json）から取る。
 // まだ無ければ秒数は空欄になる。話し手の名前は講座の cast（無ければ役の名前）、声の名前は creditsIn から。Markdown の頭には生成物の印を書く
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+// 終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../content';
 import type { Course, Evidence, Figure, Lecture, Source, VoiceId } from '../content/types';
 import { creditsIn, VOICES, voicesOf } from '../content/voices';
 import { describeScene, SCENE_INFO } from '../engine/core/scenes';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
+import { writeAtomic } from './lib/fsx';
+import { ROOT } from './lib/paths';
 import { readTimelinesByKey } from './timelines';
 import { materialProblems } from './validate';
 
-const ROOT = path.resolve(import.meta.dir, '..');
 const OUT = path.join(ROOT, 'docs/courses');
 /** 生成する Markdown の頭の印（scripts/check_docs.ts の hasGeneratedMark が見る） */
 export const GENERATED_MARK = '<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->';
@@ -283,28 +287,23 @@ const existingFiles = (wanted: string[]): string[] => {
   return wanted.length ? files.filter((f) => f === 'README.md' || wanted.includes(f.split('/')[0])) : files;
 };
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  const check = args.includes('--check');
-  for (const a of args) if (a.startsWith('--') && a !== '--check') throw new Error(`知らない引数: ${a}（使えるのは講座 ID と --check）`);
-  const wanted = args.filter((a) => !a.startsWith('--'));
-  for (const id of wanted) if (!COURSES.some((c) => c.id === id && c.syllabus)) throw new Error(`教材（syllabus）を持つ講座が無い: ${id}`);
+const main = (argv: string[]) => {
+  const { values, positionals: wanted } = readArgs(argv, { check: { type: 'boolean' } }, { positionals: true });
+  if (values.help) return showHelp(import.meta.filename);
+  for (const id of wanted) if (!COURSES.some((c) => c.id === id && c.syllabus)) throw new UsageError(`教材（syllabus）を持つ講座が無い: ${id}`);
   const outputs = materialOutputs(wanted);
   if (!outputs.size) console.log('教材（syllabus）を持つ講座がありません');
   // 消した章・講座の古いファイル（作るものに無い、今あるファイル）
   const stale = existingFiles(wanted).filter((f) => !outputs.has(f));
-  if (check) {
+  if (values.check) {
     const changed = [...outputs].filter(([f, text]) => !existsSync(path.join(OUT, f)) || readFileSync(path.join(OUT, f), 'utf8') !== text).map(([f]) => f);
     for (const f of changed) console.log(`${existsSync(path.join(OUT, f)) ? '違う' : '無い'}: docs/courses/${f}`);
     for (const f of stale) console.log(`残っている（消した章か講座）: docs/courses/${f}`);
     const n = changed.length + stale.length;
     console.log(n ? `教材が ${n} 個、台本から作り直したものと違う（bun scripts/build_materials.ts で作り直す。手で直さない）` : `教材は台本から作り直したものと同じ（${outputs.size} 個）`);
-    process.exit(n ? 1 : 0);
+    return n ? 1 : 0;
   }
-  for (const [f, text] of outputs) {
-    mkdirSync(path.dirname(path.join(OUT, f)), { recursive: true });
-    writeFileSync(path.join(OUT, f), text);
-  }
+  for (const [f, text] of outputs) writeAtomic(path.join(OUT, f), text);
   for (const f of stale) {
     rmSync(path.join(OUT, f));
     // 空になった講座のフォルダも消す
@@ -315,4 +314,6 @@ if (import.meta.main) {
   for (const c of COURSES.filter((x) => x.syllabus && (!wanted.length || wanted.includes(x.id)))) {
     console.log(`docs/courses/${c.id}/  章 ${c.syllabus!.chapters.length}（教材あり ${c.lectures.filter((l) => l.material).length}）  チャンク ${chunksOf(c).length}`);
   }
-}
+};
+
+if (import.meta.main) await runMain(main);

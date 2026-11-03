@@ -18,22 +18,22 @@
 //   node_modules は、既定では今の作業フォルダのものを cp -c（APFS の複製）で写す。--base-install の基準と --head の側は、その版で npm ci する
 // 書き出しは側ごとに別のプロセス（stills-compare-side.ts）で、その側の @remotion/bundler・@remotion/renderer・Chrome Headless Shell を使う。
 // 場面の選び方と種類の名前は、今の作業フォルダの台本で決める（場面の時刻は、それぞれの側の timeline から読む）。
-// 差があるか、書き出せなかった場面があれば 1 で終える。書体は Google Fonts から読むので、ネットにつながっている必要がある
+// 差があるか、書き出せなかった場面があれば 1 で終える（2 は使い方の誤り）。書体は Google Fonts から読むので、ネットにつながっている必要がある
 import { type ChildProcess, execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseArgs } from 'node:util';
 import { VIDEOS } from '../content';
 import { compositionId } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Scene } from '../content/types';
 import { SCENE_KINDS } from '../engine/core/scenes';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
+import { ROOT } from './lib/paths';
 import type { SideJob, SideResult } from './stills-compare-side';
 import { readTimelineEntries } from './timelines';
 
-const ROOT = path.resolve(import.meta.dir, '..');
-const SIDE_SCRIPT = path.join(import.meta.dir, 'stills-compare-side.ts');
+const SIDE_SCRIPT = path.join(import.meta.dirname, 'stills-compare-side.ts');
 
 type Timeline = Record<string, { scenes: { start: number; duration: number }[] }>;
 type Target = { key: string; scene: number; kind: Scene['kind'] };
@@ -47,45 +47,6 @@ type Row = Target & {
 };
 /** 依存の入れ方: 今の作業フォルダから写す・その版で npm ci・今の作業フォルダそのもの */
 type Deps = 'copy' | 'ci' | 'root';
-
-/** 頭書き（最初のコメントのかたまり）を、そのまま使い方にする */
-const HELP = (() => {
-  const lines = readFileSync(import.meta.path, 'utf8').split('\n');
-  const end = lines.findIndex((l) => !l.startsWith('//'));
-  return lines
-    .slice(0, end)
-    .map((l) => l.slice(3))
-    .join('\n');
-})();
-
-const { values: opt, positionals } = parseArgs({
-  options: {
-    base: { type: 'string', default: 'origin/main' },
-    'base-install': { type: 'boolean', default: false },
-    head: { type: 'string' },
-    theme: { type: 'string' },
-    threshold: { type: 'string', default: '45' },
-    captions: { type: 'boolean', default: false },
-    concurrency: { type: 'string', default: '4' },
-    out: { type: 'string', default: '.work/stills-compare' },
-    help: { type: 'boolean', short: 'h', default: false },
-  },
-  allowPositionals: true,
-  strict: true,
-});
-if (opt.help) {
-  console.log(HELP);
-  process.exit(0);
-}
-const threshold = Number(opt.threshold);
-const concurrency = Math.max(1, Math.floor(Number(opt.concurrency)));
-if (!Number.isFinite(threshold) || !Number.isFinite(concurrency))
-  throw new Error('--threshold と --concurrency は数で書く');
-const OUT = path.resolve(ROOT, opt.out);
-const underWork = path.relative(path.join(ROOT, '.work'), OUT);
-if (!underWork || underWork === '..' || underWork.startsWith(`..${path.sep}`) || path.isAbsolute(underWork))
-  throw new Error(`--out は .work の下のフォルダにする（静止画をコミットしない）: ${opt.out}`);
-const deps: Record<Side, Deps> = { base: opt['base-install'] ? 'ci' : 'copy', head: opt.head ? 'ci' : 'root' };
 
 /* ───────────── 比べる場面とテーマ ───────────── */
 
@@ -103,18 +64,14 @@ const defaultTargets = (): Target[] =>
 const parseTarget = (arg: string): Target[] => {
   const [key, list] = arg.split(':');
   const v = VIDEOS.find((x) => x.key === key);
-  if (!v) throw new Error(`動画が無い: ${key}（例: L04、S01.en）`);
+  if (!v) throw new UsageError(`動画が無い: ${key}（例: L04、S01.en）`);
   const scenes = list ? list.split(',').map(Number) : v.lecture.scenes.map((_, i) => i + 1);
   return scenes.map((n) => {
     const s = v.lecture.scenes[n - 1];
-    if (!Number.isInteger(n) || !s) throw new Error(`${key} に場面 ${n} が無い（1〜${v.lecture.scenes.length}）`);
+    if (!Number.isInteger(n) || !s) throw new UsageError(`${key} に場面 ${n} が無い（1〜${v.lecture.scenes.length}）`);
     return { key, scene: n, kind: s.kind };
   });
 };
-
-const targets = positionals.length ? positionals.flatMap(parseTarget) : defaultTargets();
-const themes = opt.theme ? opt.theme.split(',') : Object.keys(THEMES);
-for (const t of themes) if (!THEMES[t]) throw new Error(`テーマが無い: ${t}（${Object.keys(THEMES).join('・')}）`);
 
 /* ───────────── 道具 ───────────── */
 
@@ -135,8 +92,8 @@ const lockAt = (sha: string) => {
     return null;
   }
 };
-const fileName = (t: Target, theme: string) =>
-  `${t.key}-s${String(t.scene).padStart(2, '0')}-${theme}${opt.captions ? '-cc' : ''}.png`;
+const fileName = (t: Target, theme: string, captions: boolean) =>
+  `${t.key}-s${String(t.scene).padStart(2, '0')}-${theme}${captions ? '-cc' : ''}.png`;
 /**
  * その版の timeline（動画の名前 → 場面の時刻）。今の形は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。
  * 基準の版が前の形（2026-11-03 までの main。1 つのファイル src/generated/timeline.json）でも比べられるように、そちらも読む
@@ -224,199 +181,236 @@ const versionsAt = (dir: string) => {
   return out;
 };
 
-/* ───────────── 実行 ───────────── */
-
-const started = Date.now();
-const baseSha = commitOf(opt.base, 'base');
-const headSha = opt.head ? commitOf(opt.head, 'head') : git('rev-parse', 'HEAD');
-const dirty = !opt.head && git('status', '--porcelain').length > 0;
-// 写すときは、基準の版の依存と、写す node_modules（今の作業フォルダ）の依存が同じかを見る
-const lockDiffers =
-  deps.base === 'copy' && lockAt(baseSha) !== readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8').trim();
-
-// 前の結果のうち、この道具が書くものだけを消す（--out で下に置いた、ほかの比較は残す）
-for (const name of ['base', 'head', 'diff', 'public', 'report.md', 'report.json'])
-  rmSync(path.join(OUT, name), { recursive: true, force: true });
-for (const d of ['base', 'head', 'diff', 'public']) mkdirSync(path.join(OUT, d), { recursive: true });
-
-const tmp = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-stills-'));
-const worktrees: string[] = [];
-let cleaned = false;
-const cleanup = () => {
-  if (cleaned) return;
-  cleaned = true;
-  // 片側の書き出しは、Remotion が SIGINT で Chrome を止めてから終わる
-  for (const child of children) child.kill('SIGINT');
-  for (const dir of worktrees) {
-    const r = spawnSync('git', ['-C', ROOT, 'worktree', 'remove', '--force', dir], { encoding: 'utf8' });
-    if (r.status !== 0)
-      console.error(
-        `一時の worktree を外せなかった。手で git worktree remove --force ${dir} を流す: ${r.stderr.trim()}`,
-      );
-  }
-  rmSync(tmp, { recursive: true, force: true });
-};
-for (const sig of ['SIGINT', 'SIGTERM'] as const)
-  process.on(sig, () => {
-    cleanup();
-    process.exit(130);
-  });
-
-/** 一時の worktree を作り、依存を入れる */
-const prepare = async (side: Side, ref: string, sha: string) => {
-  const dir = path.join(tmp, side);
-  execFileSync('git', ['-C', ROOT, 'worktree', 'add', '--detach', dir, sha], { stdio: ['ignore', 'ignore', 'pipe'] });
-  worktrees.push(dir);
-  if (deps[side] === 'ci') await npmCi(dir, side, ref);
-  else copyModules(dir);
-  return dir;
-};
-
-const rows: Row[] = [];
-const versions: Record<Side, Record<string, string>> = { base: {}, head: {} };
-try {
-  const headName = opt.head
-    ? `今 ${opt.head}（${headSha.slice(0, 7)}・npm ci）`
-    : `今の作業フォルダ（${headSha.slice(0, 7)}${dirty ? '＋まだコミットしていない変更' : ''}）`;
-  console.log(
-    `基準 ${opt.base}（${baseSha.slice(0, 7)}・${deps.base === 'ci' ? 'npm ci' : '今の node_modules を写す'}）と${headName}を比べる: ${targets.length} 場面 × ${themes.length} テーマ`,
+const main = async (argv: string[]) => {
+  const { values: opt, positionals } = readArgs(
+    argv,
+    {
+      base: { type: 'string', default: 'origin/main' },
+      'base-install': { type: 'boolean', default: false },
+      head: { type: 'string' },
+      theme: { type: 'string' },
+      threshold: { type: 'string', default: '45' },
+      captions: { type: 'boolean', default: false },
+      concurrency: { type: 'string', default: '4' },
+      out: { type: 'string', default: '.work/stills-compare' },
+    },
+    { positionals: true },
   );
-  if (lockDiffers)
-    console.warn(
-      `注意: 基準（${opt.base}）の package-lock.json が今の作業フォルダとちがう。今の node_modules を写すので、依存の違いは比べない（比べるなら --base-install）`,
-    );
-  const [baseDir, headDir] = await Promise.all([
-    prepare('base', opt.base, baseSha),
-    opt.head ? prepare('head', opt.head, headSha) : ROOT,
-  ]);
+  if (opt.help) return showHelp(import.meta.filename);
+  const threshold = Number(opt.threshold);
+  const concurrency = Math.max(1, Math.floor(Number(opt.concurrency)));
+  if (!Number.isFinite(threshold) || !Number.isFinite(concurrency))
+    throw new UsageError('--threshold と --concurrency は数で書く');
+  const OUT = path.resolve(ROOT, opt.out);
+  const underWork = path.relative(path.join(ROOT, '.work'), OUT);
+  if (!underWork || underWork === '..' || underWork.startsWith(`..${path.sep}`) || path.isAbsolute(underWork))
+    throw new UsageError(`--out は .work の下のフォルダにする（静止画をコミットしない）: ${opt.out}`);
+  const deps: Record<Side, Deps> = { base: opt['base-install'] ? 'ci' : 'copy', head: opt.head ? 'ci' : 'root' };
 
-  const failed: Record<Side, Map<string, string>> = { base: new Map(), head: new Map() };
-  for (const [side, dir] of [
-    ['base', baseDir],
-    ['head', headDir],
-  ] as const) {
-    const timeline = readTimeline(dir);
-    const stills: SideJob['stills'] = [];
+  const targets = positionals.length ? positionals.flatMap(parseTarget) : defaultTargets();
+  const themes = opt.theme ? opt.theme.split(',') : Object.keys(THEMES);
+  for (const t of themes) if (!THEMES[t]) throw new UsageError(`テーマが無い: ${t}（${Object.keys(THEMES).join('・')}）`);
+
+  /* ───────────── 実行 ───────────── */
+
+  const started = Date.now();
+  const baseSha = commitOf(opt.base, 'base');
+  const headSha = opt.head ? commitOf(opt.head, 'head') : git('rev-parse', 'HEAD');
+  const dirty = !opt.head && git('status', '--porcelain').length > 0;
+  // 写すときは、基準の版の依存と、写す node_modules（今の作業フォルダ）の依存が同じかを見る
+  const lockDiffers =
+    deps.base === 'copy' && lockAt(baseSha) !== readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8').trim();
+
+  // 前の結果のうち、この道具が書くものだけを消す（--out で下に置いた、ほかの比較は残す）
+  for (const name of ['base', 'head', 'diff', 'public', 'report.md', 'report.json'])
+    rmSync(path.join(OUT, name), { recursive: true, force: true });
+  for (const d of ['base', 'head', 'diff', 'public']) mkdirSync(path.join(OUT, d), { recursive: true });
+
+  const tmp = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-stills-'));
+  const worktrees: string[] = [];
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    // 片側の書き出しは、Remotion が SIGINT で Chrome を止めてから終わる
+    for (const child of children) child.kill('SIGINT');
+    for (const dir of worktrees) {
+      const r = spawnSync('git', ['-C', ROOT, 'worktree', 'remove', '--force', dir], { encoding: 'utf8' });
+      if (r.status !== 0)
+        console.error(
+          `一時の worktree を外せなかった。手で git worktree remove --force ${dir} を流す: ${r.stderr.trim()}`,
+        );
+    }
+    rmSync(tmp, { recursive: true, force: true });
+  };
+  for (const sig of ['SIGINT', 'SIGTERM'] as const)
+    process.on(sig, () => {
+      cleanup();
+      process.exit(130);
+    });
+
+  /** 一時の worktree を作り、依存を入れる */
+  const prepare = async (side: Side, ref: string, sha: string) => {
+    const dir = path.join(tmp, side);
+    execFileSync('git', ['-C', ROOT, 'worktree', 'add', '--detach', dir, sha], { stdio: ['ignore', 'ignore', 'pipe'] });
+    worktrees.push(dir);
+    if (deps[side] === 'ci') await npmCi(dir, side, ref);
+    else copyModules(dir);
+    return dir;
+  };
+
+  const rows: Row[] = [];
+  const versions: Record<Side, Record<string, string>> = { base: {}, head: {} };
+  try {
+    const headName = opt.head
+      ? `今 ${opt.head}（${headSha.slice(0, 7)}・npm ci）`
+      : `今の作業フォルダ（${headSha.slice(0, 7)}${dirty ? '＋まだコミットしていない変更' : ''}）`;
+    console.log(
+      `基準 ${opt.base}（${baseSha.slice(0, 7)}・${deps.base === 'ci' ? 'npm ci' : '今の node_modules を写す'}）と${headName}を比べる: ${targets.length} 場面 × ${themes.length} テーマ`,
+    );
+    if (lockDiffers)
+      console.warn(
+        `注意: 基準（${opt.base}）の package-lock.json が今の作業フォルダとちがう。今の node_modules を写すので、依存の違いは比べない（比べるなら --base-install）`,
+      );
+    const [baseDir, headDir] = await Promise.all([
+      prepare('base', opt.base, baseSha),
+      opt.head ? prepare('head', opt.head, headSha) : ROOT,
+    ]);
+
+    const failed: Record<Side, Map<string, string>> = { base: new Map(), head: new Map() };
+    for (const [side, dir] of [
+      ['base', baseDir],
+      ['head', headDir],
+    ] as const) {
+      const timeline = readTimeline(dir);
+      const stills: SideJob['stills'] = [];
+      for (const t of targets) {
+        for (const theme of themes) {
+          const name = fileName(t, theme, opt.captions);
+          const s = timeline[t.key]?.scenes[t.scene - 1];
+          if (!s) failed[side].set(name, 'timeline に、この場面が無い');
+          else {
+            const inputProps = { id: t.key, audio: false, theme, captions: opt.captions };
+            stills.push({ name, composition: compositionId(t.key), frame: s.start + s.duration - 14, inputProps });
+          }
+        }
+      }
+      if (stills.length) {
+        seedBrowser(dir);
+        const job: SideJob = {
+          dir,
+          label: SIDE_LABEL[side],
+          outDir: path.join(OUT, side),
+          bundleDir: path.join(tmp, `${side}-bundle`),
+          publicDir: path.join(OUT, 'public'),
+          concurrency,
+          stills,
+        };
+        const jobPath = path.join(tmp, `${side}.json`);
+        writeFileSync(jobPath, JSON.stringify(job));
+        // cwd をその側のフォルダにする（renderer は Chrome Headless Shell を cwd の node_modules/.remotion に置く）
+        const r = await run(process.execPath, [SIDE_SCRIPT, jobPath], dir, false);
+        const resultPath = jobPath.replace(/\.json$/, '.result.json');
+        const result: SideResult = existsSync(resultPath)
+          ? JSON.parse(readFileSync(resultPath, 'utf8'))
+          : { failed: {}, fatal: `終了コード ${r.code}` };
+        if (result.fatal) throw new Error(`${SIDE_LABEL[side]}の版を書き出せない: ${result.fatal}`);
+        for (const [name, why] of Object.entries(result.failed)) failed[side].set(name, why);
+      }
+      versions[side] = versionsAt(dir);
+    }
+
     for (const t of targets) {
       for (const theme of themes) {
-        const name = fileName(t, theme);
-        const s = timeline[t.key]?.scenes[t.scene - 1];
-        if (!s) failed[side].set(name, 'timeline に、この場面が無い');
+        const name = fileName(t, theme, opt.captions);
+        const [a, b] = [path.join(OUT, 'base', name), path.join(OUT, 'head', name)];
+        const fb = failed.base.get(name);
+        const fh = failed.head.get(name);
+        if (fh) rows.push({ ...t, theme, psnr: null, status: 'error', note: `今の版: ${fh}` });
+        else if (fb) rows.push({ ...t, theme, psnr: null, status: 'new', note: `基準の版: ${fb}` });
         else {
-          const inputProps = { id: t.key, audio: false, theme, captions: opt.captions };
-          stills.push({ name, composition: compositionId(t.key), frame: s.start + s.duration - 14, inputProps });
+          const p = psnr(a, b);
+          const row: Row = { ...t, theme, psnr: p, status: p < threshold ? 'diff' : 'same' };
+          if (row.status === 'diff') {
+            row.diff = path.join(OUT, 'diff', name);
+            diffImage(a, b, row.diff);
+          }
+          rows.push(row);
         }
       }
     }
-    if (stills.length) {
-      seedBrowser(dir);
-      const job: SideJob = {
-        dir,
-        label: SIDE_LABEL[side],
-        outDir: path.join(OUT, side),
-        bundleDir: path.join(tmp, `${side}-bundle`),
-        publicDir: path.join(OUT, 'public'),
-        concurrency,
-        stills,
-      };
-      const jobPath = path.join(tmp, `${side}.json`);
-      writeFileSync(jobPath, JSON.stringify(job));
-      // cwd をその側のフォルダにする（renderer は Chrome Headless Shell を cwd の node_modules/.remotion に置く）
-      const r = await run(process.execPath, [SIDE_SCRIPT, jobPath], dir, false);
-      const resultPath = jobPath.replace(/\.json$/, '.result.json');
-      const result: SideResult = existsSync(resultPath)
-        ? JSON.parse(readFileSync(resultPath, 'utf8'))
-        : { failed: {}, fatal: `終了コード ${r.code}` };
-      if (result.fatal) throw new Error(`${SIDE_LABEL[side]}の版を書き出せない: ${result.fatal}`);
-      for (const [name, why] of Object.entries(result.failed)) failed[side].set(name, why);
-    }
-    versions[side] = versionsAt(dir);
+  } finally {
+    cleanup();
   }
 
-  for (const t of targets) {
-    for (const theme of themes) {
-      const name = fileName(t, theme);
-      const [a, b] = [path.join(OUT, 'base', name), path.join(OUT, 'head', name)];
-      const fb = failed.base.get(name);
-      const fh = failed.head.get(name);
-      if (fh) rows.push({ ...t, theme, psnr: null, status: 'error', note: `今の版: ${fh}` });
-      else if (fb) rows.push({ ...t, theme, psnr: null, status: 'new', note: `基準の版: ${fb}` });
-      else {
-        const p = psnr(a, b);
-        const row: Row = { ...t, theme, psnr: p, status: p < threshold ? 'diff' : 'same' };
-        if (row.status === 'diff') {
-          row.diff = path.join(OUT, 'diff', name);
-          diffImage(a, b, row.diff);
-        }
-        rows.push(row);
-      }
-    }
-  }
-} finally {
-  cleanup();
+  /* ───────────── 報告 ───────────── */
+
+  const sec = Math.round((Date.now() - started) / 1000);
+  const count = (s: Row['status']) => rows.filter((r) => r.status === s).length;
+  const db = (p: number | null) => (p === null ? '—' : p === Infinity ? 'inf' : p.toFixed(1));
+  const LABEL: Record<Row['status'], string> = { same: '同じ', diff: '差あり', new: '基準に無い', error: '書き出せない' };
+  const DEPS_LABEL: Record<Deps, string> = {
+    copy: '今の作業フォルダの node_modules を写した',
+    ci: 'その版の package-lock.json で npm ci した',
+    root: '今の作業フォルダのもの',
+  };
+  const rel = (p?: string) => (p ? path.relative(ROOT, p) : '');
+  const bad = rows.filter((r) => r.status !== 'same');
+  const compared = rows.flatMap((r) => (r.psnr === null ? [] : [r.psnr]));
+  const minPsnr = compared.length ? Math.min(...compared) : null;
+  // しきい値より上でも、inf でなければ絵は少し変わっている（アイコンの形の違いなどは 45〜80dB になる）
+  const nearSame = rows.filter((r) => r.status === 'same' && r.psnr !== Infinity).length;
+  const summary = `場面 ${targets.length} × テーマ ${themes.length} = ${rows.length} 枚。同じ ${count('same')}（うち inf でない ${nearSame}）・差あり ${count('diff')}・基準に無い ${count('new')}・書き出せない ${count('error')}・最小の PSNR ${db(minPsnr)}（しきい値 ${threshold}dB・${sec} 秒）`;
+  const headTitle = opt.head ? `${opt.head} ${headSha.slice(0, 7)}` : `${headSha.slice(0, 7)}${dirty ? '＋変更' : ''}`;
+  // 版（基準 → 今）。同じものは 1 つだけ書く
+  const versionLine = Object.keys(versions.base)
+    .map((k) => `${k} ${versions.base[k]}${versions.base[k] === versions.head[k] ? '' : ` → ${versions.head[k]}`}`)
+    .join('・');
+  const md = [
+    `### 静止画の比較（${opt.base} ${baseSha.slice(0, 7)} → ${headTitle}${opt.captions ? '・字幕つき' : ''}）`,
+    '',
+    `依存（node_modules）: 基準は${DEPS_LABEL[deps.base]}${lockDiffers ? '（基準の package-lock.json とはちがう）' : ''}、今は${DEPS_LABEL[deps.head]}`,
+    '',
+    `版（基準 → 今）: ${versionLine}`,
+    '',
+    summary,
+    '',
+    '| 場面 | 種類 | テーマ | PSNR（dB） | 結果 | 差の画像 |',
+    '|---|---|---|---|---|---|',
+    ...rows.map(
+      (r) =>
+        `| ${r.key}:${r.scene} | ${r.kind} | ${r.theme} | ${db(r.psnr)} | ${LABEL[r.status]}${r.note ? `（${r.note}）` : ''} | ${rel(r.diff)} |`,
+    ),
+    '',
+  ].join('\n');
+  writeFileSync(path.join(OUT, 'report.md'), md);
+  const json = {
+    base: opt.base,
+    baseSha,
+    head: opt.head ?? null,
+    headSha,
+    dirty,
+    deps,
+    lockDiffers,
+    versions,
+    threshold,
+    captions: opt.captions,
+    seconds: sec,
+    rows: rows.map((r) => ({ ...r, psnr: r.psnr === Infinity ? 'inf' : r.psnr })),
+  };
+  writeFileSync(path.join(OUT, 'report.json'), `${JSON.stringify(json, null, 1)}\n`);
+  for (const r of bad)
+    console.log(
+      `${LABEL[r.status]}  ${r.key}:${r.scene}（${r.kind}）${r.theme}  PSNR ${db(r.psnr)}${r.note ? `  ${r.note}` : ''}${r.diff ? `  ${rel(r.diff)}` : ''}`,
+    );
+  console.log(`版（基準 → 今）: ${versionLine}`);
+  console.log(summary);
+  console.log(`表: ${rel(path.join(OUT, 'report.md'))}（PR に貼る）`);
+  return count('diff') || count('error') ? 1 : 0;
+};
+
+if (import.meta.main) {
+  await runMain(main);
+  // 片側の書き出しの道具（Chrome・bundler）が残す待ちで、終わらなくならないようにする
+  process.exit();
 }
-
-/* ───────────── 報告 ───────────── */
-
-const sec = Math.round((Date.now() - started) / 1000);
-const count = (s: Row['status']) => rows.filter((r) => r.status === s).length;
-const db = (p: number | null) => (p === null ? '—' : p === Infinity ? 'inf' : p.toFixed(1));
-const LABEL: Record<Row['status'], string> = { same: '同じ', diff: '差あり', new: '基準に無い', error: '書き出せない' };
-const DEPS_LABEL: Record<Deps, string> = {
-  copy: '今の作業フォルダの node_modules を写した',
-  ci: 'その版の package-lock.json で npm ci した',
-  root: '今の作業フォルダのもの',
-};
-const rel = (p?: string) => (p ? path.relative(ROOT, p) : '');
-const bad = rows.filter((r) => r.status !== 'same');
-const compared = rows.flatMap((r) => (r.psnr === null ? [] : [r.psnr]));
-const minPsnr = compared.length ? Math.min(...compared) : null;
-// しきい値より上でも、inf でなければ絵は少し変わっている（アイコンの形の違いなどは 45〜80dB になる）
-const nearSame = rows.filter((r) => r.status === 'same' && r.psnr !== Infinity).length;
-const summary = `場面 ${targets.length} × テーマ ${themes.length} = ${rows.length} 枚。同じ ${count('same')}（うち inf でない ${nearSame}）・差あり ${count('diff')}・基準に無い ${count('new')}・書き出せない ${count('error')}・最小の PSNR ${db(minPsnr)}（しきい値 ${threshold}dB・${sec} 秒）`;
-const headTitle = opt.head ? `${opt.head} ${headSha.slice(0, 7)}` : `${headSha.slice(0, 7)}${dirty ? '＋変更' : ''}`;
-// 版（基準 → 今）。同じものは 1 つだけ書く
-const versionLine = Object.keys(versions.base)
-  .map((k) => `${k} ${versions.base[k]}${versions.base[k] === versions.head[k] ? '' : ` → ${versions.head[k]}`}`)
-  .join('・');
-const md = [
-  `### 静止画の比較（${opt.base} ${baseSha.slice(0, 7)} → ${headTitle}${opt.captions ? '・字幕つき' : ''}）`,
-  '',
-  `依存（node_modules）: 基準は${DEPS_LABEL[deps.base]}${lockDiffers ? '（基準の package-lock.json とはちがう）' : ''}、今は${DEPS_LABEL[deps.head]}`,
-  '',
-  `版（基準 → 今）: ${versionLine}`,
-  '',
-  summary,
-  '',
-  '| 場面 | 種類 | テーマ | PSNR（dB） | 結果 | 差の画像 |',
-  '|---|---|---|---|---|---|',
-  ...rows.map(
-    (r) =>
-      `| ${r.key}:${r.scene} | ${r.kind} | ${r.theme} | ${db(r.psnr)} | ${LABEL[r.status]}${r.note ? `（${r.note}）` : ''} | ${rel(r.diff)} |`,
-  ),
-  '',
-].join('\n');
-writeFileSync(path.join(OUT, 'report.md'), md);
-const json = {
-  base: opt.base,
-  baseSha,
-  head: opt.head ?? null,
-  headSha,
-  dirty,
-  deps,
-  lockDiffers,
-  versions,
-  threshold,
-  captions: opt.captions,
-  seconds: sec,
-  rows: rows.map((r) => ({ ...r, psnr: r.psnr === Infinity ? 'inf' : r.psnr })),
-};
-writeFileSync(path.join(OUT, 'report.json'), `${JSON.stringify(json, null, 1)}\n`);
-for (const r of bad)
-  console.log(
-    `${LABEL[r.status]}  ${r.key}:${r.scene}（${r.kind}）${r.theme}  PSNR ${db(r.psnr)}${r.note ? `  ${r.note}` : ''}${r.diff ? `  ${rel(r.diff)}` : ''}`,
-  );
-console.log(`版（基準 → 今）: ${versionLine}`);
-console.log(summary);
-console.log(`表: ${rel(path.join(OUT, 'report.md'))}（PR に貼る）`);
-process.exit(count('diff') || count('error') ? 1 : 0);
