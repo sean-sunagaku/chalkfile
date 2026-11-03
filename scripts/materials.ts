@@ -28,6 +28,7 @@ import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
 import { LANGS, type Lang } from '../content/i18n';
 import type { Course, Line, SfxId, VoiceId } from '../content/types';
+import { SFX } from '../content/sfx';
 import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { tempPath, writeAtomic } from './lib/fsx';
@@ -46,10 +47,8 @@ const SUMS = 'SHA256SUMS';
 const DURATIONS = 'DURATIONS.json';
 /** 素材の木に置く、素材でないファイル（説明・sha256 の一覧・長さの一覧） */
 const INDEX_FILES = new Set([README, SUMS, DURATIONS]);
-/** 効果音の名前（台本の SfxId と同じ。scripts/build_music.py が作り、scripts/mix.py が読む） */
-const SFX_NAMES = Object.keys({
-  pop: 0, whoosh: 0, chime: 0, tick: 0, reveal: 0, correct: 0, type: 0, harisen: 0, chin: 0, drumroll: 0, deden: 0, zuko: 0,
-} satisfies Record<SfxId, 0>);
+/** 効果音の名前（効果音の一覧の正本 content/sfx.ts の名前。scripts/build_music.py が作り、scripts/mix.py が読む） */
+const SFX_NAMES = Object.keys(SFX) as SfxId[];
 /** BGM・ジングル・効果音（scripts/build_music.py の出力）と、ブランチの中の置き場所。check と push は、この名前の一覧で確かめる */
 export const AUDIO: { local: string; inBranch: string; names: string[] }[] = [
   { local: 'public/audio/music', inBranch: 'audio/music', names: ['bed', 'sting_intro', 'sting_outro'] },

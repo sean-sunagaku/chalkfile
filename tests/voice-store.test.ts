@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import os from 'node:os';
 import path from 'node:path';
 import type { Video } from '../content';
-import { kokoroJobs, kokoroVersion, writeMetas } from '../scripts/stages/voice/kokoro';
+import { kokoroJobs, kokoroJobsJson, kokoroVersion, writeMetas } from '../scripts/stages/voice/kokoro';
 import {
   metaJson,
   readMeta,
@@ -144,6 +144,26 @@ describe('Kokoro の足りない台詞と声の記録', () => {
     });
     expect(readMeta(store.cache, jobs[1].key)).toBeUndefined();
   });
+  test.skipIf(!Bun.which('python3'))(
+    'Kokoro の仕事のファイルは { schema, jobs } の形で、scripts/audio/handoff.py の read_kokoro_jobs で読める（レシピは渡さない）',
+    () => {
+      const jobs = kokoroJobs(storeOf(), [video]);
+      const text = kokoroJobsJson(jobs);
+      expect(JSON.parse(text)).toEqual({ schema: 1, jobs: jobs.map(({ recipe: _, ...j }) => j) });
+      const file = path.join(sandbox, 'jobs.json');
+      writeFileSync(file, text);
+      const py = [
+        'import sys',
+        "sys.path.insert(0, 'scripts')",
+        'from pathlib import Path',
+        'from audio.handoff import read_kokoro_jobs',
+        'jobs = read_kokoro_jobs(Path(sys.argv[1]))',
+        "print(len(jobs), jobs[0]['key'], jobs[0]['voice'])",
+      ].join('\n');
+      const r = Bun.spawnSync(['python3', '-c', py, file], { cwd: path.resolve(import.meta.dir, '..') });
+      expect(r.stdout.toString().trim()).toBe(`2 ${jobs[0].key} ${jobs[0].voice}`);
+    },
+  );
   test('Kokoro の版は、scripts/tts_kokoro.py の頭書きで固定した依存の版', () => {
     expect(kokoroVersion()).toMatch(/^kokoro==[\d.]+ misaki\[en,zh\]==[\d.]+ .*torch==[\d.]+/);
     const file = path.join(sandbox, 'tts.py');

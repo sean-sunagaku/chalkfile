@@ -5,6 +5,7 @@ import type { Lang } from '../../../content/i18n';
 import type { Course, Lecture, Line, Scene, VoiceId } from '../../../content/types';
 import { speechIn } from '../../../content/voices';
 import { TIMELINE_SCHEMA, TIMING, type TimelineFile, timelineFingerprint } from '../../../engine/core/timeline';
+import { type Plan, SCHEMA, type Speech } from '../../lib/handoff';
 
 /** 台詞 1 つの声。file は場所に縛られない名前（.work/tts/<鍵>.wav）、sec は長さ（秒）、kana は読み（訳は Kokoro に渡した音素） */
 export type LineVoice = { file: string; sec: number; kana: string };
@@ -88,8 +89,12 @@ export const timelineOf = (key: string, lecture: Lecture, lang: Lang, timed: Tim
   };
 };
 
-/** ミックスの設計図（scripts/mix.py が読む）。音声は場所に縛られない名前（.work/tts/<鍵>.wav）で書く。項目の並びも出力のバイト列に入る */
-export const planOf = (key: string, timed: Timed) => ({
+/**
+ * ミックスの設計図（scripts/mix.py が読む。形と版は scripts/lib/handoff.ts の Plan）。音声は場所に縛られない名前（.work/tts/<鍵>.wav）で書く。
+ * 項目の並びも出力のバイト列に入る
+ */
+export const planOf = (key: string, timed: Timed): Plan => ({
+  schema: SCHEMA.plan,
   id: key,
   duration: timed.duration,
   scenes: timed.scenes.map((s) => ({
@@ -151,11 +156,12 @@ export const kanaLogOf = (key: string, lecture: Lecture, lang: Lang, voices: Lin
     )
     .join('\n');
 
-/** 訳の動画の、台詞と音声の対応（scripts/check_speech.py の聞き取りの点検が読む）。日本語は null */
-export const speechFileOf = (key: string, lecture: Lecture, lang: Lang, voices: LineVoice[][]) =>
+/** 訳の動画の、台詞と音声の対応（scripts/check_speech.py の聞き取りの点検が読む。形と版は scripts/lib/handoff.ts の Speech）。日本語は null */
+export const speechFileOf = (key: string, lecture: Lecture, lang: Lang, voices: LineVoice[][]): Speech | null =>
   lang === 'ja'
     ? null
     : {
+        schema: SCHEMA.speech,
         key,
         lang,
         lines: lecture.scenes.flatMap((scene, si) =>

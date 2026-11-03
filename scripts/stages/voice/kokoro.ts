@@ -3,16 +3,13 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Video } from '../../../content';
-import type { VoiceId } from '../../../content/types';
 import { KOKORO, speechIn } from '../../../content/voices';
 import { withLock, writeAtomic } from '../../lib/fsx';
+import { type KokoroJob, type KokoroJobs, SCHEMA } from '../../lib/handoff';
 import { ROOT } from '../../lib/paths';
 import { runInherit } from '../../lib/proc';
 import { type KokoroRecipe, recipeIn, ttsKeysIn } from '../../voices';
 import { findVoice, metaJson, type VoiceStore } from './store';
-
-/** Kokoro に渡す 1 本（scripts/tts_kokoro.py の jobs.json の 1 つ） */
-export type KokoroJob = { key: string; text: string } & (typeof KOKORO)['en'][VoiceId];
 
 const SCRIPT = path.join(ROOT, 'scripts/tts_kokoro.py');
 
@@ -54,6 +51,15 @@ export const kokoroJobs = (store: VoiceStore, videos: Video[]): (KokoroJob & { r
 };
 
 /**
+ * Kokoro に渡す仕事のファイルの中身。形と版は scripts/lib/handoff.ts の KokoroJobs（tts_kokoro.py は scripts/audio/handoff.py の
+ * read_kokoro_jobs で読む）。声の記録に書くレシピは渡さない
+ */
+export const kokoroJobsJson = (jobs: (KokoroJob & { recipe: KokoroRecipe })[]): string => {
+  const handoff: KokoroJobs = { schema: SCHEMA.kokoroJobs, jobs: jobs.map(({ recipe: _, ...job }) => job) };
+  return JSON.stringify(handoff);
+};
+
+/**
  * 訳の動画で、まだ声の無い台詞を Kokoro でまとめて作り、共有のキャッシュに書く。
  * ほかの synth（ほかの作業フォルダのものも）が Kokoro を流している間は待ち（キャッシュのロック）、
  * 終わってから足りない台詞を数え直す（同じ台詞を 2 回作らない）
@@ -69,7 +75,7 @@ export const runKokoro = async (store: VoiceStore, videos: Video[]): Promise<voi
       const tmp = mkdtempSync(path.join(tmpdir(), 'chalkfile-kokoro-'));
       try {
         const file = path.join(tmp, 'jobs.json');
-        writeFileSync(file, JSON.stringify(jobs.map(({ recipe: _, ...job }) => job)));
+        writeFileSync(file, kokoroJobsJson(jobs));
         console.log(`Kokoro で ${jobs.length} 本の台詞を読み上げる（初回はモデルのダウンロードがある）`);
         // 依存の版は scripts/tts_kokoro.py.lock で固定する（--locked: ロックと頭書きがずれていたら止まる）。
         // 止まったままにならないよう、台詞の数から決めた時間で止める

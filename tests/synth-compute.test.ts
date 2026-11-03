@@ -115,9 +115,10 @@ describe('出力の形', () => {
   });
   test('ミックスの設計図（項目の並びもバイト列に入る。無い印は書かない）', () => {
     const plan = JSON.stringify(planOf('X01', t));
-    expect(plan.startsWith(`{"id":"X01","duration":${565 / FPS},"scenes":[{"kind":"opening","start":0,"end":`)).toBe(
-      true,
-    );
+    // 形の版（scripts/lib/handoff.ts の SCHEMA.plan）を頭に書く
+    expect(
+      plan.startsWith(`{"schema":1,"id":"X01","duration":${565 / FPS},"scenes":[{"kind":"opening","start":0,"end":`),
+    ).toBe(true);
     expect(JSON.parse(plan).scenes[1].lines[2]).toEqual({
       file: '.work/tts/k12.wav',
       start: 250 / FPS,
@@ -176,6 +177,7 @@ describe('出力の形', () => {
       '    カナ20',
     ]);
     expect(speechFileOf('X01.en', en, 'en', v)).toEqual({
+      schema: 1,
       key: 'X01.en',
       lang: 'en',
       lines: [
