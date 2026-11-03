@@ -5,7 +5,7 @@
 //   3. CSP の script-src のハッシュの数と、ページで実際に動く script の数が合い、どの script のハッシュも CSP にある。
 //      動く script は、組み立てが入れた信頼できるもの（scripts に渡したもの）のどれか（エスケープし忘れて紛れ込んだ script は、CSP に入っていても止める）
 //   4. 全部の offline-manifest.json が、SW と同じ validateManifest を通る。revision と、ページ・ポスターの大きさと SHA-256 が、置いたファイルと
-//      合う。動画は動画の一覧（Worker の許可リスト）にあり、大きさと SHA-256 が合う。sw.js に入れた講座には、どれも manifest がある
+//      合う。動画は動画の一覧（Worker の許可リスト）にあり、大きさと SHA-256 が合う。sw.js に入れた講座と、manifest のある講座が同じ
 //   5. sw.js が install のときに取る起動用ファイルが置いてあり、大きさと SHA-256 が合い、型が拡張子の対応表（site/mime.ts）と合う
 // 使い方: import { assertSiteInvariants } from './site-invariants' で呼ぶ（手で流す入口は無い。テストは tests/site-invariants.test.ts）
 import { createHash } from 'node:crypto';
@@ -229,6 +229,16 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
   for (const id of input.courses ?? []) {
     if (!manifests.includes(`${id}/offline-manifest.json`)) {
       problems.push(`sw.js に入れた講座 ${id} の offline-manifest.json がありません`);
+    }
+  }
+  // manifest があるのに sw.js に入っていない講座は、保存できない（SW が「公開されていない」と断る）
+  if (input.courses) {
+    for (const rel of manifests) {
+      if (!input.courses.includes(path.posix.dirname(rel))) {
+        problems.push(
+          `${rel}: sw.js に入っていない講座の保存の manifest です（保存できない。講座を外したなら、講座を指定せずに組み立て直す）`,
+        );
+      }
     }
   }
 

@@ -64,8 +64,10 @@ export type BuildSiteOptions = {
 export type BuildSiteResult = {
   /** 書き出したファイル（outDir からの場所と大きさ） */
   files: { name: string; bytes: number }[];
-  /** 保存の manifest を作った講座（sw.js に入れた講座） */
+  /** この組み立てで保存の manifest を作った講座（講座を指定したときは、その講座だけ） */
   manifests: CourseManifest[];
+  /** sw.js に入れた、保存できる講座の ID（出す言語の全部の講座のうち、組み立てたサイトに保存の manifest があるもの） */
+  courses: string[];
   /** まだ動画かポスターが無いもの */
   missing: string[];
 };
@@ -237,18 +239,20 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const mediaRoots = Object.fromEntries(
     langs.flatMap((l) => (mediaRootOf(config, l) ? [[l, mediaRootOf(config, l) as string]] : [])),
   );
-  const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
-  const disabledProblems = disabledRevisionProblems(disabledRevisions, manifests);
-  if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
-  await buildPwa(
-    SITE_DIR,
-    dist,
-    brand,
-    manifests.map((m) => m.id),
-    shell,
-    mediaRoots,
-    disabledRevisions,
+  // sw.js に入れる講座（保存できる講座）は、出す言語の全部の講座から、組み立てたサイトに保存の manifest があるものを選ぶ。
+  // 講座を指定して組み立てたときも、前に組んだ講座を外さない（外すと、その講座を保存できず、一覧のページの保存の欄からも消える）
+  const saveable = langs
+    .flatMap((lang) => coursesIn(lang).map((c) => `${LANG_INFO[lang].path}${c.id}`))
+    .filter((cid) => existsSync(path.join(dist, cid, 'offline-manifest.json')));
+  const published = saveable.map(
+    (cid) =>
+      manifests.find((m) => m.id === cid) ??
+      (JSON.parse(readFileSync(path.join(dist, cid, 'offline-manifest.json'), 'utf8')) as CourseManifest),
   );
+  const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
+  const disabledProblems = disabledRevisionProblems(disabledRevisions, published);
+  if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
+  await buildPwa(SITE_DIR, dist, brand, saveable, shell, mediaRoots, disabledRevisions);
   writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
@@ -259,7 +263,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     mediaRoots,
     media: o.mediaManifest,
     shell,
-    courses: manifests.map((m) => m.id),
+    courses: saveable,
     scripts: [WWW_REDIRECT_SCRIPT, pageScript, app.offlineClient],
   });
   const files = listOutput(dist);
@@ -272,5 +276,5 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     if (o.strict) throw new Error(msg);
     warn(msg);
   }
-  return { files, manifests, missing };
+  return { files, manifests, courses: saveable, missing };
 }

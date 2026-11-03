@@ -44,9 +44,9 @@ const sampleMedia = (course: Course) => ({
   }),
 });
 
-/** 合成の講座で組み立てる（一時のフォルダに書く） */
+/** 合成の講座で組み立てる（一時のフォルダに書く。outDir を渡すと、そこに組み立て直す） */
 const buildSample = async (over: Partial<BuildSiteOptions> = {}) => {
-  const outDir = mkdtempSync(path.join(tmpdir(), 'chalkfile-site-build-'));
+  const outDir = over.outDir ?? mkdtempSync(path.join(tmpdir(), 'chalkfile-site-build-'));
   dirs.push(outDir);
   const course = over.courses?.ja[0] ?? SAMPLE.course;
   const result = await buildSite({
@@ -180,6 +180,23 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     expect(data.lectures[0].title).toBe('__TITLE__ {{sep}}');
     const home = readFileSync(path.join(outDir, 'index.html'), 'utf8');
     expect(home).toContain('<h3>見本 &#95;_DOCS_NOTE__ の講座</h3>');
+  });
+});
+
+describe('講座を指定して組み立てる（only）', () => {
+  test('sw.js に入れる講座は、出す言語の全部の講座から選ぶ（前に組んだ講座を外さない）', async () => {
+    const other: Course = { ...SAMPLE.course, id: 'site-sample-b' };
+    const media = { schema: 1 as const, entries: [...sampleMedia(SAMPLE.course).entries, ...sampleMedia(other).entries] };
+    const courses = { ja: [SAMPLE.course, other], en: [], zh: [] };
+    const { outDir, result: all } = await buildSample({ courses, mediaManifest: media });
+    expect(all.courses).toEqual(['site-sample', 'site-sample-b']);
+    const swCourses = () => /courses:\s*(\[[^\]]*\])/.exec(readFileSync(path.join(outDir, 'sw.js'), 'utf8'))?.[1];
+    const before = swCourses();
+    const partial = await buildSample({ courses, mediaManifest: media, outDir, only: ['site-sample'] });
+    expect(partial.result.manifests.map((m) => m.id)).toEqual(['site-sample']);
+    expect(partial.result.courses).toEqual(['site-sample', 'site-sample-b']);
+    expect(swCourses()).toBe(before);
+    expect(JSON.parse(before ?? '[]')).toEqual(['site-sample', 'site-sample-b']);
   });
 });
 

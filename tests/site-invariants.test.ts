@@ -262,6 +262,12 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
       'sw.js に入れた講座 en/sample の offline-manifest.json がありません',
     ]);
   });
+  test('保存の manifest があるのに、sw.js に入っていない講座があれば止まる（講座を指定して組み立てたときに外れた講座など）', () => {
+    const site = makeSite();
+    expect(siteInvariantProblems({ ...site.input, courses: [] })).toEqual([
+      'sample/offline-manifest.json: sw.js に入っていない講座の保存の manifest です（保存できない。講座を外したなら、講座を指定せずに組み立て直す）',
+    ]);
+  });
 
   test('起動用ファイルの型が拡張子と違う・知らない拡張子・無い・中身が違えば止まる（SW の install が止まる）', () => {
     const site = makeSite();
