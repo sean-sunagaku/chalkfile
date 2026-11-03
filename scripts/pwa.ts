@@ -44,11 +44,12 @@ function icon(size: number, t: Theme): Buffer {
 }
 
 /**
- * ページに入れる script を 1 本にまとめる（講座のページの画面と offline-client）。1 つのページに 2 本を入れるので、それぞれを関数で包む
- * （iife。包まないと、両方の一番上の名前が同じ大域の変数になり、あとの script が前の script の値を書き換える）
+ * ページに入れる script を 1 本にまとめて縮める（講座のページの画面と offline-client）。1 つのページに 2 本を入れるので、それぞれを関数で包む
+ * （iife。包まないと、両方の一番上の名前が同じ大域の変数になり、あとの script が前の script の値を書き換える）。
+ * CSP のハッシュは、縮めたものから組み立てが計算する（scripts/site/csp.ts）。縮め方は Bun の版で変わるので、Bun の版を上げるとページの版も変わる
  */
 export async function bundle(file: string): Promise<string> {
-  const result = await Bun.build({ entrypoints: [file], target: 'browser', format: 'iife', minify: false });
+  const result = await Bun.build({ entrypoints: [file], target: 'browser', format: 'iife', minify: true });
   if (!result.success) throw new Error(result.logs.join('\n'));
   return result.outputs[0].text();
 }
@@ -94,7 +95,7 @@ export async function buildPwa(
   writeFileSync(path.join(dist, 'offline/index.html'), offline);
   shell.push(asset('offline/', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
-  // sw.js は縮める（ページに入らないので、縮めてもページの版は変わらない。offline-client はページに入るので、ここでは縮めない）
+  // sw.js も縮める（ページに入らないので、sw.js が変わってもページの版は変わらない）
   const result = await Bun.build({
     entrypoints: [path.join(site, 'sw.ts')], target: 'browser', minify: true,
     define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots, disabledRevisions }) },
