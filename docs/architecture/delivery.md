@@ -34,15 +34,20 @@
 
 ## 静的な応答と CSP
 
-- 静的な応答には `Cache-Control: public, max-age=0, must-revalidate, no-transform` を付ける。Cloudflare が HTML や画像を書き換えたり、Web Analytics の beacon を自動で差し込んだりするのを防ぎ、CSP と保存用の SHA-256 を保つ。Service Worker（`/sw.js`）は `no-cache`
+- 静的な応答のヘッダーは `_headers` で付ける。規則の正本は `scripts/site/headers.ts` の `HEADER_RULES`。Worker が返す `/media/` には効かない（そちらは `worker/src/media.ts` が付ける）
+- 静的な応答には `Cache-Control: public, max-age=0, must-revalidate, no-transform` を付ける。Cloudflare が HTML や画像を書き換えたり、Web Analytics の beacon を自動で差し込んだりするのを防ぎ、CSP と保存用の SHA-256 を保つ。Service Worker（`/sw.js`）は `no-cache, no-transform`
 - 2026-11-02 に、自動の beacon による CSP の違反を実際に見つけた。`no-transform` を付けたあと、全部の 9 ページで違反が無いことを確かめた（[Cloudflare の仕様](https://developers.cloudflare.com/web-analytics/get-started/)）
+- 全部の静的な応答に、セキュリティのヘッダーを付ける。`Content-Security-Policy: frame-ancestors 'none'`（meta の CSP では効かないので、ヘッダーで送る）・`X-Frame-Options: DENY`・`Permissions-Policy`（使わないカメラ・マイク・位置・支払い・USB を止める。全画面とクリップボードは止めない）・`Cross-Origin-Opener-Policy: same-origin`。保存版を SW が返すときは、SW が応答を作るので、ページの meta の CSP が効く
+- Workers の静的 assets は、パスに当たる規則を上から順に重ね、同じヘッダーを 2 つの規則が付けると値をカンマでつなぐ（[_headers の仕様](https://developers.cloudflare.com/workers/static-assets/headers/)。2026-11-03 に確かめた）。上書きする規則は、先に `! 名前` で外す。組み立ての最後（`scripts/site-invariants.ts`）が、どの静的な応答にも `no-transform` が付き、値がつながっていないことを確かめ、smoke（`scripts/smoke_worker.ts`）が `/` と `/sw.js` の実際のヘッダーを規則と照らす
+- 規則はパスでしか当たらない（query を見ない）。`?v=` の付いたポスターは、同じパスを一覧のページの縮小画像・og:image・SW の起動用ファイルが `?v=` 無しで読むので、ほかの静的な応答と同じ `Cache-Control` にする（長くキャッシュさせると、描き直したあとも一覧のページの縮小画像が古いまま残る）。中身のハッシュが名前に入る動画（`/media/`）は、Worker が `immutable` を付ける
+- HSTS（`Strict-Transport-Security`）は、ゾーンの設定（Cloudflare の HSTS の設定と、ほかのサブドメイン）を持ち主が確かめてから決める
 - www も、同じ Worker の Custom Domain で持つ。HTML は assets で返し、その頭の CSP のハッシュつきの `location.replace` で、同じ path・query・hash の apex へ移す。HTML の最初の HTTP の状態は 200（知らないパスは 404）。`www` の `/media/` は Worker が 301 を返す。この形なら、ふつうの静的な要求で Worker を呼ばず、zone の Redirect Rule の権限も CI に渡さずに済む
 
 ## 公開に要るもの
 
 - 公開の組み立ては、声も動画も作らない。素材ブランチの声と、Releases の動画と、main のポスター・動画の一覧から作る。足りなければ止まる（声の合成も書き出しも始めない）
 - ポスター（JPG）は小さな静的な入力として、講座のフォルダの `content/<講座>/generated/posters/` に入れる。MP4 を取らなくても、CI でサイトを作れる。新しい講座で全部のレクチャーのポスターがそろっていないと、strict の組み立てが公開の前に止まる。CI で動画を取ってきてポスターを補う形にはしない
-- 素材ブランチの FLAC を WAV に戻すため、CI は Ubuntu の標準のリポジトリから ffmpeg を入れる。字幕（VTT）と講義のデータは、キャッシュした声から作る。`synth --cached-only` は、足りないときに VOICEVOX や Kokoro へつながない
+- 素材ブランチの FLAC を WAV に戻すため、CI は版を固定した ffmpeg を入れる（`.github/actions/ffmpeg`）。講義のデータ（サイトの台本と字幕の時刻）は、取り出した声から作る。サイトの字幕（WebVTT）は、ブラウザが講義のデータから作る。`synth --cached-only` は、足りないときに VOICEVOX や Kokoro へつながない。`synth --cached-only --durations-only` は、素材ブランチの長さの一覧（`DURATIONS.json`）と読みだけで同じ講義のデータを作る（音声も ffmpeg も要らない。一覧が無い・古いときは、音声を取り出してから作る）
 - ブラウザのテストのサーバーは、移行の案内に、公開済みのもの（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 をそのまま写したもの）を配る。今のソースから作り直さないので、`site/offline-shared.ts` を直しても、移行のテストは変わらない（移行のコードは凍結している。[ADR](../adr/2026-11-02-legacy-pages-end-date.md)）。本物の `gh-pages` への反映は `scripts/legacy/deploy_pages.sh` だけが行う
 
 ## Worker のログ

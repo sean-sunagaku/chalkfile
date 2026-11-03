@@ -1,13 +1,14 @@
 // 声の一覧（日本語は VOICEVOX、英語と中国語は Kokoro の話者と話し方）と、声のクレジット・読み上げる文。
 // 純粋なデータと関数だけを置く（Node・React・Remotion に依存しない）。動画（Remotion）・サイトの組み立て・synth が同じものを読む（content/voices.ts から読んでもよい。再 export）。
-// 台詞ごとの音声ファイルの名前（鍵。node:crypto で作る）は scripts/voices.ts
+// 台詞ごとの音声ファイルの名前（鍵。合成のレシピから node:crypto で作る）は scripts/voices.ts
 import type { Lang, TranslatedLang } from './i18n';
 import { readingOf, toSpeech, toSpeechZh } from './reading';
 import type { Lecture, Line, VoiceId } from './schema';
 
 /**
- * 日本語の声（VOICEVOX）。中身と並び順は音声の鍵（scripts/voices.ts の ttsKeyV1）に入るので、変えると全台詞の鍵が変わる。
- * 動かしたら tests/speech-snapshot.test.ts で、鍵が変わっていないかを確かめる
+ * 日本語の声（VOICEVOX）。合成の設定（speaker・speed・intonation・pitch）は声の鍵（scripts/voices.ts の合成のレシピ）に入り、
+ * 変えた声は新しい鍵になる（合成し直し）。credit は表示だけで、鍵には入らない。どの項目も timeline の指紋には入るので、
+ * 変えたら npm run synth -- --cached-only で timeline を作り直す。動かしたら tests/speech-snapshot.test.ts で、鍵を確かめる
  */
 export const VOICES: Record<VoiceId, { speaker: number; speed: number; intonation: number; pitch: number; credit: string }> = {
   // No.7（ノーマル）: 講師。Whisper での聞き取りが候補の中で一番正確だった
@@ -39,7 +40,7 @@ export const creditsOf = (voices: Iterable<VoiceId>): string[] => {
  * v1.1-zh の中国語の声は、データ会社の LongMaoData が許諾したデータで学習したもの（モデルカード）。
  * 声は 2026-11-02 に、同じ文を全部の候補で読ませて、Whisper（medium）の聞き取りと声の高さを比べて選んだ。
  * 掛け合いの役が声で聞き分けられるように、先生・ボケ・天の声・呼び込みを違う話者にする。
- * 中身は音声の鍵（scripts/voices.ts の kokoroKeyV1）に入る
+ * repo・voice・g2p・speed は声の鍵（scripts/voices.ts の合成のレシピ）に入る
  */
 export type KokoroVoice = {
   engine: 'kokoro';

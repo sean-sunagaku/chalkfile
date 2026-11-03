@@ -29,23 +29,33 @@ const LEGACY = {
 
 export const DEFAULT_CONTROL: Control = {
   mode: 'normal',
+  faultTarget: 'video',
   update: false,
   workerUpdate: false,
+  disabledRevisions: [],
   manifestMode: 'normal',
   mediaDown: false,
   legacyPhase: 'old',
 };
 
-/** テストが読む数（保存の動画の全体の取得の回数・保存の manifest の取得と、その失敗の回数） */
-export type Stats = { fullVideoDownloads: number; manifestRequests: number; manifestFailures: number };
+/** テストが読む数（保存の動画の全体の取得の回数とバイト数・保存の manifest の取得と、その失敗の回数） */
+export type Stats = { fullVideoDownloads: number; fullVideoBytes: number; manifestRequests: number; manifestFailures: number };
+const NO_STATS: Stats = { fullVideoDownloads: 0, fullVideoBytes: 0, manifestRequests: 0, manifestFailures: 0 };
 
 /** 応答はキャッシュさせない（障害の差し込みを変えたら、すぐ効くように） */
 const NO_STORE: ServeHeaders = { 'Cache-Control': 'no-store' };
 const sha256 = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
 
+/** sw.js の設定の「無効にした保存版の revision」を、revisions にする（組み立てたままの sw.js は空の一覧。形が変わっていたら止める） */
+export const withDisabled = (sw: string, revisions: string[]): string => {
+  const empty = /disabledRevisions:\s*\[\]/g;
+  if (!empty.test(sw)) throw new Error('sw.js に、無効にした保存版の一覧（disabledRevisions: []）が見つからない');
+  return sw.replace(empty, `disabledRevisions:${JSON.stringify(revisions)}`);
+};
+
 export class Session {
   control: Control = { ...DEFAULT_CONTROL };
-  stats: Stats = { fullVideoDownloads: 0, manifestRequests: 0, manifestFailures: 0 };
+  stats: Stats = { ...NO_STATS };
 
   constructor(readonly site: PreparedSite) {}
 
@@ -72,7 +82,7 @@ export class Session {
   }
 
   /** 旧 Pages（LEGACY_SCOPE の下） */
-  private legacy(req: Request, relative: string): Response {
+  private legacy(req: Request, relative: string): Response | Promise<Response> {
     const folder = LEGACY[this.control.legacyPhase];
     let file = path.resolve(folder, relative || 'index.html');
     if (!file.startsWith(folder + path.sep) && file !== folder) return new Response(null, { status: 403 });
@@ -97,19 +107,29 @@ export class Session {
       return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
     const headers = mediaHeaders(req, found.entry, NO_STORE);
     const whole = req.method === 'GET' && !req.headers.has('Range');
-    if (whole) this.stats.fullVideoDownloads++;
-    const target = found.entry.lecture === this.site.course.faultLecture && found.entry.kind === 'standard';
-    const mode = this.control.mode;
-    if (!whole || !target || !['fail', 'redirect', 'partial', 'corrupt', 'truncated', 'delay'].includes(mode)) {
-      return bodyResponse(req, Bun.file(found.file), headers);
+    if (whole) {
+      this.stats.fullVideoDownloads++;
+      this.stats.fullVideoBytes += found.entry.bytes;
     }
+    const target =
+      this.control.faultTarget === 'video' &&
+      found.entry.lecture === this.site.course.faultLecture &&
+      found.entry.kind === 'standard';
+    if (!whole || !target) return bodyResponse(req, Bun.file(found.file), headers);
+    return (await this.faultOf(req, readFileSync(found.file), headers)) ?? bodyResponse(req, Bun.file(found.file), headers);
+  }
+
+  /** Control の mode の失敗の応答（失敗を差し込まないときは null。delay は待ってから、そのまま返す） */
+  private async faultOf(req: Request, file: Uint8Array, headers: ServeHeaders): Promise<Response | null> {
+    const mode = this.control.mode;
+    if (!['fail', 'redirect', 'partial', 'corrupt', 'truncated', 'delay'].includes(mode)) return null;
     if (mode === 'fail') return new Response('通信失敗テスト', { status: 500 });
     if (mode === 'redirect') return Response.redirect('https://example.com/restricted.mp4', 302);
-    let data: Uint8Array = readFileSync(found.file);
+    let data = file;
     if (mode === 'partial') {
       return new Response(new Blob([data.slice(0, 100)]), {
         status: 206,
-        headers: { 'Content-Type': 'video/mp4', 'Content-Range': `bytes 0-99/${data.length}` },
+        headers: { 'Content-Type': headers['Content-Type'] ?? 'application/octet-stream', 'Content-Range': `bytes 0-99/${data.length}` },
       });
     }
     if (mode === 'corrupt') {
@@ -126,13 +146,13 @@ export class Session {
     if (u.pathname === '/__test/health') return new Response('ok');
     if (u.pathname === '/__test/control' && req.method === 'POST') {
       this.control = { ...DEFAULT_CONTROL, ...((await req.json()) as Partial<Control>) };
-      this.stats = { fullVideoDownloads: 0, manifestRequests: 0, manifestFailures: 0 };
+      this.stats = { ...NO_STATS };
       return Response.json(this.control);
     }
     if (u.pathname === '/__test/stats') return Response.json(this.stats);
     if (u.pathname.startsWith(LEGACY_SCOPE)) {
       try {
-        return this.legacy(req, decodeURIComponent(u.pathname.slice(LEGACY_SCOPE.length)));
+        return await this.legacy(req, decodeURIComponent(u.pathname.slice(LEGACY_SCOPE.length)));
       } catch {
         return new Response(null, { status: 400 });
       }
@@ -156,6 +176,19 @@ export class Session {
     if (target.rel === 'sw.js' && this.control.workerUpdate) {
       const data = Buffer.concat([readFileSync(target.file), Buffer.from('\n// worker更新テスト\n')]);
       return fileResponse(req, target.file, data, NO_STORE);
+    }
+    if (target.rel === 'sw.js' && this.control.disabledRevisions.length) {
+      return fileResponse(req, target.file, Buffer.from(withDisabled(readFileSync(target.file, 'utf8'), this.control.disabledRevisions)), NO_STORE);
+    }
+    // faultLecture のポスターの全体の取得（Range の無い GET）に、Control の mode の失敗を差し込む（faultTarget が poster のとき）
+    if (
+      this.control.faultTarget === 'poster' &&
+      target.rel === `${course}/media/${this.site.course.faultLecture}.jpg` &&
+      req.method === 'GET' &&
+      !req.headers.has('Range')
+    ) {
+      const fault = await this.faultOf(req, readFileSync(target.file), { 'Content-Type': 'image/jpeg', ...NO_STORE });
+      if (fault) return fault;
     }
     return fileResponse(req, target.file, undefined, NO_STORE);
   }
