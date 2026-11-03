@@ -242,7 +242,7 @@ jobs:
             --infer-origin-from-routes=false --show-interactive-dev-session=false \
             < /dev/null > .work/smoke/wrangler.log 2>&1 &
           for _ in $(seq 1 90); do
-            if curl -fsS -o /dev/null --max-time 2 http://127.0.0.1:8787/; then exit 0; fi
+            if curl -fs -o /dev/null --max-time 2 http://127.0.0.1:8787/; then exit 0; fi
             sleep 1
           done
           echo '手元の Worker が 90 秒で立ち上がらない（.work/smoke/wrangler.log）' >&2
