@@ -48,11 +48,11 @@ export const N02: Lecture = {
 - 要素の `at` は「何番目の台詞の頭で出すか」（0 始まり）。出す順 = 読む順。1 つの台詞で出す要素は 1 つ
 - 場面に根拠の札 `evidence`（`research`・`official`・`practice`・`example`）を付け、研究や公式の数字・定義の場面は `cite` に短い出典を書く
 - `screens`: 架空のアプリの画面を部品で組む。悪い例の部品は `weak: true`（薄く描く）。スマホの下のボタンは `{ type: 'spacer', h: 0 }` で下へ寄せる。部品が少ないブラウザ画面は `zoom: 1.5`。注（`notes`）は 1 画面 3〜4 個まで、`**強調**` を使う
-- `timeline` の `sub` は短い札（「2 章」など）で、長い説明は `detail` に書く。`title` の全角スペースの前は小さな見出しになる
+- `timeline` の `sub` は短い札（「2 章」など）で、長い説明は `detail` に書く。小さな見出しは `kicker` に書く（`title` を全角スペースで分ける古い書き方も描けるが、台本の検証が注意を出す。style.md の「見た目は明示の項目で書く」）
 - `numbers` は最初の数字を、その数字を言う台詞（または 0）に置く。仮の数字なら `footnote` に「仮の数字」
 - `quiz`（動画の○×）: 問いの台詞に `pause: 3.2`、`revealAt: 1`、答えの台詞に `sfx: 'reveal'`
 - `phone` の場面は Stripe 講座向けのピンクの部品なので使わない（画面は `screens`）
-- アイコンは `IconName` の中から選ぶ。絵文字は使わない
+- アイコンは `IconName`（一覧は `src/components/icons.ts` の `ICONS`）の中から選ぶ。絵文字は使わない
 
 ## 話し方と読み
 
