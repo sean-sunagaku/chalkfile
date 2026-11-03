@@ -84,7 +84,7 @@ npm run media:check
 
 | 生成物 | 作るもの |
 |---|---|
-| `src/generated/timeline.json` | synth |
+| `content/<講座>/generated/timeline/<key>.json` | synth |
 | `site/posters/<ID>.jpg`・`site/media-manifest.json` | render と `media push` |
 | `docs/courses/`（読む教材・AI チャット用のチャンク） | `npm run build:materials` |
 | `tests/fixtures/snapshots/`（音声の鍵と読み） | `bun scripts/snapshots.ts --update`。台詞・読み・声を変えたときと、動画を足したとき。PR に「合成し直しが要る」と書く |
@@ -159,7 +159,7 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 
 | ぶつかったもの | 直し方 |
 |---|---|
-| `src/generated/`（timeline） | `git checkout origin/main -- src/generated/` → `npm run synth -- --cached-only`（全部の動画の時刻を、手元の声から作り直す。ほかの講座の声が手元に無ければ、先に `npm run materials:pull`） |
+| `content/<講座>/generated/timeline/` | `git checkout origin/main -- content/<講座>/generated/timeline/` → `npm run synth -- --cached-only --course <講座 ID>`（その講座の全部の動画の時刻を、手元の声から作り直す。声が手元に無ければ、先に `npm run materials:pull`） |
 | `docs/courses/` | `git checkout origin/main -- docs/courses/` → `npm run build:materials` |
 | `tests/fixtures/snapshots/` | `git checkout origin/main -- tests/fixtures/snapshots/` → `bun scripts/snapshots.ts --update` |
 | `site/media-manifest.json`（動画の一覧） | 下の手順 |

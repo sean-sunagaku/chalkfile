@@ -69,7 +69,7 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 - 読み: `.work/kana/<id>.txt` を全部読む。誤読は `content/reading.ts` に足して synth し直す
 - 見た目: `node scripts/stills.ts L01 --mid` で `out/stills/` に静止画を書き、全部見る。文字のはみ出し・重なり・小さすぎを直す
-- 長さ: `ffprobe` の動画の長さが `src/generated/timeline.json` の `durationInFrames / 30` と合う
+- 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本ファイルを渡して、主張ごとに公式で確かめてもらう（research.md の「事実確認」）
 - 型: `npm run typecheck`（動画・台本と、PWAのページ/worker）
 - オフライン/PWA: `npm test`、`bun scripts/build_site.ts --strict` → `npm run test:browser`。実動画、通信断・再起動、保存/削除、失敗/更新/キャンセル/再試行、Range・シーク・繰り返し、PC/375pxとインストール導線を確かめる（[offline.md](references/offline.md)）。実機未検証を成功とはしない。専用lintスクリプトはない

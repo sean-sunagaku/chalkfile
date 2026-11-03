@@ -3,7 +3,7 @@
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）
 // 見るもの
-//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline の形
+//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）
 //   公開で止まること（このファイル）: 講座サイトの設定・ID・リンク（siteProblems。scripts/build_site.ts も組み立ての前に呼ぶ）、
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
 //     全部の動画のポスター（site/posters/）と動画の一覧（site/media-manifest.json）。これまで main の公開の CI でしか分からなかった
@@ -17,9 +17,10 @@ import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Course, Theme } from '../content/types';
-import { formatIssues, RULES, validateCourse, validateTheme, validateTimeline, type Issue, type Rule, type TimelineShape } from '../engine/core/validate';
+import { formatIssues, RULES, validateCourse, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
 import { mediaKey, validateMediaManifest, type MediaManifest } from '../site/media-shared';
 import { PAGE_VERSION_MARK } from './site-version';
+import { readTimelinesByKey } from './timelines';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -174,17 +175,25 @@ export const validateAll = async (): Promise<Report> => {
   }
   try {
     const { COURSES, coursesIn } = await import('../content');
-    const file = path.join(ROOT, 'src/generated/timeline.json');
-    const timeline: Record<string, TimelineShape> = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+    // timeline は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。指紋で、台本を直したのに合成し直していない動画も見つける
+    const timelines = readTimelinesByKey();
+    const keys = new Set<string>();
     for (const lang of LANGS) {
       for (const course of coursesIn(lang)) {
         courses++;
         issues.push(...validateCourse(course));
         for (const lec of course.lectures) {
           videos++;
-          issues.push(...validateTimeline(lec, course, timeline[videoKey(lec.id, lang)]));
+          const key = videoKey(lec.id, lang);
+          keys.add(key);
+          issues.push(...validateTimelineFiles(lec, course, timelines.get(key) ?? []));
         }
       }
+    }
+    // 台本に無い動画の timeline（消した動画・名前を変えた動画）。Studio には出ないが、残しておくと紛らわしい
+    for (const [key, entries] of timelines) {
+      if (keys.has(key)) continue;
+      for (const e of entries) issues.push({ level: 'warning', rule: 'timeline', where: e.file, message: '台本に無い動画の timeline（消した動画なら bun scripts/synth.ts --prune で消す）' });
     }
     issues.push(...publishIssues(COURSES, coursesIn));
   } catch (e) {

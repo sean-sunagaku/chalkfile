@@ -1,0 +1,3 @@
+# 生成物（スクリプトが作る。手で直さない・手でマージしない。ぶつかったら main の側を取って作り直す。AGENTS.md の「並行作業のきまり」）
+# GitHub の差分では畳んで見せる
+content/*/generated/** linguist-generated=true

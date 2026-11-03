@@ -19,6 +19,13 @@ cd "$(dirname "$0")/.."
 ids=("$@")
 if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { VIDEOS } from './content'; console.log(VIDEOS.map((v) => v.key).join(' '))")"; fi
 fail() { echo "$1" >&2; exit 1; }
+# 動画の timeline（content/<講座>/generated/timeline/<id>.json。scripts/synth.ts が書く）。動画の名前は講座をまたいで重ならないので、1 つだけ見つかる
+timeline_of() {
+  local found=(content/*/generated/timeline/"$1".json)
+  if [ ! -f "${found[0]}" ]; then echo "$1: timeline が無い（先に npm run synth -- $1）" >&2; return 1; fi
+  if [ ${#found[@]} -gt 1 ]; then echo "$1: timeline が 2 つ以上の講座にある: ${found[*]}" >&2; return 1; fi
+  echo "${found[0]}"
+}
 # サイト用の動画の大きさの目安と、保存の 1 ファイルの上限（バイト。正本は site/limits.ts）
 limits=$(bun -e "import { OFFLINE_FILE_MAX_BYTES, VIDEO_TARGET_BYTES } from './site/limits'; console.log(VIDEO_TARGET_BYTES, OFFLINE_FILE_MAX_BYTES)") ||
   fail "site/limits.ts の上限を読めません"
@@ -51,7 +58,7 @@ site_encode() {
   local tmp="${2%.mp4}.tmp.mp4"
   crf=21
   # 6 分より長い動画は、これまで crf 27 か 29 でしか上限（約 14MB）に近づかなかった（3 講座の 23 本）。21〜25 を試す書き出しを省く
-  if [ "$(python3 -c "import json; t=json.load(open('src/generated/timeline.json'))['$3']; print(t['durationInFrames'] // t['fps'])")" -gt 360 ]; then crf=27; fi
+  if [ "$(python3 -c 'import json, sys; t = json.load(open(sys.argv[1])); print(t["durationInFrames"] // t["fps"])' "$tl")" -gt 360 ]; then crf=27; fi
   while :; do
     ffmpeg -y -hide_banner -loglevel error -i "$1" -i "public/audio/mix/$3.wav" \
       -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf "$crf" -maxrate 2000k -bufsize 4000k \
@@ -74,10 +81,13 @@ site_encode() {
 # CHUNK=1500 のように渡すと、その枚数ずつ分けて書き出して最後につなぐ。
 # Remotion は書き出し中のフレームを一時フォルダに JPEG で置く（5 分で 1〜2GB）ので、ディスクの空きが少ないとき用
 CHUNK=${CHUNK:-0}
+# 書き出す前に、全部の動画の timeline があることを確かめる（無い動画があれば、何も消さず・書き出さずに止まる）
+for want in "${ids[@]}"; do timeline_of "$want" > /dev/null || exit 1; done
 for id in "${ids[@]}"; do
   start=$(date +%s)
   # Remotion のコンポジションの ID はドットを使えない（P01.en → P01-en）
   comp=${id//./-}
+  tl=$(timeline_of "$id") || exit 1
   # 前の書き出しの残り（映像・字幕つきの映像・CHUNK の部品）を先に消す。残っていると、書き出しに失敗しても前の映像で先へ進んでしまう
   rm -f "out/master/$id.mp4" "out/master/$id.cc.mp4"
   leftovers "$id"
@@ -85,7 +95,7 @@ for id in "${ids[@]}"; do
     echo "注意: $id: 字幕つきの版（site/media/$id.cc.mp4）は作り直さず、前のままです。そろえるなら CAPTIONS=1 を付ける" >&2
   fi
   if [ "$CHUNK" -gt 0 ]; then
-    total=$(python3 -c "import json; print(json.load(open('src/generated/timeline.json'))['$id']['durationInFrames'])")
+    total=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["durationInFrames"])' "$tl")
     list="out/master/$id.parts.txt"
     : > "$list"
     s=0

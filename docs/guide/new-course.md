@@ -61,7 +61,7 @@
 - [ ] 読み: `.work/kana/<ID>.txt` を全部読んだ
 - [ ] 見た目: `npm run stills -- <ID> --mid` の静止画を全部見た（文字のはみ出し・重なり・小さすぎ）
 - [ ] 共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`（ほかの講座の見た目が変わっていないか。結果の表を PR に貼る）
-- [ ] 長さ: `ffprobe` の動画の長さが `src/generated/timeline.json` と合う
+- [ ] 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - [ ] 事実: 台本ができたら、別の目（サブエージェント）に台本のファイルだけを渡して、主張ごとに公式で確かめてもらった（[research.md](../../.claude/skills/study-video-course/references/research.md) の「事実確認を別の目でやる」）
 - [ ] 権利: `bun scripts/check_overlap.ts <講座 ID>`（台本と、出典の公式ページで、言い回しが続けて同じところが無いか）
 - [ ] サイト: `npm run build:site` → `npm run serve` で、再生・途中への移動・字幕・スマホの幅（375px）を見た。講座を足したら `npm run test:browser` も流した

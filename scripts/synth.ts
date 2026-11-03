@@ -1,22 +1,28 @@
 // 台本から台詞ごとの音声を作り、場面と台詞の時刻（タイムライン）を決める。日本語は VOICEVOX、英語と中国語は Kokoro（scripts/tts_kokoro.py）。
-//   bun scripts/synth.ts                 # 全部の動画（全部の言語）
+//   bun scripts/synth.ts                 # 公開する言語（site/config.json の publishLangs）の全部の動画
 //   bun scripts/synth.ts L03 L05         # 日本語の一部だけ
 //   bun scripts/synth.ts P01.en P01.zh   # 訳の動画（レクチャー ID.言語）
 //   bun scripts/synth.ts 'P01.*' '*.en'  # P01 の全部の言語・英語の全部
+//   bun scripts/synth.ts --course ga4-comedy   # その講座の全部の動画（全部の言語）
+//   --cached-only                        # 声を作らない（素材の声だけを使う。CI と、timeline を作り直すとき）
+//   --prune                              # 台本に無い動画の timeline のファイルを消す（付けなければ、残っていることを知らせるだけ）
 // 出力（<key> は動画の名前。日本語は L01、訳は L01.en）:
 //   .work/tts/<hash>.wav                 台詞の音声（同じ文・同じ声なら再利用）
-//   src/generated/timeline.json          Remotion が読む場面・台詞の開始フレーム
+//   content/<講座>/generated/timeline/<key>.json   Remotion が読む場面・台詞の開始フレーム（指紋つき。Git に入れる。自分の動画のファイルだけを書く）
 //   .work/plan/<key>.json                mix.py が読むミックスの設計図（音声はこのフォルダからの相対パス）
 //   site/data/<key>.json, <key>.vtt      講座サイトの台本と字幕
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { VIDEOS, type Video } from '../content';
 import type { Lang } from '../content/i18n';
 import type { Lecture, Scene, VoiceId } from '../content/types';
-import { formatIssues, validateLecture } from '../engine/core/validate';
 import { KOKORO, speechIn, VOICES } from '../content/voices';
-import { STING, VIDEO } from '../src/video.config';
+import { timelineFile } from '../engine/core/generated';
+import { TIMELINE_SCHEMA, TIMING, timelineFingerprint, timelineJson } from '../engine/core/timeline';
+import { formatIssues, validateLecture } from '../engine/core/validate';
+import { VIDEO } from '../src/video.config';
+import { timelineFiles } from './timelines';
 import { ttsKeyIn } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -24,13 +30,13 @@ const CACHE_ONLY = process.argv.includes('--cached-only');
 const ENGINE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
 const FPS = VIDEO.fps;
 
-// 間の取り方（秒）
-const LEAD_IN = 0.45;
-const OPENING_LEAD_IN = STING.introHitSec + 0.05; // ジングルの「ドン」（src/video.config.ts。今は 2.0 秒）の 0.05 秒あとに呼び込む
-const GAP = 0.3;
-const MIN_GAP = 0.05;
-const TAIL = 0.75;
-const ENDING_TAIL = 4.0; // 締めのジングル（3.5 秒）を最後まで鳴らす
+// 間の取り方（秒）。値は engine/core/timeline.ts の TIMING（timeline の指紋にも入る）
+const LEAD_IN = TIMING.leadIn;
+const OPENING_LEAD_IN = TIMING.openingLeadIn; // ジングルの「ドン」の 0.05 秒あとに呼び込む
+const GAP = TIMING.gap;
+const MIN_GAP = TIMING.minGap;
+const TAIL = TIMING.tail;
+const ENDING_TAIL = TIMING.endingTail; // 締めのジングル（3.5 秒）を最後まで鳴らす
 
 const dir = (p: string) => {
   mkdirSync(p, { recursive: true });
@@ -40,7 +46,6 @@ const TTS_DIR = dir(path.join(ROOT, '.work/tts'));
 const PLAN_DIR = dir(path.join(ROOT, '.work/plan'));
 const KANA_DIR = dir(path.join(ROOT, '.work/kana'));
 const SPEECH_DIR = dir(path.join(ROOT, '.work/speech'));
-const GEN_DIR = dir(path.join(ROOT, 'src/generated'));
 const SITE_DATA = dir(path.join(ROOT, 'site/data'));
 
 const wavSeconds = (buf: Buffer): number => {
@@ -171,12 +176,31 @@ const buildLecture = async (lec: Lecture, lang: Lang, key: string) => {
   return { scenes, duration: t };
 };
 
-const wanted = process.argv.slice(2).filter((a) => a !== '--cached-only');
-// L01（日本語）・L01.en（訳）・'L01.*'（全部の言語）・'*.en'（その言語の全部）
+// 引数: 動画の名前（L01）・訳（L01.en）・'L01.*'（全部の言語）・'*.en'（その言語の全部）・--course <講座 ID>（その講座の全部の言語）
+const wanted: string[] = [];
+const courseIds: string[] = [];
+const argv = process.argv.slice(2);
+for (let i = 0; i < argv.length; i++) {
+  const a = argv[i];
+  if (a === '--cached-only' || a === '--prune') continue;
+  if (a === '--course' || a.startsWith('--course=')) {
+    const id = a === '--course' ? argv[++i] : a.slice('--course='.length);
+    if (!id) throw new Error('--course には講座 ID を渡す（例: --course ga4-comedy）');
+    if (!VIDEOS.some((v) => v.course.id === id)) throw new Error(`講座が無い: ${id}`);
+    courseIds.push(id);
+    continue;
+  }
+  if (a.startsWith('-')) throw new Error(`知らない引数: ${a}（使えるのは --cached-only・--prune・--course <講座 ID>）`);
+  wanted.push(a);
+}
+const PRUNE = argv.includes('--prune');
 const pick = (w: string, v: Video) => w === v.key || w === `${v.lecture.id}.*` || w === `*.${v.lang}`;
 for (const w of wanted) if (!VIDEOS.some((v) => pick(w, v))) throw new Error(`動画が無い: ${w}（例: L01、P01.en、'P01.*'、'*.zh'）`);
 const published = JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')).publishLangs as string[];
-const targets = wanted.length ? VIDEOS.filter((v) => wanted.some((w) => pick(w, v))) : VIDEOS.filter((v) => published.includes(v.lang));
+const targets =
+  wanted.length || courseIds.length
+    ? VIDEOS.filter((v) => wanted.some((w) => pick(w, v)) || courseIds.includes(v.course.id))
+    : VIDEOS.filter((v) => published.includes(v.lang));
 // 声を作る前に、対象の動画の台本を確かめる（矢印の行き先・at の範囲など。全部の講座は bun scripts/validate.ts）
 const invalid = targets.flatMap((v) => validateLecture(v.lecture, v.course)).filter((x) => x.level === 'error');
 if (invalid.length) {
@@ -185,22 +209,34 @@ if (invalid.length) {
 }
 if (!CACHE_ONLY) kokoroAll(targets);
 
-const timelinePath = path.join(GEN_DIR, 'timeline.json');
-const timeline: Record<string, unknown> = existsSync(timelinePath) ? JSON.parse(readFileSync(timelinePath, 'utf8')) : {};
+/** 一時の名前に書いてから置き換える（途中で止まっても、前の中身か新しい中身のどちらかになる。同時に流しても壊れない） */
+const writeAtomic = (file: string, text: string) => {
+  mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
+  writeFileSync(tmp, text);
+  renameSync(tmp, file);
+};
 
 for (const { key, lang, lecture: lec, course } of targets) {
   const t0 = Date.now();
   const { scenes, duration } = await buildLecture(lec, lang, key);
 
-  timeline[key] = {
-    fps: FPS,
-    durationInFrames: sec2f(duration),
-    scenes: scenes.map((s) => ({
-      start: sec2f(s.start),
-      duration: sec2f(s.end) - sec2f(s.start),
-      lines: s.lines.map((l) => ({ start: sec2f(l.start - s.start), end: sec2f(l.end - s.start) })),
-    })),
-  };
+  // 自分の動画のファイルだけを書く（講座のフォルダの generated/timeline/<key>.json。ほかの動画のファイルには触らない）
+  writeAtomic(
+    path.join(ROOT, timelineFile(course.id, key)),
+    timelineJson({
+      schema: TIMELINE_SCHEMA,
+      key,
+      fps: FPS,
+      durationInFrames: sec2f(duration),
+      fingerprint: timelineFingerprint(lec, lang),
+      scenes: scenes.map((s) => ({
+        start: sec2f(s.start),
+        duration: sec2f(s.end) - sec2f(s.start),
+        lines: s.lines.map((l) => ({ start: sec2f(l.start - s.start), end: sec2f(l.end - s.start) })),
+      })),
+    }),
+  );
 
   writeFileSync(
     path.join(PLAN_DIR, `${key}.json`),
@@ -240,22 +276,12 @@ for (const { key, lang, lecture: lec, course } of targets) {
   console.log(`${key} ${(duration / 60).toFixed(2)} 分  ${scenes.length} 場面  ${cues.length} 台詞  (${((Date.now() - t0) / 1000).toFixed(0)} 秒)`);
 }
 
-// 複数の synth を同時に流しても互いの結果を消さないように、ロックを取ってから読み直し、自分のレクチャーだけ差し替える
-const lockDir = `${timelinePath}.lock`;
-for (let i = 0; ; i++) {
-  try {
-    mkdirSync(lockDir);
-    break;
-  } catch {
-    if (i > 600) throw new Error(`${lockDir} が 60 秒外れない（前の synth が落ちたなら消す）`);
-    Bun.sleepSync(100);
-  }
+// 台本に無い動画の timeline（消した動画・名前や講座を変えた動画）。--prune を付けたときだけ消す
+const expected = new Set(VIDEOS.map((v) => timelineFile(v.course.id, v.key)));
+const stale = timelineFiles().filter((f) => !expected.has(f));
+if (stale.length && PRUNE) {
+  for (const f of stale) rmSync(path.join(ROOT, f), { force: true });
+  console.log(`台本に無い動画の timeline を消した: ${stale.join(' ')}`);
+} else if (stale.length) {
+  console.warn(`台本に無い動画の timeline が残っている（消すなら --prune）: ${stale.join(' ')}`);
 }
-try {
-  const latest: Record<string, unknown> = existsSync(timelinePath) ? JSON.parse(readFileSync(timelinePath, 'utf8')) : {};
-  for (const { key } of targets) latest[key] = timeline[key];
-  writeFileSync(timelinePath, JSON.stringify(latest));
-} finally {
-  rmSync(lockDir, { recursive: true, force: true });
-}
-// 声のクレジットは書かない（動画のエンディングは台詞の声から、講座サイトは content/voices.ts の SITE_CREDITS から作る）

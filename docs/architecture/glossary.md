@@ -11,7 +11,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 |---|---|---|
 | 正本 | ある事柄を直すときに、そこだけを直せばよい 1 か所。ほかの場所は、正本から作るか、正本へリンクする | 文書の正本は [文書の地図](../README.md) |
 | 台本 | 講座の中身を TypeScript のデータで書いたもの。台詞・画面の要素・クイズ・出典を持つ。Chalkfile の正本 | `content/<講座 ID>/`。型は `content/types.ts` |
-| 生成物 | スクリプトが台本や素材から作るファイル。手で直さない。main に入れているもの（`src/generated/`・`site/posters/`・`site/media-manifest.json`・`docs/courses/`）と、手元だけのものがある | [全体図](overview.md) の「置き場所」 |
+| 生成物 | スクリプトが台本や素材から作るファイル。手で直さない。main に入れているもの（講座のフォルダの `content/<講座>/generated/`・`site/posters/`・`site/media-manifest.json`・`docs/courses/`）と、手元だけのものがある | [全体図](overview.md) の「置き場所」 |
 
 ## 講座の単位
 
@@ -37,7 +37,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 配役 | 掛け合いの講座で、声ごとに付ける名前と色。焼き込んだ字幕の名前の札と、サイトの台本の「ずんだもん：…」に出る | `Course.cast` |
 | 声の鍵 | 台詞の音声ファイルの名前。文と声の設定から作るので、同じ文・同じ声なら、前に作った音声を使い回す | `scripts/voices.ts` の `ttsKey`・`ttsKeyIn` |
 | 読み | 声に読ませる文。英字をカナに開く辞書は `content/reading.ts`。合成したときの読みは `.work/kana/<key>.txt` で確かめる | `content/reading.ts` |
-| timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む | `src/generated/timeline.json` |
+| timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む。時刻に効く入力の指紋を持ち、台本を直したのに合成し直していない動画を Studio と validate が止める | `content/<講座>/generated/timeline/<key>.json`（動画ごと）。形と指紋は `engine/core/timeline.ts` |
 | ミックス | 台詞・BGM・ジングル・効果音を 1 本にまとめた音 | `scripts/mix.py` が `public/audio/mix/<key>.wav` に書く |
 
 ## 素材と教材（名前が似ているので注意）

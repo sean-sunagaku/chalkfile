@@ -24,6 +24,7 @@ import { compositionId } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Scene } from '../content/types';
 import { SCENE_KINDS } from '../engine/core/scenes';
+import { readTimelineEntries } from './timelines';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const OUT = path.join(ROOT, '.work/stills-compare');
@@ -92,7 +93,15 @@ for (const t of themes) if (!THEMES[t]) throw new Error(`テーマが無い: ${t
 
 const git = (...args: string[]) => execFileSync('git', ['-C', ROOT, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const fileName = (t: Target, theme: string) => `${t.key}-s${String(t.scene).padStart(2, '0')}-${theme}${opt.captions ? '-cc' : ''}.png`;
-const readTimeline = (dir: string): Timeline => JSON.parse(readFileSync(path.join(dir, 'src/generated/timeline.json'), 'utf8'));
+/**
+ * その版の timeline（動画の名前 → 場面の時刻）。今の形は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。
+ * 基準の版が前の形（2026-11-03 までの main。1 つのファイル src/generated/timeline.json）でも比べられるように、そちらも読む
+ */
+const readTimeline = (dir: string): Timeline => {
+  const old = path.join(dir, 'src/generated/timeline.json');
+  if (existsSync(old)) return JSON.parse(readFileSync(old, 'utf8'));
+  return Object.fromEntries(readTimelineEntries(dir).flatMap((e) => (e.timeline ? [[e.key, e.timeline]] : [])));
+};
 
 /** 2 枚の PSNR（dB）。同じ絵は Infinity */
 const psnr = (a: string, b: string): number => {

@@ -57,7 +57,11 @@ const UNCHANGED = {
  * 300 フレーム（10 秒）の T01 を書き出し、終わったあとの out/・site/ の中身（大きいファイルは大きさだけ）と、偽の道具の呼ばれ方を返す。
  * 上限の正本（site/limits.ts）は本物を写す。limits に中身を渡すとそれに替え、null なら置かない
  */
-const render = (env: Record<string, string> = {}, limits: string | null = readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8')) => {
+const render = (
+  env: Record<string, string> = {},
+  limits: string | null = readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8'),
+  timeline: string | null = JSON.stringify({ key: 'T01', durationInFrames: 300, fps: 30 }),
+) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-render-'));
   const put = (file: string, text: string) => {
     mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
@@ -66,7 +70,8 @@ const render = (env: Record<string, string> = {}, limits: string | null = readFi
   try {
     mkdirSync(path.join(dir, 'scripts'));
     copyFileSync(path.join(import.meta.dir, '../scripts/render.sh'), path.join(dir, 'scripts/render.sh'));
-    put('src/generated/timeline.json', JSON.stringify({ T01: { durationInFrames: 300, fps: 30 } }));
+    // timeline は講座のフォルダの generated/timeline/<id>.json（scripts/synth.ts が書く）
+    if (timeline !== null) put('content/t-course/generated/timeline/T01.json', timeline);
     put('public/audio/mix/T01.wav', 'wav');
     put('bin/npx', FAKE_NPX);
     put('bin/ffmpeg', FAKE_FFMPEG);
@@ -159,6 +164,22 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
     expect(r.stderr).toContain('目安（14500 KiB）');
     expect(r.stderr).not.toContain('保存の 1 ファイルの上限');
     expect(r.calls.flatMap((c) => /-crf (\d+)/.exec(c)?.[1] ?? [])).toEqual(['21', '23', '25', '27', '29']);
+  });
+});
+
+describe('render.sh は、動画の timeline を講座のフォルダから読む', () => {
+  test('timeline が無ければ、何も書き出さず・前の出力も消さずに止まる', () => {
+    const before = Object.fromEntries(PREVIOUS.map((f) => [f, 'old']));
+    const r = render({}, undefined, null);
+    expect(r.code).not.toBe(0);
+    expect(r.stderr).toContain('T01: timeline が無い');
+    expect(r.files).toEqual(before);
+    expect(r.calls).toEqual([]);
+  });
+  test('6 分より長い動画は、crf 27 から試す（長さは timeline の durationInFrames と fps）', () => {
+    const r = render({ FAKE_FFMPEG_BYTES: String(20 * 1000 * 1000) }, undefined, JSON.stringify({ key: 'T01', durationInFrames: 361 * 30, fps: 30 }));
+    expect(r.code).toBe(0);
+    expect(r.calls.flatMap((c) => /-crf (\d+)/.exec(c)?.[1] ?? [])).toEqual(['27', '29']);
   });
 });
 

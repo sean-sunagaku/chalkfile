@@ -288,7 +288,7 @@ test('gc の --keep は、読み上げる文を content/voices.ts から読む�
   write('content/i18n.ts', "export const LANGS = ['ja'];\n");
   // 読み上げる文は content/voices.ts にあり、scripts/voices.ts はそれを読んで鍵を作る
   write('content/voices.ts', 'export const speechIn = (line: { t: string; s?: string }) => line.s ?? line.t;\n');
-  write('scripts/voices.ts', 'export const ttsKeyIn = (text: string, voice: string, lang: string) => `${lang}-${voice}-${text}`;\n');
+  write('scripts/voices.ts', "export const ttsKeyIn = (text: string, voice: string, lang: string) => [lang, voice, text].join('-');\n");
   git(a.root, 'add', '-A');
   git(a.root, 'commit', '--quiet', '-m', '台本');
   git(a.root, 'push', '--quiet', 'origin', 'HEAD:main');

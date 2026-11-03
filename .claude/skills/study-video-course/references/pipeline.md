@@ -32,7 +32,7 @@ curl -s http://127.0.0.1:50021/version
 |---|---|---|
 | `npm run gen:video-config` | `src/video.config.ts` | `scripts/audio/video_config.json`（mix.py・build_music.py が読む動画の値。コミットする） |
 | `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/video_config.json` | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
-| `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`src/generated/timeline.json`、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
+| `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |
 | `uv run --locked --group audio python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav` |
@@ -62,7 +62,7 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 - 台本: `bun scripts/validate.ts`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `site/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
 - 読み: `.work/kana/<id>.txt`
 - 見た目: `node scripts/stills.ts L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
-- 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `timeline.json` の `durationInFrames / 30` と合う
+- 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `content/stripe-billing/generated/timeline/L04.json` の `durationInFrames / 30` と合う
 - 1 場面だけ見たいとき: `ffmpeg -ss <秒> -i site/media/L04.mp4 -frames:v 1 frame.jpg`
 - Remotion Studio: `npx remotion studio`（音つきで見るときは props の `audio` を true）
 

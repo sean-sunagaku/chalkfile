@@ -46,7 +46,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`） |
-| `npm run synth` | 声と時刻（`src/generated/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う |
+| `npm run synth` | 声と時刻（`content/<講座>/generated/timeline/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`） |
 | `npm run render` | 動画（`site/media/`・`site/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
@@ -92,7 +92,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 ## 部分だけ作り直す・確かめる
 
 - 一部だけ: `npm run synth -- L03 L05`（mix・render も同じ）。訳の動画は `S03.en` のように、まとめて `'S03.*'`・`'*.en'` も渡せる
-- 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
+- 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。timeline（`content/<講座>/generated/timeline/`）は Git に入っている）
 - 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
 - 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・`reading.ts`・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
 - 見た目: `npm run stills -- L04:3 --mid`（場面の中ほどと終わりを静止画にする）

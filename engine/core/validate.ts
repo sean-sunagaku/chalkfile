@@ -1,7 +1,8 @@
 // 台本の検証。描く前・声を作る前に、台本の誤りを見つける（React・Remotion・Node に依存しない純粋な関数）。
 //   validateCourse(course)            講座 1 つ（講座の項目と、全部の動画）
 //   validateLecture(lecture, course)  動画 1 本（訳の動画は、訳を重ねたあとのレクチャーと訳の講座を渡す）
-//   validateTimeline(lecture, course, timeline)  synth が書いた timeline が台本の形と合うか
+//   validateTimeline(lecture, course, timeline)  synth が書いた timeline が台本の形と合うか（指紋が今の台本と同じか）
+//   validateTimelineFiles(lecture, course, files)  置いてある timeline のファイル（重なり・置き場所・読めるか）と、上の確かめ
 //   validateTheme(theme)              テーマの色の形と数
 // 呼ぶ場所: bun scripts/validate.ts（全講座・全言語）・scripts/synth.ts の最初（対象の動画だけ）・src/Root.tsx（Studio はその動画だけを止める）
 // 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
@@ -15,6 +16,8 @@ import { VIDEO_TEXT } from '../../src/i18n';
 import { assertNever } from './assert';
 import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
+import { timelineFile } from './generated';
+import { timelineFingerprint, type TimelineEntry } from './timeline';
 
 export type Level = 'error' | 'warning';
 
@@ -457,14 +460,26 @@ export const validateCourse = (course: Course): Issue[] => {
   return out;
 };
 
-/** synth が書く timeline の形（src/Lecture.tsx の LectureTimeline） */
-export type TimelineShape = { durationInFrames: number; scenes: { start: number; duration: number; lines: { start: number; end: number }[] }[] };
+/**
+ * synth が書く timeline の形（engine/core/timeline.ts の TimelineFile。台本の形と合うかを見るのに要る所）。
+ * fps と fingerprint はファイルには必ずある。テストの見本のように無いときは、その 2 つを見ない
+ */
+export type TimelineShape = {
+  durationInFrames: number;
+  fps?: number;
+  fingerprint?: string;
+  scenes: { start: number; duration: number; lines: { start: number; end: number }[] }[];
+};
 
-/** timeline が台本の形と合うか。場面や台詞の数が違うと、描く途中で TypeError になるか、台詞と画面がずれる */
+/**
+ * timeline が台本と合うか。場面や台詞の数が違うと、描く途中で TypeError になるか、台詞と画面がずれる。
+ * 指紋（時刻に効く入力のハッシュ）が今の台本と違えば「timeline が古い」（台本を直したのに合成し直していない）
+ */
 export const validateTimeline = (lecture: Lecture, course: Course, timeline: TimelineShape | undefined): Issue[] => {
   const out: Issue[] = [];
   const where = videoWhere(lecture, course);
-  const key = videoKey(lecture.id, course.lang ?? 'ja');
+  const lang = course.lang ?? 'ja';
+  const key = videoKey(lecture.id, lang);
   const fix = `bun scripts/synth.ts ${key} で作り直す`;
   if (!timeline) {
     push(out, 'warning', 'timeline', `${where} timeline`, `timeline が無い（まだ合成していない。${fix}）`);
@@ -481,7 +496,56 @@ export const validateTimeline = (lecture: Lecture, course: Course, timeline: Tim
     const b = list(s?.lines).length;
     if (a !== b) push(out, 'error', 'timeline', `${where} 場面 ${i + 1} timeline`, `timeline の台詞の数（${a}）が台本（${b}）と合わない。${fix}`);
   });
+  // 場面は頭から隙間なく続き、最後の場面の終わりが動画の長さになる（手で直した・マージで混ざった timeline を見つける）
+  let at = 0;
+  for (const [i, s] of ts.entries()) {
+    if (s.start !== at) {
+      push(out, 'error', 'timeline', `${where} 場面 ${i + 1} timeline`, `場面の始まり（${s.start}）が、前の場面の終わり（${at}）と続いていない。${fix}`);
+      break;
+    }
+    at = s.start + s.duration;
+  }
+  if (at !== timeline.durationInFrames && !out.length) push(out, 'error', 'timeline', `${where} timeline`, `動画の長さ（${timeline.durationInFrames}）が、場面の終わり（${at}）と違う。${fix}`);
+  if (timeline.fps !== undefined && timeline.fps !== VIDEO.fps) push(out, 'error', 'timeline', `${where} timeline`, `timeline の fps（${timeline.fps}）が動画の fps（${VIDEO.fps}。src/video.config.ts）と違う。${fix}`);
+  if (timeline.fingerprint !== undefined && !out.length) {
+    let now: string;
+    try {
+      now = timelineFingerprint(lecture, lang);
+    } catch (e) {
+      // 読み上げる文を作れない台詞（辞書に無い英字が残った・空）。synth も同じ所で止まる
+      push(out, 'error', 'timeline', `${where} timeline`, `timeline の指紋を計算できない: ${e instanceof Error ? e.message : String(e)}`);
+      return out;
+    }
+    if (timeline.fingerprint !== now) {
+      push(out, 'error', 'timeline', `${where} timeline`, `timeline が古い（台詞の読み・声・間・効果音・場面の種類か hold が、合成したときと違う。指紋 ${timeline.fingerprint} → ${now}）。${fix}（台詞の声を変えていなければ --cached-only でよい）`);
+    }
+  }
   return out;
+};
+
+/**
+ * 置いてある timeline のファイル（その動画の名前のもの全部）が、動画と合うか。無ければ注意（まだ合成していない）。
+ * 2 つ以上ある・講座のフォルダが違う・読めないときは誤り。1 つあれば validateTimeline で台本と照らし合わせる
+ */
+export const validateTimelineFiles = (lecture: Lecture, course: Course, entries: readonly TimelineEntry[]): Issue[] => {
+  const where = `${videoWhere(lecture, course)} timeline`;
+  const key = videoKey(lecture.id, course.lang ?? 'ja');
+  const out: Issue[] = [];
+  if (entries.length > 1) {
+    push(out, 'error', 'timeline', where, `timeline が 2 つ以上の講座のフォルダにある: ${entries.map((e) => e.file).join('・')}（${timelineFile(course.id, key)} だけを残す）`);
+    return out;
+  }
+  const [entry] = entries;
+  if (!entry) return validateTimeline(lecture, course, undefined);
+  if (entry.course !== course.id) {
+    push(out, 'error', 'timeline', where, `timeline の置き場所が違う: ${entry.file}（${timelineFile(course.id, key)} に置く。bun scripts/synth.ts ${key} --prune）`);
+    return out;
+  }
+  if (!entry.timeline) {
+    push(out, 'error', 'timeline', where, `${entry.error ?? '読めない'}（bun scripts/synth.ts ${key} で作り直す）`);
+    return out;
+  }
+  return validateTimeline(lecture, course, entry.timeline);
 };
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
