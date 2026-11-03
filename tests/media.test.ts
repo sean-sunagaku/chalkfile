@@ -3,7 +3,8 @@ import {
   RETAIN_DAYS, allMediaEntries, expiredRetained, mediaFilename, mediaPath, releaseUrl, retainDeadline, retainedWarnings, validateMediaManifest,
   type MediaEntry,
 } from '../site/media-shared';
-import { retainEntries, verifyReleaseAssets, warnExpiredRetained } from '../scripts/media';
+import { mediaLimitProblems, readMediaManifest, retainEntries, verifyReleaseAssets, warnExpiredRetained } from '../scripts/media';
+import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, RELEASE_MAX_ASSETS } from '../site/limits';
 const entry: MediaEntry = { lang: 'ja', course: 'sample', lecture: 'L01', kind: 'standard', sha256: 'a'.repeat(64), bytes: 100,
   filename: `L01.${'a'.repeat(64)}.mp4`, tag: 'media-ja-sample' };
 describe('動画の許可リスト', () => {
@@ -76,5 +77,44 @@ describe('retained の期限', () => {
       expect(warnExpiredRetained(validateMediaManifest({ schema: 1, entries: [entry] }), later)).toBe(0);
       expect(spy).toHaveBeenCalledTimes(1);
     } finally { spy.mockRestore(); }
+  });
+});
+describe('動画の一覧が、保存と Releases の上限に収まるか（mediaLimitProblems。push と check が使う）', () => {
+  const MiB = 1024 ** 2;
+  const video = (lecture: string, o: Partial<MediaEntry> = {}): MediaEntry => {
+    const e = { ...entry, lecture, sha256: 'a'.repeat(64), ...o };
+    return { ...e, filename: mediaFilename(e) };
+  };
+  const lectures = (n: number, o: Partial<MediaEntry> = {}) => Array.from({ length: n }, (_, i) => video(`L${String(i + 1).padStart(3, '0')}`, o));
+  test('今の一覧は収まる', () => {
+    expect(mediaLimitProblems(readMediaManifest())).toEqual([]);
+  });
+  test('保存の 1 ファイルの上限を超える動画を止める（ちょうどは通す）', () => {
+    expect(mediaLimitProblems({ schema: 1, entries: [video('L01', { bytes: OFFLINE_FILE_MAX_BYTES })] })).toEqual([]);
+    expect(mediaLimitProblems({ schema: 1, entries: [video('L01', { bytes: OFFLINE_FILE_MAX_BYTES + 1 })] })).toEqual([
+      '動画が保存の 1 ファイルの上限（32.0 MiB）を超えています: ja/sample/L01/standard（32.0 MiB）',
+    ]);
+  });
+  test('講座の動画の合計が、保存の 1 講座の上限を超えたら止める', () => {
+    const fits = lectures(OFFLINE_COURSE_MAX_BYTES / OFFLINE_FILE_MAX_BYTES, { bytes: OFFLINE_FILE_MAX_BYTES });
+    expect(mediaLimitProblems({ schema: 1, entries: fits })).toEqual([]);
+    expect(mediaLimitProblems({ schema: 1, entries: [...fits, video('L999', { bytes: MiB })] })).toEqual([
+      '講座の動画の合計が、保存の 1 講座の上限（1024.0 MiB）を超えています: ja/sample（1025.0 MiB）',
+    ]);
+  });
+  test('講座の保存のファイルの数（ページとポスターも数える）が上限を超えたら止める', () => {
+    const fits = lectures((OFFLINE_COURSE_MAX_FILES - 1) / 2);
+    expect(mediaLimitProblems({ schema: 1, entries: fits })).toEqual([]);
+    const cc = { ...fits[0], kind: 'captioned' as const };
+    expect(mediaLimitProblems({ schema: 1, entries: [...fits, { ...cc, filename: mediaFilename(cc) }] })).toEqual([
+      `講座の保存のファイルの数が、上限（${OFFLINE_COURSE_MAX_FILES}）を超えています: ja/sample（ページとポスターを入れて ${OFFLINE_COURSE_MAX_FILES + 1}）`,
+    ]);
+  });
+  test('1 つの Release に置く数（retained も数える）が上限を超えたら止める', () => {
+    const old = (n: number) => Array.from({ length: n }, (_, i) => video('L001', { sha256: i.toString(16).padStart(64, '0') }));
+    expect(mediaLimitProblems({ schema: 1, entries: [video('L001')], retained: old(RELEASE_MAX_ASSETS - 1) })).toEqual([]);
+    expect(mediaLimitProblems({ schema: 1, entries: [video('L001')], retained: old(RELEASE_MAX_ASSETS) })).toEqual([
+      `Release の ${RELEASE_MAX_ASSETS} asset 上限を超えます: media-ja-sample（一覧に ${RELEASE_MAX_ASSETS + 1} 本）`,
+    ]);
   });
 });

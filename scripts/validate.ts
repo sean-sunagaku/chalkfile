@@ -1,32 +1,179 @@
-// 台本を検証する（engine/core/validate.ts）。全講座・全言語の台本と、テーマ・timeline の形を見て、誤り（error）があれば 1 で終える。
+// 台本と、公開で止まることを検証する。誤り（error）があれば 1 で終える。PR の CI（.github/workflows/check.yml）も流す。
 //   bun scripts/validate.ts             # 誤りの一覧と、注意（warning）の数と内訳
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）
+// 見るもの
+//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline の形
+//   公開で止まること（このファイル）: 講座サイトの設定・ID・リンク（siteProblems。scripts/build_site.ts も組み立ての前に呼ぶ）、
+//     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
+//     全部の動画のポスター（site/posters/）と動画の一覧（site/media-manifest.json）。これまで main の公開の CI でしか分からなかった
+//     （GA4 のポスターの入れ忘れ）ので、PR で先に止める
 // 誤り: 描くと止まるか黙って崩れるもの（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声など）と、
-//       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline
+//       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
-// synth.ts の最初（対象の動画だけ）と Studio（src/Root.tsx。その動画だけ止める）も、同じ検証を使う
+// synth.ts の最初（対象の動画だけ）と Studio（src/Root.tsx。その動画だけ止める）も、同じ台本の検証を使う
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { formatIssues, RULES, validateCourse, validateTheme, validateTimeline, type Issue, type TimelineShape } from '../engine/core/validate';
+import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
+import { THEMES } from '../content/themes';
+import type { Course, Theme } from '../content/types';
+import { formatIssues, RULES, validateCourse, validateTheme, validateTimeline, type Issue, type Rule, type TimelineShape } from '../engine/core/validate';
+import { mediaKey, validateMediaManifest, type MediaManifest } from '../site/media-shared';
+import { PAGE_VERSION_MARK } from './site-version';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
-export type Report = { ok: boolean; errors: number; warnings: number; courses: number; videos: number; themes: number; issues: Issue[] };
+/** 公開で止まることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見るので、こちらに置く） */
+export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧' } as const;
+/** 公開で止まることの 1 件（形は台本の Issue と同じで、rule だけが PUBLISH_RULES の名前） */
+export type PublishIssue = Omit<Issue, 'rule'> & { rule: keyof typeof PUBLISH_RULES };
+
+export type Report = { ok: boolean; errors: number; warnings: number; courses: number; videos: number; themes: number; issues: (Issue | PublishIssue)[] };
+
+/* ───────────── 講座サイトの設定と、公開で止まること ───────────── */
+
+/** site/config.json（scripts/build_site.ts も、この形で読む）。media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ） */
+export type SiteConfig = { series: string; seriesSub: string; baseUrl: string; repoUrl: string; publishLangs: Lang[]; media?: Partial<Record<Lang, { url: string; repo: string }>> };
+export const readSiteConfig = (): SiteConfig => JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')) as SiteConfig;
+
+/** 訳の言語の動画のサイトのパス（/media/en/ など。サイトと同じ origin なので、パスだけで指せる）。日本語と、動画のサイトの無い言語は null */
+export const mediaRootOf = (config: SiteConfig, lang: Lang): string | null => {
+  const m = lang === 'ja' ? undefined : config.media?.[lang];
+  return m ? new URL(m.url.endsWith('/') ? m.url : `${m.url}/`).pathname : null;
+};
+
+const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
+
+/**
+ * 講座サイトの安全のための確かめ（scripts/build_site.ts が組み立ての前に呼ぶ。中身と文言は build_site.ts にあったときのまま）。
+ * ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（javascript: などを通さない）。
+ * 台本の中身の確かめ（注入・隠し文字・秘密情報）は scripts/check_content.ts が受け持つ。
+ * coursesIn は言語ごとの講座（content/index.ts の coursesIn）。公開しない言語の講座も見る
+ */
+export const siteProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], themes: readonly Theme[] = Object.values(THEMES)): string[] => {
+  const base = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
+  const problems: string[] = [];
+  if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
+  for (const [lang, m] of Object.entries(config.media ?? {})) {
+    if (!m || !HTTPS.test(m.url) || !HTTPS.test(m.repo)) problems.push(`site/config.json の media.${lang} の url と repo は https:// で書く`);
+    // 動画のサイトは講座サイトと同じ origin（Service Worker が中身を確かめて保存でき、Range もそのまま動く）
+    else if (new URL(m.url).origin !== new URL(base).origin) problems.push(`site/config.json の media.${lang}.url は baseUrl と同じ origin にする: ${m.url}`);
+    else {
+      // 講座サイトを含むパスに置くと、ページと動画の区別（Service Worker）が崩れる。講座サイトの下に置くとき（chalkfile.com/media/ など）は、
+      // 頭のフォルダの名前を、講座 ID・言語のフォルダと重ねない
+      // biome-ignore lint/style/noNonNullAssertion: media に書いた訳の言語には、動画のサイトのパスが必ずある（build_site.ts にあったときのまま）
+      const mp = mediaRootOf(config, lang as Lang)!;
+      const bp = new URL(base).pathname;
+      const head = mp.startsWith(bp) ? mp.slice(bp.length).split('/')[0] : '';
+      if (bp.startsWith(mp) || coursesIn('ja').some((c) => c.id === head) || LANGS.some((l) => LANG_INFO[l].path === `${head}/`)) {
+        problems.push(`site/config.json の media.${lang}.url は、講座サイトを含まず、講座 ID・言語のフォルダと重ならない場所にする: ${m.url}`);
+      }
+    }
+  }
+  for (const lang of LANGS)
+    for (const c of coursesIn(lang)) {
+      if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
+      for (const ln of c.links ?? []) if (!HTTPS.test(ln.url)) problems.push(`${c.id} のリンクが https:// でない: ${ln.url}`);
+      for (const lec of c.lectures) {
+        if (!ID.test(lec.id)) problems.push(`レクチャー ID が英数字でない: ${lec.id}`);
+        for (const d of lec.docs) if (!HTTPS.test(d.url)) problems.push(`${lec.id} の公式ドキュメントのリンクが https:// でない: ${d.url}`);
+        // 節 ID・図 ID はページの中の id 属性とリンク先になるので英数字だけ
+        const m = lec.material;
+        if (m) for (const id of [m.id, ...m.sections.map((x) => x.id), ...m.figures.map((x) => x.id), m.exercise.id]) if (!ID.test(id)) problems.push(`${lec.id} の教材の ID が英数字でない: ${id}`);
+      }
+      for (const x of c.sources ?? []) if (!HTTPS.test(x.url)) problems.push(`${c.id} の出典のリンクが https:// でない: ${x.url}`);
+      // 版の印（scripts/site-version.ts）は、版が決まるとページの中で全部置き換えるので、台本には書けない
+      if (JSON.stringify(c).includes(PAGE_VERSION_MARK)) problems.push(`${c.id} の台本に、版の印と同じ文字 ${PAGE_VERSION_MARK} がある`);
+    }
+  for (const t of themes) if (!ID.test(t.id)) problems.push(`テーマ ID が英数字でない: ${t.id}`);
+  return problems;
+};
+
+/**
+ * 教材の ID と参照（scripts/build_materials.ts が書き出す前に呼ぶ。中身と文言は build_materials.ts にあったときのまま）。
+ * 節 ID・図 ID が重なっていないか（AI チャットの参照先がぶれないように）と、質問例の参照先があるか。教材を作る講座（syllabus のある講座）に使う
+ */
+export const materialProblems = (c: Course): string[] => {
+  const problems: string[] = [];
+  const ids = [...c.lectures.flatMap((l) => (l.material ? [l.material.id, ...l.material.sections.map((s) => s.id), ...l.material.figures.map((f) => f.id), l.material.exercise.id] : [])), ...(c.syllabus?.chapters.map((ch) => ch.id) ?? [])];
+  const dupIds = ids.filter((id, i) => ids.indexOf(id) !== i && !c.syllabus?.chapters.some((ch) => ch.id === id && c.lectures.some((l) => l.material?.id === id)));
+  if (dupIds.length) problems.push(`${c.id}: ID が重なっている: ${[...new Set(dupIds)].join(' ')}`);
+  for (const lec of c.lectures) {
+    if (!lec.material) continue;
+    for (const a of lec.material.askExamples) for (const r of a.refs) if (!ids.includes(r)) problems.push(`${lec.id}: 質問例の参照先が無い: ${r}`);
+  }
+  return problems;
+};
+
+/** 公開する言語（publishLangs）の全部の動画。key は動画の名前（S01・S01.en） */
+const publishedVideos = (config: SiteConfig, coursesIn: (lang: Lang) => Course[]) =>
+  config.publishLangs.flatMap((lang) => coursesIn(lang).flatMap((course) => course.lectures.map((lecture) => ({ lang, course, lecture, key: videoKey(lecture.id, lang) }))));
+
+/**
+ * 公開する言語の全部の動画に、ポスター（site/posters/<key>.jpg）があるか。
+ * 公開の CI の checkout には Git に入れたものしか無いので、無いと build_site --strict で止まる（GA4 のポスターの入れ忘れ）
+ */
+export const posterProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], hasPoster = (key: string) => existsSync(path.join(ROOT, 'site/posters', `${key}.jpg`))): PublishIssue[] =>
+  publishedVideos(config, coursesIn)
+    .filter((v) => !hasPoster(v.key))
+    .map((v) => ({ level: 'error', rule: 'poster', where: `${v.course.id}/${v.key}`, message: `ポスター site/posters/${v.key}.jpg が無い（bash scripts/render.sh ${v.key} が作る。Git に入れる）` }));
+
+/**
+ * 動画の一覧（site/media-manifest.json）に、公開する言語の全部の動画があるか。通常版は全部（無いと build_site が止まる）。
+ * 掛け合いの講座（cast がある）は、字幕を焼き込んだ版も（講座サイトは、字幕をオンにするとこちらを流す）
+ */
+export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], manifest: MediaManifest): PublishIssue[] => {
+  const keys = new Set(manifest.entries.map(mediaKey));
+  const out: PublishIssue[] = [];
+  for (const v of publishedVideos(config, coursesIn)) {
+    const has = (kind: 'standard' | 'captioned') => keys.has(mediaKey({ lang: v.lang, course: v.course.id, lecture: v.lecture.id, kind }));
+    const where = `${v.course.id}/${v.key}`;
+    if (!has('standard')) out.push({ level: 'error', rule: 'media', where, message: '動画の一覧（site/media-manifest.json）に通常版が無い（書き出してから bun scripts/media.ts push）' });
+    if (v.course.cast && !has('captioned')) {
+      out.push({ level: 'error', rule: 'media', where, message: '動画の一覧（site/media-manifest.json）に字幕を焼き込んだ版が無い（掛け合いの講座は CAPTIONS=1 で書き出してから bun scripts/media.ts push）' });
+    }
+  }
+  return out;
+};
+
+const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** 公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語のポスターと動画の一覧）。courses は日本語の講座 */
+export const publishIssues = (courses: Course[], coursesIn: (lang: Lang) => Course[]): PublishIssue[] => {
+  const out: PublishIssue[] = [];
+  const fail = (rule: PublishIssue['rule'], where: string, message: string) => out.push({ level: 'error', rule, where, message });
+  let config: SiteConfig;
+  try {
+    config = readSiteConfig();
+  } catch (e) {
+    fail('site', 'site/config.json', messageOf(e));
+    return out;
+  }
+  for (const message of siteProblems(config, coursesIn)) fail('site', '講座サイト', message);
+  for (const c of courses.filter((x) => x.syllabus)) for (const message of materialProblems(c)) fail('material', c.id, message);
+  out.push(...posterProblems(config, coursesIn));
+  try {
+    out.push(...mediaProblems(config, coursesIn, validateMediaManifest(JSON.parse(readFileSync(path.join(ROOT, 'site/media-manifest.json'), 'utf8')))));
+  } catch (e) {
+    fail('media', 'site/media-manifest.json', messageOf(e));
+  }
+  return out;
+};
+
+/* ───────────── 全部 ───────────── */
 
 /** 全講座・全言語を検証する。台本の読み込み（訳の重ね方）で止まったときも、誤りとして返す */
 export const validateAll = async (): Promise<Report> => {
-  const issues: Issue[] = [];
+  const issues: (Issue | PublishIssue)[] = [];
   let courses = 0;
   let videos = 0;
-  const { THEMES } = await import('../content/themes');
   for (const [id, theme] of Object.entries(THEMES)) {
     issues.push(...validateTheme(theme, `content/themes.ts ${id}`));
     if (theme.id !== id) issues.push({ level: 'error', rule: 'theme', where: `content/themes.ts ${id}`, message: `THEMES のキー（${id}）とテーマの id（${theme.id}）が違う` });
   }
   try {
-    const { coursesIn } = await import('../content');
-    const { LANGS, videoKey } = await import('../content/i18n');
+    const { COURSES, coursesIn } = await import('../content');
     const file = path.join(ROOT, 'src/generated/timeline.json');
     const timeline: Record<string, TimelineShape> = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
     for (const lang of LANGS) {
@@ -39,18 +186,22 @@ export const validateAll = async (): Promise<Report> => {
         }
       }
     }
+    issues.push(...publishIssues(COURSES, coursesIn));
   } catch (e) {
     // 訳の数の食い違いなどは、content/ を読み込むときに止まる（content/i18n.ts の localizeCourse）
-    issues.push({ level: 'error', rule: 'scenes', where: 'content/（読み込み）', message: e instanceof Error ? e.message : String(e) });
+    issues.push({ level: 'error', rule: 'scenes', where: 'content/（読み込み）', message: messageOf(e) });
   }
   const errors = issues.filter((x) => x.level === 'error').length;
   return { ok: errors === 0, errors, warnings: issues.length - errors, courses, videos, themes: Object.keys(THEMES).length, issues };
 };
 
+/** 種類の名前（台本の検証と、公開で止まること） */
+const LABELS: Record<Rule | PublishIssue['rule'], string> = { ...RULES, ...PUBLISH_RULES };
+
 /** 注意の内訳（種類ごとの数） */
-const breakdown = (issues: Issue[]) => {
+const breakdown = (issues: (Issue | PublishIssue)[]) => {
   const n = new Map<string, number>();
-  for (const x of issues) n.set(RULES[x.rule], (n.get(RULES[x.rule]) ?? 0) + 1);
+  for (const x of issues) n.set(LABELS[x.rule], (n.get(LABELS[x.rule]) ?? 0) + 1);
   return [...n].map(([k, v]) => `${k} ${v}`).join('・');
 };
 
@@ -64,9 +215,10 @@ if (import.meta.main) {
     const errors = report.issues.filter((x) => x.level === 'error');
     const warnings = report.issues.filter((x) => x.level === 'warning');
     const shown = args.includes('--warnings') ? [...errors, ...warnings] : errors;
-    if (shown.length) console.log(formatIssues(shown));
+    // 表示に使うのは level・where・message だけ（rule の種類は問わない）
+    if (shown.length) console.log(formatIssues(shown as Issue[]));
     console.log(
-      `台本の検証: 誤り ${report.errors} 件・注意 ${report.warnings} 件（${report.courses} 講座・${report.videos} 本の動画・${report.themes} テーマ。訳の講座も数える）`,
+      `台本と公開の検証: 誤り ${report.errors} 件・注意 ${report.warnings} 件（${report.courses} 講座・${report.videos} 本の動画・${report.themes} テーマ。訳の講座も数える）`,
     );
     if (warnings.length) console.log(`注意の内訳: ${breakdown(warnings)}${args.includes('--warnings') ? '' : '（一覧は --warnings）'}`);
   }

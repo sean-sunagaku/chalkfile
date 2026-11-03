@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   chmodSync,
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -52,8 +53,11 @@ const UNCHANGED = {
   'site/posters/T01.jpg': 'old',
 };
 
-/** 300 フレーム（10 秒）の T01 を書き出し、終わったあとの out/・site/ の中身（大きいファイルは大きさだけ）と、偽の道具の呼ばれ方を返す */
-const render = (env: Record<string, string> = {}) => {
+/**
+ * 300 フレーム（10 秒）の T01 を書き出し、終わったあとの out/・site/ の中身（大きいファイルは大きさだけ）と、偽の道具の呼ばれ方を返す。
+ * 上限の正本（site/limits.ts）は本物を写す。limits に中身を渡すとそれに替え、null なら置かない
+ */
+const render = (env: Record<string, string> = {}, limits: string | null = readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8')) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-render-'));
   const put = (file: string, text: string) => {
     mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
@@ -69,6 +73,7 @@ const render = (env: Record<string, string> = {}) => {
     chmodSync(path.join(dir, 'bin/npx'), 0o755);
     chmodSync(path.join(dir, 'bin/ffmpeg'), 0o755);
     for (const file of PREVIOUS) put(file, 'old');
+    if (limits !== null) put('site/limits.ts', limits);
     const r = Bun.spawnSync(['bash', 'scripts/render.sh', 'T01'], {
       cwd: dir,
       env: {
@@ -83,12 +88,13 @@ const render = (env: Record<string, string> = {}) => {
     const files: Record<string, string> = {};
     for (const file of readdirSync(dir, { recursive: true })
       .map(String)
-      .filter((f) => /^(out|site)\//.test(f))
+      .filter((f) => /^(out|site)\//.test(f) && f !== 'site/limits.ts')
       .sort()) {
       const s = statSync(path.join(dir, file));
       if (s.isFile()) files[file] = s.size > 64 ? `${s.size} bytes` : readFileSync(path.join(dir, file), 'utf8');
     }
-    const calls = readFileSync(path.join(dir, 'calls.log'), 'utf8').trim().split('\n');
+    const log = path.join(dir, 'calls.log');
+    const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n') : [];
     return { code: r.exitCode, stderr: r.stderr.toString(), files, calls };
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -146,10 +152,44 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
       'site/posters/T01.jpg': 'encoded',
     });
   });
-  test('crf 29 でも上限を超えたら、警告して先へ進む', () => {
+  test('crf 29 でも目安を超えたら、警告して先へ進む', () => {
     const r = render({ FAKE_FFMPEG_BYTES: String(15 * 1000 * 1000) });
     expect(r.code).toBe(0);
     expect(r.stderr).toContain('警告: site/media/T01.mp4 は crf 29 でも');
+    expect(r.stderr).toContain('目安（14500 KiB）');
+    expect(r.stderr).not.toContain('保存の 1 ファイルの上限');
     expect(r.calls.flatMap((c) => /-crf (\d+)/.exec(c)?.[1] ?? [])).toEqual(['21', '23', '25', '27', '29']);
+  });
+});
+
+describe('render.sh は、動画の目安と保存の上限を site/limits.ts から読む', () => {
+  const limits = (target: number, max: number) =>
+    `export const VIDEO_TARGET_BYTES = ${target};\nexport const OFFLINE_FILE_MAX_BYTES = ${max};\n`;
+  test('目安を変えると、crf を上げる所と警告が変わる', () => {
+    const small = render({ FAKE_FFMPEG_BYTES: String(20 * 1024) }, limits(10 * 1024, 1024 * 1024));
+    expect(small.code).toBe(0);
+    expect(small.stderr).toContain('目安（10 KiB）を超えています');
+    expect(small.stderr).not.toContain('保存の 1 ファイルの上限');
+    const fits = render({ FAKE_FFMPEG_BYTES: String(20 * 1024) }, limits(30 * 1024, 1024 * 1024));
+    expect(fits.code).toBe(0);
+    expect(fits.stderr).not.toContain('目安');
+    expect(fits.calls.flatMap((c) => /-crf (\d+)/.exec(c)?.[1] ?? [])).toEqual(['21']);
+  });
+  test('保存の 1 ファイルの上限を超えたら、別に警告する（書き出した動画は残す。止めるのは media.ts push と build_site）', () => {
+    const r = render({ FAKE_FFMPEG_BYTES: String(2 * 1024 * 1024) }, limits(10 * 1024, 1024 * 1024));
+    expect(r.code).toBe(0);
+    expect(r.stderr).toContain('警告: site/media/T01.mp4 は保存の 1 ファイルの上限（1 MiB）も超えています');
+    expect(r.stderr).toContain('保存の 1 ファイルの上限（1 MiB）を超えた動画があります');
+    expect(r.files['site/media/T01.mp4']).toBe(`${2 * 1024 * 1024} bytes`);
+  });
+  test('site/limits.ts が無いか、値が数でなければ、何も書き出さずに止まる', () => {
+    const before = Object.fromEntries(PREVIOUS.map((f) => [f, 'old']));
+    for (const content of [null, 'export const VIDEO_TARGET_BYTES = "大きい";\nexport const OFFLINE_FILE_MAX_BYTES = 1;\n']) {
+      const r = render({}, content);
+      expect(r.code).not.toBe(0);
+      expect(r.stderr).toMatch(/site\/limits\.ts の上限(を読めません|が数ではありません)/);
+      expect(r.files).toEqual(before);
+      expect(r.calls).toEqual([]);
+    }
   });
 });
