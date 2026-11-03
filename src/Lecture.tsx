@@ -6,14 +6,11 @@ import { themeOf } from '../content/themes';
 import { upgradeLecture } from '../engine/core/legacy';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
-import timelineJson from './generated/timeline.json';
 import { SCENES } from './scenes';
 import { alpha, H, ThemeProvider, usePalette, videoPalette } from './theme';
-import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
+import { TIMELINE } from './timelines';
+import { fadeInOut, SceneProvider } from './timing';
 import { CAPTION, frames, LEAD } from './video.config';
-
-export type LectureTimeline = { fps: number; durationInFrames: number; scenes: SceneTiming[] };
-export const TIMELINE = timelineJson as unknown as Record<string, LectureTimeline>;
 
 /** 場面の kind で登録表（src/scenes/index.ts）を引いて描く */
 const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {

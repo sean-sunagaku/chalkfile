@@ -39,7 +39,7 @@ const profile = mkdtempSync(path.join(evidence, 'profile-edge-'));
 let context: Awaited<ReturnType<typeof chromium.launchPersistentContext>> | undefined;
 try {
   // JSON出力は接続メッセージを出さない。本文なしの自分のHEADで接続を確認し、再生件数から除く。
-  const manifest = await Bun.file(path.join(root, 'site/media-manifest.json')).json();
+  const manifest = await Bun.file(path.join(root, 'content/rive-comedy/generated/media.ja.json')).json();
   const entry = manifest.entries.find((e: any) => e.lecture === 'R01' && e.kind === 'standard');
   const probe = (async () => {
     for (let i = 0; i < 12 && !hasConnected; i++) {

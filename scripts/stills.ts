@@ -9,10 +9,10 @@
 // Node で動かすので、型だけを読むときは import type にする（型を取り除いたあとに import が残らない）
 import { bundle } from '@remotion/bundler';
 import { renderStill, selectComposition } from '@remotion/renderer';
-import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { LectureTimeline } from '../src/Lecture';
+import type { TimelineFile } from '../engine/core/timeline';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -28,7 +28,19 @@ const parseTarget = (t: string) => {
   const [head, scenes] = t.split(':');
   return { head, only: scenes ? scenes.split(',').map(Number) : null };
 };
-const timeline = JSON.parse(readFileSync(path.join(ROOT, 'src/generated/timeline.json'), 'utf8')) as Record<string, LectureTimeline>;
+/**
+ * 動画の timeline（content/<講座>/generated/timeline/<key>.json。scripts/synth.ts が書く）。Node は TS の値を読めないので、
+ * 置き場所の決まり（engine/core/generated.ts）と同じ形で、講座のフォルダを探す
+ */
+const timelineOf = (key: string): TimelineFile => {
+  const content = path.join(ROOT, 'content');
+  const found = readdirSync(content, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => path.join(content, d.name, 'generated', 'timeline', `${key}.json`))
+    .filter((f) => existsSync(f));
+  if (found.length !== 1) throw new Error(found.length ? `${key} の timeline が 2 つ以上の講座にある: ${found.join(' ')}` : `${key} の timeline が無い（先に npm run synth -- ${key}）`);
+  return JSON.parse(readFileSync(found[0], 'utf8')) as TimelineFile;
+};
 const outDir = path.join(ROOT, 'out/stills');
 mkdirSync(outDir, { recursive: true });
 
@@ -42,7 +54,7 @@ for (const t of targets) {
   const inputProps = { id, audio: false, theme, captions };
   // 訳の動画 P01.en のコンポジションは P01-en（content/i18n.ts の compositionId）
   const composition = await selectComposition({ serveUrl, id: id.replace(/\./g, '-'), inputProps });
-  const tl = timeline[id];
+  const tl = timelineOf(id);
   const frames: { f: number; name: string }[] = at
     ? [{ f: Number(at), name: `f${at}` }]
     : tl.scenes.flatMap((s, i) => {

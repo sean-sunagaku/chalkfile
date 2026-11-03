@@ -44,7 +44,7 @@ Chalkfile（このリポジトリ）の章立ての講座（例: ナッジ `nudg
 ## 直し方（自分で直す）
 
 - 直してよいのは、担当する章のファイル `content/<講座>/<ID>.ts` だけ
-- 触らないもの（直すべき点は報告に書けば、親がまとめて直す）: 講座の `sources.ts`・`syllabus.ts`・`course.ts`、`content/reading.ts`・`content/types.ts`・`content/index.ts`、`src/`・`scripts/`・`site/`・`docs/`、`src/generated/timeline.json` を手で書き換えること
+- 触らないもの（直すべき点は報告に書けば、親がまとめて直す）: 講座の `sources.ts`・`syllabus.ts`・`course.ts`、`content/reading.ts`・`content/types.ts`・`content/courses.ts`・`content/index.ts`・講座の `index.ts`、`src/`・`scripts/`・`site/`・`docs/`、生成物（`content/<講座>/generated/`）を手で書き換えること
 - しないこと: `git` のコミット・push、`bash scripts/render.sh`、`scripts/mix.py`（動画の書き出しは親が順番に行う）
 - 同じ講座の別の章を、もう 1 人の担当が同時に直している。その章のファイルは触らない
 - 直すのは、誤り・言い過ぎ・出典の不備・時点・表記の誤りだけ。文体の好み・構成・例の作りは変えない
@@ -58,7 +58,7 @@ Chalkfile（このリポジトリ）の章立ての講座（例: ナッジ `nudg
 1. `npx tsc --noEmit`（自分のファイルにエラーが無いこと）
 2. `bun scripts/check_content.ts`（止める 0 件）
 3. `bun scripts/check_overlap.ts <講座 ID>`（公式ページとの 16 文字以上の一致。法律・達成基準の名前と、「」で分けた引用は残してよい。自分の章の一致を見る）
-4. 台詞を直した章は `bun scripts/synth.ts <ID>`（VOICEVOX のエンジンは 127.0.0.1:50021 で動いている。synth.ts は timeline.json をロックして書くので、ほかの担当と同時に流してよい）→ `.work/kana/<ID>.txt` で、直した台詞の読みを全部見る → 誤読は `s` で直して合成し直す。合成の出力の長さ（分）を控える
+4. 台詞を直した章は `bun scripts/synth.ts <ID>`（VOICEVOX のエンジンは 127.0.0.1:50021 で動いている。synth.ts は動画ごとの timeline のファイルに、その動画の分だけを書くので、ほかの担当と同時に流してよい）→ `.work/kana/<ID>.txt` で、直した台詞の読みを全部見る → 誤読は `s` で直して合成し直す。合成の出力の長さ（分）を控える
 5. 画面の文字を直した場面は `node scripts/stills.ts <ID>:<場面の番号（1 始まり）>` で静止画を撮り、`out/stills/` の該当の画像を見る（文字のはみ出し・重なり）
 
 ## 報告（最後に親へ返すテキスト。日本語で、簡潔に）

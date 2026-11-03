@@ -5,16 +5,15 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { byteRange } from '../site/offline-shared';
 import type { CourseManifest } from '../site/offline-shared';
-import mediaManifest from '../site/media-manifest.json';
-import { mediaPath, validateMediaManifest } from '../site/media-shared';
+import { mediaPath } from '../site/media-shared';
 import { mimeTypeOf } from '../site/mime';
-import { localMediaPath } from '../scripts/media';
+import { localMediaPath, readMediaManifest } from '../scripts/media';
 import { buildMigration } from '../scripts/build_migration';
 
 // 移行SWの古い生成物で結果が変わらないよう、テスト起動時に必ず現在のソースから作る。
 await buildMigration();
 const root = path.resolve(import.meta.dir, '../site/dist');
-const mediaEntries = new Map(validateMediaManifest(mediaManifest).entries.map((e) => [mediaPath(e), e]));
+const mediaEntries = new Map(readMediaManifest().entries.map((e) => [mediaPath(e), e]));
 // mediaDown: 訳の動画のサイトがまだ無い（公開の前・Pages の反映待ち）ときを作る
 let control = { mode: 'normal', update: false, workerUpdate: false, manifestMode: 'normal', mediaDown: false, legacyPhase: 'old' };
 let fullVideoDownloads = 0;

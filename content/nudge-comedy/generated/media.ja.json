@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "nudge-comedy",
+      "lecture": "W01",
+      "kind": "standard",
+      "bytes": 17009496,
+      "sha256": "04ae52122745da5b0808bc369911af670921cb75fca295376ecbfdbc00ba457a",
+      "filename": "W01.04ae52122745da5b0808bc369911af670921cb75fca295376ecbfdbc00ba457a.mp4",
+      "tag": "media-ja-nudge-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-comedy",
+      "lecture": "W01",
+      "kind": "captioned",
+      "bytes": 17953347,
+      "sha256": "d409d95c81ca27d58db7e0159d14064786597daed9d9da8fff877fc33ce5f474",
+      "filename": "W01.cc.d409d95c81ca27d58db7e0159d14064786597daed9d9da8fff877fc33ce5f474.mp4",
+      "tag": "media-ja-nudge-comedy"
+    }
+  ]
+}

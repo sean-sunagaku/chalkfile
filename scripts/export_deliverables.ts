@@ -77,7 +77,7 @@ for (const id of ids) {
       '- 場面だけ見る: `npx remotion studio`（props の captions を true にすると字幕つき）',
       lang === 'ja'
         ? '- ナレーション: VOICEVOX:No.7（講師）、VOICEVOX:青山龍星（呼び込み）。BGM・効果音はプログラムで合成したオリジナル'
-        : '- ナレーション: Kokoro-82M（Apache-2.0。声は scripts/voices.ts の KOKORO）。BGM・効果音はプログラムで合成したオリジナル',
+        : '- ナレーション: Kokoro-82M（Apache-2.0。声は content/voices.ts の KOKORO）。BGM・効果音はプログラムで合成したオリジナル',
       '',
     ].join('\n'),
   );

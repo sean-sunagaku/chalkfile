@@ -1,8 +1,13 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+// 公開の手順（.github/workflows/deploy.yml）・Worker の設定（wrangler.jsonc）・組み立てた静的公開物（site/dist）を確かめる。
+//   bun scripts/check_delivery.ts [site/dist]
+// Worker の許可リスト（npm run gen が作る worker/src/generated/media-manifest.json）があれば、講座ごとの動画の一覧と同じかも見る
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { WORKERS_ASSET_MAX_BYTES, WORKERS_MAX_ASSETS } from '../site/limits';
-import { retainedWarnings, validateMediaManifest } from '../site/media-shared';
+import { retainedWarnings } from '../site/media-shared';
 import { checkSecrets } from './check_content';
+import { readMediaManifest } from './media';
+import { mediaManifestJson } from './media-lists';
 
 export const DEPLOY_GUARD = "github.repository == 'sean-sunagaku/chalkfile' && github.ref == 'refs/heads/main'";
 export function validateWorkerConfig(value: any) {
@@ -29,7 +34,9 @@ export function validateWorkflow(value: any) {
   const index = (text: string) => steps.findIndex((s) => typeof s.run === 'string' && s.run.includes(text));
   const install = index('npm ci --ignore-scripts'), media = index('bun scripts/media.ts check'), build = index('bun scripts/build_site.ts --strict');
   const deploy = index('npx --no-install wrangler deploy --env=""'), verify = index('bun scripts/verify_public.ts');
-  if (!(install >= 0 && install < media && media < build && build < deploy && deploy < verify) ||
+  // Worker の許可リスト（Git に入れない生成物）は、secret の無い手順で、Deploy より前に作る
+  const gen = index('bun scripts/gen.ts');
+  if (!(install >= 0 && install < media && media < build && build < deploy && deploy < verify && install < gen && gen < deploy) ||
       steps[deploy]?.name !== 'Deploy' || steps[deploy]?.env?.CLOUDFLARE_API_TOKEN !== '${{ secrets.CLOUDFLARE_API_TOKEN }}' ||
       steps[deploy]?.env?.CLOUDFLARE_ACCOUNT_ID !== '${{ vars.CLOUDFLARE_ACCOUNT_ID }}' || !steps[deploy]?.run.includes('exit 1')) fail();
 }
@@ -55,9 +62,14 @@ if (import.meta.main) {
   validateWorkflow(Bun.YAML.parse(readFileSync(path.join(root, '.github/workflows/deploy.yml'), 'utf8')));
   validateWorkerConfig(JSON.parse(readFileSync(path.join(root, 'wrangler.jsonc'), 'utf8')));
   // 期限を過ぎた retained は、公開を止めずに知らせる（media.ts check と同じ文）。
-  for (const message of retainedWarnings(validateMediaManifest(JSON.parse(readFileSync(path.join(root, 'site/media-manifest.json'), 'utf8'))))) {
+  const manifest = readMediaManifest();
+  for (const message of retainedWarnings(manifest)) {
     console.warn(process.env.GITHUB_ACTIONS === 'true' ? `::warning::${message}` : `警告: ${message}`);
   }
+  // Worker の許可リストは、講座ごとの動画の一覧をつないだものと同じでなければ公開しない（古いまま配らない）
+  const worker = path.join(root, 'worker/src/generated/media-manifest.json');
+  if (existsSync(worker) && readFileSync(worker, 'utf8') !== mediaManifestJson(manifest)) throw new Error('Worker の許可リスト（worker/src/generated/media-manifest.json）が、講座ごとの動画の一覧と違います。npm run gen で作り直してください。');
+  if (!existsSync(worker)) console.log('Worker の許可リストはまだ無い（wrangler の前に npm run gen が作る）。');
   for (const name of ['check.yml', 'deploy.yml']) {
     const text = readFileSync(path.join(root, '.github/workflows', name), 'utf8');
     for (const m of text.matchAll(/uses:\s*(\S+)/g)) if (!/@[a-f0-9]{40}$/.test(m[1])) throw new Error('Action は SHA で固定してください。');

@@ -65,6 +65,8 @@ jobs:
       # 文書のリンク・アンカー・スキルの説明の長さは止める。古い言葉・一覧の食い違い・生成物の印・使い方は、今は注意だけ
       # （片付けたら --strict にする）
       - run: npm run check:docs
+      # 読む教材（docs/courses/）が、Git に入れている台本と timeline から作り直したものと同じか（synth は要らない）
+      - run: npm run check:materials
 
   # 公開（deploy.yml）と同じ手順で、サイトを組み立てて点検する。公開はしない。秘密情報は使わず、GITHUB_TOKEN は読み取りだけ
   # （上の permissions: contents: read）。声の合成も動画の書き出しもせず、素材と動画の一覧が足りなければ止まる
@@ -101,6 +103,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/media.ts check
+      # Worker の許可リスト（Git に入れない生成物。npm run gen）を、公開と同じく講座ごとの動画の一覧から作る（check_delivery が一覧と同じかを見る）
+      - name: Worker の許可リストを作る
+        run: bun scripts/gen.ts --media
       # --strict は、動画かポスターの無いレクチャーがあれば止まる。組み立ての最後に、公開物の決まり（scripts/site-invariants.ts）も確かめる
       - name: 静的サイトを検証して組み立てる
         env:

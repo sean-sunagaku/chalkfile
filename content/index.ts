@@ -1,57 +1,15 @@
-import { L01 } from './stripe-billing/L01';
-import { L02 } from './stripe-billing/L02';
-import { L03 } from './stripe-billing/L03';
-import { L04 } from './stripe-billing/L04';
-import { L05 } from './stripe-billing/L05';
-import { L06 } from './stripe-billing/L06';
-import { L07 } from './stripe-billing/L07';
-import { L08 } from './stripe-billing/L08';
-import { L09 } from './stripe-billing/L09';
-import { L10 } from './stripe-billing/L10';
-import { L11 } from './stripe-billing/L11';
-import { L12 } from './stripe-billing/L12';
-import { L13 } from './stripe-billing/L13';
-import { INDIE_MARKETING } from './indie-marketing/course';
-import { NUDGE_COMEDY } from './nudge-comedy/course';
-import { NUDGE_COMEDY_EN } from './nudge-comedy/en/course';
-import { NUDGE_COMEDY_ZH } from './nudge-comedy/zh/course';
-import { RIVE_COMEDY } from './rive-comedy/course';
-import { RIVE_COMEDY_EN } from './rive-comedy/en/course';
-import { RIVE_COMEDY_ZH } from './rive-comedy/zh/course';
-import { PSTACK_COMEDY } from './pstack-comedy/course';
-import { PSTACK_COMEDY_EN } from './pstack-comedy/en/course';
-import { PSTACK_COMEDY_ZH } from './pstack-comedy/zh/course';
-import { SUPERAGENT_COMEDY } from './superagent-comedy/course';
-import { SUPERAGENT_COMEDY_EN } from './superagent-comedy/en/course';
-import { SUPERAGENT_COMEDY_ZH } from './superagent-comedy/zh/course';
-import { GA4_COMEDY } from './ga4-comedy/course';
-import { NUDGE_PRODUCT } from './nudge-product/course';
-import { UIUX_ENGINEERS } from './uiux-engineers/course';
+// 講座の一覧（COURSES）・訳の一覧（TRANSLATIONS）・動画の一覧（VIDEOS）。講座は content/courses.ts の登録表（1 講座 1 行）から集め、
+// Course の order の順に並べる。講座を足すときは、講座のフォルダ（台本・course.ts・index.ts）を作り、content/courses.ts に 1 行を足す
+import type { CourseModule } from './course-module';
+import * as REGISTRY from './courses';
 import { LANGS, localizeCourse, parseVideoKey, videoKey, type CourseL10n, type Lang, type TranslatedLang } from './i18n';
 import type { Course, Lecture } from './types';
 
-/** Stripe のサブスク課金（概念・データ・サンプル実装・お金・法律・iOS） */
-export const STRIPE_BILLING: Course = {
-  id: 'stripe-billing',
-  theme: 'indigo',
-  disclaimer: 'Stripe 社とは関係のない、個人が作った非公式の講座です',
-  title: 'Stripe サブスク課金 基礎講座',
-  subtitle: '概念とデータ、サンプルで作る流れ',
-  headline: 'Stripe のサブスク課金を、概念からサンプル実装まで',
-  sections: [
-    { no: 1, title: 'はじめに' },
-    { no: 2, title: 'Stripe の概念とデータ' },
-    { no: 3, title: 'サンプルで作る' },
-    { no: 4, title: 'お金・法律・iOS' },
-    { no: 5, title: 'まとめ' },
-  ],
-  lectures: [L01, L02, L03, L04, L05, L06, L07, L08, L09, L10, L11, L12, L13],
-  docsNote: '動画の内容は、2026 年 10 月に読んだ Stripe 公式ドキュメント（API リファレンスと changelog を含む）と、消費者庁・Apple の公式ページがもとです。料金や仕様は変わるので、実装の前にここから確かめ直してください。',
-  sourceNote: '台本と図は Stripe 公式ドキュメントと、消費者庁・Apple の公式ページ（2026 年 10 月確認）をもとに作成。サンプルアプリは架空のサービス。Stripe 社とは関係のない、個人の勉強用の講座です',
-};
+/** 登録した講座（order の順。同じ order なら講座 ID の順。order の重なりは npm run validate が止める） */
+const MODULES: CourseModule[] = (Object.values(REGISTRY) as CourseModule[]).sort((a, b) => a.course.order - b.course.order || (a.course.id < b.course.id ? -1 : a.course.id > b.course.id ? 1 : 0));
 
-/** 講座を足すときは、content/<講座 ID>/ に台本を置いてここに並べる */
-export const COURSES: Course[] = [STRIPE_BILLING, NUDGE_PRODUCT, UIUX_ENGINEERS, INDIE_MARKETING, NUDGE_COMEDY, RIVE_COMEDY, PSTACK_COMEDY, SUPERAGENT_COMEDY, GA4_COMEDY];
+/** 日本語の講座（一覧のページの並び） */
+export const COURSES: Course[] = MODULES.map((m) => m.course);
 
 /** 動画を作るときは、全講座のレクチャーをまとめて扱う（ID は講座をまたいで重ならないようにする） */
 export const LECTURES: Lecture[] = COURSES.flatMap((c) => c.lectures);
@@ -69,11 +27,11 @@ if (dup) throw new Error(`レクチャー ID が講座をまたいで重なっ�
 if (COURSES.some((c) => (LANGS as string[]).includes(c.id) || /^[a-z]{2}$/.test(c.id))) throw new Error('講座 ID に 2 文字の英小文字（ja・en・zh などの言語の名前）は使えない（訳の講座の URL の頭と重なる）');
 
 /* ───────────── 訳の講座（content/i18n.ts） ─────────────
- * 言語ごとに、講座 ID → 訳（CourseL10n）を並べる。訳の講座は、日本語の講座に訳を重ねて作る。
+ * 言語ごとに、講座 ID → 訳（CourseL10n）。各講座のフォルダの index.ts の translations から集める。訳の講座は、日本語の講座に訳を重ねて作る。
  */
 export const TRANSLATIONS: Record<TranslatedLang, Record<string, CourseL10n>> = {
-  en: { 'nudge-comedy': NUDGE_COMEDY_EN, 'rive-comedy': RIVE_COMEDY_EN, 'pstack-comedy': PSTACK_COMEDY_EN, 'superagent-comedy': SUPERAGENT_COMEDY_EN },
-  zh: { 'nudge-comedy': NUDGE_COMEDY_ZH, 'rive-comedy': RIVE_COMEDY_ZH, 'pstack-comedy': PSTACK_COMEDY_ZH, 'superagent-comedy': SUPERAGENT_COMEDY_ZH },
+  en: Object.fromEntries(MODULES.flatMap((m) => (m.translations?.en ? [[m.course.id, m.translations.en]] : []))),
+  zh: Object.fromEntries(MODULES.flatMap((m) => (m.translations?.zh ? [[m.course.id, m.translations.zh]] : []))),
 };
 
 const localized = new Map<Lang, Course[]>();
