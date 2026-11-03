@@ -4,9 +4,9 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { OpeningScene } from '../../content/types';
 import { CourseMark, unitOf } from '../components/chrome';
 import { fitSize } from '../components/fit';
-import { Pill, Smart } from '../components/ui';
+import { gradientText, Pill, Smart } from '../components/ui';
 import { alpha, PAD, usePalette } from '../theme';
-import { dropY, useScene } from '../timing';
+import { dropY, ramp, useScene } from '../timing';
 import { frames, STING } from '../video.config';
 import { defineScene } from './define';
 
@@ -20,7 +20,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const { lecture, course } = useScene();
   const hit = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 14, mass: 0.7 }, durationInFrames: 40 });
   const soft = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 200 }, durationInFrames: 26 });
-  const early = interpolate(frame, [4, 28], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const early = ramp(frame, 4, 28);
   const sweep = interpolate(frame, [HIT_FRAME - 30, HIT_FRAME + 8], [-0.3, 1.3], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -92,10 +92,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             fontSize: 330,
             lineHeight: 1,
             letterSpacing: -10,
-            background: DISPLAY,
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
+            ...gradientText(DISPLAY),
             transform: `scale(${0.7 + 0.3 * hit})`,
             opacity: soft,
             filter: `blur(${(1 - soft) * 14}px)${THEME.scheme === 'dark' ? ` drop-shadow(0 0 40px ${alpha(C.accent, 0.45)})` : ''}`,
@@ -136,7 +133,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
                 color: C.ink,
                 whiteSpace: 'nowrap',
                 ...(i === 0 && titleLines.length > 1
-                  ? { background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
+                  ? gradientText(DISPLAY)
                   : {}),
               }}
             >

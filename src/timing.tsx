@@ -57,6 +57,18 @@ export const useActiveLine = (): number => {
   return active;
 };
 
+/** 項目のうち、台詞の番号（at）が今の台詞まで来た、いちばん後ろの項目の番号（まだ無ければ -1）。今の項目を光らせるのに使う */
+export const useCurrentIndex = (items: { at: number }[]): number => {
+  const active = useActiveLine();
+  return items.reduce((acc, it, i) => (it.at <= active ? i : acc), -1);
+};
+
+/** 今の台詞まで来た at のうち、いちばん大きいもの（まだ無ければ -1）。同じ at の項目をまとめて光らせる（表の行・やりとりの矢印） */
+export const useLatestAt = (items: { at: number }[]): number => {
+  const active = useActiveLine();
+  return items.reduce((m, it) => (it.at <= active ? Math.max(m, it.at) : m), -1);
+};
+
 /** focus 配列から、今のフレームで有効な項目を選ぶ */
 export function useFocus<T extends { at: number }>(focus: T[] | undefined): T | null {
   const frame = useCurrentFrame();
@@ -66,6 +78,10 @@ export function useFocus<T extends { at: number }>(focus: T[] | undefined): T | 
   for (const f of focus) if (frame >= lineStart(lines, f.at) - LEAD.appear) current = f;
   return current;
 }
+
+/** x が from から to に進むあいだに 0 から 1 になる値（from より前は 0、to より後は 1 で止める） */
+export const ramp = (x: number, from: number, to: number): number =>
+  interpolate(x, [from, to], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
 export const fadeInOut = (frame: number, duration: number, inF = 10, outF = 9) =>
   interpolate(frame, [0, inF, duration - outF, duration], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });

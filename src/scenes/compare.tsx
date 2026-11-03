@@ -1,8 +1,9 @@
 // 場面「compare」: 左右の比較
 import React from 'react';
 import type { CompareScene, CompareSide } from '../../content/types';
+import { Content } from '../components/content';
 import { Glass, Icon, IconBadge, Smart } from '../components/ui';
-import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
+import { alpha, usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -88,19 +89,7 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
   const v = useAppear(s.verdict?.at ?? 99);
   const vt = tone(s.verdict?.tone ?? 'violet');
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: PAD,
-        right: PAD,
-        top: CONTENT_TOP,
-        bottom: H - CONTENT_BOTTOM,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 30,
-        justifyContent: 'center',
-      }}
-    >
+    <Content style={{ gap: 30 }}>
       <div style={{ display: 'flex', gap: 40, alignItems: 'stretch', minHeight: s.verdict ? 470 : 600 }}>
         <SideCard side={s.left} dir={-1} />
         <SideCard side={s.right} dir={1} />
@@ -133,7 +122,7 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
           </div>
         </div>
       ) : null}
-    </div>
+    </Content>
   );
 };
 

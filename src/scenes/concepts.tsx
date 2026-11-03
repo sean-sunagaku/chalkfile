@@ -4,7 +4,7 @@ import type { ConceptsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Pill } from '../components/ui';
 import { usePalette } from '../theme';
-import { dropY, useActiveLine, useAppear } from '../timing';
+import { dropY, useAppear, useCurrentIndex } from '../timing';
 import { defineScene } from './define';
 
 const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean }> = ({ card, active }) => {
@@ -56,11 +56,10 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
 };
 
 const Concepts: React.FC<{ s: ConceptsScene }> = ({ s }) => {
-  const active = useActiveLine();
+  const current = useCurrentIndex(s.cards);
   const cols = s.columns ?? 4;
   const rows: ConceptsScene['cards'][] = [];
   for (let i = 0; i < s.cards.length; i += cols) rows.push(s.cards.slice(i, i + cols));
-  const current = s.cards.reduce((acc, c, i) => (c.at <= active ? i : acc), -1);
   return (
     <Content style={{ gap: 28 }}>
       {rows.map((row, r) => (

@@ -1,11 +1,11 @@
 // 場面「phone」: スマホの画面の流れ
 import React from 'react';
-import { interpolate, useCurrentFrame } from 'remotion';
+import { useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../content/types';
 import { DEVICE, PHONE_APP } from '../components/app-colors';
 import { Icon, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
-import { dropY, lineStart, useAppear, useScene } from '../timing';
+import { dropY, lineStart, ramp, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
@@ -145,10 +145,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
   starts.forEach((st, i) => {
     if (frame >= st) cur = i;
   });
-  const enter =
-    cur >= 0
-      ? interpolate(frame - starts[cur], [0, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-      : 0;
+  const enter = cur >= 0 ? ramp(frame - starts[cur], 0, 14) : 0;
   const pw = 450;
   const ph = 772;
   const px = PAD + 120;

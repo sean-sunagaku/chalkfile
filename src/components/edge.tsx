@@ -1,10 +1,11 @@
 // 箱から箱への矢印（流れの図と状態の図）
 import React from 'react';
-import { interpolate, useCurrentFrame } from 'remotion';
+import { useCurrentFrame } from 'remotion';
 import type { Tone } from '../../content/types';
 import { alpha, H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
 import { LEAD } from '../video.config';
+import { arrowProgress, EDGE_TIMING, GlowDot } from './arrow';
 import { Smart } from './ui';
 
 type Pt = [number, number];
@@ -52,12 +53,7 @@ export const Edge: React.FC<{
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const start = lineStart(lines, at) - LEAD.draw + stagger;
-  const draw = interpolate(frame - start, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const dot = interpolate(frame - start, [4, 26], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const dotO = interpolate(frame - start, [4, 8, 24, 30], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
+  const { draw, dot, dotO } = arrowProgress(frame - start, EDGE_TIMING);
   if (draw <= 0) return null;
   const [fs, ts] = autoSides(a, b);
   const p0 = anchor(a, fromSide ?? fs);
@@ -97,14 +93,7 @@ export const Edge: React.FC<{
           style={dashed ? { strokeDasharray: '10 10', opacity: draw } : undefined}
         />
         <polygon points={head.map((p) => p.join(',')).join(' ')} fill={col} opacity={draw >= 0.98 ? 1 : 0} />
-        <circle
-          cx={dp[0]}
-          cy={dp[1]}
-          r={9}
-          fill={col}
-          opacity={dotO}
-          style={{ filter: `drop-shadow(0 0 10px ${col})` }}
-        />
+        <GlowDot x={dp[0]} y={dp[1]} r={9} blur={10} color={col} opacity={dotO} />
       </svg>
       {label ? (
         <div

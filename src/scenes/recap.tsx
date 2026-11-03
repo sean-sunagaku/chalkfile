@@ -4,7 +4,7 @@ import type { RecapScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';
-import { dropY, useActiveLine, useAppear } from '../timing';
+import { dropY, useAppear, useCurrentIndex } from '../timing';
 import { defineScene } from './define';
 
 const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean }> = ({ text, at, i, active }) => {
@@ -49,8 +49,7 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
 };
 
 const Recap: React.FC<{ s: RecapScene }> = ({ s }) => {
-  const active = useActiveLine();
-  const current = s.items.reduce((acc, it, i) => (it.at <= active ? i : acc), -1);
+  const current = useCurrentIndex(s.items);
   return (
     <Content style={{ gap: s.items.length > 3 ? 22 : 32 }}>
       {s.items.map((it, i) => (

@@ -4,7 +4,7 @@ import type { EndingScene } from '../../content/types';
 import { unitOf } from '../components/chrome';
 import { Content } from '../components/content';
 import { fitSize } from '../components/fit';
-import { Glass, Icon } from '../components/ui';
+import { Glass, gradientText, Icon } from '../components/ui';
 import credits from '../generated/credits.json';
 import lectureCredits from '../generated/lecture-credits.json';
 import { usePalette } from '../theme';
@@ -41,10 +41,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
                   fontWeight: 900,
                   fontSize: 120,
                   lineHeight: 1,
-                  background: DISPLAY,
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
+                  ...gradientText(DISPLAY),
                 }}
               >
                 {String(s.next.no).padStart(2, '0')}
@@ -72,10 +69,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
               fontWeight: 900,
               fontSize: 110,
               opacity: p,
-              background: DISPLAY,
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
+              ...gradientText(DISPLAY),
             }}
           >
             {text.done}

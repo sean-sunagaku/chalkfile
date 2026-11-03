@@ -1,8 +1,8 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../content/types';
-import { dropY, useScene, useText } from '../timing';
+import { dropY, ramp, useScene, useText } from '../timing';
 import { HEADING } from '../video.config';
 import { Icon } from './ui';
 
@@ -182,9 +182,9 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   const { C, GRAD, MONO, SANS } = usePalette();
   const frame = useCurrentFrame();
   const { lecture, scene, course } = useScene();
-  const p = interpolate(frame, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const bar = interpolate(frame, [6, 30], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const chip = interpolate(frame, [14, 30], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const p = ramp(frame, 0, 16);
+  const bar = ramp(frame, 6, 30);
+  const chip = ramp(frame, 14, 30);
   return (
     <div style={{ position: 'absolute', left: PAD, right: PAD, top: 52, height: 150 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

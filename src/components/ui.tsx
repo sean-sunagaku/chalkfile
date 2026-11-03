@@ -243,11 +243,22 @@ export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolea
   );
 };
 
+/**
+ * グラデーションの文字（塗りを文字の形に切り抜く）。オープニングの番号と題・エンディング・クイズの番号・暗い地の **強調** が使う。
+ * 塗り（background）を先に、切り抜き（backgroundClip）を後に置く（逆にすると、background の一括指定が切り抜きを消す）
+ */
+export const gradientText = (fill: string): React.CSSProperties => ({
+  background: fill,
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  color: 'transparent',
+});
+
 /** **強調** の見た目。暗い地はグラデーションの文字、チョークのテーマは蛍光ペンの線、ほかは主役の色の文字 */
 const emphasis = ({ C, GRAD, THEME, tone }: VideoPalette, t?: Tone): React.CSSProperties => {
   const tt = tone(t);
   if (THEME.scheme === 'dark') {
-    return { background: t ? `linear-gradient(110deg, ${tt.main}, ${tt.text})` : GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
+    return gradientText(t ? `linear-gradient(110deg, ${tt.main}, ${tt.text})` : GRAD);
   }
   if (THEME.decor === 'chalk') {
     return { background: `linear-gradient(180deg, transparent 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 92%, transparent 92%)`, color: C.ink };
@@ -271,6 +282,25 @@ export const Rich: React.FC<{ text: string; t?: Tone; style?: React.CSSPropertie
         ),
       )}
     </span>
+  );
+};
+
+/** 横に出す注のカード（コードの光る行の注・端末の注）。文字の大きさ・行の高さ・カードの余白は、場面ごとに渡す */
+export const NoteCard: React.FC<{ text: string; t?: Tone; active: number; size: number; lineHeight: number; style?: React.CSSProperties }> = ({
+  text,
+  t,
+  active,
+  size,
+  lineHeight,
+  style,
+}) => {
+  const { C, SANS } = usePalette();
+  return (
+    <Glass t={t} active={active} style={style}>
+      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: size, color: C.ink, lineHeight }}>
+        <Smart text={text} t={t} />
+      </div>
+    </Glass>
   );
 };
 

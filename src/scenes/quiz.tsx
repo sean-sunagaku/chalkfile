@@ -2,7 +2,7 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { QuizScene } from '../../content/types';
-import { Glass, Pill, Smart } from '../components/ui';
+import { Glass, gradientText, Pill, Smart } from '../components/ui';
 import { alpha, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';
 import { LEAD } from '../video.config';
@@ -51,10 +51,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
             fontWeight: 900,
             fontSize: 150,
             lineHeight: 1,
-            background: DISPLAY,
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
+            ...gradientText(DISPLAY),
           }}
         >
           Q{s.no}

@@ -4,7 +4,7 @@ import type { GoalsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { usePalette } from '../theme';
-import { dropY, useActiveLine, useAppear } from '../timing';
+import { dropY, useAppear, useCurrentIndex } from '../timing';
 import { defineScene } from './define';
 
 const GoalRow: React.FC<{ text: string; at: number; index: number; active: boolean }> = ({
@@ -56,8 +56,7 @@ const GoalRow: React.FC<{ text: string; at: number; index: number; active: boole
 };
 
 const Goals: React.FC<{ s: GoalsScene }> = ({ s }) => {
-  const active = useActiveLine();
-  const current = s.items.reduce((acc, it, i) => (it.at <= active ? i : acc), -1);
+  const current = useCurrentIndex(s.items);
   const gap = s.items.length > 3 ? 20 : 30;
   return (
     <Content style={{ gap }}>

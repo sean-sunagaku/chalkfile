@@ -1,9 +1,10 @@
 // 場面「table」: 表
 import React from 'react';
 import type { TableScene } from '../../content/types';
+import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
-import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
-import { dropY, useActiveLine, useAppear } from '../timing';
+import { CONTENT_BOTTOM, CONTENT_TOP, usePalette } from '../theme';
+import { dropY, useAppear, useLatestAt } from '../timing';
 import { defineScene } from './define';
 
 const Row: React.FC<{
@@ -68,26 +69,14 @@ const Row: React.FC<{
 
 const Table: React.FC<{ s: TableScene }> = ({ s }) => {
   const { SANS, TONES } = usePalette();
-  const active = useActiveLine();
+  const latest = useLatestAt(s.rows);
   const fontSize = s.fontSize ?? 30;
   const widths = s.widths ?? s.columns.map(() => 1 / s.columns.length);
-  const latest = s.rows.reduce((m, r) => (r.at <= active ? Math.max(m, r.at) : m), -1);
   const head = useAppear(0);
   const avail = CONTENT_BOTTOM - CONTENT_TOP - 90;
   const rowH = Math.min(118, Math.max(64, Math.floor(avail / s.rows.length)));
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: PAD,
-        right: PAD,
-        top: CONTENT_TOP,
-        bottom: H - CONTENT_BOTTOM,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-      }}
-    >
+    <Content>
       <Glass style={{ overflow: 'hidden', opacity: head }}>
         <div style={{ display: 'flex', background: TONES.violet.soft }}>
           {s.columns.map((c, i) => (
@@ -112,7 +101,7 @@ const Table: React.FC<{ s: TableScene }> = ({ s }) => {
           <Row key={i} r={r} widths={widths} mono={s.mono ?? []} fontSize={fontSize} on={r.at === latest} h={rowH} />
         ))}
       </Glass>
-    </div>
+    </Content>
   );
 };
 

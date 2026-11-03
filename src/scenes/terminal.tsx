@@ -4,9 +4,9 @@ import { interpolate, useCurrentFrame } from 'remotion';
 import type { TerminalOut, TerminalScene, Theme } from '../../content/types';
 import { terminalText } from '../../engine/core/scenes';
 import { WINDOW_LIGHTS } from '../components/app-colors';
-import { Glass, Smart } from '../components/ui';
+import { NoteCard } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
-import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import { dropY, lineStart, ramp, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
@@ -83,10 +83,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
                   }),
                 )
               : 0;
-            const outO = interpolate(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), [0, 8], [0, 1], {
-              extrapolateLeft: 'clamp',
-              extrapolateRight: 'clamp',
-            });
+            const outO = ramp(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), 0, 8);
             if (frame < st) return null;
             return (
               <div
@@ -144,7 +141,6 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
 };
 
 const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> = ({ at, text, y, left }) => {
-  const { C, SANS } = usePalette();
   const p = useAppear(at, 10);
   const on = useActiveLine() === at;
   return (
@@ -158,11 +154,7 @@ const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> 
         transform: `translateX(${(1 - p) * -16}px)`,
       }}
     >
-      <Glass t="mint" active={on ? 1 : 0} style={{ padding: '18px 22px' }}>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 25, color: C.ink, lineHeight: 1.4 }}>
-          <Smart text={text} t="mint" />
-        </div>
-      </Glass>
+      <NoteCard text={text} t="mint" active={on ? 1 : 0} size={25} lineHeight={1.4} style={{ padding: '18px 22px' }} />
     </div>
   );
 };

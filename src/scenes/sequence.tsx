@@ -1,10 +1,11 @@
 // 場面「sequence」: やりとりの図（登場人物の縦の線と、横の矢印）
 import React from 'react';
-import { interpolate, useCurrentFrame } from 'remotion';
+import { useCurrentFrame } from 'remotion';
 import type { SequenceScene } from '../../content/types';
+import { arrowProgress, GlowDot, STEP_TIMING } from '../components/arrow';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, H, PAD, usePalette, W } from '../theme';
-import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import { dropY, lineStart, useAppear, useLatestAt, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
@@ -12,7 +13,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
   const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
-  const active = useActiveLine();
+  const latestAt = useLatestAt(s.steps);
   const n = s.actors.length;
   const colW = (W - PAD * 2) / n;
   const xOf = (key: string) => PAD + (s.actors.findIndex((a) => a.key === key) + 0.5) * colW;
@@ -20,7 +21,6 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
   const firstY = 418;
   const lastY = 968;
   const gap = Math.min(92, (lastY - firstY) / Math.max(1, s.steps.length - 1));
-  const latestAt = s.steps.reduce((m, st) => (st.at <= active ? Math.max(m, st.at) : m), -1);
   const seen = new Map<number, number>();
   return (
     <>
@@ -46,10 +46,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         seen.set(st.at, k + 1);
         const y = firstY + i * gap;
         const start = lineStart(lines, st.at) - LEAD.draw + k * 14;
-        const draw = interpolate(frame - start, [0, 16], [0, 1], {
-          extrapolateLeft: 'clamp',
-          extrapolateRight: 'clamp',
-        });
+        const { draw, dot, dotO } = arrowProgress(frame - start, STEP_TIMING);
         if (draw <= 0) return null;
         const x1 = xOf(st.from);
         const x2 = xOf(st.to);
@@ -60,14 +57,6 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         const isLatest = st.at === latestAt;
         const dim = isLatest ? 1 : 0.62;
         const xNow = xa + (xb - xa) * draw;
-        const dot = interpolate(frame - start, [4, 24], [0, 1], {
-          extrapolateLeft: 'clamp',
-          extrapolateRight: 'clamp',
-        });
-        const dotO = interpolate(frame - start, [4, 8, 22, 28], [0, 1, 1, 0], {
-          extrapolateLeft: 'clamp',
-          extrapolateRight: 'clamp',
-        });
         return (
           <React.Fragment key={i}>
             <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, opacity: dim }}>
@@ -84,14 +73,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
               {draw > 0.97 ? (
                 <polygon points={`${xb},${y} ${xb - dir * 18},${y - 10} ${xb - dir * 18},${y + 10}`} fill={tt.main} />
               ) : null}
-              <circle
-                cx={xa + (xb - xa) * dot}
-                cy={y}
-                r={10}
-                fill={tt.main}
-                opacity={dotO}
-                style={{ filter: `drop-shadow(0 0 12px ${tt.main})` }}
-              />
+              <GlowDot x={xa + (xb - xa) * dot} y={y} r={10} blur={12} color={tt.main} opacity={dotO} />
             </svg>
             <div
               style={{
