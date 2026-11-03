@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../content';
 import type { Course, Evidence, Figure, Lecture, Scene, Source } from '../content/types';
+import { materialProblems } from './validate';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const OUT = path.join(ROOT, 'docs/courses');
@@ -293,18 +294,14 @@ const chunksOf = (c: Course): Chunk[] => {
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const targets = COURSES.filter((c) => c.syllabus && (!wanted.length || wanted.includes(c.id)));
 if (!targets.length) console.log('教材（syllabus）を持つ講座がありません');
+// 節 ID・図 ID が重なっていないか（AI チャットの参照先がぶれないように）と、質問例の参照先があるか。中身は scripts/validate.ts の
+// materialProblems（PR の CI の npm run validate も同じものを流す）。書き出す前に全部の講座を確かめる
+const problems = targets.flatMap(materialProblems);
+if (problems.length) throw new Error(problems.join('\n'));
 
 for (const c of targets) {
   const dir = path.join(OUT, c.id);
   mkdirSync(dir, { recursive: true });
-  // 節 ID・図 ID が重なっていないか（AI チャットの参照先がぶれないように）
-  const ids = [...c.lectures.flatMap((l) => (l.material ? [l.material.id, ...l.material.sections.map((s) => s.id), ...l.material.figures.map((f) => f.id), l.material.exercise.id] : [])), ...(c.syllabus?.chapters.map((ch) => ch.id) ?? [])];
-  const dupIds = ids.filter((id, i) => ids.indexOf(id) !== i && !c.syllabus?.chapters.some((ch) => ch.id === id && c.lectures.some((l) => l.material?.id === id)));
-  if (dupIds.length) throw new Error(`${c.id}: ID が重なっている: ${[...new Set(dupIds)].join(' ')}`);
-  for (const lec of c.lectures) {
-    if (!lec.material) continue;
-    for (const a of lec.material.askExamples) for (const r of a.refs) if (!ids.includes(r)) throw new Error(`${lec.id}: 質問例の参照先が無い: ${r}`);
-  }
   writeFileSync(path.join(dir, 'README.md'), syllabusMd(c));
   for (const lec of c.lectures) if (lec.material) writeFileSync(path.join(dir, `${lec.material.id}.md`), lectureMd(c, lec));
   const chunks = chunksOf(c);
