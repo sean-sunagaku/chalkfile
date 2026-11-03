@@ -62,7 +62,7 @@ async function main() {
     secretName: SECRET_NAME, cfVersion: CF_VERSION, oauthProfile: PROFILE,
     credentialTransport: 'supported cf grant: stdout in memory -> gh secret set stdin; otherwise provider UI -> GitHub production secret; no credential in logs, files or argv',
     initialSetup: 'cf beta.26 cannot request workers-scripts.edit (Workers Editor); use the account-token dashboard with these exact permissions, never broaden to Workers Admin',
-    deploy: 'main only; successful setup dispatches deploy.yml' };
+    deploy: 'main only; successful setup dispatches ci.yml (all checks, then the deploy job)' };
   if (mode === 'plan') { console.log(JSON.stringify(plan, null, 2)); return; }
   if (process.env.CLOUDFLARE_API_TOKEN) throw new Error('既存tokenを流用せず、専用の認可profileから実行してください');
   stage = 'GitHubのmain限定とaccount確認';
@@ -90,7 +90,7 @@ async function main() {
   stage = 'secretの存在の読み戻しとActions開始';
   const installed = await json(['gh', 'api', `repos/${REPOSITORY}/environments/production/secrets`]);
   if (!installed.secrets?.some((s: any) => s.name === SECRET_NAME)) throw new Error('GitHub secretの登録を読み戻せません');
-  if ((await run(['gh', 'workflow', 'run', 'deploy.yml', '--repo', REPOSITORY, '--ref', 'main'])).code !== 0) throw new Error('secretは登録済みですがActionsの開始に失敗しました');
+  if ((await run(['gh', 'workflow', 'run', 'ci.yml', '--repo', REPOSITORY, '--ref', 'main'])).code !== 0) throw new Error('secretは登録済みですがActionsの開始に失敗しました');
   console.log('production secretの存在を確認し、mainのdeployを開始しました。秘密値は表示/ファイル保存していません。');
 }
 if (import.meta.main) {

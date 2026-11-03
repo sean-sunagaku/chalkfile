@@ -7,6 +7,8 @@
 
 ## サイトを前の版に戻す（Workers の rollback）
 
+公開のあとの確かめが通らないときは、CI の deploy のジョブが自分で前の版に戻す（下の「公開後の確かめが通らず、前の版に戻ったとき」）。ここは、持ち主が手で戻すときの手順。
+
 ```bash
 npx --no-install wrangler deployments list --env=""                          # 最近の 10 回の公開と、その Version ID
 npx --no-install wrangler rollback <Version ID> --env="" --message "<戻す理由>"
@@ -18,18 +20,56 @@ npx --no-install wrangler rollback <Version ID> --env="" --message "<戻す理�
 - rollback は一時のしのぎで、次の公開（main への merge）で上書きされる。main を直す PR（revert など）を出し、Actions で出し直す
 - 戻したあと、[公開の順番](publish.md) の「公開後の確認」を流す
 
+## 公開後の確かめが通らず、前の版に戻ったとき
+
+CI の deploy のジョブ（`scripts/deploy_worker.ts`）は、出したあとに、公開したページと `sw.js` が組み立てたものと同じか・全部の動画の Range・HTML の smoke を確かめる。間をおいて流し直しても通らなければ、出す前に控えた版へ `wrangler rollback` し、ジョブを失敗にする（流れは [CI の形](ci.md) の「公開の流れ」）。
+
+- サイトは、出す前の版に戻っている。動画は `retained` に残っているので、前の版のページも再生できる
+- deploy のジョブの要約に、出した版・前の版・通らなかった確かめが出る。記録で、どの確かめが通らなかったかを見る
+- 直し方
+  1. 原因を直す PR を出し、merge で出し直す（main を直さずに出し直すと、同じところで止まって、また戻る）
+  2. 一時の通信の失敗だったときは、下の「Actions を出し直す」で ci.yml を main で流す
+- 要約に「戻せなかった」と出たときは、上の「サイトを前の版に戻す」で、持ち主が手で戻す
+- 初めての公開で戻す版が無いときは、戻さずにジョブを失敗にする
+
+## rollback を試す（preview）
+
+持ち主が一度だけ流す。自動で戻す流れが動くかを、本番に触らずに、preview の Worker（`chalkfile-preview`。経路なし・workers.dev だけ）で確かめる。持ち主が手元の Wrangler の認証で流す（CI の token は使わない）。
+
+```bash
+npm run synth -- --cached-only && npm run build:site -- --strict && npm run gen
+npx --no-install wrangler deploy --env preview                 # 1 回目: 戻す先の版を作る。出力に preview の URL が出る
+npx --no-install wrangler deployments status --env preview     # 今の版の Version ID を控える
+bun scripts/deploy_worker.ts --env preview --origin https://chalkfile-preview.<workers.dev の名前>.workers.dev/ --drill
+npx --no-install wrangler deployments status --env preview     # 控えた版に戻っているか
+```
+
+- `--drill` は、出したあとの確かめを、通っても失敗にして、rollback まで流す。preview だけで使える（本番を指すと、何もせずに止まる）
+- 試したら、結果（戻った版と、かかった時間）を [日付つきの記録](../history/) に残す
+
 ## Actions を出し直す（workflow_dispatch）
 
-- GitHub の Actions → deploy → Run workflow で、branch に main を選ぶ。main 以外を選ぶと、job 全体が skipped になる（公開しない）
-- 手元からなら `gh workflow run deploy.yml --ref main`。失敗した実行をそのまま流し直すなら `gh run rerun <run ID> --failed`
+- GitHub の Actions → ci → Run workflow で、branch に main を選ぶ。全部のジョブを流したあとで公開する。main 以外を選ぶと、deploy のジョブは skipped になる（公開しない）
+- 手元からなら `gh workflow run ci.yml --ref main`。失敗した実行をそのまま流し直すなら `gh run rerun <run ID> --failed`
+- main の先頭でない commit の実行を流し直しても、deploy は出さずに終える（古い版を出さない）。今の main を出すときは、新しく流す
 
 | 止まった手順 | 直し方 |
 |---|---|
 | 素材と講義データ（`synth --cached-only`） | 素材ブランチに声が足りない。台本の branch で `materials push` をする（[公開の順番](publish.md) の 4）。素材が消えたときは、下の「素材を作り直す」 |
 | 動画を先に照合（`media.ts check`） | 動画の一覧と Releases が合わない。その講座で `media push --course <講座 ID>` → `media check` をやり直し、その講座の動画の一覧を commit する |
 | 静的サイトを検証して組み立てる（`build_site.ts --strict`） | ポスターか動画の一覧が足りない（[ハマりどころ](troubleshooting.md) の「素材と動画の push」） |
+| build と同じものかを照らす（`dist_digest.ts verify`） | 取った artifact が、build の出した一覧と違う。出し直す。続くときは、build と同じ commit かを見る |
 | Deploy（secret か vars が無いと出る） | [初回の設定](setup.md) の 2 と 3 |
-| ffmpeg を入れる手順で、取得が進まない | 一時のもの。出し直す |
+| Deploy（確かめが通らず、前の版に戻した） | 上の「公開後の確かめが通らず、前の版に戻ったとき」 |
+| ffmpeg を取る・確かめる手順 | 固定した版のビルドを取れないか、sha256 が合わない。出し直す。続くときは [CI の形](ci.md) の「ffmpeg」 |
+
+### 前の形の公開で出す（2026-11-10 まで）
+
+ci.yml の公開が止まり、急いで出すときだけ使う。組み立てから公開までを 1 つのジョブで流す、前の形の workflow（`deploy.yml`）。
+
+- Actions → deploy → Run workflow で、branch に main を選ぶ（手元からなら `gh workflow run deploy.yml --ref main`）
+- ci.yml の公開と同じ時には流れない（同じ concurrency の group）。出したあとの確かめは `verify_public.ts` だけで、自動では戻さない。出したら [公開の順番](publish.md) の「公開後の確認」を手で流す
+- 2026-11-10 に、workflow とこの節を消す（[CI の形](ci.md) の「この形に移したときに、持ち主がやること」）
 
 ## 素材を作り直す（VOICEVOX）
 

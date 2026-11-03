@@ -1,0 +1,336 @@
+# PR と main への push で流す CI。点検・組み立て・ブラウザのテスト・手元の Worker の smoke が全部通ったら、main だけ公開する。
+#   check（静的な点検）─┬─ build（公開と同じ組み立て → artifact）── smoke（artifact を手元の Worker で配る）─┐
+#                        └─ e2e（合成の講座で、ブラウザのテスト）────────────────────────────────────────────┴─ deploy（main だけ）
+# main を守るルールセットは、ジョブの名前（check・build・e2e・smoke）で必須のチェックを待つ。ジョブの名前を変えない。
+# 公開の決まり（secret は Deploy の手順だけ・production は main だけ・uses は SHA で固定・権限は読み取りだけ など）は、
+# scripts/check_delivery.ts が「性質」で確かめる。ジョブ・キャッシュ・artifact・公開と戻し方の説明は docs/operations/ci.md
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # main を選んで手で流すと、全部のジョブのあとで公開する（出し直し。docs/operations/recovery.md）
+  workflow_dispatch:
+
+# 読み取りだけ。secret は deploy のジョブの Deploy の手順だけが使う
+permissions:
+  contents: read
+
+# PR は、新しい push が来たら古い実行を取り消す。main は取り消さず、来た順に 1 つずつ流す（古い commit をあとから出さない）
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # lint・整形・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検（npm run check と同じもの）。
+  # 点検を足すときは、このジョブに手順を 1 つ足す（必須のチェック check に入る）
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # 足したファイルの整形を見るため、マージの commit の 1 つ目の親（base の先頭）まで取る
+          fetch-depth: 2
+      - uses: ./.github/actions/setup
+      - run: npm run lint
+      # 全体の整形は、開いている講座の PR が 0 の日に 1 回で行う。それまでは、足したファイルだけを整った形で入れる
+      - name: 足したファイルの整形
+        if: github.event_name == 'pull_request'
+        run: bun scripts/format_new.ts --base HEAD^1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          # uv の版は pyproject.toml の required-version から決まる。uv のキャッシュは使わない（ruff を 1 つ取るだけ）
+          enable-cache: false
+      # ruff の版は package.json の lint:py で固定している
+      - name: Python の lint（ruff）
+        env:
+          RUFF_OUTPUT_FORMAT: github
+        run: npm run lint:py
+      # render.sh の SC2086（3 件）は #30 が直している。#30 が入ったら package.json の lint:sh の --exclude=SC2086 を外す
+      - name: シェルの lint（shellcheck）
+        run: |
+          command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck; }
+          shellcheck --version
+          npm run lint:sh
+      # 使っていないファイル・export・依存の一覧。はじめは止めない（ログに出すだけ。講座の PR に注釈を出さない）。
+      # 一覧を空にしたら continue-on-error を外す
+      - name: 使っていないコード（knip）
+        continue-on-error: true
+        run: npm run knip
+      - run: npm run typecheck
+      - run: npm test
+      # 台本と、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）
+      - run: npm run validate
+      - run: bun scripts/check_content.ts --self-test
+      - run: bun scripts/check_content.ts
+      # 文書のリンク・アンカー・スキルの説明の長さは止める。古い言葉・一覧の食い違い・生成物の印・使い方は、今は注意だけ
+      # （片付けたら --strict にする）
+      - run: npm run check:docs
+      # 読む教材（docs/courses/）が、Git に入れている台本と timeline から作り直したものと同じか（synth は要らない）
+      - run: npm run check:materials
+
+  # 公開と同じ手順でサイトを組み立てて点検し、公開物を artifact に残す（deploy は、これをそのまま出す）。
+  # secret は使わず、GITHUB_TOKEN は読み取りだけ。声の合成も動画の書き出しもせず、素材と動画の一覧が足りなければ止まる
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      # 公開物の一覧（.work/ci/site-dist.sha256）の sha256。smoke と deploy は、取った artifact をこの値で照らす
+      digest: ${{ steps.digest.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # 素材の FLAC を WAV に戻すのに使う（キャッシュから戻した WAV が SHA256SUMS と合えば、戻し直さない）
+      - uses: ./.github/actions/ffmpeg
+      - name: 素材のブランチの版
+        id: materials
+        run: |
+          sha=$(git ls-remote --exit-code origin refs/heads/materials | cut -f1)
+          if ! [[ $sha =~ ^[0-9a-f]{40}$ ]]; then
+            echo '素材のブランチ（materials）の版を読めない' >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      # 鍵は素材のブランチの版だけ。版が同じなら、取り出す WAV と読みも同じ（materials.ts pull が SHA256SUMS で 1 本ずつ確かめ、合わないものだけ戻す）。
+      # 別の版の残り（restore-keys）は使わない（素材のブランチに無い声で、CI が通ってしまわないように）
+      - name: 素材のキャッシュを戻す
+        id: materials-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .work/tts
+            public/audio
+          key: materials-wav-v1-${{ steps.materials.outputs.sha }}
+      # 素材のブランチ（公開のリポジトリ）から台詞の音声を取り出し、合成せずに時刻とサイトのデータを作る
+      - name: 素材と講義データ
+        run: |
+          bun scripts/materials.ts pull
+          bun scripts/synth.ts --cached-only
+      # 残すのは main の実行だけ（約 2GB。PR ごとに残すと、リポジトリのキャッシュの枠を埋める。PR は main のものを戻せる）
+      - name: 素材のキャッシュを残す（main だけ）
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.materials-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .work/tts
+            public/audio
+          key: materials-wav-v1-${{ steps.materials.outputs.sha }}
+      # 動画の一覧の項目が Releases にあり、大きさと SHA-256 が合うか（公開の Releases を読むだけ）
+      - name: 動画を先に照合
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/media.ts check
+      # Worker の許可リスト（Git に入れない生成物。npm run gen）を、公開と同じく講座ごとの動画の一覧から作る（check_delivery が一覧と同じかを見る）
+      - name: Worker の許可リストを作る
+        run: bun scripts/gen.ts --media
+      # --strict は、動画かポスターの無いレクチャーがあれば止まる。組み立ての最後に、公開物の決まり（scripts/site-invariants.ts）も確かめる
+      - name: 静的サイトを検証して組み立てる
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bun scripts/build_site.ts --strict
+          bun scripts/check_delivery.ts site/dist
+      # 公開と同じ設定で Worker をまとめる（--dry-run。Cloudflare には何も送らず、認証も使わない）
+      - name: Worker をまとめる（公開はしない）
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: npx --no-install wrangler deploy --dry-run --outdir .work/ci/worker-bundle --env=""
+      - name: 公開物の sha256 の一覧
+        id: digest
+        run: |
+          digest=$(bun scripts/dist_digest.ts write)
+          echo "sha256=$digest" >> "$GITHUB_OUTPUT"
+      # PR でも、組み立てた公開物を取り出して見られる（secret も、PR に書く権限も使わない）
+      - name: artifact に残す（site-dist）
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-dist
+          path: |
+            site/dist
+            worker/src/generated/media-manifest.json
+            .work/ci/site-dist.sha256
+            .work/ci/worker-bundle
+          # site/dist の .assetsignore（wrangler が公開から外すファイルを決める）も入れる
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
+      - name: 要約
+        env:
+          DIGEST: ${{ steps.digest.outputs.sha256 }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          MATERIALS_HIT: ${{ steps.materials-cache.outputs.cache-hit }}
+        run: |
+          if [ "$MATERIALS_HIT" = true ]; then materials='戻した'; else materials='無かった（素材のブランチの版が変わった。main の実行が残す）'; fi
+          {
+            echo '### 組み立てた公開物（artifact: site-dist）'
+            echo
+            echo "- ファイル: $(find site/dist -type f | wc -l) 個・$(du -sh site/dist | cut -f1)（ページ $(find site/dist -name index.html | wc -l) 枚）"
+            echo "- 一覧 \`.work/ci/site-dist.sha256\` の sha256: \`$DIGEST\`（smoke と deploy は、取った artifact をこの値で照らす）"
+            echo "- Worker の bundle（wrangler deploy --dry-run。見るためのもので、deploy は作り直す）: $(du -sh .work/ci/worker-bundle/index.js | cut -f1)"
+            echo "- 素材のキャッシュ: $materials"
+            echo "- 取り出す: $ARTIFACT_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # 合成の講座でサイトを組み、ブラウザ（Playwright の Chromium）で確かめる（npm run test:e2e:ci を --if-present で流す。package.json に入れたら流れる）
+  e2e:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # 合成の講座の短い動画（ffmpeg の testsrc）を作るのに使う
+      - uses: ./.github/actions/ffmpeg
+      - uses: ./.github/actions/playwright
+      - name: 合成の講座で E2E
+        env:
+          PW_CHANNEL: chromium
+          CHALKFILE_EVIDENCE_DIR: ${{ github.workspace }}/.work/e2e
+        run: npm run test:e2e:ci --if-present
+      - name: 失敗したときの trace を残す
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-trace
+          path: |
+            .work/e2e
+            test-results
+            playwright-report
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
+
+  # build の artifact を、手元の Worker（wrangler dev。Cloudflare の認証を使わない）で配り、配信の約束を確かめる（scripts/smoke_worker.ts）。
+  # 結果は、ジョブの要約と artifact（smoke-result）で見られる
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/playwright
+      - name: 組み立てたものを取る
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-dist
+          path: .
+      # npm run gen のうち、wrangler が要る Worker の許可リストだけを作り直す（README などの表は check が見ている）
+      - name: Worker の許可リストを作る
+        run: bun scripts/gen.ts --media
+      - name: build と同じものかを照らす
+        env:
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: bun scripts/dist_digest.ts verify "$DIGEST"
+      - name: 手元の Worker を立ち上げる
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          mkdir -p .work/smoke
+          nohup npx --no-install wrangler dev --local --env="" --ip 127.0.0.1 --port 8787 \
+            --infer-origin-from-routes=false --show-interactive-dev-session=false \
+            < /dev/null > .work/smoke/wrangler.log 2>&1 &
+          for _ in $(seq 1 90); do
+            if curl -fs -o /dev/null --max-time 2 http://127.0.0.1:8787/; then exit 0; fi
+            sleep 1
+          done
+          echo '手元の Worker が 90 秒で立ち上がらない（.work/smoke/wrangler.log）' >&2
+          tail -n 50 .work/smoke/wrangler.log >&2
+          exit 1
+      - name: 配信の約束（scripts/smoke_worker.ts）
+        env:
+          PW_CHANNEL: chromium
+        run: bun scripts/smoke_worker.ts http://127.0.0.1:8787/ | tee .work/smoke/smoke.log
+      - name: 要約
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '### 手元の Worker の smoke（artifact: smoke-result）'
+            echo
+            echo '```text'
+            if [ -f .work/smoke/smoke.log ]; then cat .work/smoke/smoke.log; else echo '（smoke まで進まなかった。手元の Worker の記録は .work/smoke/wrangler.log）'; fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: 結果を残す
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-result
+          path: .work/smoke
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
+
+  # main への push と、main を選んだ手動の実行だけ。前の 4 つのジョブが全部通ったら、build の artifact をそのまま出す。
+  # secret を渡すのは Deploy の手順だけ。Deploy は、出す → 確かめる（公開したものが artifact と同じか・verify_public・HTML の smoke）
+  # → 通らなければ前の版に戻す（scripts/deploy_worker.ts）
+  deploy:
+    needs: [check, build, e2e, smoke]
+    if: github.repository == 'sean-sunagaku/chalkfile' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://chalkfile.com
+    # 公開は 1 つずつ。途中で取り消さない（手で出す deploy.yml とも同じ group）
+    concurrency:
+      group: chalkfile-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # secret を持つジョブなので、ほかの実行が書いたキャッシュ（npm・bun の実行ファイル）を戻さない
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: npm ci --ignore-scripts
+      - name: 組み立てたものを取る
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-dist
+          path: .
+      # Worker の許可リスト（Git に入れない生成物）を、secret の無い手順で作り直す（build と同じものになるかを、次の手順で照らす）
+      - name: Worker の許可リストを作る
+        run: bun scripts/gen.ts --media
+      - name: build と同じものかを照らす
+        env:
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: bun scripts/dist_digest.ts verify "$DIGEST"
+      - name: 公開物を点検する
+        run: bun scripts/check_delivery.ts site/dist
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+          # HTML の smoke は、runner の image に入っている Chrome で開く（secret のあるジョブで、キャッシュや取ってきたブラウザを動かさない）
+          PW_CHANNEL: chrome
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo 'production の Cloudflare secret / vars が未設定です。値は表示しません。' >&2
+            exit 1
+          fi
+          bun scripts/deploy_worker.ts --main "$GITHUB_SHA"

@@ -1,0 +1,115 @@
+# 公開中のサイト（https://chalkfile.com/）と、旧サイトの案内を毎日確かめる。secret は使わない。
+# 通らなければ Issue を開く（同じ題の Issue が開いていれば、新しく開かずに書き足す）。見ることと直し方は docs/operations/ci.md
+name: canary
+
+on:
+  schedule:
+    # 毎日 12:17（日本時間）。米国の朝（太平洋時間の 6〜9 時）は Actions が混むので避ける。cron は UTC で書く
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+# 読み取りだけ。Issue に書けるのは report のジョブだけ（リポジトリのコードを取らない）
+permissions:
+  contents: read
+
+concurrency:
+  group: canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    # fork では流さない（本番を見に行かない）
+    if: github.repository == 'sean-sunagaku/chalkfile'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      media: ${{ steps.media.outcome }}
+      html: ${{ steps.html.outcome }}
+      legacy: ${{ steps.legacy.outcome }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: トップと全部の動画の Range（verify_public）
+        id: media
+        run: bun scripts/verify_public.ts
+      # どれかが通らなくても、残りも確かめる（Issue に、どれが通らないかを書く）
+      - name: 本番の HTML の smoke（全ページ・SW の scope・CSP）
+        id: html
+        if: ${{ !cancelled() }}
+        env:
+          # runner の image に入っている Chrome で開く
+          PW_CHANNEL: chrome
+        run: bun tests/worker-site-smoke.ts https://chalkfile.com/
+      # 旧サイトは GitHub Pages（https://<持ち主>.github.io/<リポジトリ>/）。移行の案内だけを置いている（scripts/build_migration.ts）
+      - name: 旧サイトの案内ページ
+        id: legacy
+        if: ${{ !cancelled() }}
+        run: |
+          legacy="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+          code=$(curl -sS -o "$RUNNER_TEMP/legacy.html" -w '%{http_code}' --max-time 20 --retry 2 "$legacy")
+          if [ "$code" != 200 ]; then
+            echo "旧サイトの案内ページが $code を返す（200 のはず）" >&2
+            exit 1
+          fi
+          if ! grep -qF '<link rel="canonical" href="https://chalkfile.com/">' "$RUNNER_TEMP/legacy.html"; then
+            echo '旧サイトの案内ページに、chalkfile.com への案内が無い' >&2
+            exit 1
+          fi
+          health=$(curl -fsS --max-time 20 --retry 2 "${legacy}migration-health.json")
+          if [ "$health" != '{"target":"https://chalkfile.com/"}' ]; then
+            echo '旧サイトの migration-health.json の行き先が chalkfile.com でない' >&2
+            exit 1
+          fi
+          echo '旧サイトの案内ページ 200・行き先は https://chalkfile.com/'
+      - name: 失敗したときの記録を残す
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: canary-evidence
+          path: .work/evidence
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 30
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
+
+  # 確かめが通らなかったとき（時間切れも）だけ。Issue に書く権限は、このジョブだけが持つ（コードを取らず、gh だけを流す）
+  report:
+    needs: canary
+    if: always() && (needs.canary.result == 'failure' || needs.canary.result == 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Issue を開く（同じ題の Issue が開いていれば書き足す）
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MEDIA: ${{ needs.canary.outputs.media }}
+          HTML: ${{ needs.canary.outputs.html }}
+          LEGACY: ${{ needs.canary.outputs.legacy }}
+          TITLE: 公開中のサイトの毎日の確かめ（canary）が通らない
+        run: |
+          mark() { case "$1" in success) echo '通った' ;; failure) echo '**通らない**' ;; *) echo "流れなかった（$1）" ;; esac; }
+          body=$(cat <<EOF
+          $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')（日本時間）の確かめ: $RUN_URL
+
+          | 確かめ | 結果 |
+          |---|---|
+          | トップと全部の動画の Range（verify_public） | $(mark "${MEDIA:-skipped}") |
+          | 本番の HTML の smoke（全ページ・SW の scope・CSP） | $(mark "${HTML:-skipped}") |
+          | 旧サイトの案内ページ | $(mark "${LEGACY:-skipped}") |
+
+          見ることと直し方: docs/operations/ci.md の「canary が Issue を開いたとき」。直したら、この Issue を閉じる
+          EOF
+          )
+          number=$(gh issue list --state open --limit 200 --json number,title --jq 'map(select(.title == env.TITLE)) | .[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$TITLE" --body "$body"
+          fi

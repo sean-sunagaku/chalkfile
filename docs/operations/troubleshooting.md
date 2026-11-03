@@ -2,7 +2,7 @@
 
 困ったときの索引。症状ごとに、直し方を短く書く。詳しいことは、リンク先の正本を読む。
 
-- 公開の順番は [公開の順番](publish.md)、止まった公開の戻し方は [戻し方](recovery.md)
+- 公開の順番は [公開の順番](publish.md)、止まった公開の戻し方は [戻し方](recovery.md)、CI のジョブとキャッシュは [CI の形](ci.md)
 - 講座を作るときのつまずき（読み・例の日付・モックの色・事実の確かめ方・並行で作るとき）は、スキルの [lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md)
 
 ## 手元の準備
@@ -49,7 +49,10 @@
 - **`media.ts pull` が「上書きしません」で止まる**: 手元の動画が、動画の一覧と違う。作り直した動画なら、その講座を外して pull する。古い写しなら、消してから pull する（[公開の順番](publish.md) の「ぶつかったとき」）
 - **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、`render.sh` と同じ 4.2 秒の所・幅 1280・JPEG の品質 3 で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
 - **`media:check` が `retained` の期限の注意を出す**: 公開は止まらない。片付けるかどうかは持ち主が決める（[戻し方](recovery.md) の「古いハッシュの動画を片付ける」）
-- **Actions が、ffmpeg を入れる手順で長く止まる**: 配布の取得が進まないことがある。出し直す（[戻し方](recovery.md) の「Actions を出し直す」）
+- **Actions の ffmpeg の手順で止まる**: 版を固定したビルドを取れないか、sha256 が合わない。出し直す（[戻し方](recovery.md) の「Actions を出し直す」）。続くときは [CI の形](ci.md) の「ffmpeg」
+- **公開のあとで、前の版に戻った（deploy のジョブが失敗した）**: [戻し方](recovery.md) の「公開後の確かめが通らず、前の版に戻ったとき」
+- **canary（毎日の確かめ）が Issue を開いた**: [CI の形](ci.md) の「canary が Issue を開いたとき」
+- **PR の build の、素材の取り出しが長い**: 素材のブランチの版が変わった直後は、main の実行がその版のキャッシュを残すまで、毎回 FLAC から WAV に戻す。main の実行のあとは短くなる（[CI の形](ci.md) の「キャッシュ」）
 
 ## 並行作業
 
