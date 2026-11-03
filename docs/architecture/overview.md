@@ -2,7 +2,7 @@
 
 Chalkfile は、TypeScript で書いた台本から、声・動画・講座サイト・読む教材を作る。台本（`content/`）が正本で、ほかのものは台本と素材から作り直せる。
 
-- 確かめた時点: 2026-11-02 の main（`76a9da9`）のコード
+- 確かめた時点: 2026-11-03 のコード（生成物を講座のフォルダに移した T2-01〜T2-06 のあと）
 - 言葉の意味は [用語集](glossary.md)、決めた理由は [ADR](../adr/README.md)
 - コマンドの書き方は [コマンド](../guide/commands.md) と [始め方](../guide/quickstart.md)。ここには写さない
 
@@ -42,9 +42,9 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 
 | どこで | すること | 正本 |
 |---|---|---|
-| 手元 | 台本を書き、synth・mix・render で声と動画を作る。動画は `media.ts push` で Releases に、台詞の音声は `materials.ts push` で素材ブランチに置く | 順番は [公開の順番](../operations/publish.md) |
-| PR の CI | lint・型検査・単体テスト・台本と公開の検証（ポスターと動画の一覧の抜けも）・ファイルと文書の点検。main の CI と同じ手順でサイトを組み立てて点検する（公開はしない） | `.github/workflows/check.yml` |
-| main の CI | 声も動画も作らない。素材ブランチから声を取り出して、時刻とサイトのデータを作り直す。動画の一覧を Releases と照らし、サイトを組み立てて点検してから、wrangler で出す。出したあと、全部の動画の Range を確かめる | `.github/workflows/deploy.yml` |
+| 手元 | 台本を書き、synth・mix・render で声と動画を作る。動画は `media.ts push --course <講座 ID>` で Releases に、台詞の音声は `materials.ts push` で素材ブランチに置く | 順番は [公開の順番](../operations/publish.md) |
+| PR の CI | lint・型検査・単体テスト・台本と公開の検証（ポスターと動画の一覧の抜け・timeline の指紋も）・ファイルと文書の点検（生成した表と教材のずれも）。main の CI と同じ手順でサイトを組み立てて点検する（公開はしない） | `.github/workflows/check.yml` |
+| main の CI | 声も動画も作らない。素材ブランチから声を取り出して、時刻とサイトのデータを作り直す。動画の一覧を Releases と照らし、Worker の許可リストを作り（`gen.ts --media`）、サイトを組み立てて点検してから、wrangler で出す。出したあと、全部の動画の Range を確かめる | `.github/workflows/deploy.yml` |
 
 - 動画は merge の前に Releases に置く。置いた時点で、誰でも取れる
 - main の CI は、素材ブランチの台詞の音声や、Releases の動画・ポスターが足りないと止まる（声の合成も書き出しも始めない）
@@ -53,7 +53,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 
 ```text
 ブラウザ ──→ https://chalkfile.com/（Cloudflare Workers。設定は wrangler.jsonc）
-               ├ /media/* … Worker（worker/src/）を先に通す。動画の一覧にあるパスだけを、
+               ├ /media/* … Worker（worker/src/）を先に通す。許可リスト（全講座の動画の一覧）にあるパスだけを、
                │             GitHub Releases から Range のまま中継し、video/mp4 で返す
                └ そのほか … 組み立てたサイト（site/dist）を静的なファイル（assets）として返す
 
@@ -70,10 +70,10 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 |---|---|---|---|
 | main ブランチ | 台本（`content/`）・動画を描くコード（`src/`）・作る道具（`scripts/`）・サイトのひな形（`site/`）・Worker（`worker/`・`wrangler.jsonc`）・テスト・文書。生成物のうち、講座のフォルダの `content/<講座>/generated/`（時刻の `timeline/`・ポスターの `posters/`・動画の一覧の `media.<言語>.json`）と読む教材（`docs/courses/`）も入れている | 台本とコードの正本。入れている生成物は写し。ただし動画の一覧は、Releases に置いた動画の記録 | 生成物は、時刻 → synth、ポスター → render、読む教材 → build_materials、動画の一覧 → media push --course |
 | `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材を足す（消すのは `materials.ts gc` だけ）。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
-| GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-ja-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の動画の一覧が決める | render のあと、`media.ts push` で足す。取り出すのは `media.ts pull` |
+| GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-<言語>-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の講座ごとの動画の一覧が決める | render のあと、`media.ts push --course <講座 ID>` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、deploy.yml が組み立てて出す |
 | `gh-pages` ブランチ（旧 `sean-sunagaku.github.io/chalkfile/`） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
-| 手元だけ（`.gitignore`） | `.work/`（声のキャッシュ・ミックスの設計図・読み）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts` |
+| 手元だけ（`.gitignore`） | `.work/`（声のキャッシュ・ミックスの設計図・読み）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
 | リポジトリの外 | Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 初回に自動で取ってくる |
 
 ## リポジトリのフォルダ
@@ -99,7 +99,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | 名前 | 指している所 |
 |---|---|
 | 講座 ID | サイトの URL（`/<講座 ID>/`、訳は `/<言語>/<講座 ID>/`）・保存の ID・Releases のタグ・素材ブランチのフォルダ |
-| レクチャー ID と動画の key | 動画・ポスター・音・字幕のファイル名と、timeline の鍵 |
+| レクチャー ID と動画の key | 動画・ポスター・音・字幕・timeline のファイル名。レクチャー ID の頭文字は講座の `prefix` |
 | 動画のパス（`/media/<言語>/<講座 ID>/<レクチャー ID>[.cc].<SHA-256>.mp4`） | 公開したページと、学ぶ人が保存した講座 |
 | 章 ID・節 ID | 読む教材と `chunks.jsonl`。AI チャットが答えの根拠を指すのに使う |
 | 声の鍵の決め方 | 素材ブランチと `.work/tts` のファイル名。決め方を変えると全部の音声が見つからなくなり、main の CI の `synth.ts --cached-only` が止まる |

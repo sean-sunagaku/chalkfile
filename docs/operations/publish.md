@@ -162,24 +162,13 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 
 ## ぶつかったとき
 
-並行の branch で、生成物がぶつかることがある。生成物は手でマージしない。main の側を取り、作り直してから commit する。
+並行の branch で、生成物がぶつかることがある。生成物は手でマージしない。main を取り込み、作り直して commit する。生成物ごとの作り直すコマンド（timeline・README の表・教材・スナップショット・ポスター）の正本は、[AGENTS.md](../../AGENTS.md) の「並行作業のきまり」。
 
-| ぶつかったもの | 直し方 |
-|---|---|
-| `content/<講座>/generated/timeline/` | `git checkout origin/main -- content/<講座>/generated/timeline/` → `npm run synth -- --cached-only --course <講座 ID>`（その講座の全部の動画の時刻を、手元の声から作り直す。声が手元に無ければ、先に `npm run materials:pull`） |
-| `docs/courses/` | `git checkout origin/main -- docs/courses/` → `npm run build:materials` |
-| `tests/fixtures/snapshots/` | `git checkout origin/main -- tests/fixtures/snapshots/` → `bun scripts/snapshots.ts --update` |
-| `content/<講座>/generated/posters/` | `git checkout origin/main -- content/<講座>/generated/posters/` → 作り直した動画だけ `npm run render -- <ID>` |
-| `content/<講座>/generated/media.<言語>.json`（その講座の動画の一覧） | 講座ごとなので、ほかの講座の PR とはぶつからない。同じ講座の動画を 2 本の branch で push したときだけ、下の手順 |
-
-動画の一覧がぶつかったとき（同じ講座）:
+動画の一覧（`content/<講座>/generated/media.<言語>.json`）は講座ごとなので、ほかの講座の PR とはぶつからない。同じ講座の動画を 2 本の branch で push したときだけ、次の手順で直す:
 
 1. `git checkout origin/main -- content/<講座>/generated/media.<言語>.json`（main の一覧にそろえる）
 2. 手元の動画を、main の一覧に合わせる。`bun scripts/media.ts pull <講座 ID>` で、作り直していない動画を取る
 3. pull が「上書きしません」で止まった動画は、手元の写しが古い。自分が作り直した動画でなければ、`site/media/` のその動画を消してから、もう一度 pull する（Releases から取り直せる写し）
 4. `npm run media:push -- --course <講座 ID>` → `npm run media:check` → commit
 
-- Worker の許可リスト（`worker/src/generated/media-manifest.json`）は Git に入れないので、ぶつからない。main を取り込んだら `npm run gen` で作り直す
-- 講座の登録表（`content/courses.ts`）は 1 講座 1 行で、`.gitattributes` の `merge=union` が、並行で足した行を両方残す
-- README の講座の表と [new-course.md](../guide/new-course.md) の頭文字の表は、`npm run gen` が印（`<!-- courses:start -->` など）の間を作る。ぶつかったら、そのまま `npm run gen` を流す（印の間を作り直すので、ぶつかった行の印も消える）
 - 並行作業のきまり（共有のファイル・凍結中）は [AGENTS.md](../../AGENTS.md) の「並行作業のきまり」

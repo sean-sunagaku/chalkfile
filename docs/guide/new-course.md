@@ -35,7 +35,7 @@
 
 <!-- prefixes:end -->
 
-- 同じレクチャー ID は、講座をまたいで使えない（`content/index.ts` を読み込むときに止まる）
+- 同じレクチャー ID は、講座をまたいで使えない（`content/index.ts` を読み込むときに止まる）。ID は頭文字と 2 桁の番号（`npm run validate` が形を見る）
 
 ### テーマ
 
@@ -47,15 +47,31 @@
 
 ## 2. 作るファイル
 
+講座のことは、講座のフォルダ（`content/<講座 ID>/`）に閉じる。講座を足す PR が触るのは、そのフォルダと、登録表 `content/courses.ts` の 1 行だけ。フォルダの名前は講座 ID にする（生成物の置き場所にも使う）。
+
+手で書くもの:
+
 - [ ] `content/<講座 ID>/<ID>.ts`: レクチャーごとの台本。場面の型は `content/types.ts`、画面と話し方の決まりは [style.md](../../.claude/skills/study-video-course/references/style.md)
-- [ ] `content/<講座 ID>/course.ts`: 講座（`id`・`title`・`subtitle`・`headline`・`theme`・`sections`・`lectures`・`disclaimer`・`docsNote`・`sourceNote`）。お笑い版は `cast`、章立ては `unitLabel: 'CHAPTER'`、1 本だけの動画は `standalone: true`
+- [ ] `content/<講座 ID>/course.ts`: 講座（`id`・`prefix`（頭文字）・`order`（一覧の並び）・`title`・`subtitle`・`headline`・`theme`・`sections`・`lectures`・`disclaimer`・`docsNote`・`sourceNote`）。お笑い版は `cast`、章立ては `unitLabel: 'CHAPTER'`、1 本だけの動画は `standalone: true`。頭文字と並びは、上の表で使っていないものにする
+- [ ] `content/<講座 ID>/index.ts`: 講座の登録（`export default defineCourseModule({ course, translations })`。訳が無ければ `translations` は書かない）
+- [ ] `content/courses.ts`: 1 行（`export { default as <名前> } from './<講座 ID>';`）。行の順は問わない（並びは `order` で決まる）
 - [ ] `content/<講座 ID>/sources.ts`: 出典と確かめた日（章立て・教材つきの講座）
 - [ ] `content/<講座 ID>/syllabus.ts`: 全体の目次・到達目標・章の計画（教材つきの講座。[materials.md](../../.claude/skills/study-video-course/references/materials.md)）
-- [ ] `content/index.ts`: import と、`COURSES` に 1 行。並べた順が、一覧のページの順になる
-- [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`content/index.ts` の `TRANSLATIONS`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）
-- [ ] README の講座の表と、上の頭文字と並びの表は `npm run gen` で作る（手で書かない。`npm run check:docs` がずれを止める）
+- [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`index.ts` の `translations`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）
 - [ ] 実在の会社や製品を扱うなら、`disclaimer` に「非公式」と書く。お笑い版は「ボケの台詞は、わざと間違えています」も書く
-- 並行で作るとき（共有のファイル・生成物・素材と動画の push）のきまりは、[AGENTS.md](../../AGENTS.md) の「並行作業のきまり」
+
+コマンドが作るもの（手で直さない・Git に入れる）:
+
+| ファイル | 作るコマンド |
+|---|---|
+| `content/<講座 ID>/generated/timeline/<key>.json`（場面と台詞の時刻。指紋つき） | `npm run synth` |
+| `content/<講座 ID>/generated/posters/<key>.jpg`（ポスター） | `npm run render` |
+| `content/<講座 ID>/generated/media.<言語>.json`（その講座の動画の一覧） | `npm run media:push -- --course <講座 ID>` |
+| README の講座の表・上の頭文字と並びの表 | `npm run gen`（`npm run check:docs` がずれを止める） |
+| `docs/courses/<講座 ID>/`（教材つきの講座の読む教材） | `npm run build:materials`（`npm run check` がずれを止める） |
+| `tests/fixtures/snapshots/videos/<key>.json`（音声の鍵と読み） | `bun scripts/snapshots.ts --update` |
+
+- 並行で作るとき（共有のファイル・生成物がぶつかったときの作り直し方・素材と動画の push）のきまりは、[AGENTS.md](../../AGENTS.md) の「並行作業のきまり」
 
 ## 3. 作る
 
@@ -64,7 +80,7 @@
 
 ## 4. 確かめる
 
-- [ ] `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検。CI と同じ）
+- [ ] `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検・教材のずれ。CI と同じ）
 - [ ] 読み: `.work/kana/<ID>.txt` を全部読んだ
 - [ ] 見た目: `npm run stills -- <ID> --mid` の静止画を全部見た（文字のはみ出し・重なり・小さすぎ）
 - [ ] 共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`（ほかの講座の見た目が変わっていないか。結果の表を PR に貼る）
@@ -84,7 +100,7 @@ PR のテンプレート（`.github/pull_request_template.md`）の項目を埋�
 
 - [ ] 講座 ID・頭文字・動画の本数と長さ
 - [ ] 素材と動画を、merge の前に置いたこと（`materials push`・`media push`・`media check`）
-- [ ] 作り直した生成物（timeline・クレジット・ポスター・動画の一覧・`docs/courses/`・スナップショット）
+- [ ] 作り直した生成物（講座のフォルダの `generated/`（timeline・ポスター・動画の一覧）・README の表・`docs/courses/`・スナップショット）
 - [ ] 確かめたこと（上の 4。静止画の比較の表があれば貼る）
 - [ ] 訳を作ったときは、言語と `bun scripts/i18n.ts status` の結果
 - [ ] AI を使ったことと、人が確かめた範囲

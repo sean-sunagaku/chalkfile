@@ -17,7 +17,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 講座 | 1 つの題目の動画の集まり。講座サイトの 1 ページになる。講座 ID（`stripe-billing` など）は URL の `/<講座 ID>/` になる。言語の名前と重なる 2 文字の英小文字は、講座 ID に使えない | `content/types.ts` の `Course`。並べるのは `content/index.ts` の `COURSES` |
+| 講座 | 1 つの題目の動画の集まり。講座サイトの 1 ページになる。講座 ID（`stripe-billing` など）は URL の `/<講座 ID>/` になる。言語の名前と重なる 2 文字の英小文字は、講座 ID に使えない | `content/types.ts` の `Course`（講座のフォルダの `course.ts`）。登録は `content/courses.ts`（1 講座 1 行）、並びは `order`、一覧は `content/index.ts` の `COURSES` |
 | セクション | 講座の中の区切り（「はじめに」など） | `Course.sections` |
 | レクチャー | 動画 1 本ぶんの台本。レクチャー ID は頭の文字と番号（`L01`）。頭の文字は講座ごとに変え、同じ ID を講座をまたいで使わない（重なると、読み込んだときに止まる） | `content/types.ts` の `Lecture`、ファイルは `content/<講座 ID>/<レクチャー ID>.ts` |
 | 章 | 章立ての講座（`unitLabel: 'CHAPTER'`）での、レクチャーの呼び名。動画とサイトの見出しが「CHAPTER」「章」になる | `Course.unitLabel` |

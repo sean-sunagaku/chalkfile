@@ -31,7 +31,7 @@ node scripts/stills.ts L01:1   # 初回は Chrome Headless Shell を落とす。
 ## 2. 講座を設計する
 
 - `content/<講座>/syllabus.ts`: 受講者・前提・到達目標 3 つ・最後の実践・例に使う架空のサービス・章（5〜8）。章ごとに問い・学習目標・前提・動画の構成（困りごと → 考え方 → 良い例・悪い例 → 実践手順 → 演習 → 振り返り）・実践課題の案・出典の候補
-- `content/<講座>/sources.ts`（出典と確認日）・`course.ts`（`unitLabel: 'CHAPTER'`・テーマ・`ui` の言葉・`docsNote`）→ `content/index.ts` の `COURSES` に足す
+- `content/<講座>/sources.ts`（出典と確認日）・`course.ts`（`unitLabel: 'CHAPTER'`・テーマ・`ui` の言葉・`docsNote`）→ 講座のフォルダに `index.ts`（`defineCourseModule`）を作り、`content/courses.ts` に 1 行足す（`course.ts` の `prefix` と `order` は [new-course.md](../../../docs/guide/new-course.md) の表で空いているもの）
 - 最後の章に、テーマの指示が求める「1 枚にまとめる実践」を置く（例: 行動 → 障壁 → 施策 → 検証と悪影響）
 
 ## 3. 第 1 章を一式作る（親が自分で書く）

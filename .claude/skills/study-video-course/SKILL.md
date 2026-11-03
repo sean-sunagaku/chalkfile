@@ -43,7 +43,7 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 ### 3. 台本を書く
 
-`content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座を `content/index.ts` の `COURSES` に足す。
+`content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座は、フォルダの `index.ts` を作って `content/courses.ts` に 1 行で登録する（[new-course.md](../../../docs/guide/new-course.md) の「作るファイル」）。
 
 **講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる**（ユーザーの方針）。既存の講座を作り直すときも、comedy.md の「この形を基準にする」（ユーザーに好評だった掛け合いの型と例）にそろえる。笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出、守ることは [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`（章立て）と `content/pstack-comedy/`（1 本だけの解説動画。表示を少なくした形）。
 
@@ -107,9 +107,9 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.ts --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
 | 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → learner-offline.md とこのスキルの案内を合わせる |
-| レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
+| レクチャーを足す | 台本を書く → 講座の `course.ts` の `lectures` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
-| 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → `TRANSLATIONS` に並べる → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
+| 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → 講座の `index.ts` の `translations` に足す → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
 | 日本語の台本を直した（訳がある講座） | 日本語を直す → `bun scripts/i18n.ts status` で「台本が変わった」訳を見直す → `stamp` → 訳の動画も synth から作り直す |
 
 ## やらないこと

@@ -4,7 +4,7 @@
 
 - テーマの定義: `content/themes.ts`（`THEMES` に並べる）
 - 型: `content/types.ts` の `Theme`
-- 講座への指定: `content/index.ts` の講座に `theme: 'indigo'` のように書く。書かなければ既定の `chalkfile`
+- 講座への指定: 講座の `course.ts` に `theme: 'indigo'` のように書く。書かなければ既定の `chalkfile`
 - 一覧ページ（`site/dist/index.html`）は既定のテーマで描く
 
 ## 今あるテーマ

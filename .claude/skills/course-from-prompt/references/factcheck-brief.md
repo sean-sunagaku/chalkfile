@@ -44,7 +44,7 @@ Chalkfile（このリポジトリ）の章立ての講座（例: ナッジ `nudg
 ## 直し方（自分で直す）
 
 - 直してよいのは、担当する章のファイル `content/<講座>/<ID>.ts` だけ
-- 触らないもの（直すべき点は報告に書けば、親がまとめて直す）: 講座の `sources.ts`・`syllabus.ts`・`course.ts`、`content/reading.ts`・`content/types.ts`・`content/index.ts`、`src/`・`scripts/`・`site/`・`docs/`、生成物（`content/<講座>/generated/`）を手で書き換えること
+- 触らないもの（直すべき点は報告に書けば、親がまとめて直す）: 講座の `sources.ts`・`syllabus.ts`・`course.ts`、`content/reading.ts`・`content/types.ts`・`content/courses.ts`・`content/index.ts`・講座の `index.ts`、`src/`・`scripts/`・`site/`・`docs/`、生成物（`content/<講座>/generated/`）を手で書き換えること
 - しないこと: `git` のコミット・push、`bash scripts/render.sh`、`scripts/mix.py`（動画の書き出しは親が順番に行う）
 - 同じ講座の別の章を、もう 1 人の担当が同時に直している。その章のファイルは触らない
 - 直すのは、誤り・言い過ぎ・出典の不備・時点・表記の誤りだけ。文体の好み・構成・例の作りは変えない
