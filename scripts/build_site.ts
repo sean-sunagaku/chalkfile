@@ -25,8 +25,8 @@ import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
 import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
 import { checkMedia, readMediaManifest } from './media';
-import { WORKERS_ASSET_MAX_BYTES, WORKERS_MAX_ASSETS } from '../site/limits';
 import { mimeOf } from '../site/mime';
+import { assertSiteInvariants } from './site-invariants';
 import { mediaRootOf, readSiteConfig, siteProblems } from './validate';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -526,7 +526,8 @@ rmSync(path.join(DIST, '_redirects'), { force: true });
 writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n/sw.js\n  Cache-Control: no-cache, no-transform\n');
 writeFileSync(path.join(DIST, '404.html'), csp('<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title></head><body><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></body></html>'));
 
-// 静的 assets の制限は動画の総量から分けて点検する。
+// 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める
+assertSiteInvariants({ dist: DIST, scope: base, mediaRoots, media: mediaManifest, shell: shellAssets, courses: generatedManifests.map((m) => m.id) });
 const emitted: { name: string; bytes: number }[] = [];
 const inspect = (dir: string) => {
   for (const file of readdirSync(dir, { withFileTypes: true })) {
@@ -536,9 +537,6 @@ const inspect = (dir: string) => {
   }
 };
 inspect(DIST);
-if (emitted.length > WORKERS_MAX_ASSETS || emitted.some((f) => f.bytes > WORKERS_ASSET_MAX_BYTES || f.name.endsWith('.mp4'))) {
-  throw new Error('Workers assets のファイル数・サイズ制限、または MP4 非混入の条件を満たしません。');
-}
 console.log(`site/dist: ${emitted.length} files・${(emitted.reduce((n, f) => n + f.bytes, 0) / 1e6).toFixed(1)}MB・MP4なし。公開言語: ${SITE_LANGS.join(',')}`);
 
 if (missing.length) {

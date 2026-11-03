@@ -101,7 +101,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/media.ts check
-      # --strict は、動画かポスターの無いレクチャーがあれば止まる
+      # --strict は、動画かポスターの無いレクチャーがあれば止まる。組み立ての最後に、公開物の決まり（scripts/site-invariants.ts）も確かめる
       - name: 静的サイトを検証して組み立てる
         env:
           GH_TOKEN: ${{ github.token }}
