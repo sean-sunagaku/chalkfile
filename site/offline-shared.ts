@@ -3,7 +3,7 @@ import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BY
 import { parseMediaPath } from './media-shared';
 
 // 1 つの bytes の Range の読み方は site/lib/http-range.ts（再生の応答の組み立てと一緒）。前からここを読むもの（旧 Pages の移行の SW）のために、ここからも出す
-export { type ByteRange, byteRange } from './lib/http-range';
+export { byteRange } from './lib/http-range';
 export type Asset = { url: string; bytes: number; sha256: string; type: string };
 export type CourseManifest = {
   schema: 1;

@@ -8,6 +8,7 @@ import { LANG_INFO, LANGS, type Lang } from '../../content/i18n';
 import { THEMES, themeOf } from '../../content/themes';
 import type { Course } from '../../content/types';
 import { posterFile } from '../../engine/core/generated';
+import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
 import { SITE_TEXT, THEME_SUMMARY } from '../../site/i18n';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
 import { mimeOf } from '../../site/mime';
@@ -19,7 +20,6 @@ import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../v
 import { copyAssets, thumbnailAssets } from './assets';
 import { realPosterOf, SITE_DIR, siteBase } from './config';
 import { cspHead, splitPageScript, WWW_REDIRECT_SCRIPT } from './csp';
-import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
 import { cleanOutput, listOutput, writeCourse } from './emit';
 import { NOT_FOUND_HTML, writeServingFiles } from './headers';
 import { fillTemplate } from './html';
