@@ -34,7 +34,7 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
         transform: `translateY(${dropY(p, 14)}px)`,
       }}
     >
-      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: TYPE.display.numberOp, color: tt.main, textAlign: 'center' }}>
+      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: TYPE.display.numberOp, color: tt.strong, textAlign: 'center' }}>
         {it.op}
       </div>
       <div
@@ -47,7 +47,7 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
           fontFamily: SANS,
           fontWeight: 900,
           fontSize: last ? TYPE.display.numberTotal : TYPE.display.numberValue,
-          color: last ? tt.main : C.ink,
+          color: last ? tt.strong : C.ink,
           fontVariantNumeric: 'tabular-nums',
           textShadow: last ? `0 0 40px ${alpha(tt.main, 0x66 / 255)}` : undefined,
         }}

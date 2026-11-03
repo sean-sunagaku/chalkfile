@@ -180,7 +180,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
 
 /** 注の番号の丸。size は丸の径（中の数は径の 0.52） */
 const NoteDot: React.FC<{ n: number; t: Tone; p: number; size: number }> = ({ n, t, p, size }) => {
-  const { C, SANS, tone } = usePalette();
+  const { SANS, tone } = usePalette();
   return (
     <div
       style={{
@@ -188,7 +188,7 @@ const NoteDot: React.FC<{ n: number; t: Tone; p: number; size: number }> = ({ n,
         height: size,
         borderRadius: 99,
         background: tone(t).main,
-        color: C.onTone,
+        color: tone(t).on,
         fontFamily: SANS,
         fontWeight: 900,
         fontSize: size * 0.52,

@@ -86,8 +86,8 @@ const Captions: React.FC<{ cues: Cue[]; lang: Lang }> = ({ cues, lang }) => {
                 fontFamily: SANS,
                 fontWeight: 900,
                 fontSize: CAPTION.nameSize,
-                // 名前札の文字も、今は字幕と同じ白（onCode）。図の色の上の文字（onTone）にするのは見た目の更新（計画の T3A-14）
-                color: C.onCode,
+                // 名前札は、配役の図の色の面に、その上で読める文字の色（tone の on）
+                color: tone(cue.who.tone).on,
                 background: tone(cue.who.tone).main,
                 borderRadius: 999,
                 padding: `6px ${CAPTION.namePadX}px`,

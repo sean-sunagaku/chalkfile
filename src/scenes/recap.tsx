@@ -30,7 +30,7 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
             fontFamily: MONO,
             fontWeight: 700,
             fontSize: TYPE.label.recapNo,
-            color: C.onAccent,
+            color: C.onGrad,
             flexShrink: 0,
             boxShadow: active
               ? THEME.scheme === 'dark'

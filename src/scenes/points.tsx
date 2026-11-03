@@ -46,7 +46,7 @@ const PointCard: React.FC<{
             <div />
           )}
           {numbered ? (
-            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: tall ? TYPE.display.pointNo : TYPE.display.pointNoCompact, color: tt.main, opacity: 0.85 }}>
+            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: tall ? TYPE.display.pointNo : TYPE.display.pointNoCompact, color: tt.strong, opacity: 0.85 }}>
               {String(index + 1).padStart(2, '0')}
             </div>
           ) : null}

@@ -116,7 +116,7 @@ const emphasis = ({ C, GRAD, THEME, tone }: VideoPalette, t?: Tone): React.CSSPr
   if (THEME.decor === 'chalk') {
     return { background: `linear-gradient(180deg, transparent 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 58%, ${alpha(t ? tt.main : C.accent, t ? 0.3 : 0.62)} 92%, transparent 92%)`, color: C.ink };
   }
-  return { color: t ? tt.main : C.accent };
+  return { color: t ? tt.strong : C.accent };
 };
 
 /** **強調** を色つきで出す */

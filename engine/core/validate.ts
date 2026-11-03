@@ -12,6 +12,7 @@
 // engine/core の外を import しない。台本の外の一覧のうち、中身（content/）にあるもの（テーマの一覧）は、validateCourse を呼ぶ側が渡す（CourseContext）
 import { assertNever } from './assert';
 import { isHex } from './color';
+import { contrastProblems } from './contrast';
 import { timelineFile } from './generated';
 import { AT_KEYS, l10nProblems, videoKey, type Lang } from './i18n';
 import { legacyUses } from './legacy';
@@ -716,6 +717,12 @@ export const validateTheme = (theme: Theme, where = `テーマ ${theme?.id}`): I
     }
   } else if (theme.dark !== undefined) {
     push(out, 'warning', 'theme', `${where} dark`, '明るい地のテーマは dark を使わない（明るい地の面と線は color から作る）');
+  }
+  // 文字と地のコントラスト比（engine/core/contrast.ts の組と下限。本文 4.5・大きい文字 3.0）。形が合っているテーマだけを見る
+  if (!out.some((x) => x.level === 'error')) {
+    for (const p of contrastProblems(theme)) {
+      error(`コントラスト ${p.role}`, `文字と地のコントラスト比が ${p.ratio.toFixed(2)}（下限 ${p.min}）。文字か地の色を、明るい地は濃く、暗い地は明るくする（theme.md の「確かめること」）`);
+    }
   }
   return out;
 };

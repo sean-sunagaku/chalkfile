@@ -4,6 +4,7 @@
 
 - 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`usePalette()` の `C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う（[theme.md](theme.md) の「部品で色を使う」）
 - 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・役割ごとの文字の大きさ・焼き込み字幕と見出しの文字の大きさ）は `engine/core/video-config.ts` に 1 か所で持つ（部品は `src/video.config.ts` から読む）。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
+- 文字と地のコントラスト比は、本文 4.5・大きい文字 3.0 を下限にする（組と作り方は [theme.md](theme.md) の「コントラスト」）。部品は図の色の `main` を文字の色にしない（`text`・`strong`・`on` を使う）
 - コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`。画面の文字は、書体に入っている文字で書く（書体は台本の文字だけを入れたサブセット。新しい文字は `npm run fonts` で足す。元の書体にも無い文字は `npm run validate` が止めるので、別の文字にする。[theme.md](theme.md) の「書体」）
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
 - 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）

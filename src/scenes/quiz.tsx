@@ -118,7 +118,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   fontFamily: SANS,
                   fontWeight: 900,
                   fontSize: TYPE.display.quizCountdown,
-                  color: TONES.amber.main,
+                  color: TONES.amber.text,
                 }}
               >
                 {remain}
@@ -147,7 +147,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   fontFamily: SANS,
                   fontWeight: 900,
                   fontSize: TYPE.display.quizStamp,
-                  color: tt.main,
+                  color: tt.strong,
                   background: C.overlay,
                   boxShadow: `0 0 60px ${alpha(tt.main, 0x88 / 255)}`,
                   lineHeight: 1,

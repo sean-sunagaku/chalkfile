@@ -243,7 +243,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
                   fontFamily: MONO,
                   fontWeight: 700,
                   fontSize: TYPE.label.phoneStepNo,
-                  color: on ? C.onTone : tt.main,
+                  color: on ? tt.on : tt.strong,
                   boxShadow: on ? `0 0 26px ${tt.main}` : undefined,
                 }}
               >
