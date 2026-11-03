@@ -25,6 +25,9 @@ import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
 import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
 import { checkMedia, readMediaManifest } from './media';
+import { mimeOf } from '../site/mime';
+import { assertSiteInvariants } from './site-invariants';
+import { mediaRootOf, readSiteConfig, siteProblems } from './validate';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const SITE = path.join(ROOT, 'site');
@@ -34,9 +37,8 @@ const MEDIA = path.join(SITE, 'media');
 const POSTERS = path.join(SITE, 'posters');
 const ASSETS = path.join(SITE, 'assets');
 
-/** media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ） */
-type Config = { series: string; seriesSub: string; baseUrl: string; repoUrl: string; publishLangs: Lang[]; media?: Partial<Record<Lang, { url: string; repo: string }>> };
-const config = JSON.parse(readFileSync(path.join(SITE, 'config.json'), 'utf8')) as Config;
+// site/config.json（形は scripts/validate.ts の SiteConfig）
+const config = readSiteConfig();
 const base = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
 /** サイトに出す言語（既定は全部）。SITE_LANGS=ja のように絞ると、外した言語のページ・切り替え・動画のサイトを作らない */
 const SITE_LANGS: Lang[] = (() => {
@@ -48,11 +50,8 @@ const SITE_LANGS: Lang[] = (() => {
   if (!ls.includes('ja')) throw new Error('SITE_LANGS には ja（一覧と日本語の講座）を入れる');
   return LANGS.filter((l) => ls.includes(l));
 })();
-/** 訳の言語の動画のサイトのパス（/chalkfile-media-en/ など。サイトと同じ origin なので、パスだけで指せる） */
-const mediaRoot = (lang: Lang): string | null => {
-  const m = lang === 'ja' ? undefined : config.media?.[lang];
-  return m ? new URL(m.url.endsWith('/') ? m.url : `${m.url}/`).pathname : null;
-};
+/** 訳の言語の動画のサイトのパス（/media/en/ など。サイトと同じ origin なので、パスだけで指せる） */
+const mediaRoot = (lang: Lang): string | null => mediaRootOf(config, lang);
 
 type SiteData = {
   duration: number;
@@ -160,44 +159,10 @@ const readData = (key: string): SiteData | null => {
 const minutesOf = (course: Course, lang: Lang) => course.lectures.reduce((a, l) => a + (readData(videoKey(l.id, lang))?.duration ?? 0), 0) / 60;
 
 /* ───────────── 安全のための確かめ ─────────────
- * ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（javascript: などを通さない）。
- * 台本の中身の確かめ（注入・隠し文字・秘密情報）は scripts/check_content.ts が受け持つ。
+ * ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（javascript: などを通さない）。中身は scripts/validate.ts の siteProblems
+ * （PR の CI の npm run validate も同じものを流す）。台本の中身の確かめ（注入・隠し文字・秘密情報）は scripts/check_content.ts が受け持つ。
  */
-const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
-const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
-const problems: string[] = [];
-if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
-for (const [lang, m] of Object.entries(config.media ?? {})) {
-  if (!m || !HTTPS.test(m.url) || !HTTPS.test(m.repo)) problems.push(`site/config.json の media.${lang} の url と repo は https:// で書く`);
-  // 動画のサイトは講座サイトと同じ origin（Service Worker が中身を確かめて保存でき、Range もそのまま動く）
-  else if (new URL(m.url).origin !== new URL(base).origin) problems.push(`site/config.json の media.${lang}.url は baseUrl と同じ origin にする: ${m.url}`);
-  else {
-    // 講座サイトを含むパスに置くと、ページと動画の区別（Service Worker）が崩れる。講座サイトの下に置くとき（chalkfile.com/media/ など）は、
-    // 頭のフォルダの名前を、講座 ID・言語のフォルダと重ねない
-    const mp = mediaRoot(lang as Lang)!;
-    const bp = new URL(base).pathname;
-    const head = mp.startsWith(bp) ? mp.slice(bp.length).split('/')[0] : '';
-    if (bp.startsWith(mp) || COURSES.some((c) => c.id === head) || LANGS.some((l) => LANG_INFO[l].path === `${head}/`)) {
-      problems.push(`site/config.json の media.${lang}.url は、講座サイトを含まず、講座 ID・言語のフォルダと重ならない場所にする: ${m.url}`);
-    }
-  }
-}
-for (const lang of LANGS)
-  for (const c of coursesIn(lang)) {
-    if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
-    for (const ln of c.links ?? []) if (!HTTPS.test(ln.url)) problems.push(`${c.id} のリンクが https:// でない: ${ln.url}`);
-    for (const lec of c.lectures) {
-      if (!ID.test(lec.id)) problems.push(`レクチャー ID が英数字でない: ${lec.id}`);
-      for (const d of lec.docs) if (!HTTPS.test(d.url)) problems.push(`${lec.id} の公式ドキュメントのリンクが https:// でない: ${d.url}`);
-      // 節 ID・図 ID はページの中の id 属性とリンク先になるので英数字だけ
-      const m = lec.material;
-      if (m) for (const id of [m.id, ...m.sections.map((x) => x.id), ...m.figures.map((x) => x.id), m.exercise.id]) if (!ID.test(id)) problems.push(`${lec.id} の教材の ID が英数字でない: ${id}`);
-    }
-    for (const x of c.sources ?? []) if (!HTTPS.test(x.url)) problems.push(`${c.id} の出典のリンクが https:// でない: ${x.url}`);
-    // 版の印（scripts/site-version.ts）は、版が決まるとページの中で全部置き換えるので、台本には書けない
-    if (JSON.stringify(c).includes(PAGE_VERSION_MARK)) problems.push(`${c.id} の台本に、版の印と同じ文字 ${PAGE_VERSION_MARK} がある`);
-  }
-for (const t of Object.values(THEMES)) if (!ID.test(t.id)) problems.push(`テーマ ID が英数字でない: ${t.id}`);
+const problems = siteProblems(config, coursesIn);
 if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
@@ -524,7 +489,8 @@ function courseCreditsAll(lang: Lang): string[] {
   return creditsIn(lang, coursesIn(lang).flatMap((c) => c.lectures.flatMap((l) => l.scenes.flatMap((s) => s.lines.map((ln) => (ln.v ?? 'narrator') as VoiceId)))));
 }
 
-// 一覧ページの画像（site/assets）を写す
+// 一覧ページの画像（site/assets）を写す。型は拡張子の対応表（site/mime.ts）から付け、知らない拡張子なら止める
+// （SW は起動用ファイルの型を、配信の Content-Type と照らし合わせる。違うと、全員の新しい SW の install が止まる）
 const copyDir = (from: string, to: string) => {
   mkdirSync(to, { recursive: true });
   for (const e of readdirSync(from, { withFileTypes: true })) {
@@ -534,7 +500,7 @@ const copyDir = (from: string, to: string) => {
     else {
       rmSync(b, { force: true });
       place(a, b);
-      shellAssets.push(asset(path.relative(DIST, b).split(path.sep).join('/'), readFileSync(b), 'image/jpeg'));
+      shellAssets.push(asset(path.relative(DIST, b).split(path.sep).join('/'), readFileSync(b), mimeOf(b)));
     }
   }
 };
@@ -560,7 +526,8 @@ rmSync(path.join(DIST, '_redirects'), { force: true });
 writeFileSync(path.join(DIST, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n/sw.js\n  Cache-Control: no-cache, no-transform\n');
 writeFileSync(path.join(DIST, '404.html'), csp('<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title></head><body><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></body></html>'));
 
-// 静的 assets の制限は動画の総量から分けて点検する。
+// 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める
+assertSiteInvariants({ dist: DIST, scope: base, mediaRoots, media: mediaManifest, shell: shellAssets, courses: generatedManifests.map((m) => m.id) });
 const emitted: { name: string; bytes: number }[] = [];
 const inspect = (dir: string) => {
   for (const file of readdirSync(dir, { withFileTypes: true })) {
@@ -570,9 +537,6 @@ const inspect = (dir: string) => {
   }
 };
 inspect(DIST);
-if (emitted.length > 20000 || emitted.some((f) => f.bytes > 25 * 1024 ** 2 || f.name.endsWith('.mp4'))) {
-  throw new Error('Workers assets のファイル数・サイズ制限、または MP4 非混入の条件を満たしません。');
-}
 console.log(`site/dist: ${emitted.length} files・${(emitted.reduce((n, f) => n + f.bytes, 0) / 1e6).toFixed(1)}MB・MP4なし。公開言語: ${SITE_LANGS.join(',')}`);
 
 if (missing.length) {

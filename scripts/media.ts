@@ -5,6 +5,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../content';
+import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, RELEASE_MAX_ASSETS } from '../site/limits';
 import {
   MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, retainDeadline, retainedWarnings, validateMediaManifest,
   type MediaEntry, type MediaManifest, type RetainedMediaEntry,
@@ -61,8 +62,38 @@ export function retainEntries(previous: MediaManifest | null, active: MediaEntry
     ...(previous?.retained ?? []).filter((e) => !current.has(mediaPath(e))).map((e) => ({ ...e, retainedUntil: e.retainedUntil ?? until })),
   ];
 }
+const mib = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+/**
+ * 動画の一覧が、保存と Releases の上限（site/limits.ts）に収まるか。push は Releases に置く前に、check は照合の前に確かめる。
+ * 動画が保存の上限を超えると、学ぶ人がその講座を保存できない（SW の validateManifest が「保存できない」とする）
+ */
+export function mediaLimitProblems(manifest: MediaManifest): string[] {
+  const problems: string[] = [];
+  for (const e of manifest.entries) {
+    if (e.bytes > OFFLINE_FILE_MAX_BYTES) problems.push(`動画が保存の 1 ファイルの上限（${mib(OFFLINE_FILE_MAX_BYTES)}）を超えています: ${mediaKey(e)}（${mib(e.bytes)}）`);
+  }
+  // 講座の保存には、動画のほかに、ページ 1 つとレクチャーごとのポスターが入る（入れたあとの大きさは、組み立ての最後に scripts/site-invariants.ts が見る）
+  const courses = new Map<string, MediaEntry[]>();
+  for (const e of manifest.entries) courses.set(`${e.lang}/${e.course}`, [...(courses.get(`${e.lang}/${e.course}`) ?? []), e]);
+  for (const [course, list] of courses) {
+    const bytes = list.reduce((n, e) => n + e.bytes, 0);
+    const files = 1 + list.length + list.filter((e) => e.kind === 'standard').length;
+    if (bytes > OFFLINE_COURSE_MAX_BYTES) problems.push(`講座の動画の合計が、保存の 1 講座の上限（${mib(OFFLINE_COURSE_MAX_BYTES)}）を超えています: ${course}（${mib(bytes)}）`);
+    if (files > OFFLINE_COURSE_MAX_FILES) problems.push(`講座の保存のファイルの数が、上限（${OFFLINE_COURSE_MAX_FILES}）を超えています: ${course}（ページとポスターを入れて ${files}）`);
+  }
+  // 1 つの Release に置く数（古いハッシュの retained も、同じ Release に残る）
+  const tags = new Map<string, number>();
+  for (const e of allMediaEntries(manifest)) tags.set(e.tag, (tags.get(e.tag) ?? 0) + 1);
+  for (const [tag, n] of tags) if (n > RELEASE_MAX_ASSETS) problems.push(`Release の ${RELEASE_MAX_ASSETS} asset 上限を超えます: ${tag}（一覧に ${n} 本）`);
+  return problems;
+}
+function assertMediaLimits(manifest: MediaManifest): void {
+  const problems = mediaLimitProblems(manifest);
+  if (problems.length) throw new Error(problems.join('\n'));
+}
 export function checkMedia(manifest = readMediaManifest()): void {
   validateMediaManifest(manifest);
+  assertMediaLimits(manifest);
   warnExpiredRetained(manifest);
   const remote = allMediaEntries(manifest);
   for (const tag of new Set(remote.map((e) => e.tag))) {
@@ -117,6 +148,8 @@ async function pushMedia() {
   const active = [...entries, ...(previous?.entries.filter((e) => e.lang !== 'ja') ?? [])];
   const retained = retainEntries(previous, active);
   const manifest = validateMediaManifest({ schema: 1, entries: active, ...(retained.length ? { retained } : {}) });
+  // 保存できない大きさの動画を、Releases に置く前に止める
+  assertMediaLimits(manifest);
   verifyLocalMedia(entries, true);
   const target = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const temp = mkdtempSync(path.join(tmpdir(), 'chalkfile-media-'));
@@ -128,7 +161,7 @@ async function pushMedia() {
         '--title', tag, '--notes', 'Chalkfile の公開動画。ファイル名の SHA-256 ごとに保持します。', '--latest=false']);
       const current = assetsOf(tag);
       const missing = entries.filter((e) => e.tag === tag && !current.some((a) => a.name === e.filename));
-      if (current.length + missing.length > 1000) throw new Error(`Release の 1000 asset 上限を超えます: ${tag}`);
+      if (current.length + missing.length > RELEASE_MAX_ASSETS) throw new Error(`Release の ${RELEASE_MAX_ASSETS} asset 上限を超えます: ${tag}`);
       const staged = missing.map((e) => {
         const file = path.join(temp, e.filename);
         copyFileSync(localMediaPath(e), file);

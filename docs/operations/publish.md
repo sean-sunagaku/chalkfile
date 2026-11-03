@@ -130,6 +130,10 @@ npm run test:e2e                   # 入れてある Chrome と、生成した�
 
 - テストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
 - ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
+- PR の CI（`.github/workflows/check.yml`）は 2 つのジョブ。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `build_site --strict` → `check_delivery`）でサイトを組み立てる。公開はせず、秘密情報も使わない
+- `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP のハッシュと動く script の数・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
+- 大きさの上限の正本は `site/limits.ts`（保存は 1 ファイル 32 MiB・ページ 4 MiB・1 講座 1 GiB・201 ファイル、Workers の静的 assets は 1 ファイル 25 MiB・2 万ファイル、Releases の動画は 2 GiB 未満）。サイト用の動画は 14,500 KiB を目安に書き出す（上限ではない）。保存の上限を超える動画は `media.ts push`・`check` が止める
+- ファイルの型は、拡張子の対応表 `site/mime.ts` から付ける。知らない拡張子のファイルを `site/assets` に置くと、組み立てが止まる
 - ブラウザのテストは、`127.0.0.1:8877` に本物の組み立てを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
 - ブラウザは、入れてある Chrome を一時の profile で使う。`PW_CHANNEL=chromium npm run test:browser` で、Playwright の Chromium も選べる（別に入れる）
 - 証跡の既定の置き場所は `/tmp/chalkfile-pwa-evidence/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない

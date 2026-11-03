@@ -8,6 +8,7 @@ import path from 'node:path';
 import { byteRange } from '../site/offline-shared';
 import manifest from '../site/media-manifest.json';
 import { mediaPath, validateMediaManifest } from '../site/media-shared';
+import { contentTypeOf } from '../site/mime';
 import { localMediaPath } from './media';
 
 const SITE = path.resolve(import.meta.dir, '..', 'site');
@@ -20,16 +21,6 @@ const MOUNTS: [string, string][] = [
   ...Object.entries(config.media ?? {}).map(([lang, m]): [string, string] => [new URL(m.url).pathname, path.join(SITE, 'dist-media', lang)]),
   [BASE_PATH, path.join(SITE, 'dist')],
 ];
-const TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.mp4': 'video/mp4',
-  '.jpg': 'image/jpeg',
-  '.json': 'application/json',
-  '.vtt': 'text/vtt',
-  '.js': 'text/javascript; charset=utf-8',
-  '.webmanifest': 'application/manifest+json',
-  '.png': 'image/png',
-};
 
 Bun.serve({
   hostname: '127.0.0.1',
@@ -66,7 +57,8 @@ Bun.serve({
     }
     if (!existsSync(file)) return new Response('not found', { status: 404 });
     const body = Bun.file(file);
-    const type = TYPES[path.extname(file)] ?? 'application/octet-stream';
+    // 型は拡張子の対応表（site/mime.ts。Workers の配信と同じ）。文字のファイルには charset=utf-8 を付ける
+    const type = contentTypeOf(file) ?? 'application/octet-stream';
     const size = body.size;
     const range = byteRange(req.method === 'HEAD' ? null : req.headers.get('range'), size);
     if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
