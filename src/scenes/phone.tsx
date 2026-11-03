@@ -3,8 +3,9 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../content/types';
 import { Icon, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, MONO, PAD, SANS, TONES } from '../theme';
+import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES } from '../theme';
 import { dropY, lineStart, useAppear, useScene, useText } from '../timing';
+import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
@@ -59,7 +60,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const appear = useAppear(0);
-  const starts = s.screens.map((sc) => lineStart(lines, sc.at) - 4);
+  const starts = s.screens.map((sc) => lineStart(lines, sc.at) - LEAD.appear);
   let cur = -1;
   starts.forEach((st, i) => {
     if (frame >= st) cur = i;
@@ -83,7 +84,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
           <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 110, height: 30, borderRadius: 99, background: '#05070F' }} />
         </div>
       </div>
-      <div style={{ position: 'absolute', left: px + pw + 110, right: PAD, top: CONTENT_TOP + 20, bottom: 1080 - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 26 }}>
+      <div style={{ position: 'absolute', left: px + pw + 110, right: PAD, top: CONTENT_TOP + 20, bottom: H - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 26 }}>
         {s.screens.map((x, i) => {
           const on = i === cur;
           const seen = i <= cur;

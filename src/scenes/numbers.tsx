@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { NumbersScene } from '../../content/types';
 import { Glass } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, PAD, SANS, tone } from '../theme';
+import { C, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, SANS, tone } from '../theme';
 import { dropY, lineStart, useAppear, useScene } from '../timing';
 import { defineScene } from './define';
 
@@ -45,7 +45,7 @@ const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
   // 枠は最初の数字と一緒に出す（数字の前の台詞の間、空の枠を見せない）
   const box = useAppear(Math.min(...s.items.map((it) => it.at)));
   return (
-    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: 1080 - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
+    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: H - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
       <div style={{ width: 1260, opacity: box }}>
         <Glass t="mint" active={0.4} style={{ padding: '28px 56px 32px' }}>
           {s.items.map((it, i) => (

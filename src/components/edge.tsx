@@ -2,8 +2,9 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { Tone } from '../../content/types';
-import { C, SANS, tone } from '../theme';
+import { C, H, SANS, tone, W } from '../theme';
 import { lineStart, useScene } from '../timing';
+import { LEAD } from '../video.config';
 import { Smart } from './ui';
 
 type Pt = [number, number];
@@ -43,7 +44,7 @@ export const Edge: React.FC<{
 }> = ({ a, b, at, label, t, dashed, bend = 0, fromSide, toSide, labelDx = 0, labelDy = 0, dim, stagger = 0 }) => {
   const frame = useCurrentFrame();
   const { lines } = useScene();
-  const start = lineStart(lines, at) - 2 + stagger;
+  const start = lineStart(lines, at) - LEAD.draw + stagger;
   const draw = interpolate(frame - start, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const dot = interpolate(frame - start, [4, 26], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const dotO = interpolate(frame - start, [4, 8, 24, 30], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -73,7 +74,7 @@ export const Edge: React.FC<{
   const d = `M ${p0[0]} ${p0[1]} Q ${c[0]} ${c[1]} ${p1[0]} ${p1[1]}`;
   return (
     <>
-      <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0, opacity: dim, overflow: 'visible' }}>
+      <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, opacity: dim, overflow: 'visible' }}>
         <path
           d={d}
           fill="none"

@@ -5,6 +5,7 @@ import type { TerminalScene } from '../../content/types';
 import { Glass, Smart } from '../components/ui';
 import { C, CONTENT_BOTTOM, CONTENT_TOP, mix, MONO, PAD, SANS, SYNTAX } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
@@ -33,7 +34,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
             <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.codeMuted }}>{s.title}</div>
           </div>
           {s.entries.map((e, i) => {
-            const st = lineStart(lines, e.at) - 4;
+            const st = lineStart(lines, e.at) - LEAD.appear;
             const len = e.cmd?.length ?? 0;
             const typed = e.cmd ? Math.floor(interpolate(frame - st, [0, Math.min(34, len * 0.6)], [0, len], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })) : 0;
             const outO = interpolate(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), [0, 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });

@@ -3,8 +3,9 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { SequenceScene } from '../../content/types';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { C, MONO, PAD, SANS, tone } from '../theme';
+import { C, H, MONO, PAD, SANS, tone, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
@@ -12,7 +13,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
   const { lines } = useScene();
   const active = useActiveLine();
   const n = s.actors.length;
-  const colW = 1728 / n;
+  const colW = (W - PAD * 2) / n;
   const xOf = (key: string) => PAD + (s.actors.findIndex((a) => a.key === key) + 0.5) * colW;
   const top = 236;
   const firstY = 418;
@@ -25,7 +26,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
       {s.actors.map((a, i) => (
         <Actor key={a.key} a={a} x={PAD + (i + 0.5) * colW} w={Math.min(400, colW - 44)} top={top} />
       ))}
-      <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0 }}>
+      <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0 }}>
         {s.actors.map((a, i) => (
           <line key={a.key} x1={PAD + (i + 0.5) * colW} x2={PAD + (i + 0.5) * colW} y1={top + 128} y2={1004} stroke={C.lane} strokeWidth={2} strokeDasharray="6 10" />
         ))}
@@ -34,7 +35,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         const k = seen.get(st.at) ?? 0;
         seen.set(st.at, k + 1);
         const y = firstY + i * gap;
-        const start = lineStart(lines, st.at) - 2 + k * 14;
+        const start = lineStart(lines, st.at) - LEAD.draw + k * 14;
         const draw = interpolate(frame - start, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
         if (draw <= 0) return null;
         const x1 = xOf(st.from);
@@ -50,7 +51,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         const dotO = interpolate(frame - start, [4, 8, 22, 28], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
         return (
           <React.Fragment key={i}>
-            <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0, opacity: dim }}>
+            <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, opacity: dim }}>
               <line x1={xa} y1={y} x2={xNow} y2={y} stroke={tt.main} strokeWidth={isLatest ? 5 : 4} strokeLinecap="round" strokeDasharray={st.dashed ? '12 10' : undefined} />
               {draw > 0.97 ? <polygon points={`${xb},${y} ${xb - dir * 18},${y - 10} ${xb - dir * 18},${y + 10}`} fill={tt.main} /> : null}
               <circle cx={xa + (xb - xa) * dot} cy={y} r={10} fill={tt.main} opacity={dotO} style={{ filter: `drop-shadow(0 0 12px ${tt.main})` }} />

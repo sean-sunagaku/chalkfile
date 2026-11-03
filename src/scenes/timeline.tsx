@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { TimelineScene } from '../../content/types';
 import { Glass, Pill, Smart } from '../components/ui';
-import { C, GRAD, MONO, PAD, SANS, tone } from '../theme';
+import { C, GRAD, MONO, PAD, SANS, tone, W } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
 import { defineScene } from './define';
 
@@ -55,7 +55,7 @@ const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const f = useFocus(s.focus);
   const n = s.items.length;
-  const colW = 1728 / n;
+  const colW = (W - PAD * 2) / n;
   const xs = s.items.map((_, i) => PAD + (i + 0.5) * colW);
   const fi = f ? s.items.findIndex((it) => it.key === f.key) : -1;
   const target = fi >= 0 ? xs[fi] : xs[0];

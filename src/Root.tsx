@@ -4,6 +4,7 @@ import { VIDEOS, type Video } from '../content';
 import { compositionId } from '../content/i18n';
 import { validateLecture, validateTimeline, type Issue } from '../engine/core/validate';
 import { LectureVideo, TIMELINE } from './Lecture';
+import { VIDEO } from './video.config';
 
 /** その動画の台本の誤り（engine/core/validate.ts）と、台本と形の合わない timeline。描くと途中で止まるか、黙って崩れる */
 const errorsOf = (v: Video): Issue[] => {
@@ -31,9 +32,9 @@ export const Root: React.FC = () => (
           id={compositionId(v.key)}
           component={LectureVideo}
           durationInFrames={TIMELINE[v.key].durationInFrames}
-          fps={30}
-          width={1920}
-          height={1080}
+          fps={VIDEO.fps}
+          width={VIDEO.width}
+          height={VIDEO.height}
           defaultProps={{ id: v.key, audio: false, theme: '', captions: false }}
           {...(errors.length
             ? {

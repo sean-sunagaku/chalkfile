@@ -3,6 +3,7 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { Lang } from '../content/i18n';
 import type { Course, Lecture, Scene } from '../content/types';
 import { VIDEO_TEXT, type VideoText } from './i18n';
+import { LEAD } from './video.config';
 
 export type LineTiming = { start: number; end: number };
 export type SceneTiming = { start: number; duration: number; lines: LineTiming[] };
@@ -38,12 +39,12 @@ export const lineEnd = (lines: LineTiming[], at: number): number => {
   return lines[Math.min(Math.max(at, 0), lines.length - 1)].end;
 };
 
-/** 台詞 at の頭で 0→1 になる spring。ナレーションより 4 フレームだけ先に動き出す */
+/** 台詞 at の頭で 0→1 になる spring。ナレーションより LEAD.appear（4）フレームだけ先に動き出す（src/video.config.ts） */
 export const useAppear = (at: number, delay = 0, durationInFrames = 20): number => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { lines } = useScene();
-  const start = lineStart(lines, at) + delay - 4;
+  const start = lineStart(lines, at) + delay - LEAD.appear;
   return spring({ frame: frame - start, fps, config: { damping: 200 }, durationInFrames });
 };
 
@@ -52,7 +53,7 @@ export const useActiveLine = (): number => {
   const frame = useCurrentFrame();
   const { lines } = useScene();
   let active = 0;
-  for (let i = 0; i < lines.length; i++) if (frame >= lines[i].start - 4) active = i;
+  for (let i = 0; i < lines.length; i++) if (frame >= lines[i].start - LEAD.appear) active = i;
   return active;
 };
 
@@ -62,7 +63,7 @@ export function useFocus<T extends { at: number }>(focus: T[] | undefined): T | 
   const { lines } = useScene();
   if (!focus?.length) return null;
   let current: T | null = null;
-  for (const f of focus) if (frame >= lineStart(lines, f.at) - 4) current = f;
+  for (const f of focus) if (frame >= lineStart(lines, f.at) - LEAD.appear) current = f;
   return current;
 }
 

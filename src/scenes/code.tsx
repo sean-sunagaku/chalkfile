@@ -3,8 +3,9 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { CodeScene } from '../../content/types';
 import { Glass, Smart } from '../components/ui';
-import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, mix, MONO, PAD, SANS, SYNTAX, tone } from '../theme';
+import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, H, mix, MONO, PAD, SANS, SYNTAX, tone, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const RX = /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b(?:def|return|if|not|in|for|and|or|try|except|class|async|await|None|True|False|import|from|with|as|elif|else|while|is)\b)|(@[\w.]+)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*(?=\())/gm;
@@ -44,13 +45,13 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   // 行数が多いときは、エディタが内容の枠に収まるまで文字を小さくする
   const fit = Math.floor((CONTENT_BOTTOM - edTop - codeTop - pad * 2 - 6) / codeLines.length / 1.52);
   const hasNotes = s.marks.some((m) => m.note);
-  const edW = hasNotes ? 1150 : 1728;
+  const edW = hasNotes ? 1150 : W - PAD * 2;
   // 横にもはみ出さないように（英数字は 0.6em、日本語は 1em として最も長い行で決める）
   const widestEm = Math.max(...codeLines.map((ln) => [...ln].reduce((w, ch) => w + (/[\x00-\x7F]/.test(ch) ? 0.6 : 1), 0)));
   const fitW = Math.floor((edW - 64 - 48) / Math.max(1, widestEm));
   const fontSize = Math.min(s.fontSize ?? 26, fit, fitW);
   const lh = Math.round(fontSize * 1.52);
-  const show = lineStart(lines, s.showAt ?? 0) - 6;
+  const show = lineStart(lines, s.showAt ?? 0) - LEAD.code;
   const editorH = Math.min(CONTENT_BOTTOM - edTop, codeTop + pad * 2 + lh * codeLines.length);
   const activeMark = s.marks.reduce<number>((acc, m, i) => (m.at <= active ? i : acc), -1);
   const enter = interpolate(frame - show, [0, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -86,7 +87,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
           <div style={{ position: 'absolute', left: 0, right: 0, top: codeTop - 16 + pad }}>
             {s.marks.map((m, i) => {
               const on = i === activeMark;
-              const p = interpolate(frame - (lineStart(lines, m.at) - 4), [0, 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+              const p = interpolate(frame - (lineStart(lines, m.at) - LEAD.appear), [0, 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
               if (!on) return null;
               const tt = tone(m.tone ?? 'violet');
               return (
@@ -124,7 +125,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
         ? s.marks.map((m, i) => {
             if (!m.note || (i !== activeMark && i !== activeMark - 1)) return null;
             // ひとつ前の注釈は、次の注釈が出るときに消す
-            const out = i === activeMark - 1 ? lineStart(lines, s.marks[activeMark].at) - 4 : null;
+            const out = i === activeMark - 1 ? lineStart(lines, s.marks[activeMark].at) - LEAD.appear : null;
             return <Note key={i} m={m} y={notePos[i].y} center={notePos[i].center} left={PAD + edW} out={out} h={noteH} />;
           })
         : null}
@@ -140,11 +141,11 @@ const Note: React.FC<{ m: CodeScene['marks'][number]; y: number; center: number;
   const tt = tone(m.tone ?? 'violet');
   return (
     <>
-      <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0, opacity: o }}>
+      <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, opacity: o }}>
         <path d={`M ${left + 4} ${center} C ${left + 30} ${center}, ${left + 24} ${y + h / 2}, ${left + 52} ${y + h / 2}`} fill="none" stroke={tt.main} strokeWidth={3} />
         <circle cx={left + 4} cy={center} r={6} fill={tt.main} />
       </svg>
-      <div style={{ position: 'absolute', left: left + 52, width: 1824 - left - 52, top: y, height: h, opacity: o, transform: `translateX(${(1 - p) * -18}px)` }}>
+      <div style={{ position: 'absolute', left: left + 52, width: W - PAD - left - 52, top: y, height: h, opacity: o, transform: `translateX(${(1 - p) * -18}px)` }}>
         <Glass t={m.tone} active={1} style={{ height: '100%', boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center' }}>
           <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: C.ink, lineHeight: 1.38 }}>
             <Smart text={m.note!} t={m.tone} />

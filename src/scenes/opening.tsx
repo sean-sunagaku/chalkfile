@@ -7,10 +7,11 @@ import { fitSize } from '../components/fit';
 import { Pill, Smart } from '../components/ui';
 import { alpha, C, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME } from '../theme';
 import { dropY, useScene } from '../timing';
+import { frames, STING } from '../video.config';
 import { defineScene } from './define';
 
-/** ジングルの「ドン」が鳴るフレーム（sting_intro の 2.0 秒。synth.ts の OPENING_LEAD_IN と合わせる） */
-export const HIT_FRAME = 60;
+/** ジングルの「ドン」が鳴るフレーム（src/video.config.ts の STING.introHitSec。今は 2.0 秒 = 60 フレーム） */
+const HIT_FRAME = frames(STING.introHitSec);
 
 const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
   const frame = useCurrentFrame();

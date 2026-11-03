@@ -2,7 +2,7 @@
 import React from 'react';
 import type { CompareScene, CompareSide } from '../../content/types';
 import { Glass, Icon, IconBadge, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, GRAD, PAD, SANS, tone } from '../theme';
+import { C, CONTENT_BOTTOM, CONTENT_TOP, GRAD, H, PAD, SANS, tone } from '../theme';
 import { dropY, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -49,7 +49,7 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
   const v = useAppear(s.verdict?.at ?? 99);
   const vt = tone(s.verdict?.tone ?? 'violet');
   return (
-    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: 1080 - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', gap: 30, justifyContent: 'center' }}>
+    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: H - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', gap: 30, justifyContent: 'center' }}>
       <div style={{ display: 'flex', gap: 40, alignItems: 'stretch', minHeight: s.verdict ? 470 : 600 }}>
         <SideCard side={s.left} dir={-1} />
         <SideCard side={s.right} dir={1} />

@@ -5,6 +5,7 @@ import type { QuizScene } from '../../content/types';
 import { Glass, Pill, Smart } from '../components/ui';
 import { C, CONTENT_TOP, DISPLAY, MONO, PAD, SANS, TONES } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';
+import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
@@ -16,7 +17,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
   const quizTotal = lecture.scenes.filter((x) => x.kind === 'quiz').length;
   const q = useAppear(0);
   const thinkStart = lineEnd(lines, 0) + 3;
-  const revealF = lineStart(lines, s.revealAt) - 2;
+  const revealF = lineStart(lines, s.revealAt) - LEAD.draw;
   const think = interpolate(frame, [thinkStart, revealF], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const thinkO = interpolate(frame, [thinkStart - 4, thinkStart + 4, revealF - 2, revealF + 4], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const stamp = spring({ frame: frame - revealF, fps, config: { damping: 11, mass: 0.6 }, durationInFrames: 30 });

@@ -2,7 +2,7 @@
 import React from 'react';
 import type { TableScene } from '../../content/types';
 import { Glass, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, MONO, PAD, SANS, TONES, tone } from '../theme';
+import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES, tone } from '../theme';
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -56,7 +56,7 @@ const Table: React.FC<{ s: TableScene }> = ({ s }) => {
   const avail = CONTENT_BOTTOM - CONTENT_TOP - 90;
   const rowH = Math.min(118, Math.max(64, Math.floor(avail / s.rows.length)));
   return (
-    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: 1080 - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: H - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <Glass style={{ overflow: 'hidden', opacity: head }}>
         <div style={{ display: 'flex', background: TONES.violet.soft }}>
           {s.columns.map((c, i) => (
