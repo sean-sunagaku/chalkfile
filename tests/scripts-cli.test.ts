@@ -145,6 +145,9 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
     ['export_deliverables.ts', [process.execPath, 'scripts/export_deliverables.ts']],
     ['check_overlap.ts', [process.execPath, 'scripts/check_overlap.ts']],
     ['stills.ts', [...NODE, 'scripts/stills.ts']],
+    ['stills.ts（形の違う動画の名前）', [...NODE, 'scripts/stills.ts', 'L01@abc']],
+    ['stills.ts（無い場面）', [...NODE, 'scripts/stills.ts', 'L01:99']],
+    ['stills.ts（形の違うテーマ）', [...NODE, 'scripts/stills.ts', 'L01', '--theme=../x']],
     ['render.sh', ['bash', 'scripts/render.sh', '--nope']],
     ['worktree.ts', [process.execPath, 'scripts/worktree.ts', 'bad-name']],
     ['clean.ts', [process.execPath, 'scripts/clean.ts', '--nope']],
@@ -156,6 +159,16 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
       // 何がおかしいかを 1 行以上で出す（使い方の誤りの文）
       expect(r.stderr.trim()).not.toBe('');
     }, 60_000);
+  test('stills.ts は、timeline の無い動画を、バンドルを作る前に「前提が足りない」（3）で止める', () => {
+    const r = runChild([...NODE, 'scripts/stills.ts', 'ZZ99']);
+    expect({ code: r.code, changed: r.changed, cache: r.cache, tmp: r.tmp }).toEqual({
+      code: 3,
+      changed: [],
+      cache: [],
+      tmp: [],
+    });
+    expect(r.stderr).toContain('ZZ99 の timeline が無い');
+  }, 60_000);
   // Python の道具は、依存（numpy など）を読む前に引数を確かめる（依存の無い python3 でも 2 で止まる）
   const pyUnknown: [string, string[]][] = [
     ['mix.py', ['scripts/mix.py', '--nope']],

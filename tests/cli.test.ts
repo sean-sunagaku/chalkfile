@@ -104,6 +104,13 @@ describe('流すコマンド（--dry-run は出すだけ）', () => {
     expect(all.stdout).toContain('CONCURRENCY=4 CAPTIONS=1 bash scripts/render.sh N01');
     expect(chalk('render', '--jobs', 'x', '--dry-run').code).toBe(2);
   });
+  test('stills は、場面とフレームを付けた名前の動画と、--theme のテーマが台本にあるかを確かめてから渡す', () => {
+    expect(chalk('stills', 'ZZ99:3', '--dry-run').code).toBe(2);
+    expect(chalk('stills', 'G01:2', '--theme', 'nope', '--dry-run').code).toBe(2);
+    expect(chalk('stills', 'G01:2', 'G01@90', '--theme', 'paper', '--dry-run').stdout).toContain(
+      'node scripts/stills.ts G01:2 G01@90 --theme paper',
+    );
+  });
   test('道具に --dry-run があるもの（materials push）は、道具に渡す', () => {
     const push = COMMANDS.find((c) => c.name === 'materials push');
     expect(push?.dry).toBe('pass');
