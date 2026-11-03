@@ -252,6 +252,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   /* ───────────── 画像・PWA・ヘッダー ───────────── */
   // 一覧のページの画像と、講座のサムネイル（日本語の講座の最初の動画のポスター）は、SW の起動用ファイルにする
   shell.push(...copyAssets(assetsDir, path.join(dist, 'assets'), dist));
+  shell.push(...copyAssets(path.join(ROOT, 'engine/fonts'), path.join(dist, 'fonts'), dist));
   shell.push(
     ...thumbnailAssets(
       dist,
@@ -309,7 +310,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   );
 
   if (missing.length) {
-    const msg = `まだ動画かポスターが無い: ${missing.join(' ')}（bash scripts/render.sh で作る）`;
+    const msg = `まだ動画かポスターが無い: ${missing.join(' ')}（bash scripts/scripts/stages/video/render.ts で作る）`;
     if (o.strict) throw new Error(msg);
     warn(msg);
   }

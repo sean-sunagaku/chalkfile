@@ -21,8 +21,8 @@ export const cspPolicy = (hashes: readonly string[]) =>
   [
     "default-src 'self'",
     `script-src ${hashes.length ? hashes.join(' ') : "'none'"}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    'font-src https://fonts.gstatic.com',
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data:",
     "media-src 'self' blob:",
     "connect-src 'self'",

@@ -4,7 +4,7 @@
 //   bun scripts/build_site.ts --strict         # 動画の一覧を Releases と照らし合わせ、動画かポスターが無いレクチャーがあれば止める（公開の CI が使う）
 //   SITE_LANGS=ja bun scripts/build_site.ts    # その言語だけのサイトにする（site/config.json の publishLangs の中から選ぶ）
 // 入力: content/（台本・訳・テーマ・一覧のページに出す台本の抜き出し heroSnippet）、site/data/<key>.json（synth.ts の出力）、
-//       content/<講座>/generated/posters/<key>.jpg（render.sh が書くポスター。無ければ site/media/<key>.jpg）、
+//       content/<講座>/generated/posters/<key>.jpg（scripts/stages/video/render.ts が書くポスター。無ければ site/media/<key>.jpg）、
 //       動画の一覧（講座ごとの content/<講座>/generated/media.<言語>.json。scripts/media.ts の readMediaManifest）、
 //       site/template.html（講座のページ）、site/home.html（一覧のページ）、site/i18n/（サイトの決まった文字。言語ごとのファイル）、site/assets/、site/config.json
 // 出力: site/dist/index.html と site/dist/<講座>/（日本語）、site/dist/<言語>/ と site/dist/<言語>/<講座>/（訳）。動画は入れない（Worker が /media/ で配る）

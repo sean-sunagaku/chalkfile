@@ -22,7 +22,6 @@
 | 送り先 | いつ | 届くもの |
 |---|---|---|
 | Cloudflare（chalkfile.com の配信） | ページと動画を開くたび | ふつうの Web の要求と同じもの（接続元の IP アドレス・ブラウザの情報・開いた URL など）。Cloudflare が配信と攻撃の防御に使う（[Cloudflare のプライバシーポリシー](https://www.cloudflare.com/privacypolicy/)） |
-| Google Fonts（`fonts.googleapis.com`・`fonts.gstatic.com`） | ページを開いて、書体を取るとき | 接続元の IP アドレスとブラウザの情報。リファラーは、サイトの名前（`https://chalkfile.com/`）まで（[Google のプライバシーポリシー](https://policies.google.com/privacy)） |
 | 公式ドキュメントなど、外のサイト | 自分でリンクを開いたときだけ | その先のサイトへの、ふつうの要求。リンクは `noreferrer` なので、講座のページの URL は渡さない |
 
 - 動画は、サイトの Worker が GitHub の Releases から取って中継する。ブラウザは GitHub につながない。Worker が GitHub に渡す要求のヘッダーは、動画の範囲を指す `Range` と `If-Range` だけ（`worker/src/media.ts`）

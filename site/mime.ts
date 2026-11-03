@@ -20,6 +20,7 @@ export const MIME: Readonly<Record<string, string>> = {
   '.vtt': 'text/vtt',
   '.xml': 'application/xml',
   '.txt': 'text/plain',
+  '.woff2': 'font/woff2',
 };
 
 /** ファイルの名前か URL のパスの拡張子（小文字。. から）。無ければ '' */

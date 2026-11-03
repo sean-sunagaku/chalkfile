@@ -33,7 +33,7 @@ const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = (
 
 /* ───────────── 焼き込みの字幕 ─────────────
  * captions=true のとき、場面を縮めて下に字幕の帯を空け、台詞（t）をそのまま出す。
- * 講座サイトは動画の下に自前の字幕を出すので、サイト用の動画は字幕なしで書き出す（render.sh の CAPTIONS=1 で両方作る）。
+ * 講座サイトは動画の下に自前の字幕を出すので、サイト用の動画は字幕なしで書き出す（scripts/stages/video/render.ts の CAPTIONS=1 で両方作る）。
  * 縮める割合・字幕を残す時間・文字の大きさは src/video.config.ts の CAPTION
  */
 const CAPTION_SCALE = CAPTION.scale;

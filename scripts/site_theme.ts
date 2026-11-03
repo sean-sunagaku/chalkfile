@@ -2,22 +2,23 @@
 // 動画と同じパレット（engine/core/theme.ts の derivePalette）と色の計算（engine/core/color.ts）から作るので、動画とサイトのトンマナがそろう。
 // 図の文字色（--pink など）は、パレットの site.toneText（動画の文字色と、混ぜる割合が違う。そろえるのは、動画とサイトの見た目をまとめて更新する回）
 import type { Lang } from '../content/i18n';
-import type { FontKey, Theme } from '../content/types';
+import type { Theme } from '../content/types';
 import { alpha, mix } from '../engine/core/color';
 import { derivePalette } from '../engine/core/theme';
+import { FONTS } from '../engine/core/fonts';
 import { readableOn } from './site/contrast';
 
-const FONT: Record<FontKey, { family: string; query: string }> = {
-  'zen-maru': { family: '"Zen Maru Gothic"', query: 'Zen+Maru+Gothic:wght@500;700;900' },
-  inter: { family: '"Inter"', query: 'Inter:wght@400;500;600;700;800' },
-  noto: { family: '"Noto Sans JP"', query: 'Noto+Sans+JP:wght@400;500;700;900' },
-  'noto-sc': { family: '"Noto Sans SC"', query: 'Noto+Sans+SC:wght@400;500;700;900' },
+/** 動画と同じファイルを、太さごとに登録する。保存版でも同じ URL を SW が返す。 */
+export const fontLink = (t: Theme, lang: Lang = 'ja') => {
+  const ids = [...derivePalette(t, lang).fonts, 'mono'] as const;
+  const faces = ids.flatMap((id) => {
+    const font = FONTS[id];
+    return font.files.flatMap((file) => file.weights.map((weight) =>
+      `@font-face{font-family:"${font.family}";font-style:normal;font-weight:${weight};font-display:swap;src:url("/fonts/${file.file}") format("woff2");}`,
+    ));
+  });
+  return `<style>${faces.join('')}</style>`;
 };
-
-export const fontLink = (t: Theme, lang: Lang = 'ja') =>
-  `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${[...derivePalette(t, lang).fonts.map((f) => FONT[f].query), 'JetBrains+Mono:wght@500;700']
-    .map((q) => `family=${q}`)
-    .join('&')}&display=swap">`;
 
 /** 書体が読めないときの、端末の書体（中国語は簡体字の書体、ほかは日本語の書体） */
 const SYSTEM: Record<Lang, string[]> = {
@@ -25,7 +26,7 @@ const SYSTEM: Record<Lang, string[]> = {
   en: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"'],
   zh: ['"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"'],
 };
-const fontBody = (t: Theme, lang: Lang) => [...derivePalette(t, lang).fonts.map((f) => FONT[f].family), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
+const fontBody = (t: Theme, lang: Lang) => [...derivePalette(t, lang).fonts.map((f) => `"${FONTS[f].family}"`), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
 
 /** 背景の飾り（動画の decor と同じ考え方） */
 const decorCss = (t: Theme) => {

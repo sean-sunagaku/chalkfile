@@ -24,9 +24,9 @@ export const SITE_NEWS: readonly SiteNews[] = [
     date: '2026-11-04',
     history: 'docs/history/2026-11-04-course-page.md',
     text: {
-      ja: '講座のページの画面を作り直し、キーボードと読み上げで使いやすく、開くときの通信を少なくしました。動画は変わりません。',
-      en: 'The course page was rebuilt to work better with a keyboard and screen readers, and to use less data when you open it. The videos are unchanged.',
-      zh: '重新制作了课程页面，更方便用键盘和读屏软件使用，打开时的流量也更少了。视频没有变化。',
+      ja: '講座のページの画面を作り直し、キーボードと読み上げで使いやすく、開くときの通信を少なくしました。全講座の動画も読みやすい書体と配色で作り直しました。保存した講座を更新すると、動画をすべてダウンロードし直します。',
+      en: 'The course page was rebuilt to work better with a keyboard and screen readers, and to use less data when you open it. All course videos have also been rebuilt with more readable fonts and colors. Updating a saved course downloads all its videos again.',
+      zh: '重新制作了课程页面，更方便用键盘和读屏软件使用，打开时的流量也更少了。所有课程视频也已采用更易读的字体和配色重新制作。更新已保存的课程时，会重新下载该课程的全部视频。',
     },
   },
 ];
