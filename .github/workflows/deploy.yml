@@ -1,8 +1,10 @@
+# 前の形の公開（組み立てから公開までを 1 つのジョブで流す）。main への push での公開は ci.yml の deploy のジョブに移した。
+# 移したあとも 1 週間は、ci.yml の公開が止まったときに手で出せるよう、手で流すとき（workflow_dispatch・main を選ぶ）だけ残す。
+# 2026-11-10 に消す（ci.yml の deploy が main で緑に通ったのを確かめてから。消すときは docs/operations/recovery.md の
+# 「前の形の公開で出す」も消す）。ci.yml の公開と同じ concurrency の group で、同じ時に 2 つは流れない
 name: deploy
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -32,6 +34,8 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .bun-version
+          # secret を持つジョブなので、ほかの実行が書いたキャッシュ（bun の実行ファイル）を戻さない
+          no-cache: true
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test

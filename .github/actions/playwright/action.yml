@@ -1,0 +1,27 @@
+# Playwright の Chromium を入れる（先に setup で依存を入れておく）。ブラウザ（~/.cache/ms-playwright）は、Playwright の版を鍵にキャッシュする。
+# OS の部品（apt で入れるもの）はキャッシュできないので、毎回 playwright install-deps で入れる。secret を持つジョブでは使わない
+name: playwright
+description: Playwright の Chromium（キャッシュあり）と、OS の部品を入れる
+runs:
+  using: composite
+  steps:
+    - name: Playwright の版
+      id: version
+      shell: bash
+      run: |
+        version=$(node -p "require('@playwright/test/package.json').version")
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    - name: ブラウザのキャッシュ
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
+    - name: Chromium と OS の部品を入れる
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx --no-install playwright install --with-deps chromium
+    - name: OS の部品を入れる（ブラウザはキャッシュから戻した）
+      if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx --no-install playwright install-deps chromium
