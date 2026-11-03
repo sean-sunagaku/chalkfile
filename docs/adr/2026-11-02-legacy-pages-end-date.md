@@ -27,6 +27,14 @@
 - `gh-pages` ブランチは触らない。静的なページなので、費用 0 のまま動き続ける
 - 期限の前に、旧サイトに終わる日を出すかを、持ち主が決める
 
+## 凍結（2026-11-03 から）
+
+期限を持ち主が決める前でも、凍結は先に始めた（変えないことには、決めることが無いため）。
+
+- `site/legacy-sw.ts` と `scripts/build_migration.ts` は変えない。ファイルの SHA-256 を `tests/legacy-freeze.test.ts` が見る。Biome の全体の整形からも外す（`biome.jsonc`）
+- 移行のテスト（`tests/browser/migration.spec.ts`）は、公開済みの移行の案内（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 を、そのまま写したもの）を配る。テストのサーバーは、今のソースから作り直さない。fixture が公開物と同じかも、`tests/legacy-freeze.test.ts` が見る
+- 凍結を解くとき（期限の前に、移行の不具合を直すなど）は、先にこの ADR を直し、そのあとでテストの値を直す
+
 ## 理由
 
 - 旧サイトの利用の数を測っていない。数ではなく、日付で決める

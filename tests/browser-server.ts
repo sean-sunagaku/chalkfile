@@ -8,10 +8,9 @@ import type { CourseManifest } from '../site/offline-shared';
 import { mediaPath } from '../site/media-shared';
 import { mimeTypeOf } from '../site/mime';
 import { localMediaPath, readMediaManifest } from '../scripts/media';
-import { buildMigration } from '../scripts/build_migration';
 
-// 移行SWの古い生成物で結果が変わらないよう、テスト起動時に必ず現在のソースから作る。
-await buildMigration();
+// 旧 Pages の移行の案内は、公開済みのもの（tests/fixtures/legacy-migration。gh-pages の 9dd4e82 をそのまま写したもの）を配る。
+// 移行のコードは凍結しているので、今のソースから作り直さない（docs/adr/2026-11-02-legacy-pages-end-date.md）
 const root = path.resolve(import.meta.dir, '../site/dist');
 const mediaEntries = new Map(readMediaManifest().entries.map((e) => [mediaPath(e), e]));
 // mediaDown: 訳の動画のサイトがまだ無い（公開の前・Pages の反映待ち）ときを作る
@@ -44,7 +43,7 @@ function variant() {
 }
 
 function legacyResponse(req: Request, relative: string): Response {
-  const folder = path.resolve(import.meta.dir, control.legacyPhase === 'old' ? 'fixtures/legacy-pages' : '../site/migration-dist');
+  const folder = path.resolve(import.meta.dir, control.legacyPhase === 'old' ? 'fixtures/legacy-pages' : 'fixtures/legacy-migration');
   let file = path.resolve(folder, relative || 'index.html');
   if (!file.startsWith(folder + path.sep) && file !== folder) return new Response(null, { status: 403 });
   const oldVideo = /^pstack-comedy\/media\/(P01(?:\.cc)?)\.mp4$/.exec(relative);

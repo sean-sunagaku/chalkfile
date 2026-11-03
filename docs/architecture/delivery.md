@@ -33,7 +33,7 @@
 - 公開の組み立ては、声も動画も作らない。素材ブランチの声と、Releases の動画と、main のポスター・動画の一覧から作る。足りなければ止まる（声の合成も書き出しも始めない）
 - ポスター（JPG）は小さな静的な入力として、講座のフォルダの `content/<講座>/generated/posters/` に入れる。MP4 を取らなくても、CI でサイトを作れる。新しい講座で全部のレクチャーのポスターがそろっていないと、strict の組み立てが公開の前に止まる。CI で動画を取ってきてポスターを補う形にはしない
 - 素材ブランチの FLAC を WAV に戻すため、CI は Ubuntu の標準のリポジトリから ffmpeg を入れる。字幕（VTT）と講義のデータは、キャッシュした声から作る。`synth --cached-only` は、足りないときに VOICEVOX や Kokoro へつながない
-- ブラウザのテストのサーバーは、起動のたびに今のソースから移行の案内と Service Worker を組み立てる。前の `site/migration-dist` が残っていても、移行のテストに古い生成物を使わない。本物の `gh-pages` への反映は、このテストの生成とは別の `scripts/legacy/deploy_pages.sh` だけが行う
+- ブラウザのテストのサーバーは、移行の案内に、公開済みのもの（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 をそのまま写したもの）を配る。今のソースから作り直さないので、`site/offline-shared.ts` を直しても、移行のテストは変わらない（移行のコードは凍結している。[ADR](../adr/2026-11-02-legacy-pages-end-date.md)）。本物の `gh-pages` への反映は `scripts/legacy/deploy_pages.sh` だけが行う
 
 ## Worker のログ
 

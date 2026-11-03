@@ -15,13 +15,18 @@ test('公開していた旧SWから移行し、保存・記録・Rangeを残し�
   await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
   const before = await page.evaluate(() => caches.keys());
   expect(before.some((n) => n.startsWith('chalkfile:/chalkfile/:offline-v1:course:pstack-comedy:'))).toBeTruthy();
+  // 旧 SW が仕事をしている間（動画の応答を流している・STATUS に答えている）は、新しい SW が activate を待つ。
+  // 移行の SW に替える前に、ページの動画の読み込みを止め、替わり終わるまでは旧 SW に話しかけない（このあとはページを開き直してから再生する）
+  await page.locator('video').evaluate((v: HTMLVideoElement) => { v.removeAttribute('src'); v.load(); });
   await request.post('/__test/control', { data: { legacyPhase: 'migrated' } });
-  await expect.poll(async () => { await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
-    return page.evaluate(() => new Promise<boolean>((resolve) => {
+  const switched = page.evaluate(() => new Promise<void>((resolve) => navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })));
+  await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
+  await switched;
+  await expect.poll(() => page.evaluate(() => new Promise<boolean>((resolve) => {
     const c = new MessageChannel(); c.port1.onmessage = (e) => { c.port1.close(); resolve(e.data.migrated === true); };
     navigator.serviceWorker.controller!.postMessage({ protocol: 1, type: 'STATUS' }, [c.port2]);
     setTimeout(() => resolve(false), 1000);
-  })); }).toBeTruthy();
+  }))).toBeTruthy();
   await context.setOffline(true); await page.reload();
   await expect(page.locator('#chalkfileMoved')).toContainText('新しい場所で保存し直してください');
   const video = page.locator('video');
