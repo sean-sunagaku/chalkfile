@@ -41,18 +41,20 @@ curl -s http://127.0.0.1:50021/version
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bash scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内のときだけ。講座サイトの公開には使わない） | `site/dist/`（`site/config.json` の `publishLangs` に訳の言語があるときは `site/dist-media/<言語>/` も） | 講座サイトの gh-pages（最新の main からだけ。いまは日本語だけ。訳の公開先は chalkfile.com の Worker に移る（[i18n.md](i18n.md)）） |
 | `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は gh-pages も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
-| `bun scripts/materials.ts push` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（親の無い 1 コミットで置き換える） |
+| `bun scripts/materials.ts push [--dry-run]` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（リモートの素材に足すだけ。前の版を親にしたコミット） |
+| `bun scripts/materials.ts gc [--keep ref] [--confirm]` | `materials` ブランチ、`--keep` の ref（既定 origin/main）の台本 | 台本が使わない台詞の音声の一覧（`--confirm` のときだけ消して push） |
 
 ## 素材（`materials` ブランチ）
 
 VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作り直しに VOICEVOX が要るので、素材だけを置くブランチ `materials` に置く。main の履歴には入れない（動画を gh-pages に置くのと同じ考え方）。
 
-- 中身: `tts/<講座 ID>/<key>.flac`・`.kana`（台本の全部の台詞。`key` は `scripts/voices.ts` の `ttsKey`）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻した後の中身）、`README.md`
+- 中身: `tts/<講座 ID>/<key>.flac`・`.kana`（台本の全部の台詞。`key` は `scripts/voices.ts` の `ttsKey`）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻した後の中身と読み）、`README.md`
 - 取り出す: `bun scripts/materials.ts pull` → `bun scripts/synth.ts` は VOICEVOX につながずに時刻を決める（声のキャッシュが全部当たる）。足りない台詞があると、VOICEVOX に届かないことと `pull` を案内して止まる
-- 確かめる: `bun scripts/materials.ts check`（台本の全部の台詞の声が `.work/tts/` にあるか）
-- 置き換える: 台詞を直したら、台本をコミット → synth（kana を見る）→ `bun scripts/materials.ts push`。コミットしていない台本の変更があると止まる。公開（main へのマージ）の前に置き換えて、公開中の動画と素材をそろえる
+- 確かめる: `bun scripts/materials.ts check`（台本の全部の台詞の声が `.work/tts/` に、決まった名前の BGM・効果音が `public/audio/` にあるか）
+- 足す: 台詞を直したら、台本をコミット → synth（kana を見る）→ `bun scripts/materials.ts push`。push は足すだけ（リモートの素材に手元の素材を足すか上書きし、手元の台本に無い講座の素材は残す。`--dry-run` で本数を見る）。コミットしていない台本の変更があるときと、HEAD が origin/main を含まないときは止まる。マージで走る公開が素材を取り出すので、PR をマージする前に push する
+- 消す: `bun scripts/materials.ts gc` だけ。origin/main（`--keep` で変えられる）の台本が使わない台詞の音声を一覧にし、`--confirm` を付けたときだけ消す（持ち主が流す）
 - FLAC は可逆なので、WAV に戻すと VOICEVOX の出力と同じバイトになる（`pull` が `SHA256SUMS` で確かめる）。音声は WAV のままの 3 分の 1 ほど
-- 前の版は残さない（push のたびに置き換える）。前の素材が要るときは、そのときの台本のコミットから VOICEVOX で作り直す
+- push は前の版を親にする（送るのは新しい素材だけで、前の版に戻せる）。gc は親の無い 1 コミットにして、それまでの履歴を切る。消した素材が要るときは、そのときの台本のコミットから VOICEVOX で作り直す
 
 ## 確かめ方
 

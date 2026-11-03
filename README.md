@@ -163,7 +163,8 @@ npm run build:materials && npm run build:site   # 読む教材と講座サイト
 - `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめます。1 つの講座だけなら `bun scripts/materials.ts pull nudge-product`
 - 動画を書き出さずに講座サイトだけ組むとき: `bun scripts/materials.ts pull --videos`（Releases の動画も SHA-256 を確かめて `site/media/` に取り出す。ポスターは `site/posters/`）→ `bun scripts/synth.ts` → `bun scripts/build_site.ts`
 - 手元の音声が台本に足りているか: `bun scripts/materials.ts check`（足りない台詞は、VOICEVOX を動かして `synth.ts` が作る）
-- 素材を新しくする（台詞を直した後）: 台本をコミットして synth まで流し、`bun scripts/materials.ts push`。`materials` ブランチを親の無い 1 コミットで置き換えます（前の版は残しません）
+- 素材を足す（台詞を直した後）: 台本をコミットして synth まで流し、`bun scripts/materials.ts push`（`--dry-run` で、足す・変える・同じ・残すの本数だけを見る）。**push は足すだけ**で、手元の台本に無い講座の素材は消しません。HEAD が origin/main を含まないと止まります。マージで走る公開が素材を取り出すので、PR をマージする前に push します
+- **消すのは gc だけ**: `bun scripts/materials.ts gc` は、origin/main（`--keep` で変えられる）の台本が使わない台詞の音声を一覧にするだけです。消すのは `--confirm` を付けたときだけで、持ち主が流します。push のコミットは前の版を親にし（送るのは新しい素材だけ）、gc は親の無い 1 コミットにして、それまでの履歴を切ります
 - 素材と動画のブランチを持ってこないで clone するとき: `git clone --single-branch https://github.com/sean-sunagaku/chalkfile.git`
 
 ## サイト変更の検証
