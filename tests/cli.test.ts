@@ -111,6 +111,15 @@ describe('流すコマンド（--dry-run は出すだけ）', () => {
       'node scripts/stills.ts G01:2 G01@90 --theme paper',
     );
   });
+  test('mix は、選んだ動画を mix.py に渡す（npm run mix も同じ入口。選ばなければ公開する言語の全部）', () => {
+    expect(chalk('mix', '--course', 'ga4-comedy', '--dry-run').stdout).toContain(
+      'uv run --locked --group audio python scripts/mix.py G01 G02 G03',
+    );
+    const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    expect(pkg.scripts.mix).toBe('bun scripts/cli.ts mix');
+  });
   test('道具に --dry-run があるもの（materials push）は、道具に渡す', () => {
     const push = COMMANDS.find((c) => c.name === 'materials push');
     expect(push?.dry).toBe('pass');
