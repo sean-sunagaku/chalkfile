@@ -90,7 +90,7 @@ npm run media:check
 | `content/<講座>/generated/timeline/<key>.json` | synth |
 | `content/<講座>/generated/posters/<key>.jpg` | render |
 | `content/<講座>/generated/media.<言語>.json`（その講座の動画の一覧） | `media push --course <講座 ID>` |
-| `docs/courses/`（読む教材・AI チャット用のチャンク） | `npm run build:materials` |
+| `docs/courses/`（読む教材・AI チャット用のチャンク） | `npm run build:materials`（台本と timeline から作る。ずれは `npm run check` の `check:materials` と CI が止める） |
 | `tests/fixtures/snapshots/`（音声の鍵と読み） | `bun scripts/snapshots.ts --update`。台詞・読み・声を変えたときと、動画を足したとき。PR に「合成し直しが要る」と書く |
 
 ```bash

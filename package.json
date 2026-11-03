@@ -9,7 +9,7 @@
     "npm": ">=11"
   },
   "scripts": {
-    "check": "npm run lint && npm run typecheck && npm test && npm run validate && npm run check:content && npm run check:docs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run validate && npm run check:content && npm run check:docs && npm run check:materials",
     "lint": "biome ci --formatter-enabled=false --assist-enabled=false",
     "lint:py": "uvx ruff@0.17.3 check scripts",
     "lint:sh": "shellcheck --exclude=SC2086 scripts/render.sh && git ls-files -z '*.sh' ':!scripts/render.sh' | xargs -0 shellcheck",
@@ -24,6 +24,7 @@
     "test:browser": "playwright test",
     "check:content": "bun scripts/check_content.ts --self-test && bun scripts/check_content.ts",
     "check:docs": "bun scripts/check_docs.ts",
+    "check:materials": "bun scripts/build_materials.ts --check",
     "validate": "bun scripts/validate.ts",
     "gen": "bun scripts/gen.ts",
     "gen:video-config": "bun scripts/gen_video_config.ts",

@@ -2,8 +2,7 @@
 // 形と指紋は engine/core/timeline.ts、置き場所は engine/core/generated.ts。Remotion は src/timelines.ts が同じものを集める
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { timelineFile } from '../engine/core/generated';
-import { entriesByKey, timelineEntry, type TimelineEntry, type TimelineFile } from '../engine/core/timeline';
+import { entriesByKey, timelineEntry, type TimelineEntry } from '../engine/core/timeline';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -39,12 +38,3 @@ export const readTimelineEntries = (root = ROOT): TimelineEntry[] =>
 /** 動画の名前 → 置いてあるファイル */
 export const readTimelinesByKey = (root = ROOT): Map<string, TimelineEntry[]> =>
   entriesByKey(readTimelineEntries(root));
-
-/** 動画 1 本の timeline（講座のフォルダから読む）。無い・読めないときは投げる */
-export const readTimeline = (courseId: string, key: string, root = ROOT): TimelineFile => {
-  const file = timelineFile(courseId, key);
-  if (!existsSync(path.join(root, file))) throw new Error(`${file} が無い（先に npm run synth -- ${key}）`);
-  const e = timelineEntry(file, JSON.parse(readFileSync(path.join(root, file), 'utf8')));
-  if (!e.timeline) throw new Error(e.error);
-  return e.timeline;
-};

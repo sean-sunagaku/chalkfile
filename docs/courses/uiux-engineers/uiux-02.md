@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 第 2 章　ユーザーの目的と情報設計
 
 - 講座: エンジニアのための UI・UX デザイン（uiux-engineers）

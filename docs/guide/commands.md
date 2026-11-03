@@ -22,7 +22,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `npm run check` | lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検を順に流す（CI と同じ。動画なしで流せる） |
+| `npm run check` | lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検・教材のずれを順に流す（CI と同じ。動画なしで流せる） |
 | `npm run lint` | Biome の lint（TS・TSX・JSON） |
 | `npm run lint:py` | ruff の lint（`scripts/*.py`。uv が要る） |
 | `npm run lint:sh` | shellcheck（`*.sh`。shellcheck が要る） |
@@ -32,6 +32,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run test:e2e`（`test:browser` も同じ） | Playwright のブラウザのテスト（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
 | `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声など）。注意も見るなら `-- --warnings` |
 | `npm run check:content` | 台本と Git に入れるファイルの点検（点検の点検も）。点検する中身は [safety.md](../../.claude/skills/study-video-course/references/safety.md) |
+| `npm run check:materials` | 読む教材（`docs/courses/`）が、Git に入れている台本と timeline から作り直したものと同じか（書かない。synth は要らない） |
 | `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い・生成した表（README の講座の表・頭文字の表）のずれ |
 
 ### 整える
@@ -52,7 +53,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
-| `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`） |
+| `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`）。時刻は Git に入れている timeline から読む。消した章の古いファイルも消す |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
 | `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 

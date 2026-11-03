@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 講座の教材
 
 Chalkfile で作った講座の、読む教材・設計・AI チャット用のチャンクです。`bun scripts/build_materials.ts` で台本（`content/`）から作り直します。

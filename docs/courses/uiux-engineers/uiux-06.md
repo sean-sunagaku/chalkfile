@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 第 6 章　フォームとエラー表示
 
 - 講座: エンジニアのための UI・UX デザイン（uiux-engineers）
