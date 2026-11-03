@@ -559,7 +559,9 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
         const files = todo.map((rel) => path.join(tmpDir(), 'flac', rel.replace(/\.wav$/, '.flac')));
         await convert(todo.map((rel, i): [string, string] => [path.join(repo.root, rel), files[i]]), 'flac');
         const blobs = hashFiles(repo.root, files, true);
-        todo.forEach((rel, i) => flacs.set(rel, { blob: blobs[i], size: statSync(files[i]).size }));
+        todo.forEach((rel, i) => {
+          flacs.set(rel, { blob: blobs[i], size: statSync(files[i]).size });
+        });
       }
       for (const c of plan.changes.values()) if (!c.blob) Object.assign(c, flacs.get(c.rel));
       // 読みをオブジェクトとして書く（ID は、前に書かずに求めたものと同じになる）

@@ -10,7 +10,8 @@ import { AUDIO, check, gc, keepAt, pull, push, type Convert, type CourseKeys, ty
 const sandbox = mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-test-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
 
-const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const git = (cwd: string, ...args: string[]) =>
+  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const sha256 = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
 
 /** ffmpeg の代わりに、中身をそのまま写す（FLAC にしても WAV に戻しても同じバイトになる、という性質だけを借りる） */
@@ -72,7 +73,12 @@ const audio = (repo: Repo, make: (name: string) => string | Buffer = (name) => `
     for (const name of a.names) writeFileSync(path.join(repo.root, a.local, `${name}.wav`), make(name));
   }
 };
-const course = (id: string, keys: string[]): CourseKeys => ({ id, langs: ['ja'], keys, about: `講座 ${id}（1 章・ja）` });
+const course = (id: string, keys: string[]): CourseKeys => ({
+  id,
+  langs: ['ja'],
+  keys,
+  about: `講座 ${id}（1 章・ja）`,
+});
 
 test('2 つの worktree が別々の講座を順に push しても、両方の講座の素材が残る', async () => {
   const remote = makeRemote();
@@ -90,13 +96,27 @@ test('2 つの worktree が別々の講座を順に push しても、両方の�
   expect(out.text()).toContain('beta: 足す 1');
 
   const m = branchOf(remote);
-  const files = ['tts/alpha/a1.flac', 'tts/alpha/a1.kana', 'tts/alpha/a2.flac', 'tts/alpha/a2.kana', 'tts/beta/b1.flac', 'tts/beta/b1.kana'];
-  expect(m.files()).toEqual(expect.arrayContaining([...files, 'audio/music/bed.flac', 'audio/sfx/zuko.flac', 'README.md', 'SHA256SUMS']));
+  const files = [
+    'tts/alpha/a1.flac',
+    'tts/alpha/a1.kana',
+    'tts/alpha/a2.flac',
+    'tts/alpha/a2.kana',
+    'tts/beta/b1.flac',
+    'tts/beta/b1.kana',
+  ];
+  expect(m.files()).toEqual(
+    expect.arrayContaining([...files, 'audio/music/bed.flac', 'audio/sfx/zuko.flac', 'README.md', 'SHA256SUMS']),
+  );
   // 後の push は前の版を親にする（送るのは新しい素材だけ。前の版にも戻せる）
   expect(git(sandbox, `--git-dir=${remote}`, 'rev-parse', 'materials^')).toBe(first.sha!);
   // SHA256SUMS は両方の講座の WAV と読みを持ち、README は両方の講座を載せる
   const sums = m.show('SHA256SUMS');
-  for (const line of [`${sha256('wav:a1')}  .work/tts/a1.wav`, `${sha256('kana:a1')}  .work/tts/a1.kana`, `${sha256('wav:b1')}  .work/tts/b1.wav`]) expect(sums).toContain(line);
+  for (const line of [
+    `${sha256('wav:a1')}  .work/tts/a1.wav`,
+    `${sha256('kana:a1')}  .work/tts/a1.kana`,
+    `${sha256('wav:b1')}  .work/tts/b1.wav`,
+  ])
+    expect(sums).toContain(line);
   expect(m.show('README.md')).toContain('| `tts/alpha/` | 講座 alpha（1 章・ja）の台詞の音声');
   expect(m.show('README.md')).toContain('| `tts/beta/` | 講座 beta（1 章・ja）の台詞の音声');
 }, 30_000);
@@ -194,8 +214,17 @@ test('gc は --confirm が無いと何も消さず、付けたときだけ --kee
   // gc は親の無いコミットにして、消した素材を履歴にも残さない
   expect(git(sandbox, `--git-dir=${remote}`, 'rev-list', '--count', 'materials')).toBe('1');
   const files = m.files();
-  expect(files).toEqual(expect.arrayContaining(['tts/alpha/a1.flac', 'tts/alpha/a1.kana', 'audio/sfx/zuko.flac', 'README.md', 'SHA256SUMS']));
-  for (const gone of ['tts/alpha/a2.flac', 'tts/alpha/a2.kana', 'tts/beta/b1.flac', 'tts/beta/b1.kana']) expect(files).not.toContain(gone);
+  expect(files).toEqual(
+    expect.arrayContaining([
+      'tts/alpha/a1.flac',
+      'tts/alpha/a1.kana',
+      'audio/sfx/zuko.flac',
+      'README.md',
+      'SHA256SUMS',
+    ]),
+  );
+  for (const gone of ['tts/alpha/a2.flac', 'tts/alpha/a2.kana', 'tts/beta/b1.flac', 'tts/beta/b1.kana'])
+    expect(files).not.toContain(gone);
   const sums = m.show('SHA256SUMS');
   for (const gone of ['.work/tts/a2.wav', '.work/tts/a2.kana', '.work/tts/b1.wav']) expect(sums).not.toContain(gone);
   expect(m.show('README.md')).not.toContain('tts/beta/');
@@ -221,13 +250,23 @@ test('gc の --keep は、その ref の台本（content/ と scripts/voices.ts�
     ].join('\n'),
   );
   write('content/i18n.ts', "export const LANGS = ['ja', 'en'];\n");
-  write('scripts/voices.ts', 'export const speechIn = (line: { t: string }) => line.t;\nexport const ttsKeyIn = (text: string, voice: string, lang: string) => `${lang}-${voice}-${text}`;\n');
+  write(
+    'scripts/voices.ts',
+    'export const speechIn = (line: { t: string }) => line.t;\nexport const ttsKeyIn = (text: string, voice: string, lang: string) => `${lang}-${voice}-${text}`;\n',
+  );
   git(a.root, 'add', '-A');
   git(a.root, 'commit', '--quiet', '-m', '台本');
   git(a.root, 'push', '--quiet', 'origin', 'HEAD:main');
   const keep = await keepAt(a, ['origin/main']);
   expect(keep.refs).toEqual([`origin/main（${git(a.root, 'rev-parse', 'HEAD').slice(0, 7)}）`]);
-  expect(keep.courses).toEqual([{ id: 'alpha', langs: ['ja'], keys: ['ja-narrator-こんにちは', 'ja-zundamon-またね'], about: 'アルファ（1 章・ja）' }]);
+  expect(keep.courses).toEqual([
+    {
+      id: 'alpha',
+      langs: ['ja'],
+      keys: ['ja-narrator-こんにちは', 'ja-zundamon-またね'],
+      about: 'アルファ（1 章・ja）',
+    },
+  ]);
   await expect(keepAt(a, ['origin/nosuch'])).rejects.toThrow('origin に無い');
 }, 30_000);
 
@@ -286,7 +325,11 @@ test('前の形の素材（読みの行が SHA256SUMS に無い）も、今ま�
   const remote = makeRemote();
   const old = cloneOf(remote, 'old');
   // 前の materials.ts が作った形を手で組む（SHA256SUMS は WAV の行だけ）
-  const files: Record<string, string> = { 'tts/alpha/a1.flac': 'wav:a1', 'tts/alpha/a1.kana': 'kana:a1', 'README.md': '# Chalkfile の動画の素材\n' };
+  const files: Record<string, string> = {
+    'tts/alpha/a1.flac': 'wav:a1',
+    'tts/alpha/a1.kana': 'kana:a1',
+    'README.md': '# Chalkfile の動画の素材\n',
+  };
   const wavs: [string, string][] = [['.work/tts/a1.wav', 'wav:a1']];
   for (const a of AUDIO) {
     for (const name of a.names) {
@@ -351,7 +394,9 @@ test('check は BGM・効果音を、決まった名前の一覧で確かめる'
   const lines: string[] = [];
   expect(check(a, [course('alpha', ['a1'])], (line) => void lines.push(line))).toBe(false);
   expect(lines).toContain('alpha（ja）: 台詞の音声 1/1');
-  expect(lines).toContain('public/audio/sfx: 11/12 個（足りない: zuko。bun scripts/materials.ts pull か、scripts/build_music.py）');
+  expect(lines).toContain(
+    'public/audio/sfx: 11/12 個（足りない: zuko。bun scripts/materials.ts pull か、scripts/build_music.py）',
+  );
 });
 
 /** 小さな WAV（48kHz・モノラル・16bit・0.05 秒） */
@@ -374,19 +419,28 @@ const wav = (seed: number) => {
   return Buffer.concat([head, data]);
 };
 
-test.skipIf(!Bun.which('ffmpeg'))('ffmpeg で FLAC にして WAV に戻すと、元と同じバイトになる', async () => {
-  const remote = makeRemote();
-  const a = cloneOf(remote, 'a');
-  const b = cloneOf(remote, 'b');
-  let seed = 0;
-  audio(a, () => wav(seed++));
-  mkdirSync(path.join(a.root, '.work/tts'), { recursive: true });
-  writeFileSync(path.join(a.root, '.work/tts/a1.wav'), wav(99));
-  writeFileSync(path.join(a.root, '.work/tts/a1.kana'), 'アイウ');
-  await push(a, [course('alpha', ['a1'])], { log: () => {} });
-  await pull(b, ['alpha'], { log: () => {} });
-  expect(readFileSync(path.join(b.root, '.work/tts/a1.wav')).equals(wav(99))).toBe(true);
-  for (const a2 of AUDIO) {
-    for (const name of a2.names) expect(readFileSync(path.join(b.root, a2.local, `${name}.wav`)).equals(readFileSync(path.join(a.root, a2.local, `${name}.wav`)))).toBe(true);
-  }
-}, 60_000);
+test.skipIf(!Bun.which('ffmpeg'))(
+  'ffmpeg で FLAC にして WAV に戻すと、元と同じバイトになる',
+  async () => {
+    const remote = makeRemote();
+    const a = cloneOf(remote, 'a');
+    const b = cloneOf(remote, 'b');
+    let seed = 0;
+    audio(a, () => wav(seed++));
+    mkdirSync(path.join(a.root, '.work/tts'), { recursive: true });
+    writeFileSync(path.join(a.root, '.work/tts/a1.wav'), wav(99));
+    writeFileSync(path.join(a.root, '.work/tts/a1.kana'), 'アイウ');
+    await push(a, [course('alpha', ['a1'])], { log: () => {} });
+    await pull(b, ['alpha'], { log: () => {} });
+    expect(readFileSync(path.join(b.root, '.work/tts/a1.wav')).equals(wav(99))).toBe(true);
+    for (const a2 of AUDIO) {
+      for (const name of a2.names)
+        expect(
+          readFileSync(path.join(b.root, a2.local, `${name}.wav`)).equals(
+            readFileSync(path.join(a.root, a2.local, `${name}.wav`)),
+          ),
+        ).toBe(true);
+    }
+  },
+  60_000,
+);
