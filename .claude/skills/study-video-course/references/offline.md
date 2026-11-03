@@ -2,7 +2,7 @@
 
 chalkfile.com のルート `/` がアプリのscope。教材とポスターは Workers assets、MP4 は同じoriginの `/media/<言語>/<講座>/<ID>[.cc].<SHA-256>.mp4` から取得する。権利条件と、利用者の明示選択で保存する約束は維持する。
 
-動画のサイズ・hash・通常/字幕版は `site/media-manifest.json` が正本。buildは動画を静的出力へコピーせず、保存用manifestにも同じ情報を渡す。`--strict` は公開Releasesの存在とサイズ・提供hash、手元にあるMP4のhashを照合する。手元にMP4がなくても公開assetがそろえばbuildできる。ポスターと講義データは必要。
+動画のサイズ・hash・通常/字幕版は、講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`）が正本。buildは動画を静的出力へコピーせず、保存用manifestにも同じ情報を渡す。`--strict` は公開Releasesの存在とサイズ・提供hash、手元にあるMP4のhashを照合する。手元にMP4がなくても公開assetがそろえばbuildできる。ポスターと講義データは必要。
 
 SWは `/media/` をページのURLより先に判定して講座を決める。保存時はRangeを付けず200全体を取得し、サイズとSHA-256を検証する。ハッシュ付きURLのhashと宣言hashも一致させ、他言語・別講座・任意URLを受け入れない。再生では保存した200からRangeを切り出す。`?download=1` は同じ保存動画を参照してattachmentを付けるので、通信断でも単体保存できる。
 

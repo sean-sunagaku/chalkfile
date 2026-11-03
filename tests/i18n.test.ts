@@ -21,6 +21,8 @@ const base = (patch: Partial<Lecture> = {}): Lecture => ({
 });
 const course = (lectures: Lecture[] = [base()]): Course => ({
   id: 'sample',
+  prefix: 'X',
+  order: 1,
   title: '見本の講座',
   subtitle: '副題',
   headline: '見出し',

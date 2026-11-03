@@ -1,7 +1,7 @@
 # Python の道具の依存と版（uv で動かす）。Python のパッケージとしては配らない（package = false）
 #   uv run --locked --group audio python scripts/mix.py           # 音のミックス（npm run mix）
 #   uv run --locked --group audio python scripts/build_music.py   # BGM・効果音（npm run build:music）
-# audio の版を変えると BGM・効果音のバイト列が変わりうる。上げたら素材の SHA256SUMS と比べる
+# audio の版を変えると BGM・効果音のバイト列が変わりうる。上げたら npm run music:verify で素材の SHA256SUMS と比べる
 # Kokoro（scripts/tts_kokoro.py）と Whisper（scripts/check_speech.py）は、スクリプトの頭の依存と <スクリプト>.py.lock で固定する
 [project]
 name = "chalkfile"

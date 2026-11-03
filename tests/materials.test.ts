@@ -270,6 +270,32 @@ test('gc の --keep は、その ref の台本（content/ と scripts/voices.ts�
   await expect(keepAt(a, ['origin/nosuch'])).rejects.toThrow('origin に無い');
 }, 30_000);
 
+test('gc の --keep は、読み上げる文を content/voices.ts から読む（scripts/voices.ts には鍵の計算だけがある版）', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  const write = (p: string, body: string) => {
+    mkdirSync(path.dirname(path.join(a.root, p)), { recursive: true });
+    writeFileSync(path.join(a.root, p), body);
+  };
+  write(
+    'content/index.ts',
+    [
+      "const ALPHA = { id: 'alpha', title: 'アルファ', lectures: [{ scenes: [{ lines: [{ t: 'こんにちは', s: 'こんにちわ' }] }] }] };",
+      'export const COURSES = [ALPHA];',
+      "export const coursesIn = (lang: string) => (lang === 'ja' ? COURSES : []);",
+    ].join('\n'),
+  );
+  write('content/i18n.ts', "export const LANGS = ['ja'];\n");
+  // 読み上げる文は content/voices.ts にあり、scripts/voices.ts はそれを読んで鍵を作る
+  write('content/voices.ts', 'export const speechIn = (line: { t: string; s?: string }) => line.s ?? line.t;\n');
+  write('scripts/voices.ts', "export const ttsKeyIn = (text: string, voice: string, lang: string) => [lang, voice, text].join('-');\n");
+  git(a.root, 'add', '-A');
+  git(a.root, 'commit', '--quiet', '-m', '台本');
+  git(a.root, 'push', '--quiet', 'origin', 'HEAD:main');
+  const keep = await keepAt(a, ['origin/main']);
+  expect(keep.courses.map((c) => c.keys)).toEqual([['ja-narrator-こんにちわ']]);
+}, 30_000);
+
 test('HEAD が origin/main を含まなければ push を止め、取り込む手順を出す（dry-run は知らせるだけ）', async () => {
   const remote = makeRemote();
   const a = cloneOf(remote, 'a');

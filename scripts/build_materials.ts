@@ -1,20 +1,27 @@
-// 講座の「読む教材」を Markdown と JSON に書き出す。台本（content/）が正本で、ここは毎回作り直す。
-//   bun scripts/build_materials.ts                 # 教材を持つ全講座
-//   bun scripts/build_materials.ts nudge-product   # 一部の講座だけ
+// 講座の「読む教材」を Markdown と JSON に書き出す。台本（content/）が正本で、ここは毎回作り直す。Git に入れている台本と生成物だけを読む
+// （synth を流していない checkout でも、同じ中身になる）。
+//   bun scripts/build_materials.ts                 # 教材を持つ全講座（消した章・講座の古いファイルも消す）
+//   bun scripts/build_materials.ts nudge-product   # 一部の講座だけ（その講座のフォルダの古いファイルも消す）
+//   bun scripts/build_materials.ts --check         # 書かずに、作り直したものと docs/courses を比べる（違えば一覧を出して 1 で終える。CI の check）
 // 出力（docs/courses/<講座 ID>/）:
 //   README.md            講座の設計（全体の目次・到達目標・動画構成）
 //   <章 ID>.md           章の一式（教材本文・ナレーション台本・絵コンテ・図解と比較例・確認問題・実践課題・要点と参考資料・AI チャットの質問例）
 //   chunks.jsonl         AI 質問チャットが参照する単位（節・図・課題・問題）。id は章 ID・節 ID をそのまま使う
-// 絵コンテの秒数とナレーションの時刻は synth.ts の出力（site/data/<id>.json）から取る。まだ無ければ秒数は空欄になる
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+// 絵コンテの秒数とナレーションの時刻は、Git に入れている timeline（content/<講座>/generated/timeline/<ID>.json）から取る。
+// まだ無ければ秒数は空欄になる。話し手の名前は講座の cast（無ければ役の名前）、声の名前は creditsIn から。Markdown の頭には生成物の印を書く
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../content';
-import type { Course, Evidence, Figure, Lecture, Source } from '../content/types';
+import type { Course, Evidence, Figure, Lecture, Source, VoiceId } from '../content/types';
+import { creditsIn, VOICES, voicesOf } from '../content/voices';
 import { describeScene, SCENE_INFO } from '../engine/core/scenes';
+import { readTimelinesByKey } from './timelines';
 import { materialProblems } from './validate';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const OUT = path.join(ROOT, 'docs/courses');
+/** 生成する Markdown の頭の印（scripts/check_docs.ts の hasGeneratedMark が見る） */
+export const GENERATED_MARK = '<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->';
 
 const EVIDENCE: Record<Evidence, string> = {
   research: '研究・学術',
@@ -29,9 +36,31 @@ type SiteData = {
   cues: { start: number; end: number; text: string; scene: number }[];
 };
 
+const timelines = readTimelinesByKey();
+/**
+ * 絵コンテとナレーションの時刻（秒）。synth.ts が site/data/<ID>.json に書くのと同じ値になるように、timeline のフレームを秒にして
+ * 小数 2 桁に丸める（台詞の時刻は、場面の頭と、場面の中の台詞の頭を足す）。timeline が無ければ null
+ */
 const readData = (id: string): SiteData | null => {
-  const f = path.join(ROOT, 'site/data', `${id}.json`);
-  return existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as SiteData) : null;
+  const t = timelines.get(id)?.[0]?.timeline;
+  if (!t) return null;
+  const sec = (frames: number) => +(frames / t.fps).toFixed(2);
+  return {
+    duration: sec(t.durationInFrames),
+    chapters: t.scenes.map((s, scene) => ({ scene, start: sec(s.start) })),
+    cues: t.scenes.flatMap((s, scene) => s.lines.map((l) => ({ start: sec(s.start + l.start), end: sec(s.start + l.end), text: '', scene }))),
+  };
+};
+
+/** 役の名前（講座に cast が無いとき） */
+const ROLE: Record<VoiceId, string> = { narrator: '講師', announcer: '呼び込み', zundamon: 'ずんだもん', 'zundamon-cry': 'ずんだもん', tsukkomi: 'ツッコミ', tennokoe: '天の声' };
+/** 話し手の名前（講座の cast。無ければ役の名前） */
+const speakerOf = (c: Course, v: VoiceId) => c.cast?.[v]?.name ?? ROLE[v];
+/** その章で使った声の話し手と、声の名前（VOICES の順・重なりなし。名前は creditsIn） */
+const speakersLine = (c: Course, lec: Lecture) => {
+  const used = new Set(voicesOf(lec));
+  const pairs = (Object.keys(VOICES) as VoiceId[]).filter((v) => used.has(v)).map((v) => `${speakerOf(c, v)} = ${creditsIn('ja', [v]).join('・')}`);
+  return `話者: ${[...new Set(pairs)].join('、')}。時刻は合成した音声の実測。`;
 };
 
 const plain = (s: string) => s.replace(/\*\*/g, '');
@@ -78,7 +107,7 @@ const lectureMd = (c: Course, lec: Lecture): string => {
     return `[${s.publisher} ${s.year}](${s.url})`;
   });
 
-  L.push(`# 第 ${lec.no} ${unit}　${lec.title}`, '');
+  L.push(GENERATED_MARK, '', `# 第 ${lec.no} ${unit}　${lec.title}`, '');
   L.push(`- 講座: ${c.title}（${c.id}）`, `- 章 ID: \`${m.id}\`　動画 ID: \`${lec.id}\``, `- 動画: ${data ? `${mmss(data.duration)}（${data.cues.length} 台詞）` : '未合成（bun scripts/synth.ts で時刻が入る）'}`, `- 要約: ${lec.summary}`, '');
   L.push('> このファイルは `bun scripts/build_materials.ts` が `content/` の台本から作ります。直すときは台本（`content/' + c.id + '/` の TS）を直してください。', '');
   L.push('## 学習目標', '', ...m.goals.map((g) => `- ${g}`), '', '## 前提知識', '', ...m.prerequisites.map((g) => `- ${g}`), '');
@@ -94,13 +123,14 @@ const lectureMd = (c: Course, lec: Lecture): string => {
 
   // 2. ナレーション台本
   L.push('## 2. ナレーション台本', '');
-  L.push('話者: 講師 = VOICEVOX:No.7、呼び込み = VOICEVOX:青山龍星。時刻は合成した音声の実測。', '');
+  L.push(speakersLine(c, lec), '');
   let k = 0;
   for (const [si, s] of lec.scenes.entries()) {
     L.push(`### 場面 ${si + 1}　${s.kind === 'opening' ? 'オープニング' : s.kind === 'ending' ? 'エンディング' : (s.heading ?? SCENE_INFO[s.kind].label)}`, '');
     for (const ln of s.lines) {
       const cue = data?.cues[k++];
-      L.push(`- ${cue ? `\`${mmss(cue.start)}\` ` : ''}${ln.v === 'announcer' ? '（呼び込み）' : ''}${ln.t}`);
+      const who = speakerOf(c, ln.v ?? 'narrator');
+      L.push(`- ${cue ? `\`${mmss(cue.start)}\` ` : ''}${who !== speakerOf(c, 'narrator') ? `（${who}）` : ''}${ln.t}`);
     }
     if (s.hold) L.push(`- （${s.hold} 秒の間。考える時間）`);
     L.push('');
@@ -155,7 +185,7 @@ const syllabusMd = (c: Course): string => {
   const y = c.syllabus!;
   const src = sourceMap(c);
   const L: string[] = [];
-  L.push(`# ${c.title}`, '', `${c.subtitle}`, '', `- 講座 ID: \`${c.id}\``, `- 受講者: ${y.audience}`, `- 例に使う架空のサービス: ${y.sample}`, '');
+  L.push(GENERATED_MARK, '', `# ${c.title}`, '', `${c.subtitle}`, '', `- 講座 ID: \`${c.id}\``, `- 受講者: ${y.audience}`, `- 例に使う架空のサービス: ${y.sample}`, '');
   if (c.disclaimer) L.push(`> ${c.disclaimer}`, '');
   L.push('## 到達目標', '', ...y.outcomes.map((x, i) => `${i + 1}. ${x}`), '', `最後の実践: ${y.finalProject}`, '');
   L.push('## 前提知識', '', ...y.prerequisites.map((x) => `- ${x}`), '');
@@ -220,28 +250,69 @@ const chunksOf = (c: Course): Chunk[] => {
   return out;
 };
 
-const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-const targets = COURSES.filter((c) => c.syllabus && (!wanted.length || wanted.includes(c.id)));
-if (!targets.length) console.log('教材（syllabus）を持つ講座がありません');
-// 節 ID・図 ID が重なっていないか（AI チャットの参照先がぶれないように）と、質問例の参照先があるか。中身は scripts/validate.ts の
-// materialProblems（PR の CI の npm run validate も同じものを流す）。書き出す前に全部の講座を確かめる
-const problems = targets.flatMap(materialProblems);
-if (problems.length) throw new Error(problems.join('\n'));
+/**
+ * 教材のファイル（docs/courses からのパス → 中身）。courses を渡すとその講座だけ（一覧の README は毎回作る）。
+ * 書き出す前に、節 ID・図 ID が重なっていないか（AI チャットの参照先がぶれないように）と、質問例の参照先があるかを全部の講座で確かめる
+ * （中身は scripts/validate.ts の materialProblems。PR の CI の npm run validate も同じものを流す）
+ */
+export const materialOutputs = (wanted: string[] = []): Map<string, string> => {
+  const targets = COURSES.filter((c) => c.syllabus && (!wanted.length || wanted.includes(c.id)));
+  const problems = targets.flatMap(materialProblems);
+  if (problems.length) throw new Error(problems.join('\n'));
+  const out = new Map<string, string>();
+  for (const c of targets) {
+    out.set(`${c.id}/README.md`, syllabusMd(c));
+    for (const lec of c.lectures) if (lec.material) out.set(`${c.id}/${lec.material.id}.md`, lectureMd(c, lec));
+    out.set(`${c.id}/chunks.jsonl`, chunksOf(c).map((x) => JSON.stringify(x)).join('\n') + '\n');
+  }
+  // 講座の一覧
+  if (targets.length) {
+    const all = COURSES.filter((c) => c.syllabus);
+    const L = [GENERATED_MARK, '', '# 講座の教材', '', 'Chalkfile で作った講座の、読む教材・設計・AI チャット用のチャンクです。`bun scripts/build_materials.ts` で台本（`content/`）から作り直します。', '', '| 講座 | 章 | 教材と動画を作った章 | 設計 |', '| --- | --- | --- | --- |'];
+    for (const c of all) L.push(`| ${c.title} | ${c.syllabus!.chapters.length} | ${c.lectures.filter((l) => l.material).map((l) => `[${l.material!.id}](${c.id}/${l.material!.id}.md)`).join('、')} | [README](${c.id}/README.md) |`);
+    out.set('README.md', L.join('\n') + '\n');
+  }
+  return out;
+};
 
-for (const c of targets) {
-  const dir = path.join(OUT, c.id);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(path.join(dir, 'README.md'), syllabusMd(c));
-  for (const lec of c.lectures) if (lec.material) writeFileSync(path.join(dir, `${lec.material.id}.md`), lectureMd(c, lec));
-  const chunks = chunksOf(c);
-  writeFileSync(path.join(dir, 'chunks.jsonl'), chunks.map((x) => JSON.stringify(x)).join('\n') + '\n');
-  console.log(`docs/courses/${c.id}/  章 ${c.syllabus!.chapters.length}（教材あり ${c.lectures.filter((l) => l.material).length}）  チャンク ${chunks.length}`);
-}
+/** 今ある教材のファイル（docs/courses からのパス）。courses を渡すと、その講座のフォルダと一覧の README だけ */
+const existingFiles = (wanted: string[]): string[] => {
+  const walk = (dir: string): string[] =>
+    existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.relative(OUT, path.join(dir, e.name))])) : [];
+  const files = walk(OUT).map((f) => f.split(path.sep).join('/'));
+  return wanted.length ? files.filter((f) => f === 'README.md' || wanted.includes(f.split('/')[0])) : files;
+};
 
-// 講座の一覧
-if (targets.length) {
-  const all = COURSES.filter((c) => c.syllabus);
-  const L = ['# 講座の教材', '', 'Chalkfile で作った講座の、読む教材・設計・AI チャット用のチャンクです。`bun scripts/build_materials.ts` で台本（`content/`）から作り直します。', '', '| 講座 | 章 | 教材と動画を作った章 | 設計 |', '| --- | --- | --- | --- |'];
-  for (const c of all) L.push(`| ${c.title} | ${c.syllabus!.chapters.length} | ${c.lectures.filter((l) => l.material).map((l) => `[${l.material!.id}](${c.id}/${l.material!.id}.md)`).join('、')} | [README](${c.id}/README.md) |`);
-  writeFileSync(path.join(OUT, 'README.md'), L.join('\n') + '\n');
+if (import.meta.main) {
+  const args = process.argv.slice(2);
+  const check = args.includes('--check');
+  for (const a of args) if (a.startsWith('--') && a !== '--check') throw new Error(`知らない引数: ${a}（使えるのは講座 ID と --check）`);
+  const wanted = args.filter((a) => !a.startsWith('--'));
+  for (const id of wanted) if (!COURSES.some((c) => c.id === id && c.syllabus)) throw new Error(`教材（syllabus）を持つ講座が無い: ${id}`);
+  const outputs = materialOutputs(wanted);
+  if (!outputs.size) console.log('教材（syllabus）を持つ講座がありません');
+  // 消した章・講座の古いファイル（作るものに無い、今あるファイル）
+  const stale = existingFiles(wanted).filter((f) => !outputs.has(f));
+  if (check) {
+    const changed = [...outputs].filter(([f, text]) => !existsSync(path.join(OUT, f)) || readFileSync(path.join(OUT, f), 'utf8') !== text).map(([f]) => f);
+    for (const f of changed) console.log(`${existsSync(path.join(OUT, f)) ? '違う' : '無い'}: docs/courses/${f}`);
+    for (const f of stale) console.log(`残っている（消した章か講座）: docs/courses/${f}`);
+    const n = changed.length + stale.length;
+    console.log(n ? `教材が ${n} 個、台本から作り直したものと違う（bun scripts/build_materials.ts で作り直す。手で直さない）` : `教材は台本から作り直したものと同じ（${outputs.size} 個）`);
+    process.exit(n ? 1 : 0);
+  }
+  for (const [f, text] of outputs) {
+    mkdirSync(path.dirname(path.join(OUT, f)), { recursive: true });
+    writeFileSync(path.join(OUT, f), text);
+  }
+  for (const f of stale) {
+    rmSync(path.join(OUT, f));
+    // 空になった講座のフォルダも消す
+    const dir = path.dirname(path.join(OUT, f));
+    if (dir !== OUT && !readdirSync(dir).length) rmSync(dir, { recursive: true });
+    console.log(`消した（消した章か講座の古いファイル）: docs/courses/${f}`);
+  }
+  for (const c of COURSES.filter((x) => x.syllabus && (!wanted.length || wanted.includes(x.id)))) {
+    console.log(`docs/courses/${c.id}/  章 ${c.syllabus!.chapters.length}（教材あり ${c.lectures.filter((l) => l.material).length}）  チャンク ${chunksOf(c).length}`);
+  }
 }

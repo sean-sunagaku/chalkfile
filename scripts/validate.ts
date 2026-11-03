@@ -3,23 +3,27 @@
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）
 // 見るもの
-//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline の形
+//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）・
+//     講座をまたいだもの（レクチャー ID の頭文字・一覧の並び・講座 ID が重ならないか）
 //   公開で止まること（このファイル）: 講座サイトの設定・ID・リンク（siteProblems。scripts/build_site.ts も組み立ての前に呼ぶ）、
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
-//     全部の動画のポスター（site/posters/）と動画の一覧（site/media-manifest.json）。これまで main の公開の CI でしか分からなかった
-//     （GA4 のポスターの入れ忘れ）ので、PR で先に止める
+//     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
+//     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める
 // 誤り: 描くと止まるか黙って崩れるもの（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声など）と、
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
 // synth.ts の最初（対象の動画だけ）と Studio（src/Root.tsx。その動画だけ止める）も、同じ台本の検証を使う
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Course, Theme } from '../content/types';
-import { formatIssues, RULES, validateCourse, validateTheme, validateTimeline, type Issue, type Rule, type TimelineShape } from '../engine/core/validate';
-import { mediaKey, validateMediaManifest, type MediaManifest } from '../site/media-shared';
+import { formatIssues, RULES, validateCourse, validateCourses, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
+import { mediaListFile, posterFile } from '../engine/core/generated';
+import { mediaKey, type MediaManifest } from '../site/media-shared';
+import { readMediaLists } from './media-lists';
 import { PAGE_VERSION_MARK } from './site-version';
+import { readTimelinesByKey } from './timelines';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -111,16 +115,16 @@ const publishedVideos = (config: SiteConfig, coursesIn: (lang: Lang) => Course[]
   config.publishLangs.flatMap((lang) => coursesIn(lang).flatMap((course) => course.lectures.map((lecture) => ({ lang, course, lecture, key: videoKey(lecture.id, lang) }))));
 
 /**
- * 公開する言語の全部の動画に、ポスター（site/posters/<key>.jpg）があるか。
+ * 公開する言語の全部の動画に、ポスター（content/<講座>/generated/posters/<key>.jpg）があるか。
  * 公開の CI の checkout には Git に入れたものしか無いので、無いと build_site --strict で止まる（GA4 のポスターの入れ忘れ）
  */
-export const posterProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], hasPoster = (key: string) => existsSync(path.join(ROOT, 'site/posters', `${key}.jpg`))): PublishIssue[] =>
+export const posterProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], hasPoster = (file: string) => existsSync(path.join(ROOT, file))): PublishIssue[] =>
   publishedVideos(config, coursesIn)
-    .filter((v) => !hasPoster(v.key))
-    .map((v) => ({ level: 'error', rule: 'poster', where: `${v.course.id}/${v.key}`, message: `ポスター site/posters/${v.key}.jpg が無い（bash scripts/render.sh ${v.key} が作る。Git に入れる）` }));
+    .filter((v) => !hasPoster(posterFile(v.course.id, v.key)))
+    .map((v) => ({ level: 'error', rule: 'poster', where: `${v.course.id}/${v.key}`, message: `ポスター ${posterFile(v.course.id, v.key)} が無い（bash scripts/render.sh ${v.key} が作る。Git に入れる）` }));
 
 /**
- * 動画の一覧（site/media-manifest.json）に、公開する言語の全部の動画があるか。通常版は全部（無いと build_site が止まる）。
+ * 動画の一覧（講座ごとの content/<講座>/generated/media.<言語>.json をつないだもの）に、公開する言語の全部の動画があるか。通常版は全部（無いと build_site が止まる）。
  * 掛け合いの講座（cast がある）は、字幕を焼き込んだ版も（講座サイトは、字幕をオンにするとこちらを流す）
  */
 export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], manifest: MediaManifest): PublishIssue[] => {
@@ -129,9 +133,11 @@ export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Cou
   for (const v of publishedVideos(config, coursesIn)) {
     const has = (kind: 'standard' | 'captioned') => keys.has(mediaKey({ lang: v.lang, course: v.course.id, lecture: v.lecture.id, kind }));
     const where = `${v.course.id}/${v.key}`;
-    if (!has('standard')) out.push({ level: 'error', rule: 'media', where, message: '動画の一覧（site/media-manifest.json）に通常版が無い（書き出してから bun scripts/media.ts push）' });
+    const list = mediaListFile(v.course.id, v.lang);
+    const push = `bun scripts/media.ts push --course ${v.course.id}${v.lang === 'ja' ? '' : ` --lang ${v.lang}`}`;
+    if (!has('standard')) out.push({ level: 'error', rule: 'media', where, message: `動画の一覧（${list}）に通常版が無い（書き出してから ${push}）` });
     if (v.course.cast && !has('captioned')) {
-      out.push({ level: 'error', rule: 'media', where, message: '動画の一覧（site/media-manifest.json）に字幕を焼き込んだ版が無い（掛け合いの講座は CAPTIONS=1 で書き出してから bun scripts/media.ts push）' });
+      out.push({ level: 'error', rule: 'media', where, message: `動画の一覧（${list}）に字幕を焼き込んだ版が無い（掛け合いの講座は CAPTIONS=1 で書き出してから ${push}）` });
     }
   }
   return out;
@@ -154,12 +160,37 @@ export const publishIssues = (courses: Course[], coursesIn: (lang: Lang) => Cour
   for (const c of courses.filter((x) => x.syllabus)) for (const message of materialProblems(c)) fail('material', c.id, message);
   out.push(...posterProblems(config, coursesIn));
   try {
-    out.push(...mediaProblems(config, coursesIn, validateMediaManifest(JSON.parse(readFileSync(path.join(ROOT, 'site/media-manifest.json'), 'utf8')))));
+    out.push(...mediaProblems(config, coursesIn, readMediaLists(courses.map((c) => c.id))));
   } catch (e) {
-    fail('media', 'site/media-manifest.json', messageOf(e));
+    fail('media', 'content/<講座>/generated/media.<言語>.json', messageOf(e));
   }
   return out;
 };
+
+/* ───────────── 講座の登録 ───────────── */
+
+/**
+ * 講座のフォルダ（content/<講座 ID>/index.ts）と、登録表（content/courses.ts の COURSES）が合うか。フォルダの名前は講座 ID にする
+ * （生成物の置き場所 content/<講座 ID>/generated/ にも使う）。dirs は index.ts のある講座のフォルダの名前（渡さなければ content/ を見る）
+ */
+export const registryProblems = (courses: readonly Course[], dirs = courseDirs()): Issue[] => {
+  const ids = courses.map((c) => c.id);
+  return [
+    ...dirs
+      .filter((d) => !ids.includes(d))
+      .map((d): Issue => ({ level: 'error', rule: 'course-id', where: `content/${d}/index.ts`, message: `講座のフォルダがあるのに、content/courses.ts に登録が無い（export { default as … } from './${d}'; の 1 行を足す）` })),
+    ...ids
+      .filter((id) => !dirs.includes(id))
+      .map((id): Issue => ({ level: 'error', rule: 'course-id', where: id, message: `講座のフォルダ content/${id}/（index.ts）が無い。フォルダの名前は講座 ID にする` })),
+  ];
+};
+
+/** index.ts のある講座のフォルダの名前 */
+const courseDirs = (): string[] =>
+  readdirSync(path.join(ROOT, 'content'), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && existsSync(path.join(ROOT, 'content', d.name, 'index.ts')))
+    .map((d) => d.name)
+    .sort();
 
 /* ───────────── 全部 ───────────── */
 
@@ -174,17 +205,27 @@ export const validateAll = async (): Promise<Report> => {
   }
   try {
     const { COURSES, coursesIn } = await import('../content');
-    const file = path.join(ROOT, 'src/generated/timeline.json');
-    const timeline: Record<string, TimelineShape> = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+    // timeline は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。指紋で、台本を直したのに合成し直していない動画も見つける
+    const timelines = readTimelinesByKey();
+    // 講座をまたいだもの（頭文字・並び・講座 ID の重なり）。並行の PR が講座を足すと、マージするまで気づけない
+    issues.push(...validateCourses(COURSES), ...registryProblems(COURSES));
+    const keys = new Set<string>();
     for (const lang of LANGS) {
       for (const course of coursesIn(lang)) {
         courses++;
         issues.push(...validateCourse(course));
         for (const lec of course.lectures) {
           videos++;
-          issues.push(...validateTimeline(lec, course, timeline[videoKey(lec.id, lang)]));
+          const key = videoKey(lec.id, lang);
+          keys.add(key);
+          issues.push(...validateTimelineFiles(lec, course, timelines.get(key) ?? []));
         }
       }
+    }
+    // 台本に無い動画の timeline（消した動画・名前を変えた動画）。Studio には出ないが、残しておくと紛らわしい
+    for (const [key, entries] of timelines) {
+      if (keys.has(key)) continue;
+      for (const e of entries) issues.push({ level: 'warning', rule: 'timeline', where: e.file, message: '台本に無い動画の timeline（消した動画なら bun scripts/synth.ts --prune で消す）' });
     }
     issues.push(...publishIssues(COURSES, coursesIn));
   } catch (e) {

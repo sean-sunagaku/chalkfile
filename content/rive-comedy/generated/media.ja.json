@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "rive-comedy",
+      "lecture": "R01",
+      "kind": "standard",
+      "bytes": 11470413,
+      "sha256": "76697f1e9e816913f6524af7feb4e650ad5f23c6ee1a17b190594890f15f1e3f",
+      "filename": "R01.76697f1e9e816913f6524af7feb4e650ad5f23c6ee1a17b190594890f15f1e3f.mp4",
+      "tag": "media-ja-rive-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "rive-comedy",
+      "lecture": "R01",
+      "kind": "captioned",
+      "bytes": 11990846,
+      "sha256": "31cb0481c99a81112040cea7cfa6ab3ff464e0a9ea67bd3b5b86f6f3ce81fd64",
+      "filename": "R01.cc.31cb0481c99a81112040cea7cfa6ab3ff464e0a9ea67bd3b5b86f6f3ce81fd64.mp4",
+      "tag": "media-ja-rive-comedy"
+    }
+  ]
+}

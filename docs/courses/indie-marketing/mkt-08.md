@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 第 8 章　効果測定と 1 枚の計画
 
 - 講座: 個人開発者のためのマーケティング（indie-marketing）

@@ -1,7 +1,7 @@
 import type { CourseL10n } from '../../i18n';
 import { R01 } from './R01';
 
-/** 「笑ってわかる Rive アニメーション」の英語版。声は Kokoro（scripts/voices.ts の KOKORO.en） */
+/** 「笑ってわかる Rive アニメーション」の英語版。声は Kokoro（content/voices.ts の KOKORO.en） */
 export const RIVE_COMEDY_EN: CourseL10n = {
   title: 'Laugh & Learn: Rive Animation',
   subtitle: 'Getting the gist of Rive with Zundamon, comedy edition',

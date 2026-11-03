@@ -1,0 +1,247 @@
+{
+  "durationInFrames": 8081,
+  "fingerprint": "7af10d502aad47be",
+  "fps": 30,
+  "key": "L05",
+  "scenes": [
+    {
+      "duration": 412,
+      "lines": [
+        {
+          "end": 131,
+          "start": 61
+        },
+        {
+          "end": 390,
+          "start": 149
+        }
+      ],
+      "start": 0
+    },
+    {
+      "duration": 391,
+      "lines": [
+        {
+          "end": 49,
+          "start": 13
+        },
+        {
+          "end": 143,
+          "start": 58
+        },
+        {
+          "end": 238,
+          "start": 152
+        },
+        {
+          "end": 369,
+          "start": 247
+        }
+      ],
+      "start": 412
+    },
+    {
+      "duration": 656,
+      "lines": [
+        {
+          "end": 86,
+          "start": 14
+        },
+        {
+          "end": 253,
+          "start": 95
+        },
+        {
+          "end": 426,
+          "start": 262
+        },
+        {
+          "end": 483,
+          "start": 435
+        },
+        {
+          "end": 634,
+          "start": 492
+        }
+      ],
+      "start": 803
+    },
+    {
+      "duration": 1268,
+      "lines": [
+        {
+          "end": 125,
+          "start": 14
+        },
+        {
+          "end": 302,
+          "start": 134
+        },
+        {
+          "end": 858,
+          "start": 311
+        },
+        {
+          "end": 999,
+          "start": 867
+        },
+        {
+          "end": 1246,
+          "start": 1008
+        }
+      ],
+      "start": 1459
+    },
+    {
+      "duration": 682,
+      "lines": [
+        {
+          "end": 192,
+          "start": 14
+        },
+        {
+          "end": 365,
+          "start": 201
+        },
+        {
+          "end": 492,
+          "start": 374
+        },
+        {
+          "end": 660,
+          "start": 501
+        }
+      ],
+      "start": 2727
+    },
+    {
+      "duration": 1136,
+      "lines": [
+        {
+          "end": 79,
+          "start": 14
+        },
+        {
+          "end": 219,
+          "start": 88
+        },
+        {
+          "end": 298,
+          "start": 228
+        },
+        {
+          "end": 476,
+          "start": 307
+        },
+        {
+          "end": 829,
+          "start": 485
+        },
+        {
+          "end": 1114,
+          "start": 838
+        }
+      ],
+      "start": 3409
+    },
+    {
+      "duration": 1029,
+      "lines": [
+        {
+          "end": 119,
+          "start": 14
+        },
+        {
+          "end": 300,
+          "start": 128
+        },
+        {
+          "end": 675,
+          "start": 309
+        },
+        {
+          "end": 792,
+          "start": 684
+        },
+        {
+          "end": 1006,
+          "start": 801
+        }
+      ],
+      "start": 4545
+    },
+    {
+      "duration": 629,
+      "lines": [
+        {
+          "end": 198,
+          "start": 14
+        },
+        {
+          "end": 472,
+          "start": 207
+        },
+        {
+          "end": 606,
+          "start": 481
+        }
+      ],
+      "start": 5574
+    },
+    {
+      "duration": 792,
+      "lines": [
+        {
+          "end": 135,
+          "start": 14
+        },
+        {
+          "end": 452,
+          "start": 144
+        },
+        {
+          "end": 590,
+          "start": 461
+        },
+        {
+          "end": 770,
+          "start": 599
+        }
+      ],
+      "start": 6203
+    },
+    {
+      "duration": 768,
+      "lines": [
+        {
+          "end": 38,
+          "start": 13
+        },
+        {
+          "end": 282,
+          "start": 47
+        },
+        {
+          "end": 482,
+          "start": 291
+        },
+        {
+          "end": 746,
+          "start": 491
+        }
+      ],
+      "start": 6995
+    },
+    {
+      "duration": 318,
+      "lines": [
+        {
+          "end": 198,
+          "start": 13
+        }
+      ],
+      "start": 7763
+    }
+  ],
+  "schema": 1
+}

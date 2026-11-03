@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N01",
+      "kind": "standard",
+      "bytes": 15556816,
+      "sha256": "a75d63bafdb57005509b446e1dd9700e519845f66cdf8294261585ebd1769c94",
+      "filename": "N01.a75d63bafdb57005509b446e1dd9700e519845f66cdf8294261585ebd1769c94.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N02",
+      "kind": "standard",
+      "bytes": 15426054,
+      "sha256": "481686c5d9bcf521cb376167b085613e23b5fdb106b4e5552e1805cabb116ab8",
+      "filename": "N02.481686c5d9bcf521cb376167b085613e23b5fdb106b4e5552e1805cabb116ab8.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N03",
+      "kind": "standard",
+      "bytes": 15421714,
+      "sha256": "86fd018d92ac14cc7930d5310c4bb6a79f4f2e21879603be8d349f2cb9e3a793",
+      "filename": "N03.86fd018d92ac14cc7930d5310c4bb6a79f4f2e21879603be8d349f2cb9e3a793.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N04",
+      "kind": "standard",
+      "bytes": 15983063,
+      "sha256": "285fc7bd2a1734ca6e98cb441764b19dadde9cf7cdc6b2b5541d2d37ccc03b7b",
+      "filename": "N04.285fc7bd2a1734ca6e98cb441764b19dadde9cf7cdc6b2b5541d2d37ccc03b7b.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N05",
+      "kind": "standard",
+      "bytes": 14955799,
+      "sha256": "0474ef6f90fb8492de7f06f535b08bed05cc790912865016ca525f4a3872a04d",
+      "filename": "N05.0474ef6f90fb8492de7f06f535b08bed05cc790912865016ca525f4a3872a04d.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N06",
+      "kind": "standard",
+      "bytes": 16339823,
+      "sha256": "8cea57b926e1fa91468ee755e487ae629a1bfb2f6a56bb7d8c323c84bd365243",
+      "filename": "N06.8cea57b926e1fa91468ee755e487ae629a1bfb2f6a56bb7d8c323c84bd365243.mp4",
+      "tag": "media-ja-nudge-product"
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-product",
+      "lecture": "N07",
+      "kind": "standard",
+      "bytes": 17135277,
+      "sha256": "1ad242b935e35b73bafb48d76ca62e827dbd8de061c00c2da2856863843d9305",
+      "filename": "N07.1ad242b935e35b73bafb48d76ca62e827dbd8de061c00c2da2856863843d9305.mp4",
+      "tag": "media-ja-nudge-product"
+    }
+  ]
+}

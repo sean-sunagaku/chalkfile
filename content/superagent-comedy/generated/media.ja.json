@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S01",
+      "kind": "standard",
+      "bytes": 15294727,
+      "sha256": "0dcdb99ee3d7d3ed16f76cd194a53fa0e4136319d7c2c67e0c81fdcb5e8260b0",
+      "filename": "S01.0dcdb99ee3d7d3ed16f76cd194a53fa0e4136319d7c2c67e0c81fdcb5e8260b0.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S01",
+      "kind": "captioned",
+      "bytes": 16409733,
+      "sha256": "43585220551cea8c7a089411bc0dcadbb40d72b08e83d94674a2f71a9ee260b0",
+      "filename": "S01.cc.43585220551cea8c7a089411bc0dcadbb40d72b08e83d94674a2f71a9ee260b0.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S02",
+      "kind": "standard",
+      "bytes": 18129763,
+      "sha256": "1e67cf295fa648e201bdc06f433705f7552da94b8434410e5025b1bcb5773efe",
+      "filename": "S02.1e67cf295fa648e201bdc06f433705f7552da94b8434410e5025b1bcb5773efe.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S02",
+      "kind": "captioned",
+      "bytes": 19454031,
+      "sha256": "6231f22f862de35eaa8f9528b1b25ba108bd974407c1807330dd768d5ee55769",
+      "filename": "S02.cc.6231f22f862de35eaa8f9528b1b25ba108bd974407c1807330dd768d5ee55769.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S03",
+      "kind": "standard",
+      "bytes": 16007917,
+      "sha256": "60d72573c0a5dcfd259cbb68886853b851ff30f86732b0811cceaca75a33e922",
+      "filename": "S03.60d72573c0a5dcfd259cbb68886853b851ff30f86732b0811cceaca75a33e922.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S03",
+      "kind": "captioned",
+      "bytes": 16967160,
+      "sha256": "7eb433755aa9fab4bfd1600a79a23d0a8cfb35d4fb54ae37e63c50b77ea82532",
+      "filename": "S03.cc.7eb433755aa9fab4bfd1600a79a23d0a8cfb35d4fb54ae37e63c50b77ea82532.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S04",
+      "kind": "standard",
+      "bytes": 14943446,
+      "sha256": "6fc58f37a1c0c0a66d97114a49842908e092468630edd4b291dd63834adaad32",
+      "filename": "S04.6fc58f37a1c0c0a66d97114a49842908e092468630edd4b291dd63834adaad32.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S04",
+      "kind": "captioned",
+      "bytes": 16003798,
+      "sha256": "a7f1ce8ef9f107d2e43cf24d651d229c0885a440ca7c5d0a50f7763b90df9022",
+      "filename": "S04.cc.a7f1ce8ef9f107d2e43cf24d651d229c0885a440ca7c5d0a50f7763b90df9022.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S05",
+      "kind": "standard",
+      "bytes": 14302699,
+      "sha256": "79764e68f9efc2af81e537da662e6daaec64809291aa8b30781ac12b2ed83ebc",
+      "filename": "S05.79764e68f9efc2af81e537da662e6daaec64809291aa8b30781ac12b2ed83ebc.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S05",
+      "kind": "captioned",
+      "bytes": 13896055,
+      "sha256": "717ee649b1f2e72f397131f729216271186da13321f8ff7e9b24eeecb2278033",
+      "filename": "S05.cc.717ee649b1f2e72f397131f729216271186da13321f8ff7e9b24eeecb2278033.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S06",
+      "kind": "standard",
+      "bytes": 17865985,
+      "sha256": "77eb37ffae5a85ac8fb8dbe425f39889b5e6942fa73f5f946deda1ee6074698d",
+      "filename": "S06.77eb37ffae5a85ac8fb8dbe425f39889b5e6942fa73f5f946deda1ee6074698d.mp4",
+      "tag": "media-ja-superagent-comedy"
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S06",
+      "kind": "captioned",
+      "bytes": 19316362,
+      "sha256": "1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513",
+      "filename": "S06.cc.1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513.mp4",
+      "tag": "media-ja-superagent-comedy"
+    }
+  ]
+}

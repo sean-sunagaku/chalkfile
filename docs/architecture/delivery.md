@@ -2,7 +2,7 @@
 
 講座サイトと動画を、どう配るか。なぜこの形にしたか。手順は書かない（公開は [公開の順番](../operations/publish.md)、初回の設定は [初回の設定](../operations/setup.md)、戻し方は [戻し方](../operations/recovery.md)）。決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md) と [無料のままにする ADR](../adr/2026-11-02-workers-free-only.md)。
 
-- サイトの正本は https://chalkfile.com/。設定は `wrangler.jsonc`、Worker は `worker/src/`、動画の正本は動画の一覧（`site/media-manifest.json`）
+- サイトの正本は https://chalkfile.com/。設定は `wrangler.jsonc`、Worker は `worker/src/`、動画の正本は講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`）。Worker はそれをつないだ許可リスト（`npm run gen` が作る `worker/src/generated/media-manifest.json`。Git に入れない）を読む
 - 全体の流れと置き場所は [全体図](overview.md)
 
 ## 配り方
@@ -31,7 +31,7 @@
 ## 公開に要るもの
 
 - 公開の組み立ては、声も動画も作らない。素材ブランチの声と、Releases の動画と、main のポスター・動画の一覧から作る。足りなければ止まる（声の合成も書き出しも始めない）
-- ポスター（JPG）は小さな静的な入力として `site/posters/` に入れる。MP4 を取らなくても、CI でサイトを作れる。新しい講座で全部のレクチャーのポスターがそろっていないと、strict の組み立てが公開の前に止まる。CI で動画を取ってきてポスターを補う形にはしない
+- ポスター（JPG）は小さな静的な入力として、講座のフォルダの `content/<講座>/generated/posters/` に入れる。MP4 を取らなくても、CI でサイトを作れる。新しい講座で全部のレクチャーのポスターがそろっていないと、strict の組み立てが公開の前に止まる。CI で動画を取ってきてポスターを補う形にはしない
 - 素材ブランチの FLAC を WAV に戻すため、CI は Ubuntu の標準のリポジトリから ffmpeg を入れる。字幕（VTT）と講義のデータは、キャッシュした声から作る。`synth --cached-only` は、足りないときに VOICEVOX や Kokoro へつながない
 - ブラウザのテストのサーバーは、起動のたびに今のソースから移行の案内と Service Worker を組み立てる。前の `site/migration-dist` が残っていても、移行のテストに古い生成物を使わない。本物の `gh-pages` への反映は、このテストの生成とは別の `scripts/legacy/deploy_pages.sh` だけが行う
 
