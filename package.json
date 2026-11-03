@@ -9,12 +9,19 @@
     "npm": ">=11"
   },
   "scripts": {
-    "check": "npm run typecheck && npm test && npm run validate && npm run check:content",
+    "check": "npm run lint && npm run typecheck && npm test && npm run validate && npm run check:content && npm run check:docs",
+    "lint": "biome ci --formatter-enabled=false --assist-enabled=false",
+    "lint:py": "uvx ruff@0.17.3 check scripts",
+    "lint:sh": "shellcheck --exclude=SC2086 scripts/render.sh && git ls-files -z '*.sh' ':!scripts/render.sh' | xargs -0 shellcheck",
+    "knip": "knip",
+    "format": "biome check --write",
+    "format:new": "bun scripts/format_new.ts --write",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
     "test": "bun test tests/*.test.ts",
     "test:e2e": "playwright test",
     "test:browser": "playwright test",
     "check:content": "bun scripts/check_content.ts --self-test && bun scripts/check_content.ts",
+    "check:docs": "bun scripts/check_docs.ts",
     "validate": "bun scripts/validate.ts",
     "gen:video-config": "bun scripts/gen_video_config.ts",
     "build:music": "uv run --locked --group audio python scripts/build_music.py",
@@ -43,12 +50,14 @@
     "remotion": "4.0.440"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.4",
     "@playwright/test": "1.64.1",
     "@remotion/bundler": "4.0.440",
     "@remotion/renderer": "4.0.440",
     "@types/bun": "1.3.6",
     "@types/react": "19.2.14",
-    "typescript": "6.0.2",
+    "knip": "6.44.1",
+    "typescript": "6.0.3",
     "wrangler": "4.156.1"
   }
 }

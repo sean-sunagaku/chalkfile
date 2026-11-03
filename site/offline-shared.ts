@@ -10,6 +10,8 @@ export type CourseManifest = {
   files: Asset[];
 };
 export type SavedVersion = { cache: string; manifest: CourseManifest; savedAt: string };
+/** 保存の記録（registry の 1 件。sw.ts が Response.json で書く）。新しい版が先頭で、前の完全な版を 1 つまで持つ */
+export type SavedRecord = { versions: SavedVersion[] };
 export type DownloadProgress = { id: string; loaded: number; total: number; file: number; count: number };
 export type CourseStatus = {
   id: string;
@@ -91,6 +93,94 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
   if (!urls.has(`${id}/`) || media.size === 0 || [...media.values()].some((x) => !x.has('mp4') || !x.has('jpg')) ||
       bytes !== m.bytes || bytes > 1024 * 1024 * 1024) throw new OfflineError('incomplete');
   return m;
+}
+
+/**
+ * 保存の記録の 1 つの版を確かめる（教材情報と、Cache の名前がその講座のものか）。prefix は Cache の名前の頭（chalkfile:<scope の path>:offline-v1:）。
+ * 利用者が保存した記録も毎回ここを通る。ここと validateManifest を厳しくすると、保存した講座が読めなくなる（tests/offline-compat.test.ts）
+ */
+export function checkSavedVersion(value: unknown, id: string, scope: string, prefix: string, mediaRoots: Record<string, string> = {}): SavedVersion {
+  const v = value as SavedVersion;
+  validateManifest(v?.manifest, id, scope, mediaRoots);
+  if (typeof v.cache !== 'string' || !v.cache.startsWith(`${prefix}course:${id}:`)) throw new OfflineError('manifest');
+  return v;
+}
+
+/** 保存の記録を読む（site/sw.ts）。1 つでも読めない版があれば、記録全体を読めないとして OfflineError を投げる */
+export function parseRecord(value: unknown, id: string, scope: string, prefix: string, mediaRoots: Record<string, string> = {}): SavedRecord {
+  const r = value as SavedRecord;
+  if (!r || !Array.isArray(r.versions) || r.versions.length > 2) throw new OfflineError('manifest');
+  for (const v of r.versions) checkSavedVersion(v, id, scope, prefix, mediaRoots);
+  return r;
+}
+
+/** 読めない記録が指していた Cache の名前（隔離する）。記録の形が壊れていて分からなければ null（その講座の Cache を全部隔離する） */
+export function recordCaches(value: unknown, id: string, prefix: string): string[] | null {
+  const versions = (value as { versions?: unknown } | null | undefined)?.versions;
+  const names = Array.isArray(versions) ? versions.flatMap((v) => {
+    const cache = (v as { cache?: unknown } | null)?.cache;
+    return typeof cache === 'string' && cache.startsWith(`${prefix}course:${id}:`) ? [cache] : [];
+  }) : [];
+  return names.length ? names : null;
+}
+
+/** 読めない記録が指す Cache を、消さずに残す日数。過ぎたら中身ごと消す */
+export const QUARANTINE_DAYS = 30;
+/**
+ * 隔離の印。Cache API には名前を変える操作が無く、写すと容量が 2 倍要る。そこで中身は元の名前のまま残し、
+ * 空の Cache を「quarantine:<隔離した時刻（ミリ秒）>:<元の名前>」の名前で作って印にする。元の名前のままなので、記録が読めるように戻れば、そのまま保存版に戻る
+ */
+export const quarantineName = (cache: string, at: number) => `quarantine:${at}:${cache}`;
+export function parseQuarantineName(name: string): { at: number; cache: string } | null {
+  const m = /^quarantine:(\d{1,16}):(.+)$/.exec(name);
+  return m ? { at: Number(m[1]), cache: m[2] } : null;
+}
+
+export type CleanupInput = {
+  /** caches.keys() */
+  names: string[];
+  /** Cache の名前の頭（chalkfile:<scope の path>:offline-v1:）。これで始まらない Cache と、その印には触れない */
+  prefix: string;
+  /** 残す Cache（registry・今の shell・読める記録が指す版） */
+  keep: Set<string>;
+  /** 隔離する Cache（読めない記録が指す版）と、記録の形が壊れていて指す先が分からない講座 */
+  held: { caches: Set<string>; ids: Set<string> };
+  /** 前の版の shell も消す（activate のときだけ） */
+  oldShell: boolean;
+  now: number;
+};
+
+/**
+ * cleanup で消す Cache と、新しく付ける隔離の印を決める（site/sw.ts が実行する）。
+ * 記録が指さない講座の Cache（途中で終わった保存の仮領域・更新で外れた版）は消す。読めない記録が指す Cache は消さずに印を付け、
+ * 印から 30 日たったら中身ごと消す。読めるように戻った・記録が消えた（保存し直し・削除）ときは印を外す。未来の時刻の印（端末の時計のずれ）は付け直す
+ */
+export function planCleanup({ names, prefix, keep, held, oldShell, now }: CleanupInput): { remove: string[]; create: string[] } {
+  const DAY = 24 * 60 * 60 * 1000;
+  const course = `${prefix}course:`;
+  const isHeld = (name: string) => held.caches.has(name) || [...held.ids].some((id) => name.startsWith(`${course}${id}:`));
+  const exists = new Set(names);
+  const marks = new Map<string, { name: string; at: number }[]>();
+  for (const name of names) {
+    const q = parseQuarantineName(name);
+    if (q?.cache.startsWith(course)) marks.set(q.cache, [...(marks.get(q.cache) ?? []), { name, at: q.at }]);
+  }
+  const remove = new Set<string>();
+  const create: string[] = [];
+  for (const name of names) {
+    if (keep.has(name) || parseQuarantineName(name)) continue;
+    if (name.startsWith(course)) {
+      if (!isHeld(name)) { remove.add(name); continue; }
+      const at = (marks.get(name) ?? []).filter((m) => m.at <= now + DAY).map((m) => m.at);
+      if (!at.length) create.push(quarantineName(name, now));
+      else if (now - Math.min(...at) >= QUARANTINE_DAYS * DAY) remove.add(name);
+    } else if (oldShell && name.startsWith(`${prefix}shell:`)) remove.add(name);
+  }
+  for (const [cache, list] of marks) {
+    const holding = exists.has(cache) && !remove.has(cache) && !keep.has(cache) && isHeld(cache);
+    for (const m of list) if (!holding || m.at > now + DAY) remove.add(m.name);
+  }
+  return { remove: [...remove], create };
 }
 
 export async function sha256(data: ArrayBuffer): Promise<string> {

@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { retainedWarnings, validateMediaManifest } from '../site/media-shared';
 import { checkSecrets } from './check_content';
 
 export const DEPLOY_GUARD = "github.repository == 'sean-sunagaku/chalkfile' && github.ref == 'refs/heads/main'";
@@ -8,6 +9,8 @@ export function validateWorkerConfig(value: any) {
       JSON.stringify(value.assets?.run_worker_first) !== JSON.stringify(['/media/*']) || value.assets?.not_found_handling !== '404-page') {
     throw new Error('静的サイトをWorkerへ通さない配信設定が不正です。');
   }
+  // /media/* の失敗を Workers Logs で見えるようにしておく（W-13）。logs.enabled があれば、そちらが優先する。
+  if ((value.observability?.logs?.enabled ?? value.observability?.enabled) !== true) throw new Error('Workers Logs（observability）が有効ではありません。');
 }
 export function validateWorkflow(value: any) {
   const fail = () => { throw new Error('Actions の公開条件・権限・secret の範囲・順序が不正です。'); };
@@ -50,6 +53,10 @@ if (import.meta.main) {
   const root = path.resolve(import.meta.dir, '..');
   validateWorkflow(Bun.YAML.parse(readFileSync(path.join(root, '.github/workflows/deploy.yml'), 'utf8')));
   validateWorkerConfig(JSON.parse(readFileSync(path.join(root, 'wrangler.jsonc'), 'utf8')));
+  // 期限を過ぎた retained は、公開を止めずに知らせる（media.ts check と同じ文）。
+  for (const message of retainedWarnings(validateMediaManifest(JSON.parse(readFileSync(path.join(root, 'site/media-manifest.json'), 'utf8'))))) {
+    console.warn(process.env.GITHUB_ACTIONS === 'true' ? `::warning::${message}` : `警告: ${message}`);
+  }
   for (const name of ['check.yml', 'deploy.yml']) {
     const text = readFileSync(path.join(root, '.github/workflows', name), 'utf8');
     for (const m of text.matchAll(/uses:\s*(\S+)/g)) if (!/@[a-f0-9]{40}$/.test(m[1])) throw new Error('Action は SHA で固定してください。');

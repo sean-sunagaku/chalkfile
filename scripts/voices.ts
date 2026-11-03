@@ -44,7 +44,10 @@ export const speechOf = (line: Line): string => {
  */
 export const ttsKeyV1 = (text: string, voice: VoiceId): string =>
   createHash('sha1').update(JSON.stringify([text, VOICES[voice]])).digest('hex').slice(0, 16);
-/** ttsKeyV1 の別名（今までの名前） */
+/**
+ * ttsKeyV1 の別名（今までの名前。素材の文書が scripts/voices.ts の ttsKey として指すので残す）
+ * @public
+ */
 export const ttsKey = ttsKeyV1;
 
 /* ───────────── 英語と中国語の声（Kokoro） ─────────────
@@ -101,9 +104,6 @@ export const creditsIn = (lang: Lang, voices: Iterable<VoiceId>): string[] => {
   for (const v of list) byRepo.set(v.repo, [...new Set([...(byRepo.get(v.repo) ?? []), v.voice])]);
   return [...byRepo].map(([repo, names]) => `Kokoro-82M${repo.endsWith('v1.1-zh') ? '-v1.1-zh' : ''} (${names.join(', ')})`);
 };
-
-/** 講座サイトのクレジット（その言語の全部の声） */
-export const siteCreditsIn = (lang: Lang): string[] => (lang === 'ja' ? SITE_CREDITS : creditsIn(lang, Object.keys(KOKORO[lang]) as VoiceId[]));
 
 /** 読み上げる文。日本語は英字をカナに開き（reading.ts）、英語と中国語は s か t を読む（強調の ** は外す。中国語は多音字を直す） */
 export const speechIn = (line: Line, lang: Lang): string => {

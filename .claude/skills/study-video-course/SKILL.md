@@ -79,15 +79,17 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 ### 6. 公開する
 
-動画とポスターを確認し `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。具体的な初回設定・公開・復旧は [../../../docs/workers-delivery.md](../../../docs/workers-delivery.md)。
+動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。具体的な初回設定・公開・復旧は [../../../docs/workers-delivery.md](../../../docs/workers-delivery.md)。
 
 新しい講座をReleasesへ置いたときは、全レクチャーの `site/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
 
-静的応答にno-transformを付け、CSPと保存用SHA-256を変える自動挿入を防ぐ。`bash scripts/deploy_pages.sh` は旧Pagesの案内だけを出す。移行SWのcache保持テストを通し、chalkfile.comの本番確認が済んでから切り替える。通常公開に旧Pages用スクリプトを使わない。
+静的応答にno-transformを付け、CSPと保存用SHA-256を変える自動挿入を防ぐ。`bash scripts/legacy/deploy_pages.sh` は旧Pagesの案内だけを出す。移行SWのcache保持テストを通し、chalkfile.comの本番確認が済んでから切り替える。通常公開に旧Pages用スクリプトを使わない。
 
-台詞の声を作り直したら `bun scripts/materials.ts push` で素材もそろえる。MP4・作業profile・認証情報をmainへ入れない。権限や公開範囲は今回の本人依頼を確認し、許可済み操作はその範囲で進める。
+台詞の声を作り直したら、`bun scripts/check_content.ts --require-denylist` を通してから `bun scripts/materials.ts push` で素材もそろえる。MP4・作業profile・認証情報をmainへ入れない。権限や公開範囲は今回の本人依頼を確認し、許可済み操作はその範囲で進める。
 
-初回のAPI tokenをCLIで登録するときは `bun scripts/setup_cloudflare_ci.ts plan` で対象と3権限を確認し、公式cf CLIの本人認可後に `apply` を使う。認可はscope追加を伴うため既存Wrangler OAuthの流用で置き換えない。tokenはghの標準入力だけへ渡し、登録に失敗したらその場で発行したものだけを失効する。
+初回のAPI tokenは `bun scripts/setup_cloudflare_ci.ts plan` で対象と3権限を確認する。cf beta.26はWorkers Editorの `workers-scripts.edit` を認可できないため、公式管理画面から対象accountのEditorと対象zoneのRoutes Write/Zone Readだけで作り、GitHubのproduction secretへ直接登録する。発行不可を理由にAdminへ広げず、`is_selectable: false` の安全確認も外さない。既存Wrangler OAuthや認証ファイルから秘密値を取り出さない。値は会話/ログ/ファイル/引数に残さず、登録後の `apply` で存在を確認してmainのActionsを開始する。作成と登録の途中で中断した場合はtoken名とIDのメタデータで状態を確認し、重複発行しない。CLIで発行可能な認可を使う場合だけ、値をプロセス内からghの標準入力へ渡し、登録失敗時はその場で発行したものだけを失効する。
+
+初期設定専用のcf profileが不要になったら、その名前を指定した `cf auth delete <profile>` で後片付けし、一覧で確認する。通常のWranglerや既存defaultの認証を削除しない。Actions成功後も本番でページ/CSP/SWと全動画Rangeを確認し、新しい専用profileへの全講座保存と、別プロセスの再起動後の通信遮断再生を分けて記録する。以前の保存profileは保全してから検証し、古い保存済み表示を新規保存成功と数えない。
 
 Mac Safariは `safaridriver` と `bun tests/verify-safari.ts` を使える。必要な初回設定はApple公式の `safaridriver --enable`（環境によりsudo認可が必要）。ロック中のpointer入力や画面更新の制限を、CLI全体が使えないという判断へ広げない。非表示中は保存/字幕ボタンのDOM clickと、動画から実際に取り出した非単色フレームを検証する。`--disconnect-wifi=<interface>` を明示した場合だけ実際にWi-Fiを切り、独立した復旧プロセスを先に用意する。Safariのnavigator.onLineだけで通信断を断定しない。実機が未接続ならシミュレータを実機成功として扱わない。
 

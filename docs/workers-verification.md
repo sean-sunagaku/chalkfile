@@ -1,13 +1,13 @@
-# Workers 配信の公開確認（2026-11-02）
+# Workers 配信の公開確認（2026-11-03）
 
-P-SUN-84 / SUN-1654〜1659。初回公開の日本語8講座・通常版45本と字幕焼き込み9本を対象とした結果を記録する。後続mainで追加されたGA4講座の確認は下記の再開結果に分ける。M3/M4は含めない。
+P-SUN-84 / SUN-1654〜1659。日本語9講座・通常版48本と字幕焼き込み12本をActionsで公開した確認結果。初回8講座の保存/移行/実通信断の証跡も保持し、GA4を含む9講座の再確認と区別する。M3/M4は含めない。iPhone実機は本人指示により今回の完了条件から除外した。
 
 ## 公開されたもの
 
 - 正本: https://chalkfile.com/ 。同じWorkerのCustom Domainに www.chalkfile.com も接続。
-- Worker version: `6a273b87-5429-449a-8b5b-21f8b28d2b1b`（PR18の `9d6f19e` を公開）。続くPR19はCIへのffmpeg追加のみ。
-- 動画: Releasesの8タグ・54 assets、合計823,714,815 bytes。マニフェストのサイズ、提供されたSHA-256、手元54本のSHA-256が一致。
-- サイト: 静的77 files、約4.7MB。静的公開物にMP4なし。Workerを先に通すのは `/media/*`。
+- 検証対象の公開: main `76a9da98b921459bb00cd8a7012f6a22b5473c37`、[Actionsの成功したattempt 2](https://github.com/sean-sunagaku/chalkfile/actions/runs/41468738419/attempts/2)。Worker version: `c8dd8884-31b6-4dcc-b63a-80009158bd0f`。初回のローカルWrangler公開から、production secretを使うActions公開へ移行できた。
+- 動画: Releasesの9タグ・60 assets、合計879,276,298 bytes。マニフェストのサイズ、提供されたSHA-256、手元60本のSHA-256が一致。
+- サイト: 静的82 files、約5.0MB。静的公開物にMP4なし。Workerを先に通すのは `/media/*`。
 - 旧Pages: `9dd4e82cf6bee4c4096bd84291825886ec987a8f`、移行案内13 files、約56KB。Pages buildはbuilt。旧版はローカルの `refs/chalkfile-backups/gh-pages-ad75d60` に保持。
 
 PR: [土台 #13](https://github.com/sean-sunagaku/chalkfile/pull/13)、[Releases #14](https://github.com/sean-sunagaku/chalkfile/pull/14)、[中継 #15](https://github.com/sean-sunagaku/chalkfile/pull/15)、[保存 #16](https://github.com/sean-sunagaku/chalkfile/pull/16)、[公開と移行 #18](https://github.com/sean-sunagaku/chalkfile/pull/18)、[CI修正 #19](https://github.com/sean-sunagaku/chalkfile/pull/19)。
@@ -16,16 +16,16 @@ PR: [土台 #13](https://github.com/sean-sunagaku/chalkfile/pull/13)、[Releases
 
 | 対象 | 結果 |
 |---|---|
-| 型・単体・安全点検 | typecheck、単体67件（CLIの最小権限/秘密値の受け渡し/失敗時失効/現行token形式を含む）、content自己検査/本検査に成功。秘密値は検出時も表示しない |
+| 型・単体・安全点検 | typecheck、単体68件（Editor発行不可時にAdminへ広げない回帰、CLIの最小権限/秘密値の受け渡し/失敗時失効/現行token形式を含む）、content自己検査/本検査に成功。秘密値は検出時も表示しない |
 | ブラウザ回帰 | Chrome: 21成功、公開していない多言語4件skip。保存/更新/削除/不足/破損/Range/シーク/旧SW移行を含む |
 | wrangler dev | `/` の全ページとSW scope `/`、CSP、中継206/HEAD/416/ダウンロードを確認 |
-| 本番HTML | トップと8講座の200、h1表示、CSP/JSエラーなし、SW scope `/`、no-transformを確認 |
-| 本番動画 | 全54本の `Range: bytes=0-1` が206、Content-Range、video/mp4、2 bytes、attachmentなし |
-| 本番保存 | 実際のchalkfile.comから8講座すべてを保存。ブラウザ終了後に同じ専用profileで再起動し、オフラインで8講座すべての表示/再生/30秒シークに成功 |
+| 本番HTML | トップと9講座の全10ページが200、h1表示、CSP/JSエラーなし、SW scope `/`、no-transformを確認 |
+| 本番動画 | 全60本の `Range: bytes=0-1` が206、Content-Range、video/mp4、2 bytes、attachmentなし。Actions内とMacからそれぞれ確認 |
+| 本番保存 | 実際のchalkfile.comから新しい専用profileに9講座すべてを保存。ブラウザ終了後に同じprofileで再起動し、通信遮断下で9講座すべての表示/再生/30秒シークに成功。初回8講座のprofileと証跡は別名で保全 |
 | 字幕と単体DL | Riveお笑い版の字幕オン/オフ、90秒シーク、オフラインでの通常版DLに成功。DLしたMP4のSHA-256がマニフェストと一致 |
 | 旧保存の実移行 | 切替前の本物のgithub.ioでPstack講座を保存→移行SWへ更新→cache名一覧/ノート不変→オフライン再生/90秒シーク/128 bytesのRange一致→オンラインで同じpath/query/講義hashのapexに到達 |
-| 旧URLとwww | トップ/8講座/404から新URLへ自動移動。queryと有効な講義hashを保持。wwwのHTMLからも同じpath/query/hashのapexへ移動。`www/media/` は301 |
-| Mac Safari CLI | Safari 26.5.2 / macOS 26.5.2の実ブラウザで全9ページ、SW scope /、再生/シーク、Rive全4ファイルの保存、Wi-Fi断での新規タブ起動/再生/90秒シーク/字幕切替/Range206/ダウンロード応答のSHA-256一致に成功 |
+| 旧URLとwww | トップ/9講座/404から新URLへ自動移動。queryと有効な講義hashを保持。wwwのHTMLからも同じpath/query/hashのapexへ移動。`www/media/` は301 |
+| Mac Safari CLI | Safari 26.5.2 / macOS 26.5.2の実ブラウザで全10ページ、SW scope /、再生/シーク、Rive全4ファイルの保存に成功。初回にはWi-Fi断での新規タブ起動/再生/90秒シーク/字幕切替/Range206/ダウンロード応答のSHA-256一致も確認 |
 
 本番ブラウザはMacのGoogle Chrome `156.0.8078.48`、headless、1440×1000。音声はmutedで再生し、再生時刻とデコード済みフレームを確認した。音声の聴取、Mac Safari、iPhone実機の結果とは分ける。
 
@@ -47,28 +47,19 @@ www作成直後は端末の負のDNSキャッシュが残ったため、公開DN
 
 100,000/日の枠はWorker要求の合計で、アプリ内保存、途中への移動、再試行、将来のチャットも枠を使う。静的assetsのページ/ポスター/VTTはこの枠を使わない。ブラウザ、動画の長さ、通信状態で要求数は変わるため、参考再生数は保証値ではない。[Cloudflareの制限](https://developers.cloudflare.com/workers/platform/limits/)・[静的assetsの料金](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)
 
-## Actionsの実行結果と本人の残作業
+## Actionsの実行結果と残作業
 
-再開時の最新mainにはGA4講座（3講義・通常版3本/字幕版3本）が追加され、9講座・60動画になっていた。[新mainのActions](https://github.com/sean-sunagaku/chalkfile/actions/runs/41445266401)はG01〜G03のポスター不足を検出し、公開前に停止した。[PR23](https://github.com/sean-sunagaku/chalkfile/pull/23)で、SHA-256照合済みの通常版からrender.shと同じ4.2秒地点・幅1280・JPEG品質3の画像を補い、目視した。Releasesの全60本のサイズ/提供SHAと手元SHA、strict build（82 files・5.0MB・MP4なし）、公開物点検、typecheck、単体67件、Chrome回帰21成功/未公開言語4skipを確認した。
+他の作業で追加されたGA4講座（3講義・通常版3本/字幕版3本）も公開対象に含めた。[ポスター不足で停止したActions](https://github.com/sean-sunagaku/chalkfile/actions/runs/41445266401)を受け、[PR23](https://github.com/sean-sunagaku/chalkfile/pull/23)でSHA-256照合済みの通常版から、render.shと同じ4.2秒地点・幅1280・JPEG品質3の画像を補い、目視した。全60本のSHA/サイズ、strict build、公開物点検、型・単体・Chrome回帰も成功。古い移行SW生成物を使う回帰サーバーの不備も修正し、意図的に旧生成物を置いた移行2件が成功、再生成SWと本番gh-pagesのSHAも一致した。
 
-古いローカル移行SW生成物による回帰の失敗も修正した。テストサーバーは起動時に現在のソースから組み立てる。旧SWの生成物を意図的に置いてから起動した移行2件が成功し、再生成したSWは本番gh-pagesのものとSHA一致。PR23はmainの `978aef79f35a56f5e7104ed5e1c6fe702381559e` へマージ済み。[そのmainの公開workflow](https://github.com/sean-sunagaku/chalkfile/actions/runs/41450025967)はinstallからstrict build/公開物点検まで成功し、Deployのsecret未設定チェックで停止した。Cloudflareの最終認可確認を待っており、API token作成・production secret登録とActionsの実公開成功は未完了。現行本番へのGA4講座の追加はまだ成功と扱わない。
+2026-11-03、専用account token `chalkfile-github-production` を1件作成し、GitHub productionの `CLOUDFLARE_API_TOKEN` に登録した。Workers Editorは対象account、Workers Routes Write / Zone Readはchalkfile.comだけ。cf beta.26のOAuth制約で最小権限のCLI発行が拒否されたため、Adminへ広げず公式管理画面で発行・登録した。値は隔離したブラウザ内の一時メモリから直接secret欄へ渡し、登録後に破棄。会話/ファイル/引数/ログへは残していない。既存の認証ファイルや個人のWrangler OAuthも読み出していない。初期設定専用のcf profileは `cf auth delete chalkfile-ci-bootstrap` で削除し、一覧が空であることを確認した。通常のWrangler認証は対象にしていない。
 
-[mainの公開workflow](https://github.com/sean-sunagaku/chalkfile/actions/runs/41411442324)では、install/型/単体/content/ffmpeg/素材取得/cached-only合成/Releases照合/strict build/公開物点検がすべて成功。Deployで未登録のAPI tokenを検出して停止した。現行本番は既存のローカルOAuthを使うWranglerから公開したもの。Actionsでの実公開成功は未確認。
+`setup_cloudflare_ci.ts apply` がmain限定policy、account ID、secret名の存在を読み戻して公開を開始した。[成功したActions](https://github.com/sean-sunagaku/chalkfile/actions/runs/41468738419/attempts/2)はinstall/型/単体/content/ffmpeg/素材取得/cached-only合成/Releases照合/strict build/公開物点検/Deploy/全60動画Rangeまで成功。最初のattemptはUbuntu配布ミラーの取得が7分以上進まず、Deploy前に中断した。新しいrunnerでの再実行は同じ検査を通過して成功した。以前のsecret未設定チェックによる停止も解消した。
 
-[非mainのworkflow_dispatch](https://github.com/sean-sunagaku/chalkfile/actions/runs/41412622989)はjob全体がskippedで、公開しなかった。production environmentはmain限定、Cloudflare secretはDeploy stepだけに渡す。Action SHA固定、contents: read、npm ci --ignore-scripts、公開の直列化も検査対象。
+この公開の後、Macから全10ページの200/CSP/JS/SW、全60動画の206を確認した。新しいChrome profileへ9講座すべてを保存し、完全終了後の別プロセスで通信を遮断して9講座の再生/30秒シーク、Riveの字幕切替/90秒シーク、単体DLのSHA-256一致に成功。旧github.ioからのトップ/9講座/404とwwwの移動もquery/hashを保って成功した。Mac Safariでも全10ページ、1920×1080の実デコード、再生/シーク、Rive全4ファイル保存が成功した。この再実行のdocumentはhiddenだったためDOM clickを使った。前記の初回実通信断と、解除後の通常pointer操作の証跡を別に保ち、今回それらを再実施したとは扱わない。
 
-今回の確認範囲: 2026-11-02の本人指示「実機はしなくていい」により、iPhone実機はM1/M2の完了条件から除外した。Mac Safari/Chrome、実通信断、保存/Range/シーク/移行の検証は維持する。iPhone未検証を成功に置き換えない。
+[非mainのworkflow_dispatch](https://github.com/sean-sunagaku/chalkfile/actions/runs/41412622989)はjob全体がskippedで、公開しなかった。productionはmain限定、Cloudflare secretはDeploy stepだけ。Action SHA固定、contents: read、npm ci --ignore-scripts、公開の直列化、機密情報/MP4の公開物混入防止を維持する。権限ヘルパーとDocs/Skillの更新は[PR33](https://github.com/sean-sunagaku/chalkfile/pull/33)にまとめ、公開するWorkerと静的ファイルのコードは変更していない。
 
-Cloudflareの表示済み権限については本人から続行許可を受領済み。トークン作成の実行許可を再度求める必要はないが、公式cfの本人認可が完了するまでは発行APIを呼ばない。Macのロック解除とCloudflareでの認可完了は別の状態として確認する。
-
-本人が行う作業:
-
-1. [配信手順](workers-delivery.md)の公式cf CLIの初回認可を本人が承認する。認可後のtoken作成/production secret登録/mainのdeploy開始は `setup_cloudflare_ci.ts apply` で進める。API tokenの値を会話やファイルへコピーする必要はない。再開時はブラウザに権限を表示し、新規の機密アクセスを与える最終確認を依頼した。Device Grantは確認待ちの間に期限切れになったため、同じコードを再利用しない。token作成は未実施、production secretの件数0を読み戻した。Actions経由の実公開成功は引き続き未確認。
-2. ドメインの商標確認（SUN-1653）は本人が判断する。登録済み/自動更新オフの方針は変更していない。
-
-除外前のiPhone接続確認では、CoreDeviceのiPhone 11はpaired/unavailable、利用可能なmobile inventoryはシミュレータだけで、Mirroringも接続不能だった。Apple WebDriverでも実機sessionを作れなかった。これらは接続確認の記録であり、実機Safariの動作確認ではない。今後、追加依頼があれば対象を再確認して実施する。
-
-任意で追加検証する場合のSafari手順: `https://chalkfile.com/rive-comedy/` を開く→再生→90秒へシーク→字幕オン/オフ→アプリ内保存完了→ブラウザを閉じる→通信を切る（iPhoneは機内モード、Wi-Fiもオフ）→同じURL/ホーム画面のアプリから開く→再生/シーク/字幕切替→動画ファイルDL→通信を戻す→保存削除と再保存。OS/Safari版、成否、最初に止まった手順をSUN-1659へ残す。
+M1/M2の実装・公開・今回の範囲の検証に残作業はない。iPhone実機は2026-11-02の本人指示「実機はしなくていい」により対象外で、未実施を成功に置き換えない。本人が判断する残件はドメインの商標確認（SUN-1653）。自動更新オフの方針は変更していない。SUN-1627のDone操作は本人の担当として触れていない。
 
 ## 再実行と証跡
 

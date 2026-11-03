@@ -32,7 +32,7 @@ JPGは小さな静的入力として `site/posters/` に入れる。MP4を取得
 
 Releasesに動画を追加しただけでは公開入力はそろわない。新しい講座には各レクチャーの `site/posters/<ID>.jpg` も必要で、欠けたままならstrict buildが公開前に停止する。旧手順で作った動画から補う場合は、SHA-256を確認して取得した通常版MP4の4.2秒地点を、`render.sh` と同じ幅1280・JPEG品質3で取り出す。作成したポスターを目視してコミットし、strict buildを通す。CIで動画をダウンロードして画像を補う方式にはしない。
 
-ブラウザ回帰用サーバーは起動時に現在のソースから移行案内とSWを組み立てる。以前の `site/migration-dist` が残っていても、旧SW移行テストに古い生成物を使わない。実際のgh-pagesへの反映は、このテスト生成とは別の `deploy_pages.sh` だけが行う。
+ブラウザ回帰用サーバーは起動時に現在のソースから移行案内とSWを組み立てる。以前の `site/migration-dist` が残っていても、旧SW移行テストに古い生成物を使わない。実際のgh-pagesへの反映は、このテスト生成とは別の `scripts/legacy/deploy_pages.sh` だけが行う。
 
 ## Cloudflare と GitHub の初回設定
 
@@ -40,25 +40,27 @@ WorkersはFreeを維持する。Paid、R2、Terraformを導入しない。Custom
 
 GitHubの[production environment](https://github.com/sean-sunagaku/chalkfile/settings/environments)はcustom branch policyを `main` だけにする。workflowのrepository/ref条件でもmainを確認する。`CLOUDFLARE_ACCOUNT_ID` はこのenvironmentのvars、`CLOUDFLARE_API_TOKEN` はこのenvironmentのsecretに設定する。
 
-API tokenは[CloudflareのAPI Tokens](https://dash.cloudflare.com/profile/api-tokens)で作る。アカウントを対象のものに限定し、既存の `chalkfile` Workerを更新するEditor権限（従来の権限表示は Workers Scripts / Edit）を使う。Custom DomainをWranglerで照合・変更するための Zone / Workers Routes / Edit と Zone / Zone / Read は `chalkfile.com` だけに限定する。D1/KV/R2/Registrar/請求/全zoneの権限は付けない。アカウントIDをvarsに渡すため、アカウント一覧の取得権限をCIへ追加しない。細粒度のWorker指定が選べる画面では `chalkfile` を選ぶ。
+API tokenは[Cloudflare管理画面](https://dash.cloudflare.com/)で対象accountの Manage Account → Account API Tokens から作る。既存の `chalkfile` Workerを更新する **Workers Editor**、`chalkfile.com` だけの **Workers Routes Write** と **Zone Read** の3権限にする。従来の Workers Scripts Write を選ぶと、現在はより広いWorkers Adminに対応するため使わない。Custom Domainは現時点でWorker単位の権限に対応しないため、Editorは対象accountに限定する。D1/KV/R2/Registrar/請求/全zone/token発行の権限は付けない。アカウントIDをvarsに渡すため、アカウント一覧の取得権限をCIへ追加しない。[公式の権限とCustom Domainの制約](https://developers.cloudflare.com/workers/authorization/workers/)
 
 token値はその場でGitHubのsecret欄に入力する。会話・Issue・PR・ファイル・ログ・Wrangler設定へ貼らない。個人のWrangler OAuth tokenをCIへ流用しない。ActionsではCloudflare secretをDeploy stepだけに渡し、依存のinstallや素材取得、テスト、buildでは使わない。ActionはSHAで固定、`contents: read`、checkoutのcredential永続化なし、npmは `--ignore-scripts`。
 
-### CLIで初回登録する
+### 初回登録とCLIでの公開開始
 
-本人からCLIでの登録を依頼されたときは、API tokenの値を手作業でコピーせず次を使える。
+`plan` は変更や認証を行わず、固定のリポジトリ/account/zone/3権限と秘密値の扱いを表示する。
 
 ```bash
 bun scripts/setup_cloudflare_ci.ts plan
-CLOUDFLARE_AUTH_USE_KEYRING=true npm exec --yes --ignore-scripts --package=cf@1.0.0-beta.26 -- cf auth create chalkfile-ci-bootstrap --no-browser --scopes account:read user:read account_api_tokens:create workers:write workers_routes:write zone:read
+```
+
+2026-11-03に公式cf `1.0.0-beta.26` で確認した制約: Workers Editorに対応する `workers-scripts.edit` はCLIで無効なscopeとして拒否され、同じOAuthクライアントのDevice Grantも `invalid_scope` となった。`workers-scripts.write` の認可から発行しようとすると、作成APIは必要なscope不足で拒否する。権限一覧の `is_selectable: false` を無視したり、Adminへ広げたり、同じ認可を繰り返したりしない。CLIの権限対応が更新されるまでは、上記の管理画面で専用tokenを作り、値をGitHub productionのsecret欄へ直接登録する。
+
+登録後は次を使う。`apply` はproductionのmain限定policy、account ID、secret名の存在を読み戻してmainのActionsを開始する。既存secretがあれば新規tokenを作らず、値も取得しない。
+
+```bash
 bun scripts/setup_cloudflare_ci.ts apply
 ```
 
-最初の認可だけは、cfが表示するCloudflareのURLと期限付きコードを本人が承認する。CLIにもこの認可を省く仕組みはない。期限切れなら認可コマンドをやり直す。既存Wrangler OAuthにはtoken発行scopeがないため、権限があると推測したり、認証ファイルから取り出してCIへ流用したりしない。cfは独立した専用profileを使い、OAuth認証はOS keychainで暗号化して保持する。[Cloudflare CLIの認可](https://developers.cloudflare.com/cf/get-started/)・[2026-10-01のtoken発行scope追加](https://developers.cloudflare.com/changelog/post/2026-10-01-account-api-token-provisioning/)
-
-認可画面のSensitive scopesには `Account API Token Provisioning` が表示されるが、初期状態ではオフだった。この権限を選ばない認可ではtoken作成を進めない。画面には必須のUser Read/Background Accessと、Account Read・Workers Write・Workers Routes Write・Account Zone Readも表示される。対象accountと実際に与える権限を最終承認前に確認し、無関係な権限を追加しない。この初回認可と、CI用に作るtokenの3権限は区別する。
-
-`plan` は変更や認証を行わず、固定のリポジトリ/account/zone/3権限を表示する。`apply` はproductionのmain限定policyとaccount IDを読み戻してから、`chalkfile.com` のzoneを一意に確認する。許可された3権限だけのaccount API tokenを公式cfで作り、その応答をメモリ内から `gh secret set` の標準入力へ渡す。秘密値は表示・ファイル保存・コマンド引数への展開をしない。登録失敗時は、その実行で発行したtokenだけを失効する。すでにproduction secretがあれば新規発行せず、存在を確認してmainのActionsを開始する。登録失敗で結果が不明な場合は、発行したtokenの失効とGitHub側の状態を確認してから再試行する。
+CLIで最小権限を発行可能な認可を使う場合だけ、`apply` は対象zoneと発行可能な3権限を確認し、作成APIの応答をメモリ内から `gh secret set` の標準入力へ渡す。秘密値は表示・ファイル保存・引数への展開をしない。登録失敗時はその実行で発行したtokenだけを失効する。途中で中断した場合はtoken名/IDとGitHub secret名のメタデータで状態を確認し、重複発行しない。既存Wrangler OAuthをCIへ流用せず、認証ファイルも読まない。初期設定専用の認可profileはOS keychainを使う。[Cloudflare CLIの認可](https://developers.cloudflare.com/cf/get-started/)・[発行できる権限とis_selectable](https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/)
 
 CI側のtokenへはtoken作成権限・KV/R2/D1/Registrar/請求権限を渡さない。cfをプロジェクトの公開ツールへ移行する操作もしない。通常公開は固定版Wranglerのまま。secret検査はCloudflareの現行prefix付き認証値も文章全体から検出する。[tokenの形式](https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/)
 
@@ -68,13 +70,46 @@ CI側のtokenへはtoken作成権限・KV/R2/D1/Registrar/請求権限を渡さ�
 
 サイトは無料の静的assetsが配り、Workerを先に通すのは `/media/*` だけ。動画は固定リポジトリのReleasesへRange/If-Rangeだけを渡し、本文をstreamで返す。毎回元のURLからredirectをたどり、署名付きLocationを保存・ログ出力しない。
 
+`/media/` の応答（200・206・416・HEAD・エラー）には `Cross-Origin-Resource-Policy: same-origin` を付け、ほかのサイトに動画を埋め込ませない（その再生で Worker の無料枠を使わせない）。
+
 静的応答には `Cache-Control: public, max-age=0, must-revalidate, no-transform` を付ける。CloudflareによるHTML/画像の変更と自動Web Analytics beaconの挿入を防ぎ、CSPと保存用SHA-256を維持する。SWはno-cache。2026-11-02に自動beaconによるCSP違反を実際に検出し、no-transform後に全9ページで違反なしを確認した。[Cloudflareの仕様](https://developers.cloudflare.com/web-analytics/get-started/)
 
 wwwも同じWorkerのCustom Domainで管理する。HTMLはassetsで返し、その先頭のCSPハッシュ付き `location.replace` で同じpath/query/hashのapexへ自動移動する。HTMLの最初のHTTP状態は200（不明pathは404）。`www/media/` はWorkerから301を返す。この構成では通常の静的リクエストでWorkerを呼ばず、zone Redirect Ruleの追加権限もCIへ渡さない。
 
+## Worker のログ
+
+`wrangler.jsonc` の `observability.enabled` で Workers Logs を有効にしている（preview の env も受け継ぐ）。Free は 2026-11-30 まで 1 日 20 万件・3 日保存で、呼び出しの記録（1 回に 1 件）と `console` の出力（1 回の出力に 1 件）を数える。この Worker が `console` に出すのは失敗したときの 1 件だけで、Free の Worker の要求は 1 日 10 万件までなので、全部が失敗しても 20 万件に収まる。
+
+2026-12-01 からは Cloudflare Observability の料金に移り、Free は 1 日 0.5GB（ログと trace の合計）・7 日保存になる。上限に達すると、その日（00:00 UTC まで）は取り込みが止まるだけで、Free では超過分の料金はかからない。[Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)・[Observability の料金](https://developers.cloudflare.com/observability/pricing/)・[Workers の制限](https://developers.cloudflare.com/workers/platform/limits/)（2026-11-02 に確認）
+
+`/media/*` の失敗は `{ message: 'media_upstream_failed', code, status, host, course, lecture }` を 1 件だけ `console.error` に出す。URL・path・query・署名・例外の本文は出さず、`host` はホスト名だけにする。無い値は `null`。
+
+| code | 意味 | 利用者への応答 |
+|---|---|---|
+| `upstream_missing` | Releases が 404 を返した（asset か tag が無い） | 404 |
+| `redirect_host` | redirect を拒んだ（許可外のホスト・https でない・認証情報つき・Location が無いか読めない・4 回目）。`host` は拒んだ行き先 | 502 |
+| `status` | 上流が 200・206・416・404・redirect 以外を返した（403・429・5xx など） | 502 |
+| `network` | 上流につながらなかった（DNS・切断・時間切れ）。`host` はつなごうとした先 | 502 |
+
+## 手元の smoke
+
+`wrangler dev` は手元の workerd で動き、Cloudflare の認証は要らない（空の HOME・token なしで起動して確かめた）。既定では routes の先頭（`chalkfile.com`）を `request.url` と Host にするので、www を Host ヘッダーで試すために `--infer-origin-from-routes=false` を付ける。
+
+```bash
+bun scripts/synth.ts --cached-only && bun scripts/build_site.ts --strict
+npx --no-install wrangler dev --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で
+bun scripts/smoke_worker.ts http://127.0.0.1:8787/
+```
+
+HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る。ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 を見る。CI にはまだ入れていない。
+
+## 古いハッシュの動画（retained）の期限
+
+`media.ts push` で一覧から外れた旧ハッシュの動画は、`retained` に `retainedUntil`（UTC の日付。その日まで）を付けて残す。期限は retained に入れた日から 90 日で、すでに retained にあるものの期限は変えない（期限の無い古い項目には、次の push で付ける）。期限を過ぎたものが残っていると、`media.ts check`（`build_site.ts --strict` の中でも流れる）と `check_delivery.ts` が警告する。Actions では注釈にし、公開は止めない。外すと Worker はその URL に 404 を返すので、開いたままの旧ページが無くなった頃に持ち主が外す。延ばすときは `retainedUntil` を書き換える。Release の asset は消さない。
+
 ## 旧 GitHub Pages の切替
 
-`bash scripts/deploy_pages.sh` は移行案内だけを出す。最新main・cleanなcheckout・公開先の全動画Range・ブラウザのCSP/SW確認に通らないと止まる。見ていた旧gh-pages SHAを指定したforce-with-leaseを使い、ローカルの `refs/chalkfile-backups/gh-pages-<main SHA>` に復旧参照を残す。通常のサイトとMP4をgh-pagesへ公開し直す用途には使わない。
+`bash scripts/legacy/deploy_pages.sh` は移行案内だけを出す。最新main・cleanなcheckout・公開先の全動画Range・ブラウザのCSP/SW確認に通らないと止まる。見ていた旧gh-pages SHAを指定したforce-with-leaseを使い、ローカルの `refs/chalkfile-backups/gh-pages-<main SHA>` に復旧参照を残す。通常のサイトとMP4をgh-pagesへ公開し直す用途には使わない。
 
 案内はトップ・全講座・404にcanonical、meta refresh、押せるリンク、path/query/hashを保持するlocation.replaceを置く。旧scope `/chalkfile/` のSWを登録してから移る。
 

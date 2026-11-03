@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Stripe サブスク課金 実装講座 — BGM・ジングル・効果音ジェネレータ
 
 すべてコードだけで合成する（サンプル音源・ダウンロードなし）。乱数はすべて固定 seed
@@ -672,7 +671,7 @@ def voice(pcs, prev, lo: int, hi: int, center: float) -> list[int]:
         if notes[-1] - notes[0] > 12:
             continue
         cost = 0.4 * abs(float(np.mean(notes)) - center)
-        cost += 2.5 * sum(1 for a, b in zip(notes, notes[1:]) if b - a == 1)  # 半音の団子を避ける
+        cost += 2.5 * sum(1 for a, b in itertools.pairwise(notes) if b - a == 1)  # 半音の団子を避ける
         if prev is not None:
             cost += sum(abs(a - b) for a, b in zip(notes, prev))
         if cost < best_cost:

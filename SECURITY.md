@@ -24,12 +24,16 @@ To report a vulnerability, please use GitHub's private vulnerability reporting (
   - リファラーは `strict-origin-when-cross-origin`、外へのリンクは `noopener noreferrer`
   - 台本のデータはスクリプトとして動かない形（`type="application/json"`）で埋め込み、`<` を `<` に置き換える
 - 公開の前の点検（`bun scripts/check_content.ts`）
-  - 台本の中の AI への指示文（プロンプトインジェクション）・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・秘密情報の形
-  - Git に入れる全部のテキストファイルの見えない文字・秘密情報の形・手元だけの禁止語（`.denylist.local`）
-  - `--self-test` で、見つけるべき例を見つけ、見逃すべき例を見逃すかを確かめる
+  - 台本の中の AI への指示文（プロンプトインジェクション）・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・制御文字・秘密情報の形
+  - Git に入れる全部のテキストファイルの見えない文字・制御文字（タブ・改行・復帰のほか）・秘密情報の形・手元だけの禁止語（`.git/info/chalkfile-denylist` か `.denylist.local`。どちらも Git に入れない）
+  - 動画と音声（`mp4`・`mov`・`wav`・`flac`・`m4a` など）と、5MiB を超えるファイルを Git に入れない（動画は Releases、声の素材は `materials` ブランチ。ポスターと `tests/fixtures/` は理由つきで外し、50MiB で止める）
+  - わざと書いた例は、`scripts/content-allow.json` に `{ "text", "rule", "why" }` で書き、その所のその規則だけを許す。見えない文字・制御文字・秘密情報の形・禁止語は許さない
+  - `--self-test` で、見つけるべき例を見つけ、見逃すべき例を見逃すかを確かめる（`tests/check-content.test.ts`）
 - clone した人の手元で勝手に動くものを置かない
-  - Claude Code の設定と hooks（`.claude/settings*.json`・`.claude/hooks/`）を Git に入れない
+  - Claude Code: `.claude/` に入れるのはスキルと `launch.json` だけ（設定・hooks・agents・commands は入れない）。スキルの頭書きに `hooks`・`allowed-tools` を書かない。`launch.json` が起動するのは、決めたコマンド（`bun scripts/serve.ts`・`npx remotion studio`・`npx wrangler dev`）だけ
+  - 開く・入る・使うだけでコマンドが動く設定（`.npmrc`・`.mcp.json`・`.vscode/tasks.json`・`.devcontainer/`・`.envrc`・`.husky/`・`lefthook.yml`・`.pre-commit-config.yaml` など）を入れない。`bunfig.toml` の `preload`・`plugins` と、`.vscode/settings.json` のシェル・実行ファイルの場所・自動で動く tasks の許可も止める
   - npm のインストール時スクリプト（`postinstall` など）を置かない。CI は `npm ci --ignore-scripts` で依存のスクリプトも動かさない
+- AI への指示（`.claude/`・`CLAUDE.md`・`AGENTS.md`）・スクリプト・CI・配信の設定・依存の変更は、`.github/CODEOWNERS` で持ち主のレビューに回す
 - GitHub Actions は読み取りだけの権限で動かし、使う Action はコミットの SHA で固定する
 - Workers の動画中継はマニフェストにある固定リポジトリの動画だけ。上流へRange/If-Rangeだけを渡し、Cookie/Authorization・任意URLを転送しない。署名付きredirect URLや例外本文をログへ出さない
 - Actionsのproduction environmentはmainだけ。Cloudflare secretは検証を終えたDeploy stepにだけ渡し、個人のOAuthをCIへ流用しない。生成した静的公開物も `scripts/check_delivery.ts` で点検する

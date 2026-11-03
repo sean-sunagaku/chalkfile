@@ -1,0 +1,21 @@
+// 動画の描画（src）と台本（content）で、毎回ちがう値になるものを使わない
+// Remotion はフレームを別々の処理で描くので、同じ入力から毎回同じ絵にならないと、書き出しのたびに絵が変わる。
+// 台本は音声の鍵（中身から決まる名前）の元なので、ここも毎回同じにする。
+// - 乱数は remotion の random(seed)（同じ seed なら同じ値）を使う
+// - 時刻は、台本に書くか、フレーム（useCurrentFrame）から決める
+// 対象のファイルは biome.jsonc の plugins の includes で決める。
+language js
+
+or {
+  `Math.random()`,
+  `Date.now()`,
+  `new Date()`,
+  `Date()`,
+  `performance.now()`
+} as $call where {
+  register_diagnostic(
+    span = $call,
+    message = "描画と台本では、毎回ちがう値（乱数・今の時刻）を使わない。乱数は remotion の random(seed) を使い、時刻は台本かフレームから決める。",
+    severity = "error"
+  )
+}
