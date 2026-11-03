@@ -1,0 +1,54 @@
+# 文書の地図
+
+Chalkfile の文書の入口。話題ごとに正本（直すときに、そこだけを直せばよいファイル）を 1 つに決め、ここに 1 行ずつ書く。
+
+- （予定）は、まだ作っていない文書。できるまでは「今の置き場所」を読む
+- 言葉の意味は [用語集](architecture/glossary.md)、全体の仕組みは [全体図](architecture/overview.md)
+
+## 話題と正本
+
+| 話題 | 正本 | 今の置き場所・メモ |
+|---|---|---|
+| 全体の仕組み（データの流れと置き場所） | [architecture/overview.md](architecture/overview.md) | |
+| 言葉の意味 | [architecture/glossary.md](architecture/glossary.md) | |
+| 講座の作り方 | スキル [study-video-course](../.claude/skills/study-video-course/SKILL.md) | 共通プロンプトから講座を丸ごと作るときは [course-from-prompt](../.claude/skills/course-from-prompt/SKILL.md) |
+| 画面と話し方 | [style.md](../.claude/skills/study-video-course/references/style.md) | |
+| テーマ（色・書体・背景） | 値は `content/themes.ts`、仕様は [theme.md](../.claude/skills/study-video-course/references/theme.md) | |
+| お笑い版の作り方 | [comedy.md](../.claude/skills/study-video-course/references/comedy.md) | |
+| 多言語 | [i18n.md](../.claude/skills/study-video-course/references/i18n.md) | |
+| 読む教材・章の計画 | [materials.md](../.claude/skills/study-video-course/references/materials.md) | 名前は materials だが「教材」の話（「素材」とは別。[用語集](architecture/glossary.md)） |
+| 調べ方・事実の確かめ方 | [research.md](../.claude/skills/study-video-course/references/research.md) | |
+| 名前と公式ドキュメントの使い方 | [rights.md](../.claude/skills/study-video-course/references/rights.md) | |
+| コマンド | `package.json` の `scripts` と `docs/guide/commands.md`（予定） | 今は [README](../README.md) の「作り直す」「素材から作り直す（VOICEVOX なし）」「サイト変更の検証」と、スキルの [pipeline.md](../.claude/skills/study-video-course/references/pipeline.md) |
+| 公開の順番 | `docs/operations/publish.md`（予定） | 今は [workers-delivery.md](workers-delivery.md) の「公開する順番」 |
+| 初回の設定（Cloudflare・GitHub） | `docs/operations/setup.md`（予定） | 今は [workers-delivery.md](workers-delivery.md) の「Cloudflare と GitHub の初回設定」 |
+| 戻し方・ハマりどころ | `docs/operations/recovery.md`・`troubleshooting.md`（予定） | 今は [workers-delivery.md](workers-delivery.md) の「機密情報と復旧」と、[pipeline.md](../.claude/skills/study-video-course/references/pipeline.md) の「ハマりどころ」 |
+| 安全（AI 向けのきまり・公開物・点検） | [CLAUDE.md](../CLAUDE.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts`。AI 共通のきまりは `AGENTS.md`（予定）に移す |
+| 保存の設計（オフライン・PWA） | `docs/architecture/offline.md`（予定） | 今はスキルの [offline.md](../.claude/skills/study-video-course/references/offline.md) |
+| 学ぶ人向けの保存の説明 | `docs/guide/learner-offline.md`（予定） | 今は [README](../README.md) の「講座を保存してオフラインで学ぶ（PWA）」 |
+| 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
+| 日付つきの記録 | `docs/history/`（予定） | 今は [workers-verification.md](workers-verification.md) と [courses/production-notes.md](courses/production-notes.md) |
+| 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない（production-notes.md だけは手書きの記録） |
+| 参加・脆弱性の報告・ライセンス | [CONTRIBUTING.md](../CONTRIBUTING.md)・[SECURITY.md](../SECURITY.md)・[LICENSE](../LICENSE)・[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)・[DISCLAIMER.md](../DISCLAIMER.md) | |
+
+## docs/ の置き方
+
+| 場所 | 中身 |
+|---|---|
+| `architecture/` | 仕組みの説明（全体図・用語集。保存の設計も、ここに移す予定） |
+| `adr/` | 決めたことの記録 |
+| `courses/` | 生成物（読む教材） |
+| `guide/`（予定） | 始め方・講座の足し方・コマンド・学ぶ人の保存 |
+| `operations/`（予定） | 公開・初回の設定・戻し方・ハマりどころ。今の `workers-delivery.md` を分けて移す |
+| `history/`（予定） | 日付つきの記録。今の `workers-verification.md` と `courses/production-notes.md` を移す |
+
+## 文書の決まり
+
+1. 手順・設定の値・一覧は、正本の 1 か所にだけ書く。ほかの場所には 1 行の要約と、正本へのリンクを置く
+2. 版・件数・一覧（講座・テーマ・声・動画の本数など）を写さない。コードかデータから作るか、点検で照らし合わせる。ADR と日付つきの記録は、確かめた日の値を日付と一緒に残してよい
+3. 「〜は無い」「〜はまだ無い」と書かない。足されたときに、誰も直さないまま古くなる。あるもの・決めたことを書く
+4. 決めたことの理由は [ADR](adr/README.md) に書き、ほかの文書からはリンクする
+5. 日付つきの記録（確かめた結果・つまずき）は、今の手順と分けて置く
+6. 生成物は手で直さない。元の台本かスクリプトを直して作り直す
+7. リンクは相対パスで書く。（予定）の文書にはリンクせず、できてから張る
+8. 文体は平易な日本語の常体（「〜する」）。漢語・外来語・英字を減らし、コードの名前とコマンドはそのまま書く。見本はスキルの [style.md](../.claude/skills/study-video-course/references/style.md) と [theme.md](../.claude/skills/study-video-course/references/theme.md) の書き方。AI に向けた文体のきまりの正本は `AGENTS.md`（予定）に置く
