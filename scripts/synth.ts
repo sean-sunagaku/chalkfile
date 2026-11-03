@@ -34,7 +34,7 @@ import { ROOT, ttsDirs } from './lib/paths';
 import { setVerbose, trace } from './lib/proc';
 import { emitVideo, type OutDirs, outDirs } from './stages/timeline/emit';
 import { runKokoro } from './stages/voice/kokoro';
-import { readVoice, type Voice, type VoiceStore, writeVoice } from './stages/voice/store';
+import { readVoice, type Voice, type VoiceStore, versionsOf, writeVoice } from './stages/voice/store';
 import { timeoutFromEnv, type Voicevox, voicevox } from './stages/voice/voicevox';
 import { timelineFiles } from './timelines';
 import { recipeIn, ttsKeysIn, type VoicevoxRecipe } from './voices';
@@ -49,6 +49,8 @@ export type Ctx = {
   engine: Voicevox;
   /** 動画ごとの 1 行（既定は標準出力） */
   log?: (line: string) => void;
+  /** 注意（既定は標準エラー） */
+  warn?: (line: string) => void;
 };
 
 const lacking = (keys: string[]) =>
@@ -74,10 +76,10 @@ const voicesOf = async (ctx: Ctx, { lecture, lang }: Video): Promise<Voice[][]> 
       } else if (ctx.cacheOnly) throw lacking(keys);
       else if (lang !== 'ja') throw new Error(`音声が無い（Kokoro で作れなかった）: ${text}`);
       else {
-        // 新しく作る声は、v2 の鍵（合成のレシピから作る）の名前で置く
+        // 新しく作る声は、v2 の鍵（合成のレシピから作る）の名前で置き、読みの隣に声の記録（レシピとエンジンの版）を置く
         trace(`  ${at(lines, out)} [${voice}] 合成 ${keys[0]}（v2）`);
-        const { wav, kana } = await ctx.engine.synthesize(text, recipe as VoicevoxRecipe);
-        lines.push(writeVoice(ctx.store, keys[0], wav, kana));
+        const { wav, kana, engineVersion } = await ctx.engine.synthesize(text, recipe as VoicevoxRecipe);
+        lines.push(writeVoice(ctx.store, keys[0], wav, kana, { schema: 1, key: keys[0], text, recipe, engineVersion }));
       }
     }
     out.push(lines);
@@ -85,10 +87,17 @@ const voicesOf = async (ctx: Ctx, { lecture, lang }: Video): Promise<Voice[][]> 
   return out;
 };
 
-/** 1 本の動画の声をそろえ、時刻を決めて出力を書く */
+/** 1 本の動画の声をそろえ、時刻を決めて出力を書く。声のエンジンの版が混ざっていれば知らせる */
 const synthVideo = async (ctx: Ctx, video: Video) => {
   const t0 = Date.now();
   const voices = await voicesOf(ctx, video);
+  const versions = versionsOf(voices);
+  if (versions.size > 1) {
+    const list = [...versions].map(([v, n]) => `${v} が ${n} 台詞`).join('・');
+    (ctx.warn ?? console.warn)(
+      `注意: ${video.key} の声は、エンジンの版が混ざっている（${list}）。そろえるなら、古い版の声をキャッシュから消して、もう一度 synth する`,
+    );
+  }
   const { scenes, duration } = emitVideo(ctx.out, video, voices, VIDEO.fps);
   const lines = scenes.reduce((n, s) => n + s.lines.length, 0);
   (ctx.log ?? console.log)(

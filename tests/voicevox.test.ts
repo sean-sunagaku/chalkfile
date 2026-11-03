@@ -9,7 +9,8 @@ import { MissingError, UsageError } from '../scripts/lib/args';
 import { outDirs } from '../scripts/stages/timeline/emit';
 import { kanaOf, timeoutFromEnv, voicevox } from '../scripts/stages/voice/voicevox';
 import { type Ctx, synthVideos } from '../scripts/synth';
-import { ttsKeysIn, voicevoxRecipe } from '../scripts/voices';
+import { metaJson, readMeta } from '../scripts/stages/voice/store';
+import { recipeIn, ttsKeysIn, voicevoxRecipe } from '../scripts/voices';
 import { course, lecture } from './fixtures/content/invalid/_base';
 
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-voicevox-test-'));
@@ -213,6 +214,14 @@ describe('synth の声のそろえ方（偽の VOICEVOX と一時のフォルダ
     const [v2] = ttsKeysIn('はじめます。', 'announcer', 'ja');
     expect(cached).toContain(`${v2}.wav`);
     expect(readFileSync(path.join(ctx.store.cache, `${v2}.kana`), 'utf8')).toBe('コン、ニチワ');
+    // 読みの隣に、声の記録（合成のレシピとエンジンの版）を置く
+    expect(readMeta(ctx.store.cache, v2)).toEqual({
+      schema: 1,
+      key: v2,
+      text: 'はじめます。',
+      recipe: recipeIn('announcer', 'ja'),
+      engineVersion: '0.99.0',
+    });
     expect(cached.filter((f) => f.endsWith('.wav'))).toHaveLength(2);
     expect(cached.filter((f) => f.endsWith('.kana'))).toHaveLength(2);
     expect(existsSync(path.join(dir, 'root/content/invalid-sample/generated/timeline/X01.json'))).toBe(true);
@@ -222,6 +231,31 @@ describe('synth の声のそろえ方（偽の VOICEVOX と一時のフォルダ
     expect(readdirSync(again.ctx.out.plan)).toEqual(['X01.json']);
     // キャッシュに無ければ、--cached-only は前提が足りない（終了コード 3）
     await expect(synthVideos(again.ctx, [video])).rejects.toBeInstanceOf(MissingError);
+  });
+  test('動画の中で声のエンジンの版が混ざったら、知らせる（記録の無い v1 の声は数えない）', async () => {
+    const e = working();
+    const { ctx } = ctxOf(e.url);
+    const warned: string[] = [];
+    // 1 つ目の台詞は、前に別の版（0.98.0）で作った声がキャッシュにある。2 つ目は今のエンジン（0.99.0）で作る
+    const [first] = ttsKeysIn('はじめます。', 'announcer', 'ja');
+    mkdirSync(ctx.store.cache, { recursive: true });
+    writeFileSync(path.join(ctx.store.cache, `${first}.wav`), wav(0.5));
+    writeFileSync(
+      path.join(ctx.store.cache, `${first}.meta.json`),
+      metaJson({
+        schema: 1,
+        key: first,
+        text: 'はじめます。',
+        recipe: recipeIn('announcer', 'ja'),
+        engineVersion: '0.98.0',
+      }),
+    );
+    writeFileSync(path.join(ctx.store.cache, `${first}.kana`), 'カナ');
+    await synthVideos({ ...ctx, warn: (l) => void warned.push(l) }, [video]);
+    expect(e.calls.synthesis).toBe(1);
+    expect(warned).toEqual([
+      '注意: X01 の声は、エンジンの版が混ざっている（0.98.0 が 1 台詞・0.99.0 が 1 台詞）。そろえるなら、古い版の声をキャッシュから消して、もう一度 synth する',
+    ]);
   });
   test('前の名前（v1）の声があれば、それを使い、VOICEVOX にはつながない（作業フォルダの .work/tts も探す）', async () => {
     const e = working();

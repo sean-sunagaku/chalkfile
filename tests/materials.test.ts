@@ -324,6 +324,32 @@ test('台詞は v2 → v1 の順に探し、手元にある最初の鍵の音声
   expect(out.text()).toContain('消すものは無い');
 }, 30_000);
 
+test('v2 の声の記録（.meta.json）は、読みと同じに push・pull し、gc は音声と一緒に消す', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  voice(a, 'k2');
+  voice(a, 'k3');
+  writeFileSync(path.join(a.root, '.work/tts/k2.meta.json'), '{"schema":1,"key":"k2"}\n');
+  await push(a, [course('alpha', ['k2', 'k3'])], logs().opts);
+  const m = branchOf(remote);
+  // 記録は v2 の声（記録のあるもの）だけ。SHA256SUMS にも行を足す
+  expect(m.files()).toContain('tts/alpha/k2.meta.json');
+  expect(m.files()).not.toContain('tts/alpha/k3.meta.json');
+  expect(m.show('SHA256SUMS')).toContain(`${sha256('{"schema":1,"key":"k2"}\n')}  .work/tts/k2.meta.json`);
+  // 取り出すと、共有のキャッシュの読みの隣に置く
+  const cache = mkdtempSync(path.join(sandbox, 'cache-'));
+  const b = withCache(cloneOf(remote, 'b'), cache);
+  const out = logs();
+  await pull(b, ['alpha'], out.opts);
+  expect(readFileSync(path.join(cache, 'k2.meta.json'), 'utf8')).toBe('{"schema":1,"key":"k2"}\n');
+  expect(out.text()).toContain('読み 2 本・声の記録 1 本');
+  // gc で台詞の音声を消すと、記録も消える
+  await gc(a, { refs: ['テストの台本'], courses: [course('alpha', ['k3'])] }, { ...logs().opts, confirm: true });
+  expect(m.files()).not.toContain('tts/alpha/k2.meta.json');
+  expect(m.show('SHA256SUMS')).not.toContain('k2.meta.json');
+}, 30_000);
+
 test('gc の --keep は、その ref の scripts/voices.ts に ttsKeysIn があれば、台詞ごとの v2 と v1 の鍵を作る', async () => {
   const remote = makeRemote();
   const a = cloneOf(remote, 'a');
