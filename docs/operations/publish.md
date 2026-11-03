@@ -25,11 +25,11 @@ npm run chalk -- status                                  # 段ごとの新しい
 npm run chalk -- status --course <講座 ID> --json        # 講座で絞る。AI・ほかの道具が読む形
 npm run chalk -- build --to site --dry-run               # 流すものだけを見る
 npm run chalk -- build --to site                         # 声と時刻（synth）→ サイト（build_site）の、古いものだけ
-npm run chalk -- build --to render --video <ID…>         # 声と時刻 → ミックス → 動画（render.sh）の、古いものだけ
+npm run chalk -- build --to render --video <ID…>         # 声と時刻 → ミックス → 動画（render.ts）の、古いものだけ
 ```
 
-- 段は `voice`（synth）・`mix`（mix.py）・`render`（render.sh）・`docs`（build_materials）・`site`（build_site）。`build --to` は、その段と前の段を、前から順に流す。入力（台本・声・時刻・ミックスの音・道具のコードなど）の指紋が記録と同じで、出力も記録のとおりなら流さない。指紋に入れるものと記録の置き場所は [全体図](../architecture/overview.md) の「段と記録」
-- 記録は、`build` が流したあとと、`npm run mix`（`npm run chalk -- mix`）・`render.sh`（`npm run render` と `npm run chalk -- render`）が流したあとに書く。`npm run synth` は記録を書かないので、あとの `build` が synth をもう一度流す（数秒で、同じ出力になる）
+- 段は `voice`（synth）・`mix`（mix.py）・`render`（`scripts/stages/video/render.ts`）・`docs`（build_materials）・`site`（build_site）。`build --to` は、その段と前の段を、前から順に流す。入力（台本・声・時刻・ミックスの音・道具のコードなど）の指紋が記録と同じで、出力も記録のとおりなら流さない。指紋に入れるものと記録の置き場所は [全体図](../architecture/overview.md) の「段と記録」
+- 記録は、`build` が流したあとと、`npm run mix`（`npm run chalk -- mix`）・書き出し（`npm run render` と `npm run chalk -- render`。動画ごとに、全部の出力を置き換えたあと）が流したあとに書く。`npm run synth` は記録を書かないので、あとの `build` が synth をもう一度流す（数秒で、同じ出力になる）
 - 記録が無い動画（この仕組みより前に書き出した動画）は、書き出し直さない（今の動画を残す）。台本を直した動画は `--force --video <ID>` で書き出す。描き方のコード（`src/`・`engine/`・Remotion の版など）だけが変わった動画も、既定では書き出さない（見た目が変わる直しは、まとめて書き出す。そのときは `--src`）
 - 声を作らずに流すときは `--cached-only`（素材の声だけを使う）。全部を流し直すときは `--force`
 
@@ -76,10 +76,13 @@ npm run materials:push
 ```bash
 bun scripts/media.ts pull <講座 ID>        # その講座の、作り直さない公開済みの動画を Releases から取る（render より前に流す）
 npm run mix -- <ID…>
-CAPTIONS=1 npm run render -- <ID…>         # 字幕を焼き込んだ版も作る（お笑い版では必ず）
+npm run render -- <ID…>                    # 掛け合いの講座（お笑い版）は、字幕を焼き込んだ版も作る。--dry-run で書き出すものだけを見る
 ```
 
-- render は、動画を `site/media/` に、ポスターを講座のフォルダ（`content/<講座>/generated/posters/<ID>.jpg`）に書く。書き出した動画ごとに、書き出しの記録（`.work/state/render/<ID>.json`）も書く
+- render は、選んだ動画を 1 回で書き出す（バンドルは 1 回）。動画を `site/media/` に、ポスターを講座のフォルダ（`content/<講座>/generated/posters/<ID>.jpg`。公開する言語の動画だけ）に書く。書き出した動画ごとに、書き出しの記録（`.work/state/render/<ID>.json`）も書く
+- 掛け合いの講座（`cast` のある講座）は、字幕を焼き込んだ版（`site/media/<ID>.cc.mp4`・`out/captioned/<ID>.mp4`）も作る。ほかの講座でも作るなら `--captions`（前の `CAPTIONS=1` も同じ）
+- 全部の出力を一時の名前に書き、ffprobe で長さ・形式・音を確かめてから置き換える。失敗したとき・Ctrl-C で止めたときは、前の動画とポスターが残る（一時のファイルは消す）
+- 作り直すと、見た目が同じでもサイト用の動画のバイト列（ハッシュ）は変わる（x264 の大きさの上限 `-maxrate` と並列の組み合わせで、同じ映像からでも毎回少し違う）。作り直した動画だけを push する
 - mix と render の代わりに、`npm run chalk -- build --to render --video <ID…>` でもよい（古いものだけを流す。掛け合いの講座は字幕を焼き込んだ版も作る）。書き出す前に `npm run chalk -- status` で、どれが古いかを見られる
 - 6 の `media push --course <講座 ID>` は、その講座の通常版が全部手元にないと止まる（ほかの講座の動画は要らない）。字幕版は、手元に無いと動画の一覧から外れ、サイトに出なくなる。だから、同じ講座の作り直さない動画は、先に `media.ts pull <講座 ID>` でそろえる
 - `media.ts pull` は、手元の動画が動画の一覧と違うと止まる（上書きしない）。作り直したあとに流すと、作り直した動画で止まる。render より前に流す

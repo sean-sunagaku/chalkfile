@@ -20,10 +20,10 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  ├─ scripts/materials.ts push ⇄ pull ── materials ブランチ（台詞の音声と読み・BGM・効果音・台詞の長さの一覧 DURATIONS.json）
  ├─ scripts/build_music.py（中身は scripts/audio/music/）──→ public/audio/music/・sfx/（BGM・ジングル・効果音）
  ├─ scripts/mix.py ─────────→ public/audio/mix/<key>.wav（台詞・BGM・効果音を 1 本に）
- ├─ scripts/render.sh（Remotion。映像は音なしで書き出し、ミックスの音と合わせる）
+ ├─ scripts/stages/video/render.ts（Remotion。バンドルは 1 回。映像は音なしで書き出し、ミックスの音と合わせる）
  │    ├→ out/master/<key>.mp4（高画質の映像）→ site/media/<key>.mp4（サイト用に縮めた動画）
  │    ├→ content/<講座>/generated/posters/<key>.jpg（ポスター。追跡）
- │    └→ CAPTIONS=1 のとき site/media/<key>.cc.mp4（字幕を焼き込んだ版）
+ │    └→ 掛け合いの講座（cast のある講座）は site/media/<key>.cc.mp4（字幕を焼き込んだ版）も
  ├─ scripts/media.ts push --course <講座> ──→ GitHub Releases（タグ media-<言語>-<講座>。名前に SHA-256 が入る）
  │                             ＋ content/<講座>/generated/media.<言語>.json（その講座の動画の一覧。追跡）
  ├─ scripts/gen.ts（npm run gen）→ worker/src/generated/media-manifest.json（全講座の動画の一覧。Worker の許可リスト。手元だけ）
@@ -43,7 +43,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 上の流れの道具を、段として並べる。`npm run chalk -- status` は段ごとの古い単位を出し、`npm run chalk -- build --to <段>` は古い単位だけを、前の段から順に流す。流し方は [公開の順番](../operations/publish.md) の「段の状態を見て、古い段だけを流す」。
 
 ```text
-voice（synth.ts）─┬─ mix（mix.py）── render（render.sh）
+voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
                   ├─ docs（build_materials.ts）
                   └─ site（build_site.ts）
 ```
@@ -52,13 +52,13 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.sh）
 |---|---|---|---|
 | voice | 動画 | 台本（訳を重ねたレクチャーと、講座の id・cast）・時刻の指紋（timeline の指紋）・見つけた声（鍵・長さ・読み）・synth.ts から import をたどったコード | timeline・ミックスの設計図・読み・聞き取りの対応・サイトの台本 |
 | mix | 動画 | 設計図の中身・台詞の音声の中身・BGM と効果音の中身・mix.py と、それが読む Python の部品・効果音の一覧・依存の固定 | `public/audio/mix/<key>.wav` |
-| render | 動画 | 台本の側（動画が描くレクチャーと講座の項目・テーマの値・声のクレジット・timeline）・描き方の側（`src/`・`engine/`・訳とテーマの部品・Remotion の設定・render.sh・動画の大きさの目安・Remotion などの依存の版）・ミックスの音の中身 | サイト用の動画（掛け合いの講座は字幕版も）・ポスター |
+| render | 動画 | 台本の側（動画が描くレクチャーと講座の項目・テーマの値・声のクレジット・timeline）・描き方の側（`src/`・`engine/`・訳とテーマの部品・Remotion の設定・書き出しの道具と設定・動画の大きさの目安・Remotion などの依存の版）・ミックスの音の中身 | サイト用の動画（掛け合いの講座は字幕版も）・ポスター |
 | docs | 全部の教材で 1 つ | 教材を持つ講座の台本の全部・その timeline・build_materials.ts からたどったコード | `docs/courses/` |
 | site | サイトで 1 つ | 全部の言語の台本・サイトの台本（`site/data`）・ポスター・動画の一覧・`site/config.json`・build_site.ts からたどったコードと `site/` のひな形・依存の版 | `site/dist` |
 
 - 記録は `.work/state/<段>/<単位>.json`（形は `{ schema, stage, unit, fingerprint, parts, outputs, tools, at }`。`parts` は部分ごとの指紋、`outputs` は出力の sha256、`tools` は流した道具の版で指紋には入れない）。ファイルの中身の sha256 は、大きさと時刻が同じなら `.work/state/files.json` に覚えた値を使う。どれも手元だけで、`npm run clean` が消す
 - 前の段の出力は、出力の中身の sha256 で次の段に入る。前の段を流し直しても、出力が同じなら次の段は流さない
-- 書き出し（render）は長いので、`render.sh` が動画ごとに、書き出す前の指紋を置き、書き終えてから比べて記録する（流している間に台本を直したら、記録しない）。記録の無い動画は、既定で書き出し直さない。描き方の側だけが変わった動画も、既定では書き出さない（`--src`）
+- 書き出し（render）は長いので、書き出しの道具（`scripts/stages/video/render.ts`）が動画ごとに、書き出す前の指紋を置き、全部の出力を置き換えてから比べて記録する（流している間に台本を直したら、記録しない）。記録の無い動画は、既定で書き出し直さない。描き方の側だけが変わった動画も、既定では書き出さない（`--src`）
 - 書き出しの記録の台本の側と描き方の側の指紋は、`media push` が動画の一覧の項目の `inputs` に写す（一覧の版 2。版 1 も読む。Worker の許可リストには入れない）。PR の CI の `npm run validate` が、今の台本から作った指紋と比べる
 - 指紋の作り方の正本は `scripts/stages/pipeline/stages.ts` と `scripts/stages/video/inputs.ts`、状態の見方は `scripts/stages/pipeline/runner.ts`。入れるものは `tests/pipeline-inputs.test.ts` が固定する（サイトと教材だけが使う項目を直しても、動画は古くならない）
 
@@ -97,7 +97,7 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.sh）
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-<言語>-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の講座ごとの動画の一覧が決める | render のあと、`media.ts push --course <講座 ID>` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、ci.yml の deploy のジョブが、build のジョブが組み立てたものを出す |
 | `gh-pages` ブランチ（旧 Pages。前の公開先） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
-| 手元だけ（`.gitignore`） | `.work/`（ミックスの設計図・読み・段の記録 `.work/state/`。前の置き場所の声のキャッシュ `.work/tts` も読む）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕の時刻）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
+| 手元だけ（`.gitignore`） | `.work/`（ミックスの設計図・読み・段の記録 `.work/state/`。前の置き場所の声のキャッシュ `.work/tts` も読む）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕の時刻）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `npm run render` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
 | リポジトリの外 | 台詞の声と読みの共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`。作業フォルダの間で使い回す）・Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 声 → `materials.ts pull`（同じ中身があれば取り出さない。台詞を変えたら synth）。ほかは初回に自動で取ってくる |
 
 ## リポジトリのフォルダ

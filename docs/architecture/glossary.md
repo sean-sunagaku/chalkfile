@@ -67,10 +67,10 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
 | 動画の一覧 | 公開する動画の正本。動画ごとに、言語・講座・レクチャー・種類・大きさ・SHA-256・タグを持つ。サイトの組み立てと Worker が同じ一覧を読む | 講座ごとの `content/<講座>/generated/media.<言語>.json`。Worker の許可リストは `npm run gen` がつないで作る（`worker/src/generated/media-manifest.json`）。形の検査は `site/media-shared.ts` |
-| 通常版・字幕版 | 字幕版（`captioned`）は字幕を焼き込んだ動画。手元の名前は `<key>.cc.mp4`。サイトは、字幕をオンにするとこちらを流す | `scripts/render.sh`（`CAPTIONS=1`） |
+| 通常版・字幕版 | 字幕版（`captioned`）は字幕を焼き込んだ動画。手元の名前は `<key>.cc.mp4`。サイトは、字幕をオンにするとこちらを流す。書き出しは、掛け合いの講座（`cast` のある講座）で作る | `scripts/stages/video/render.ts`（`--captions`・`CAPTIONS=1` で全部の動画） |
 | retained | 動画の一覧のうち、前の版のハッシュの動画を並べる欄。サイトはもう指さないが、Worker は配り続ける。理由は [ADR](../adr/2026-11-02-keep-old-video-hashes.md) | `scripts/media.ts`・`site/media-shared.ts` |
 | Releases のタグ | 動画を置く GitHub Releases の名前。形は `media-<言語>-<講座 ID>` | `site/media-shared.ts` |
-| ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `content/<講座>/generated/posters/<key>.jpg`。作るのは `scripts/render.sh` |
+| ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `content/<講座>/generated/posters/<key>.jpg`（公開する言語の動画）。作るのは `scripts/stages/video/render.ts`（秒と幅は `render.config.ts`） |
 | Worker | chalkfile.com の `/media/*` を受ける Cloudflare Workers のコード。ほかのパスは、組み立てたサイトの静的なファイル（assets）から返す | `worker/src/`・`wrangler.jsonc` |
 | 公開 | サイトを chalkfile.com に出すこと。main の CI が wrangler で行う。動画は、Releases に置いた時点で誰でも取れる | `.github/workflows/ci.yml` の deploy のジョブ |
 | 保存（アプリ内に保存） | 学ぶ人が講座を選んでブラウザに保存し、通信なしで見られるようにする仕組み（PWA） | `site/sw.ts`・`site/offline-client.ts`。設計は [保存の設計](offline.md) |
