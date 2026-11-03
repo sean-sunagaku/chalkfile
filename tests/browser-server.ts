@@ -7,6 +7,7 @@ import { byteRange } from '../site/offline-shared';
 import type { CourseManifest } from '../site/offline-shared';
 import mediaManifest from '../site/media-manifest.json';
 import { mediaPath, validateMediaManifest } from '../site/media-shared';
+import { mimeTypeOf } from '../site/mime';
 import { localMediaPath } from '../scripts/media';
 import { buildMigration } from '../scripts/build_migration';
 
@@ -21,8 +22,8 @@ let manifestRequests = 0;
 let manifestFailures = 0;
 const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
 const baseManifest = JSON.parse(readFileSync(path.join(root, 'stripe-billing/offline-manifest.json'), 'utf8')) as CourseManifest;
-const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.jpg': 'image/jpeg', '.png': 'image/png',
-  '.mp4': 'video/mp4', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+/** 応答の型（拡張子の対応表 site/mime.ts の本体だけ。charset は付けない） */
+const typeOf = (file: string) => mimeTypeOf(file) ?? 'application/octet-stream';
 function variant() {
   const m = structuredClone(baseManifest);
   let page = readFileSync(path.join(root, 'stripe-billing/index.html'), 'utf8');
@@ -52,7 +53,7 @@ function legacyResponse(req: Request, relative: string): Response {
   if (existsSync(file) && statSync(file).isDirectory()) file = path.join(file, 'index.html');
   if (!existsSync(file)) return new Response(null, { status: 404 });
   const body = Bun.file(file);
-  const headers = { 'Content-Type': types[path.extname(file)] ?? 'application/octet-stream', 'Content-Length': String(body.size), 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' };
+  const headers = { 'Content-Type': typeOf(file), 'Content-Length': String(body.size), 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' };
   if (req.method === 'HEAD') return new Response(null, { headers });
   const range = byteRange(req.headers.get('Range'), body.size);
   if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${body.size}` } });
@@ -105,7 +106,7 @@ Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
     data = Buffer.from(JSON.stringify(variant().m));
   }
   if (relative === 'sw.js' && control.workerUpdate) data = Buffer.concat([data, Buffer.from('\n// worker更新テスト\n')]);
-  const type = types[path.extname(file)] ?? 'application/octet-stream';
+  const type = typeOf(file);
   if (req.method === 'GET' && relative.endsWith('.mp4') && !req.headers.has('Range')) {
     fullVideoDownloads++;
     if (media?.lecture === 'L03') {
