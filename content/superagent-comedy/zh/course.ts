@@ -7,7 +7,7 @@ import { S05 } from './S05';
 import { S06 } from './S06';
 import { SOURCES_ZH } from './sources';
 
-/** 「笑ってわかる Super-agent」の中国語（簡体字）版。声は Kokoro（scripts/voices.ts の KOKORO.zh） */
+/** 「笑ってわかる Super-agent」の中国語（簡体字）版。声は Kokoro（content/voices.ts の KOKORO.zh） */
 export const SUPERAGENT_COMEDY_ZH: CourseL10n = {
   title: '笑着搞懂 Super-agent',
   subtitle: '和俊达萌一起读懂：不被会话束缚的智能体设计',

@@ -8,6 +8,8 @@ import { W01 } from './W01';
  */
 export const NUDGE_COMEDY: Course = {
   id: 'nudge-comedy',
+  prefix: 'W',
+  order: 50,
   unitLabel: 'CHAPTER',
   theme: 'stage',
   disclaimer: 'ボケの台詞は、わざと間違えています。正しい内容は、ツッコミと画面で確かめてください',

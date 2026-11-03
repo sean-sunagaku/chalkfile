@@ -1,7 +1,7 @@
 import type { CourseL10n } from '../../i18n';
 import { P01 } from './P01';
 
-/** 「笑ってわかる pstack」の英語版。声は Kokoro（scripts/voices.ts の KOKORO.en） */
+/** 「笑ってわかる pstack」の英語版。声は Kokoro（content/voices.ts の KOKORO.en） */
 export const PSTACK_COMEDY_EN: CourseL10n = {
   title: 'Laugh & Learn: pstack',
   subtitle: 'How the Cursor skill set pstack thinks, and how to use it',

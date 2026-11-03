@@ -1,20 +1,7 @@
-// サイトは assets が先に配信する。Worker を先に通すのは /media/* だけ。
-// Env（binding の型）と ExportedHandler は、wrangler types が wrangler.jsonc から作る worker/worker-configuration.d.ts にある（手で書かない）。
-import manifest from '../../site/media-manifest.json';
-import { allMediaEntries, validateMediaManifest } from '../../site/media-shared';
-import { createMediaHandler } from './media';
-const media = createMediaHandler(allMediaEntries(validateMediaManifest(manifest)));
+// Worker の入口。中身は app.ts。動画の一覧（許可リスト）は、npm run gen が講座ごとの content/<講座>/generated/media.<言語>.json を
+// つないで作る worker/src/generated/media-manifest.json（Git に入れない）。wrangler（dev・deploy）の前に流す（npm run dev:worker・
+// CI の build・deploy.yml は流す）。型は generated/media-manifest.d.json.ts（JSON が無い checkout でも型を確かめられる）
+import { createWorker } from './app';
+import manifest from './generated/media-manifest.json';
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    // www の HTML も assets が返し、ページの先頭の location.replace で apex へ移す。Worker が 301 にするのは /media/ だけ。
-    if (!url.pathname.startsWith('/media/')) return env.ASSETS.fetch(request);
-    if (url.hostname === 'www.chalkfile.com') {
-      url.hostname = 'chalkfile.com';
-      url.protocol = 'https:';
-      return Response.redirect(url.href, 301);
-    }
-    return media(request);
-  },
-} satisfies ExportedHandler<Env>;
+export default createWorker(manifest);

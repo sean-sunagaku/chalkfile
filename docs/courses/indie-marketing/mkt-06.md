@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 第 6 章　集客経路の選び方
 
 - 講座: 個人開発者のためのマーケティング（indie-marketing）

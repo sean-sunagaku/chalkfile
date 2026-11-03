@@ -6,11 +6,11 @@ import type { Lang } from '../content/i18n';
 import { NUDGE_PRODUCT } from '../content/nudge-product/course';
 import { CHALKFILE, THEMES } from '../content/themes';
 import type { Course, Lecture } from '../content/types';
-import { captionLines, formatIssue, SFX_IDS, validateCourse, validateLecture, validateTheme, validateTimeline, VOICE_IDS, type Issue, type TimelineShape } from '../engine/core/validate';
+import { VOICES } from '../content/voices';
+import { captionLines, formatIssue, freePrefixes, SFX_IDS, validateCourse, validateCourses, validateLecture, validateTheme, validateTimeline, VOICE_IDS, type Issue, type TimelineShape } from '../engine/core/validate';
 import { mediaFilename, type MediaEntry, type MediaManifest } from '../site/media-shared';
 import { PAGE_VERSION_MARK } from '../scripts/site-version';
-import { materialProblems, mediaProblems, posterProblems, publishIssues, readSiteConfig, siteProblems, validateAll, type PublishIssue } from '../scripts/validate';
-import { VOICES } from '../scripts/voices';
+import { materialProblems, mediaProblems, posterProblems, publishIssues, readSiteConfig, registryProblems, siteProblems, validateAll, type PublishIssue } from '../scripts/validate';
 import { course, lecture, say, type Expected } from './fixtures/content/invalid/_base';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -40,6 +40,51 @@ describe('誤った台本（tests/fixtures/content/invalid）', () => {
   }
   test('土台の講座（壊す前）は、誤りも注意も 0 件', () => {
     expect(validateCourse(course([lecture([{ kind: 'big', heading: '大事なこと', text: '台本が **正本**', lines: say('台本が正本です。') }])]))).toEqual([]);
+  });
+});
+
+describe('講座の登録（頭文字・並び・講座 ID）', () => {
+  const say1 = () => [lecture([{ kind: 'big', heading: '大事なこと', text: '台本', lines: say('台本です。') }])];
+  const two = (a: Partial<Course>, b: Partial<Course>) => [course(say1(), { id: 'alpha', prefix: 'A', order: 10, ...a }), course(say1(), { id: 'beta', prefix: 'B', order: 20, ...b })];
+  const relabel = (c: Course, id: string) => ({ ...c, lectures: c.lectures.map((l) => ({ ...l, id: `${c.prefix}${l.id.slice(-2)}` })), id });
+  test('今の講座は、頭文字と並びが重ならず、レクチャー ID が頭文字と 2 桁の番号', () => {
+    expect(validateCourses(COURSES)).toEqual([]);
+    expect(COURSES.map((c) => c.prefix)).toEqual(['L', 'N', 'D', 'M', 'W', 'R', 'P', 'S', 'G']);
+    expect(COURSES.map((c) => c.order)).toEqual([...COURSES.map((c) => c.order)].sort((a, b) => a - b));
+    for (const c of COURSES) for (const l of c.lectures) expect(l.id).toMatch(new RegExp(`^${c.prefix}\\d{2}$`));
+  });
+  test('頭文字が重なると誤りで、空いている文字を出す（X はテストの見本が使うので出さない）', () => {
+    const got = validateCourses(two({}, { prefix: 'A' }));
+    expect(brief(got)).toEqual(['error prefix beta prefix']);
+    expect(got[0].message).toContain('頭文字 A が alpha と重なっている');
+    expect(got[0].message).toContain('空いている文字: B C D');
+    expect(got[0].message).not.toMatch(/ X /);
+    expect(freePrefixes(COURSES)).not.toContain('X');
+    expect(freePrefixes(COURSES)).not.toContain('G');
+  });
+  test('頭文字は英大文字 1 字（X は使えない）、order は 1 以上の整数で重ならない', () => {
+    expect(validateCourses(two({ prefix: 'ab' }, {}))[0].message).toContain('英大文字 1 字');
+    expect(validateCourses(two({ prefix: 'X' }, {}))[0].message).toContain('テストの見本が使う');
+    expect(validateCourses(two({ order: 0 }, {}))[0].message).toContain('1 以上の整数');
+    const dup = validateCourses(two({}, { order: 10 }));
+    expect(brief(dup)).toEqual(['error order beta order']);
+    expect(dup[0].message).toContain('使っている数: 10');
+  });
+  test('講座 ID の重なりと、言語の名前（2 文字の英小文字）を止める', () => {
+    expect(brief(validateCourses(two({}, { id: 'alpha' })))).toEqual(['error course-id alpha']);
+    expect(validateCourses(two({ id: 'en' }, {}))[0].message).toContain('2 文字の英小文字');
+  });
+  test('レクチャー ID が頭文字と 2 桁の番号の形でなければ、その講座の誤り', () => {
+    const c = relabel(course(say1(), { prefix: 'Q' }), 'invalid-sample');
+    expect(validateCourse(c)).toEqual([]);
+    expect(brief(validateCourse({ ...c, lectures: [{ ...c.lectures[0], id: 'Q1' }] }))).toEqual(['error prefix invalid-sample lectures[0].id']);
+    expect(brief(validateCourse({ ...c, prefix: 'R' }))).toEqual(['error prefix invalid-sample lectures[0].id']);
+  });
+  test('講座のフォルダ（content/<講座 ID>/index.ts）と登録表（content/courses.ts）が合う', () => {
+    expect(registryProblems(COURSES)).toEqual([]);
+    const ids = COURSES.map((c) => c.id);
+    expect(brief(registryProblems(COURSES, [...ids, 'new-course']))).toEqual(['error course-id content/new-course/index.ts']);
+    expect(brief(registryProblems(COURSES, ids.slice(1)))).toEqual([`error course-id ${ids[0]}`]);
   });
 });
 
@@ -86,7 +131,7 @@ describe('名前の一覧が、音の側の一覧と合う', () => {
     const block = py.slice(start, py.indexOf('}', start));
     expect([...block.matchAll(/"(\w+)":/g)].map((m) => m[1]).sort()).toEqual([...SFX_IDS].sort());
   });
-  test('声は scripts/voices.ts の VOICES と同じ', () => expect(Object.keys(VOICES).sort()).toEqual([...VOICE_IDS].sort()));
+  test('声は content/voices.ts の VOICES と同じ', () => expect(Object.keys(VOICES).sort()).toEqual([...VOICE_IDS].sort()));
 });
 
 describe('見込みと表示', () => {
@@ -154,9 +199,9 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
   });
   test('公開する言語の全部の動画のポスターを見る（無ければ止める。公開しない言語は見ない）', () => {
     const c = course([lec('X01'), lec('X02', { no: 2 })]);
-    const got = posterProblems({ ...config, publishLangs: ['ja'] }, ja([c]), (key) => key === 'X01');
+    const got = posterProblems({ ...config, publishLangs: ['ja'] }, ja([c]), (file) => file === 'content/invalid-sample/generated/posters/X01.jpg');
     expect(got.map((x) => `${x.level} ${x.rule} ${x.where}`)).toEqual(['error poster invalid-sample/X02']);
-    expect(got[0].message).toContain('site/posters/X02.jpg');
+    expect(got[0].message).toContain('content/invalid-sample/generated/posters/X02.jpg');
     expect(posterProblems({ ...config, publishLangs: ['ja'] }, (lang) => (lang === 'en' ? [c] : []), () => false)).toEqual([]);
     expect(posterProblems(config, coursesIn)).toEqual([]);
   });

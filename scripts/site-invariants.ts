@@ -205,7 +205,7 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
         // 動画は Worker が Releases から配る（静的 assets には置かない）。許可リストに無い動画は 404 になる
         if (!allowed) continue;
         const e = allowed.get(pathname);
-        if (!e) problems.push(`${rel}: ${f.url} が動画の一覧（site/media-manifest.json）に無い（Worker が配らない）`);
+        if (!e) problems.push(`${rel}: ${f.url} が動画の一覧（Worker の許可リスト。content/<講座>/generated/media.<言語>.json）に無い（Worker が配らない）`);
         else if (e.bytes !== f.bytes || e.sha256 !== f.sha256) {
           problems.push(`${rel}: ${f.url} の大きさか SHA-256 が、動画の一覧と違います`);
         }

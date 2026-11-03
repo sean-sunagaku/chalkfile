@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 第 3 章　操作の流れとナビゲーション
 
 - 講座: エンジニアのための UI・UX デザイン（uiux-engineers）

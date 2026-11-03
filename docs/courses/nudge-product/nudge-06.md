@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # 第 6 章　ダークパターンとの境界線
 
 - 講座: ナッジ理論をプロダクト改善に活かす（nudge-product）

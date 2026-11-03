@@ -11,13 +11,13 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 |---|---|---|
 | 正本 | ある事柄を直すときに、そこだけを直せばよい 1 か所。ほかの場所は、正本から作るか、正本へリンクする | 文書の正本は [文書の地図](../README.md) |
 | 台本 | 講座の中身を TypeScript のデータで書いたもの。台詞・画面の要素・クイズ・出典を持つ。Chalkfile の正本 | `content/<講座 ID>/`。型は `content/types.ts` |
-| 生成物 | スクリプトが台本や素材から作るファイル。手で直さない。main に入れているもの（`src/generated/`・`site/posters/`・`site/media-manifest.json`・`docs/courses/`）と、手元だけのものがある | [全体図](overview.md) の「置き場所」 |
+| 生成物 | スクリプトが台本や素材から作るファイル。手で直さない。main に入れているもの（講座のフォルダの `content/<講座>/generated/`（timeline・ポスター・動画の一覧）・`docs/courses/`）と、手元だけのもの（Worker の許可リストなど）がある | [全体図](overview.md) の「置き場所」 |
 
 ## 講座の単位
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 講座 | 1 つの題目の動画の集まり。講座サイトの 1 ページになる。講座 ID（`stripe-billing` など）は URL の `/<講座 ID>/` になる。言語の名前と重なる 2 文字の英小文字は、講座 ID に使えない | `content/types.ts` の `Course`。並べるのは `content/index.ts` の `COURSES` |
+| 講座 | 1 つの題目の動画の集まり。講座サイトの 1 ページになる。講座 ID（`stripe-billing` など）は URL の `/<講座 ID>/` になる。言語の名前と重なる 2 文字の英小文字は、講座 ID に使えない | `content/types.ts` の `Course`（講座のフォルダの `course.ts`）。登録は `content/courses.ts`（1 講座 1 行）、並びは `order`、一覧は `content/index.ts` の `COURSES` |
 | セクション | 講座の中の区切り（「はじめに」など） | `Course.sections` |
 | レクチャー | 動画 1 本ぶんの台本。レクチャー ID は頭の文字と番号（`L01`）。頭の文字は講座ごとに変え、同じ ID を講座をまたいで使わない（重なると、読み込んだときに止まる） | `content/types.ts` の `Lecture`、ファイルは `content/<講座 ID>/<レクチャー ID>.ts` |
 | 章 | 章立ての講座（`unitLabel: 'CHAPTER'`）での、レクチャーの呼び名。動画とサイトの見出しが「CHAPTER」「章」になる | `Course.unitLabel` |
@@ -33,11 +33,11 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 声 | 台詞を読む役（講師の `narrator`・天の声の `tennokoe` など）。日本語は VOICEVOX、英語と中国語は Kokoro-82M の話者に当てる | `content/types.ts` の `VoiceId`。話者と話し方は `scripts/voices.ts` |
+| 声 | 台詞を読む役（講師の `narrator`・天の声の `tennokoe` など）。日本語は VOICEVOX、英語と中国語は Kokoro-82M の話者に当てる | `content/types.ts` の `VoiceId`。話者と話し方は `content/voices.ts`（音声の鍵の計算は `scripts/voices.ts`） |
 | 配役 | 掛け合いの講座で、声ごとに付ける名前と色。焼き込んだ字幕の名前の札と、サイトの台本の「ずんだもん：…」に出る | `Course.cast` |
 | 声の鍵 | 台詞の音声ファイルの名前。文と声の設定から作るので、同じ文・同じ声なら、前に作った音声を使い回す | `scripts/voices.ts` の `ttsKey`・`ttsKeyIn` |
 | 読み | 声に読ませる文。英字をカナに開く辞書は `content/reading.ts`。合成したときの読みは `.work/kana/<key>.txt` で確かめる | `content/reading.ts` |
-| timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む | `src/generated/timeline.json` |
+| timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む。時刻に効く入力の指紋を持ち、台本を直したのに合成し直していない動画を Studio と validate が止める | `content/<講座>/generated/timeline/<key>.json`（動画ごと）。形と指紋は `engine/core/timeline.ts` |
 | ミックス | 台詞・BGM・ジングル・効果音を 1 本にまとめた音 | `scripts/mix.py` が `public/audio/mix/<key>.wav` に書く |
 
 ## 素材と教材（名前が似ているので注意）
@@ -57,11 +57,11 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 動画の一覧 | 公開する動画の正本。動画ごとに、言語・講座・レクチャー・種類・大きさ・SHA-256・タグを持つ。サイトの組み立てと Worker が同じ一覧を読む | `site/media-manifest.json`。形の検査は `site/media-shared.ts` |
+| 動画の一覧 | 公開する動画の正本。動画ごとに、言語・講座・レクチャー・種類・大きさ・SHA-256・タグを持つ。サイトの組み立てと Worker が同じ一覧を読む | 講座ごとの `content/<講座>/generated/media.<言語>.json`。Worker の許可リストは `npm run gen` がつないで作る（`worker/src/generated/media-manifest.json`）。形の検査は `site/media-shared.ts` |
 | 通常版・字幕版 | 字幕版（`captioned`）は字幕を焼き込んだ動画。手元の名前は `<key>.cc.mp4`。サイトは、字幕をオンにするとこちらを流す | `scripts/render.sh`（`CAPTIONS=1`） |
 | retained | 動画の一覧のうち、前の版のハッシュの動画を並べる欄。サイトはもう指さないが、Worker は配り続ける。理由は [ADR](../adr/2026-11-02-keep-old-video-hashes.md) | `scripts/media.ts`・`site/media-shared.ts` |
 | Releases のタグ | 動画を置く GitHub Releases の名前。形は `media-<言語>-<講座 ID>` | `site/media-shared.ts` |
-| ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `site/posters/<key>.jpg`。作るのは `scripts/render.sh` |
+| ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `content/<講座>/generated/posters/<key>.jpg`。作るのは `scripts/render.sh` |
 | Worker | chalkfile.com の `/media/*` を受ける Cloudflare Workers のコード。ほかのパスは、組み立てたサイトの静的なファイル（assets）から返す | `worker/src/`・`wrangler.jsonc` |
 | 公開 | サイトを chalkfile.com に出すこと。main の CI が wrangler で行う。動画は、Releases に置いた時点で誰でも取れる | `.github/workflows/deploy.yml` |
 | 保存（アプリ内に保存） | 学ぶ人が講座を選んでブラウザに保存し、通信なしで見られるようにする仕組み（PWA） | `site/sw.ts`・`site/offline-client.ts`。設計はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md) |

@@ -49,6 +49,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/media.ts check
+      # Worker の許可リスト（Git に入れない生成物）を、講座ごとの動画の一覧から作る。wrangler がまとめる前に、secret の無い手順で
+      - name: Worker の許可リストを作る
+        run: bun scripts/gen.ts --media
       - name: 静的サイトを検証して組み立てる
         env:
           GH_TOKEN: ${{ github.token }}

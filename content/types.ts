@@ -6,7 +6,7 @@ import type { Lang } from './i18n';
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
 
 /**
- * 声（VOICEVOX の話者と話し方は scripts/voices.ts）。narrator: 講師、announcer: 呼び込み。
+ * 声（VOICEVOX・Kokoro の話者と話し方は content/voices.ts）。narrator: 講師、announcer: 呼び込み。
  * お笑い版の掛け合い: zundamon（ボケ）・zundamon-cry（ボケの涙声）・tsukkomi（講師の声で短く刺すツッコミ）・tennokoe（天の声）
  */
 export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | 'tsukkomi' | 'tennokoe';
@@ -510,7 +510,7 @@ export type Syllabus = {
 };
 
 export type Lecture = {
-  id: string; // 例: 'L01'。講座をまたいで重ならないように、講座ごとに頭の文字を変える
+  id: string; // 例: 'L01'。講座の頭文字（Course の prefix）と 2 桁の番号。講座をまたいで重ならない
   no: number;
   section: { no: number; title: string };
   title: string;
@@ -531,6 +531,13 @@ export type Lecture = {
 /** 講座 1 つ分（講座サイト 1 枚と、動画の右上の講座名） */
 export type Course = {
   id: string; // 例: 'stripe-billing'。サイトの URL（/<id>/）になる
+  /**
+   * レクチャー ID の頭文字（英大文字 1 字。例: 'G'）。ID は頭文字と 2 桁の番号（G01）。講座をまたいで重ねない
+   * （npm run validate が確かめ、空いている文字を出す。使っている文字の表は docs/guide/new-course.md）
+   */
+  prefix: string;
+  /** 講座の一覧（サイトの一覧ページ・README の表・COURSES）の並び。小さい順に並ぶ。講座をまたいで重ねない（content/courses.ts の行の順には頼らない） */
+  order: number;
   /** 講座の言語。日本語の台本では書かない（ja）。訳の講座は localizeCourse（content/i18n.ts）が付ける */
   lang?: Lang;
   /** サイトの見出しと動画の右上に出す講座名 */

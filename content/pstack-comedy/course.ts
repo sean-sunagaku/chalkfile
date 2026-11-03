@@ -4,6 +4,8 @@ import { P01 } from './P01';
 /** pstack をざっくり知るお笑い版（1 本だけ）。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、考え方と使い方だけを見せる */
 export const PSTACK_COMEDY: Course = {
   id: 'pstack-comedy',
+  prefix: 'P',
+  order: 70,
   theme: 'stage',
   disclaimer: 'Cursor 社・pstack の作者とは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています',
   title: '笑ってわかる pstack',

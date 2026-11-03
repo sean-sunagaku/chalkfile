@@ -40,7 +40,7 @@ export const expiredRetained = (manifest: MediaManifest, today = new Date()) =>
   (manifest.retained ?? []).filter((e) => e.retainedUntil !== undefined && e.retainedUntil < utcDay(today));
 // media check と check_delivery が同じ文で知らせる（失敗にはしない）。
 export const retainedWarnings = (manifest: MediaManifest, today = new Date()) => expiredRetained(manifest, today).map((e) =>
-  `retained の期限 ${e.retainedUntil} を過ぎた動画が許可リストに残っています: ${mediaPath(e)}。site/media-manifest.json の retained から外すか、期限を延ばしてください（Release の asset は消さない）。`);
+  `retained の期限 ${e.retainedUntil} を過ぎた動画が許可リストに残っています: ${mediaPath(e)}。講座の動画の一覧（content/<講座>/generated/media.<言語>.json）の retained から外すか、期限を延ばしてください（Release の asset は消さない）。`);
 
 export function validateMediaManifest(value: unknown): MediaManifest {
   const m = value as MediaManifest;
