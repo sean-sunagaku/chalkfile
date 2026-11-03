@@ -9,7 +9,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../content';
 import { mediaListFile, posterFile } from '../engine/core/generated';
-import { mediaLimitProblems, pushMedia, readMediaManifest, redact, retainEntries, verifyReleaseAssets, warnExpiredRetained, type Gh } from '../scripts/media';
+import { redact } from '../scripts/lib/proc';
+import { mediaLimitProblems, pushMedia, readMediaManifest, retainEntries, verifyReleaseAssets, warnExpiredRetained, type Gh } from '../scripts/media';
 import { mediaListFiles, readMediaLists } from '../scripts/media-lists';
 import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, RELEASE_MAX_ASSETS } from '../site/limits';
 const entry: MediaEntry = { lang: 'ja', course: 'sample', lecture: 'L01', kind: 'standard', sha256: 'a'.repeat(64), bytes: 100,

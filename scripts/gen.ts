@@ -7,19 +7,22 @@
 //                                              content/<講座>/generated/media.<言語>.json を、講座の登録の順につなぐ（scripts/media.ts）
 //   README.md の講座の表                        <!-- courses:start --> と <!-- courses:end --> の間。講座の登録（COURSES）と timeline から
 //   docs/guide/new-course.md の頭文字の表        <!-- prefixes:start --> と <!-- prefixes:end --> の間。各講座の prefix と order から
-// 表のずれは npm run check:docs（scripts/check_docs.ts）も止める
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+//   docs/guide/commands.md の chalk の表          <!-- cli:start --> と <!-- cli:end --> の間。scripts/cli.ts のコマンドの一覧（npm run chalk -- help の元）から
+// 表のずれは npm run check:docs（scripts/check_docs.ts）も止める。終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
 import { type Lang, TRANSLATED_LANGS, videoKey } from '../content/i18n';
 import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
+import { commandTable } from './cli';
+import { readArgs, runMain, showHelp } from './lib/args';
+import { readSiteConfig } from './lib/config';
+import { writeAtomic } from './lib/fsx';
+import { ROOT } from './lib/paths';
 import { readMediaManifest } from './media';
 import { mediaManifestJson } from './media-lists';
 import { readTimelinesByKey } from './timelines';
-import { readSiteConfig } from './validate';
-
-const ROOT = path.resolve(import.meta.dir, '..');
 
 /** Worker の許可リスト（wrangler が worker/src/index.ts と一緒にまとめる。Git に入れない） */
 export const WORKER_MEDIA = 'worker/src/generated/media-manifest.json';
@@ -103,13 +106,14 @@ export const prefixTable = (): string =>
     '',
   ].join('\n');
 
-/** 生成した表を入れた文書（リポジトリの直下からのパス → 中身） */
+/** 生成した表を入れた文書（リポジトリの直下からのパス → 中身）。scripts/check_docs.ts も、これと比べてずれを止める */
 export const docOutputs = (root = ROOT): Map<string, string> => {
   const out = new Map<string, string>();
   const put = (file: string, name: string, body: string) =>
     out.set(file, replaceBlock(out.get(file) ?? readFileSync(path.join(root, file), 'utf8'), name, body, file));
   put('README.md', 'courses', courseTable());
   put('docs/guide/new-course.md', 'prefixes', prefixTable());
+  put('docs/guide/commands.md', 'cli', commandTable());
   return out;
 };
 
@@ -132,30 +136,26 @@ export const staleOutputs = (outputs: Map<string, string>, root = ROOT): string[
     )
     .map(([file]) => file);
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  for (const a of args)
-    if (!['--check', '--media'].includes(a)) throw new Error(`知らない引数: ${a}（使えるのは --check と --media）`);
-  const outputs = generated(args.includes('--media') ? 'media' : undefined);
+const main = (argv: string[]) => {
+  const { values } = readArgs(argv, { check: { type: 'boolean' }, media: { type: 'boolean' } });
+  if (values.help) return showHelp(import.meta.filename);
+  const outputs = generated(values.media ? 'media' : undefined);
   const stale = staleOutputs(outputs);
-  if (args.includes('--check')) {
+  if (values.check) {
     for (const f of stale) console.log(`違う: ${f}（npm run gen で作り直す）`);
     console.log(
       stale.length
         ? `生成物が ${stale.length} 個、作り直したものと違う`
         : `生成物は作り直したものと同じ（${outputs.size} 個）`,
     );
-    process.exit(stale.length ? 1 : 0);
+    return stale.length ? 1 : 0;
   }
   for (const [file, text] of outputs) {
-    if (!stale.includes(file)) continue;
-    const to = path.join(ROOT, file);
-    mkdirSync(path.dirname(to), { recursive: true });
-    const pending = path.join(path.dirname(to), `.${path.basename(to)}.${process.pid}.tmp`);
-    writeFileSync(pending, text);
-    renameSync(pending, to);
+    if (stale.includes(file)) writeAtomic(path.join(ROOT, file), text);
   }
   console.log(
     `生成物 ${outputs.size} 個（作り直した ${stale.length} 個${stale.length ? `: ${stale.join(' ')}` : ''}）`,
   );
-}
+};
+
+if (import.meta.main) await runMain(main);

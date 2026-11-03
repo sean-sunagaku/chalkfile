@@ -1,5 +1,10 @@
 // 公式cf CLIの認可後、API tokenをプロセス内だけで扱い、ghの標準入力へ直接渡す。
 // planは読取/変更とも行わない。applyは本人が許可した初回登録とmainの公開を実行する。
+//   bun scripts/setup_cloudflare_ci.ts plan    # 何をするかを出すだけ（読み取りも変更もしない。既定）
+//   bun scripts/setup_cloudflare_ci.ts apply   # 初回の登録と main の公開（持ち主だけ。docs/operations/setup.md）
+// 失敗したときは、どの段で止まったかだけを出す（生の出力と秘密値は出さない）。終了コード: 0 できた・1 失敗・2 使い方の誤り
+import { EXIT, readArgs, showHelp, UsageError } from './lib/args';
+
 const ACCOUNT = '1771bd0a5ec29834c0c8714ffe808889';
 const REPOSITORY = 'sean-sunagaku/chalkfile';
 const PROFILE = 'chalkfile-ci-bootstrap';
@@ -55,9 +60,11 @@ async function json(args: string[]) {
   try { return JSON.parse(result.stdout); } catch { throw new Error('CLIの応答形式を確認できません。生の出力は表示しません'); }
 }
 const cf = (args: string[]) => ['npm', 'exec', '--yes', '--ignore-scripts', `--package=cf@${CF_VERSION}`, '--', 'cf', ...args, '--profile', PROFILE];
-async function main() {
-  const mode = process.argv[2] ?? 'plan';
-  if (!['plan', 'apply'].includes(mode)) throw new Error('plan または apply を指定してください');
+async function main(argv: string[]) {
+  const { values, positionals } = readArgs(argv, {}, { positionals: true });
+  if (values.help) return showHelp(import.meta.filename);
+  const mode = positionals[0] ?? 'plan';
+  if (positionals.length > 1 || !['plan', 'apply'].includes(mode)) throw new UsageError('plan または apply を指定してください（使い方は --help）');
   const plan = { repository: REPOSITORY, environment: 'production', account: ACCOUNT, zone: 'chalkfile.com', permissions: required,
     secretName: SECRET_NAME, cfVersion: CF_VERSION, oauthProfile: PROFILE,
     credentialTransport: 'supported cf grant: stdout in memory -> gh secret set stdin; otherwise provider UI -> GitHub production secret; no credential in logs, files or argv',
@@ -94,5 +101,9 @@ async function main() {
   console.log('production secretの存在を確認し、mainのdeployを開始しました。秘密値は表示/ファイル保存していません。');
 }
 if (import.meta.main) {
-  try { await main(); } catch { console.error(`CLI設定を完了できません（${stage}）。生出力や秘密値は表示しません。`); process.exitCode = 1; }
+  try { await main(process.argv.slice(2)); } catch (e) {
+    // 使い方の誤りだけは、その文を出す（ほかは、生の出力や秘密値が混ざりうるので段だけを出す）
+    if (e instanceof UsageError) { console.error(e.message); process.exitCode = EXIT.usage; }
+    else { console.error(`CLI設定を完了できません（${stage}）。生出力や秘密値は表示しません。`); process.exitCode = EXIT.failed; }
+  }
 }
