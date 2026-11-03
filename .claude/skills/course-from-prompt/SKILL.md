@@ -63,7 +63,7 @@ bun scripts/export_deliverables.ts <ID> …          # out/deliverables/（完�
 
 書き出す前に `bun scripts/materials.ts check` で、台本の全部の台詞の声が手元にあるかを見る（`reading.ts` を直した後に合成し直していない章が見つかる）。`reading.ts` は全講座で共有なので、直したら全講座の台詞の読みが変わらないかを比べ、変わった章（ほかの講座も）を合成・書き出し直す。
 
-`syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。作業が長くなったら、PR を更新する前に `origin/main` を取り込む（別の PR がマージされていることがある）。台詞の声を作ったら `bun scripts/materials.ts push` で素材のブランチも置き換える（VOICEVOX の無い手元でも作り直せるように。README の「素材から作り直す」）。
+`syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う）。作業が長くなったら、PR を更新する前に `origin/main` を取り込む（別の PR がマージされていることがある）。台詞の声を作ったら、merge の前に `bun scripts/materials.ts push` で素材のブランチにも足す（VOICEVOX の無い手元でも作り直せるように。順番は [publish.md](../../../docs/operations/publish.md)）。
 
 公開は [publish.md](../../../docs/operations/publish.md) の順番に従う（main に入ると Actions が本番に出すので、マージの前に公開の許可をユーザーにもらう）。
 

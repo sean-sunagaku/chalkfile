@@ -55,4 +55,4 @@
 
 - **生成物（timeline・動画の一覧・教材・スナップショット）がぶつかる**: 手で直さない。[公開の順番](publish.md) の「ぶつかったとき」
 - **新しい作業フォルダで、声が無い**: 声のキャッシュ（`.work/tts`）は作業フォルダごとにある。`npm run materials:pull` で取り出す
-- **手元のサーバーの番号がぶつかる**: 講座サイトは `PORT=<番号> npm run serve`、Remotion Studio は `npm run studio -- --port <番号>`、Worker は `npm run dev:worker -- --port <番号>`
+- **手元のサーバーの番号がぶつかる**: 講座サイトは `PORT=<番号> npm run serve`、Remotion Studio は `npm run studio -- --port <番号>`、Worker は `npm run dev:worker -- --port <番号>`（[commands.md](../guide/commands.md) の「ポート」）

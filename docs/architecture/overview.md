@@ -4,7 +4,7 @@ Chalkfile は、TypeScript で書いた台本から、声・動画・講座サ�
 
 - 確かめた時点: 2026-11-02 の main（`76a9da9`）のコード
 - 言葉の意味は [用語集](glossary.md)、決めた理由は [ADR](../adr/README.md)
-- コマンドの書き方は [README](../../README.md) の「作り直す」「素材から作り直す（VOICEVOX なし）」。ここには写さない
+- コマンドの書き方は [コマンド](../guide/commands.md) と [始め方](../guide/quickstart.md)。ここには写さない
 
 ## データの流れ
 

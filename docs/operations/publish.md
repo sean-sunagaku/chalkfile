@@ -63,7 +63,7 @@ CAPTIONS=1 npm run render -- <ID…>         # 字幕を焼き込んだ版も作
 
 - 6 の `media push` は、全部の講座の日本語の通常版が手元にないと止まる。字幕版は、手元に無いと動画の一覧から外れ、サイトに出なくなる。だから先に `media.ts pull` でそろえる
 - `media.ts pull` は、手元の動画が動画の一覧と違うと止まる（上書きしない）。作り直したあとに流すと、作り直した動画で止まる。render より前に流すか、`bun scripts/media.ts pull <講座 ID…>` で作り直していない講座だけを取る
-- 書き出したら確かめる。読み・静止画・長さ・サイトの見え方は、スキルの [SKILL.md](../../.claude/skills/study-video-course/SKILL.md) の「5. 確かめる」
+- 書き出したら確かめる。読み・静止画・長さ・サイトの見え方は、スキルの [SKILL.md](../../.claude/skills/study-video-course/SKILL.md) の「5. 確かめる」と、[new-course.md](../guide/new-course.md) の「確かめる」
 - 見直す前の動画を、6 で push しない（置いた時点で、誰でも取れる）
 
 ## 6. 動画を Releases に置く（media push・check）
@@ -99,7 +99,7 @@ npm run build:site -- --strict      # merge で動く Actions と同じ組み立
 
 ## 8. PR → merge → Actions → 公開後の確認
 
-- PR は、テンプレート（`.github/pull_request_template.md`）の項目を埋める
+- PR は、テンプレート（`.github/pull_request_template.md`）の項目を埋める。新しい講座のときに書くことは [new-course.md](../guide/new-course.md) の「PR に書くこと」
 - merge すると、Actions（deploy）が次の順に流す。どこかで止まったら、公開しない
   1. `npm ci --ignore-scripts`・型・単体テスト・台本とファイルの点検
   2. 素材ブランチから声を取り出し、`synth --cached-only` で時刻とサイトのデータを作る（声を合成しない）

@@ -19,7 +19,7 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 正本は台本のデータ（`content/<講座>/Lxx.ts`）。声も動画もサイトも、台本からコマンドで作り直す。動画を手で編集しない。
 
-講座サイトの事前保存・オフライン再生・PWAを直すときは [references/offline.md](references/offline.md) に従う。利用者が選んだ講座の公開教材・MP4だけを保存し、不完全な保存を成功扱いしない。オンライン再生・単体ファイル保存・アプリ内保存・インストールを区別する。READMEの利用手順も一緒に更新する。
+講座サイトの事前保存・オフライン再生・PWAを直すときは [references/offline.md](references/offline.md) に従う。利用者が選んだ講座の公開教材・MP4だけを保存し、不完全な保存を成功扱いしない。オンライン再生・単体ファイル保存・アプリ内保存・インストールを区別する。学ぶ人向けの説明（[learner-offline.md](../../../docs/guide/learner-offline.md)）も一緒に直す。
 
 保存状態の案内を直すときは、`tests/browser/offline-status.spec.ts` を対象実行し、完全再起動後のオフライン表示と、進捗・通信エラーを遅い応答や状態確認で消さないことを確かめる。公開後の単体MP4ダウンロード操作は、保存検証の一時profileのキャッシュを使って1本だけ確認し、公開での結果を別に記録する。
 
@@ -106,7 +106,7 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | 図や画面の文字だけ直す | 台本を直す → stills → render（声は変わらないので synth と mix は要らない） |
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.ts --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
-| 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → READMEとこのSkillの案内を合わせる |
+| 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → learner-offline.md とこのスキルの案内を合わせる |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
 | 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → `TRANSLATIONS` に並べる → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |

@@ -1,0 +1,82 @@
+# 講座を足す（チェックリスト）
+
+新しい講座を足して、公開の PR を出すまでのチェックリスト。中身の作り方（調べ方・台本・声・画面・お笑い）の正本は、スキル [study-video-course](../../.claude/skills/study-video-course/SKILL.md)。共通プロンプトから章立ての講座を丸ごと作るときは、スキル [course-from-prompt](../../.claude/skills/course-from-prompt/SKILL.md)。
+
+- 手元の用意は [quickstart.md](quickstart.md) の A、コマンドは [commands.md](commands.md)、公開の順番は [公開の順番](../operations/publish.md)
+
+## 1. 決める
+
+- [ ] 講座 ID。サイトの URL（`/<講座 ID>/`）・保存の ID・Releases のタグになるので、公開したら変えない。今の講座と同じく、英小文字とハイフンで書く。2 文字の英小文字は使えない（言語の名前と重なる）
+- [ ] レクチャー ID の頭文字。下の表で使っていない英大文字を 1 つ選ぶ。ID は頭文字と 2 桁の番号（`G01`）
+- [ ] 講座の型: 真面目版・お笑い版・章立て（読む教材つき）・1 本だけの解説動画
+- [ ] お笑いを必ず入れる。型と守ることは [comedy.md](../../.claude/skills/study-video-course/references/comedy.md)、理由は [ADR](../adr/2026-11-01-comedy-in-every-course.md)。お笑い版は表示を少なくする（副題・前置きを出さない。1 本だけの動画は、番号と根拠の札も出さない）
+- [ ] テーマ（下の「テーマ」）
+
+### 頭文字の表（今の 9 講座）
+
+この表は、あとでコードから作る予定。それまでは、講座を足す PR でこの表にも 1 行足す。
+
+| 頭文字 | 講座 ID |
+|---|---|
+| `L` | `stripe-billing` |
+| `N` | `nudge-product` |
+| `D` | `uiux-engineers` |
+| `M` | `indie-marketing` |
+| `W` | `nudge-comedy` |
+| `R` | `rive-comedy` |
+| `P` | `pstack-comedy` |
+| `S` | `superagent-comedy` |
+| `G` | `ga4-comedy` |
+
+- 同じレクチャー ID は、講座をまたいで使えない（`content/index.ts` を読み込むときに止まる）
+
+### テーマ
+
+- テーマは、色・書体・背景の飾りをまとめたもの。動画と講座サイトの両方に効く。今あるテーマの一覧と、項目の意味と確かめ方は [theme.md](../../.claude/skills/study-video-course/references/theme.md)、値は `content/themes.ts`
+- 講座の `theme: '<id>'` で選ぶ。書かなければ `chalkfile`
+- 作るときは `content/themes.ts` に足す（項目は `content/types.ts` の `Theme`）。地・文字・主役の色・図の 7 色・コードの色分け・背景の飾り（`chalk`・`band`・`stars`）・書体を決める
+- 書き出す前に試す: `npm run stills -- L02:3 L03:3 --theme=<id>`（講座のテーマを変えずに、そのテーマで静止画を描く）
+- 実在のブランドに寄せるときは、色の雰囲気までにする。テーマの名前に会社名を付けず、ロゴ・社名の書体は使わない
+
+## 2. 作るファイル
+
+- [ ] `content/<講座 ID>/<ID>.ts`: レクチャーごとの台本。場面の型は `content/types.ts`、画面と話し方の決まりは [style.md](../../.claude/skills/study-video-course/references/style.md)
+- [ ] `content/<講座 ID>/course.ts`: 講座（`id`・`title`・`subtitle`・`headline`・`theme`・`sections`・`lectures`・`disclaimer`・`docsNote`・`sourceNote`）。お笑い版は `cast`、章立ては `unitLabel: 'CHAPTER'`、1 本だけの動画は `standalone: true`
+- [ ] `content/<講座 ID>/sources.ts`: 出典と確かめた日（章立て・教材つきの講座）
+- [ ] `content/<講座 ID>/syllabus.ts`: 全体の目次・到達目標・章の計画（教材つきの講座。[materials.md](../../.claude/skills/study-video-course/references/materials.md)）
+- [ ] `content/index.ts`: import と、`COURSES` に 1 行。並べた順が、一覧のページの順になる
+- [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`content/index.ts` の `TRANSLATIONS`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）
+- [ ] README の「Chalkfile で作った講座」の表に 1 行（あとでコードから作る予定）
+- [ ] 実在の会社や製品を扱うなら、`disclaimer` に「非公式」と書く。お笑い版は「ボケの台詞は、わざと間違えています」も書く
+
+## 3. 作る
+
+- 調べる → 講座を設計する → 台本 → synth → mix → render の順に進める（スキルの「進め方」）。台詞を直したら synth からやり直す
+- 台本だけを先に確かめるときは `npm run validate`（synth の最初にも同じ検証が流れる）
+
+## 4. 確かめる
+
+- [ ] `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検。CI と同じ）
+- [ ] 読み: `.work/kana/<ID>.txt` を全部読んだ
+- [ ] 見た目: `npm run stills -- <ID> --mid` の静止画を全部見た（文字のはみ出し・重なり・小さすぎ）
+- [ ] 共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`（ほかの講座の見た目が変わっていないか。結果の表を PR に貼る）
+- [ ] 長さ: `ffprobe` の動画の長さが `src/generated/timeline.json` と合う
+- [ ] 事実: 台本ができたら、別の目（サブエージェント）に台本のファイルだけを渡して、主張ごとに公式で確かめてもらった（[research.md](../../.claude/skills/study-video-course/references/research.md) の「事実確認を別の目でやる」）
+- [ ] 権利: `bun scripts/check_overlap.ts <講座 ID>`（台本と、出典の公式ページで、言い回しが続けて同じところが無いか）
+- [ ] サイト: `npm run build:site` → `npm run serve` で、再生・途中への移動・字幕・スマホの幅（375px）を見た。講座を足したら `npm run test:browser` も流した
+- [ ] 音声の鍵のスナップショット: `bun scripts/snapshots.ts --update`（動画を足したとき）
+
+## 5. 公開する
+
+- [ ] [公開の順番](../operations/publish.md) のとおりに進めた。素材（`materials push`）と動画（`media push`）は merge の前に置く。動画は、置いた時点で誰でも取れる
+
+## 6. PR に書くこと
+
+PR のテンプレート（`.github/pull_request_template.md`）の項目を埋める。新しい講座では、次も書く。
+
+- [ ] 講座 ID・頭文字・動画の本数と長さ
+- [ ] 素材と動画を、merge の前に置いたこと（`materials push`・`media push`・`media check`）
+- [ ] 作り直した生成物（timeline・クレジット・ポスター・動画の一覧・`docs/courses/`・スナップショット）
+- [ ] 確かめたこと（上の 4。静止画の比較の表があれば貼る）
+- [ ] 訳を作ったときは、言語と `bun scripts/i18n.ts status` の結果
+- [ ] AI を使ったことと、人が確かめた範囲
