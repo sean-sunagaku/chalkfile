@@ -1,17 +1,22 @@
 // 講座のページ（site/template.html）を描く（純粋）。印は 1 回の走査で置き換える（scripts/site/html.ts の fillTemplate）。
-// 版の印（scripts/site-version.ts）は入れたまま描き、CSP（__CSP__）は呼ぶ側が付ける
+// 版の印（scripts/site-version.ts）は入れたまま描く。CSP は、ページに入れる script（本体と offline-client）から先に作る（csp.ts）
 import { LANG_INFO, type Lang } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
 import { fill, type SiteText } from '../../site/i18n';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
-import { fillTemplate, type Html, html, raw, styleText } from './html';
+import { cspHead } from './csp';
+import { fillTemplate, type Html, html, inlineScript, raw, styleText } from './html';
 import { type LectureModel, plain } from './model';
 import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } from './parts';
 
 export type CoursePageInput = {
-  /** site/template.html の中身 */
+  /** site/template.html の中身から、ページの本体の script を __PAGE_SCRIPT__ にしたもの（csp.ts の splitPageScript） */
   template: string;
+  /** ページの本体の script（csp.ts の splitPageScript が取り出したもの） */
+  pageScript: string;
+  /** offline-client.ts を bundle したもの（保存機能の部品の script と同じ） */
+  offlineClient: string;
   config: SiteConfig;
   /** サイトの URL（/ で終える） */
   base: string;
@@ -42,7 +47,7 @@ const evidenceHintTail = (text: string): Html => {
     : html`${text.slice(0, at)}<span class="mono">xx-01-s01</span>${text.slice(at + '{id}'.length)}`;
 };
 
-/** 講座のページの HTML（CSP の印 __CSP__ と版の印は残したまま） */
+/** 講座のページの HTML（版の印は残したまま） */
 export const renderCoursePage = (p: CoursePageInput): string => {
   const info = LANG_INFO[p.lang];
   const T = p.T;
@@ -50,6 +55,9 @@ export const renderCoursePage = (p: CoursePageInput): string => {
   const url = `${p.base}${cid}/`;
   const firstPoster = `${url}media/${p.lectures[0].key}.jpg`;
   const marks = {
+    // CSP の script-src は、このページに入れる script（文書の順に、本体・offline-client）のハッシュ
+    CSP: cspHead([p.pageScript, p.offlineClient]),
+    PAGE_SCRIPT: inlineScript(p.pageScript),
     LANG: html`${info.html}`,
     HOME: html`../`,
     LANG_NAV: langNav({
@@ -94,5 +102,5 @@ export const renderCoursePage = (p: CoursePageInput): string => {
     DOCS_NOTE: html`${p.course.docsNote}`,
     COURSE_JSON: p.json,
   };
-  return fillTemplate(p.template, { marks, text: textOf(T), keep: ['CSP'] }, 'site/template.html');
+  return fillTemplate(p.template, { marks, text: textOf(T) }, 'site/template.html');
 };

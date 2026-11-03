@@ -14,6 +14,7 @@ import type { Course } from '../content/types';
 import { bundle } from '../scripts/pwa';
 import { type BuildSiteOptions, buildSite } from '../scripts/site/build';
 import { heroSnippetOf } from '../scripts/site/config';
+import { scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 import { type MediaEntry, mediaFilename } from '../site/media-shared';
 import SAMPLE from './fixtures/content/site-sample';
 
@@ -141,6 +142,19 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     await expect(
       buildSample({ mediaManifest: { schema: 1, entries: sampleMedia(SAMPLE.course).entries.slice(0, 1) } }),
     ).rejects.toThrow('動画の一覧がありません: ja/site-sample/Y02');
+  });
+
+  test('CSP の script-src は、ページに入れる信頼できる script（www の移動・本体・offline-client）のハッシュだけ', async () => {
+    const { outDir } = await buildSample();
+    const offlineClient = await bundle(path.join(ROOT, 'site/offline-client.ts'));
+    const { script: pageScript } = splitPageScript(readFileSync(path.join(ROOT, 'site/template.html'), 'utf8'), 't');
+    const scriptSrc = (rel: string) =>
+      /script-src ([^;]+);/.exec(readFileSync(path.join(outDir, rel), 'utf8'))?.[1].split(' ') ?? [];
+    expect(scriptSrc('site-sample/index.html')).toEqual(
+      [WWW_REDIRECT_SCRIPT, pageScript, offlineClient].map(scriptHash),
+    );
+    expect(scriptSrc('index.html')).toEqual([WWW_REDIRECT_SCRIPT, offlineClient].map(scriptHash));
+    expect(scriptSrc('404.html')).toEqual([scriptHash(WWW_REDIRECT_SCRIPT)]);
   });
 
   test('台本に置き換えの印（__DOCS_NOTE__・{{tabQuiz}}・__COURSE_JSON__）や </script> を書いても、組み立てが壊れない', async () => {

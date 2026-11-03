@@ -12,6 +12,7 @@ import {
   raw,
   styleText,
 } from '../scripts/site/html';
+import { cspHead, scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 
 describe('html`…` と raw()', () => {
   test('文字と数はエスケープし、Html はそのまま、配列はつなぐ', () => {
@@ -72,5 +73,26 @@ describe('属性・script・style に入れるもの', () => {
     expect(() => inlineScript('x="</script>"')).toThrow('</script');
     expect(htmlText(styleText('a{color:red}'))).toBe('a{color:red}');
     expect(() => styleText('a{}</style><script>')).toThrow('</');
+  });
+});
+
+describe('CSP（scripts/site/csp.ts）', () => {
+  test('__CSP__ の所に、meta の CSP（www の移動とページの script のハッシュ）と www の移動の script を入れる', () => {
+    const head = htmlText(cspHead(['run(1)']));
+    expect(head).toStartWith(
+      `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src ${scriptHash(WWW_REDIRECT_SCRIPT)} ${scriptHash('run(1)')}; `,
+    );
+    expect(head).toEndWith(`"><script>${WWW_REDIRECT_SCRIPT}</script>`);
+  });
+  test('テンプレートから本体の script を取り出し、その場所を __PAGE_SCRIPT__ にする。属性の無い script が 1 つでなければ止める', () => {
+    const json = '<script id="d" type="application/json">{}</script>';
+    expect(splitPageScript(`<p>${json}<script>\nrun()\n</script></p>`, 't')).toEqual({
+      template: `<p>${json}__PAGE_SCRIPT__</p>`,
+      script: '\nrun()\n',
+    });
+    expect(() => splitPageScript(json, 'site/t.html')).toThrow(
+      'site/t.html に、ページの本体の script（属性の無い <script>）が 1 つではなく 0 ある',
+    );
+    expect(() => splitPageScript('<script>a</script><script>b</script>', 't')).toThrow('2 ある');
   });
 });

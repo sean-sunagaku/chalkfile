@@ -1,11 +1,12 @@
 // 一覧のページ（site/home.html）を描く（純粋）。講座のカード・まだ訳していない講座・テーマの一覧・最初の画面の台本の抜き出し。
-// 印は 1 回の走査で置き換える（scripts/site/html.ts の fillTemplate）。CSP（__CSP__）は呼ぶ側が付ける
+// 印は 1 回の走査で置き換える（scripts/site/html.ts の fillTemplate）。CSP は、ページに入れる script（offline-client）から先に作る（csp.ts）
 import type { HeroSnippet } from '../../content/course-module';
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
 import { fill, type SiteText } from '../../site/i18n';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
+import { cspHead } from './csp';
 import { cssColor, esc, fillTemplate, type Html, html, joinHtml, raw, styleText } from './html';
 import { plain } from './model';
 import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } from './parts';
@@ -54,6 +55,8 @@ export type HomePageInput = {
   hero: HeroSnippet;
   /** 保存機能の部品（parts.ts の appParts） */
   app: AppParts;
+  /** offline-client.ts を bundle したもの（保存機能の部品の script と同じ） */
+  offlineClient: string;
   /** site/offline.css の中身 */
   offlineCss: string;
 };
@@ -118,7 +121,7 @@ const themeCard = (p: HomePageInput, t: Theme, root: string): Html => {
   );
 };
 
-/** 一覧のページの HTML（CSP の印 __CSP__ は残したまま） */
+/** 一覧のページの HTML */
 export const renderHomePage = (p: HomePageInput): string => {
   const T = p.T;
   const lang = p.lang;
@@ -166,6 +169,8 @@ export const renderHomePage = (p: HomePageInput): string => {
     : raw('');
   const url = `${p.base}${info.path}`;
   const marks = {
+    // CSP の script-src は、このページに入れる script（offline-client）のハッシュ
+    CSP: cspHead([p.offlineClient]),
     LANG: html`${info.html}`,
     LANG_NAV: langNav({ langs: p.langs, coursesIn: p.coursesIn, lang, root, label: T.langNav }),
     PWA_HEAD: p.app.head,
@@ -204,5 +209,5 @@ export const renderHomePage = (p: HomePageInput): string => {
     REPO: html`${p.config.repoUrl}`,
     CREDITS: html`${fill(T.homeCredits, { voices: p.credits.join(T.creditsSep) })}`,
   };
-  return fillTemplate(p.home, { marks, text: textOf(T), keep: ['CSP'] }, 'site/home.html');
+  return fillTemplate(p.home, { marks, text: textOf(T) }, 'site/home.html');
 };

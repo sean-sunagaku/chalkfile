@@ -17,9 +17,10 @@ import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version'
 import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../validate';
 import { copyAssets, thumbnailAssets } from './assets';
 import { realPosterOf, SITE_DIR, siteBase } from './config';
-import { withCsp } from './csp';
+import { cspHead, splitPageScript, WWW_REDIRECT_SCRIPT } from './csp';
 import { cleanOutput, listOutput, writeCourse } from './emit';
 import { NOT_FOUND_HTML, writeServingFiles } from './headers';
+import { fillTemplate } from './html';
 import { courseJson, homeCredits, lectureModels, minutesOf, type ReadData, type SiteData } from './model';
 import { courseManifest, type PosterFile, pageFiles } from './offline-manifest';
 import { type AppContext, appParts } from './parts';
@@ -81,7 +82,11 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const problems = siteProblems(config, coursesIn);
   if (problems.length) throw new Error(problems.join('\n'));
 
-  const template = readFileSync(path.join(SITE_DIR, 'template.html'), 'utf8');
+  // ページの本体の script は、テンプレートから取り出しておく（CSP のハッシュを先に計算する、信頼できるソースの 1 つ）
+  const { template, script: pageScript } = splitPageScript(
+    readFileSync(path.join(SITE_DIR, 'template.html'), 'utf8'),
+    'site/template.html',
+  );
   const home = readFileSync(path.join(SITE_DIR, 'home.html'), 'utf8');
   const offlineCss = readFileSync(path.join(SITE_DIR, 'offline.css'), 'utf8');
   const app: AppContext = {
@@ -126,6 +131,8 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       const json = courseJson({ course, lang, T, config, lectures, video });
       const html = renderCoursePage({
         template,
+        pageScript,
+        offlineClient: app.offlineClient,
         config,
         base,
         langs,
@@ -147,10 +154,10 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       });
       // 保存の manifest に入る、ページのほかのファイル。ポスターの ?v= は版の印のまま
       const files = pageFiles({ cid, lectures, posters, video });
-      // 版は、版の印を入れたまま描いたページ（CSP まで）と、動画・ポスターの URL・大きさ・sha256 から計算する。保存した HTML と MP4 を別の版に混ぜない
-      const pageVersion = pageVersionOf({ html: withCsp(html), files });
-      // CSP のハッシュは、版を差し込んだ最終のページから作る
-      const page = Buffer.from(withCsp(stampVersion(html, pageVersion)));
+      // 版は、版の印を入れたまま描いたページ（CSP まで）と、動画・ポスターの URL・大きさ・sha256 から計算する。保存した HTML と MP4 を別の版に混ぜない。
+      // 版の印は、ページで動く script の中には無い（JSON のデータにだけある）ので、版を差し込んでも CSP は変わらない
+      const pageVersion = pageVersionOf({ html, files });
+      const page = Buffer.from(stampVersion(html, pageVersion));
       const manifest =
         posters.length === lectures.length
           ? courseManifest({ cid, title: course.title, page, files, pageVersion })
@@ -186,11 +193,12 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       credits: homeCredits(coursesIn(lang), lang),
       hero: o.hero,
       app: appParts(app, lang, root),
+      offlineClient: app.offlineClient,
       offlineCss,
     });
     const dir = path.join(dist, info.path);
     mkdirSync(dir, { recursive: true });
-    const page = Buffer.from(withCsp(html));
+    const page = Buffer.from(html);
     writeFileSync(path.join(dir, 'index.html'), page);
     shell.push(asset(info.path || './', page, 'text/html'));
   }
@@ -215,9 +223,10 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     shell,
     mediaRoots,
   );
-  writeServingFiles(dist, withCsp(NOT_FOUND_HTML));
+  writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
 
-  // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める
+  // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
+  // ページで動く script は、信頼できる 3 本（www の移動・講座のページの本体・offline-client）のどれかでなければ止める
   assertSiteInvariants({
     dist,
     scope: base,
@@ -225,6 +234,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     media: o.mediaManifest,
     shell,
     courses: manifests.map((m) => m.id),
+    scripts: [WWW_REDIRECT_SCRIPT, pageScript, app.offlineClient],
   });
   const files = listOutput(dist);
   log(
