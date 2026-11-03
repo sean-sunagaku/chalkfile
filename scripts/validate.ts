@@ -21,7 +21,7 @@ import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Course, Theme } from '../content/types';
-import { creditsIn, SITE_CREDITS, voicesOf } from '../content/voices';
+import { creditsIn, voicesOf } from '../content/voices';
 import { formatIssues, RULES, validateCourse, validateCourses, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
 import { mediaListFile, posterFile } from '../engine/core/generated';
 import { mediaKey, type MediaManifest } from '../site/media-shared';
@@ -30,6 +30,7 @@ import { readSiteConfig, type SiteConfig } from './lib/config';
 import { ROOT } from './lib/paths';
 import { readMediaLists } from './media-lists';
 import { PAGE_VERSION_MARK } from './site-version';
+import { courseCredits } from './site/model';
 import { readTimelinesByKey } from './timelines';
 
 /** 公開で止まることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見るので、こちらに置く） */
@@ -148,11 +149,11 @@ export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Cou
 };
 
 /**
- * 講座のページに出す声のクレジットの文（scripts/build_site.ts の courseCredits と、ページの {voices}・{note}）。
- * 日本語のページは、全講座で共通の講師と呼び込み（SITE_CREDITS）と、講座の sourceNote。訳のページは、使った声から作る（creditsIn）
+ * 講座のページに出す声のクレジットの文（ページの {voices} は scripts/site/model.ts の courseCredits、{note} は講座の sourceNote）。
+ * 今の courseCredits は、日本語は全講座で共通の講師と呼び込み、訳は使った声から作る（creditsIn）
  */
 const pageCreditText = (course: Course, lang: Lang): string =>
-  [...(lang === 'ja' ? SITE_CREDITS : creditsIn(lang, course.lectures.flatMap(voicesOf))), course.sourceNote ?? ''].join('\n');
+  [...courseCredits(course, lang), course.sourceNote ?? ''].join('\n');
 
 /**
  * 講座のページのクレジットが、講座の動画で使った全部の声のクレジットを含むか（キャラクターの利用規約。VOICEVOX は「VOICEVOX:キャラ名」）。
