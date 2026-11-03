@@ -3,7 +3,7 @@
 //   node scripts/stills.ts L01 --mid      # 各場面の中ほども
 //   node scripts/stills.ts L01@120 L03@900 --scale=1
 //   node scripts/stills.ts L02:3 --theme=chalkfile   # 講座のテーマの代わりに別のテーマで描く（テーマを作るとき）
-//   node scripts/stills.ts N01 --captions            # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で描く
+//   node scripts/stills.ts N01 --captions            # 字幕を焼き込んだ版（書き出しの字幕版と同じ）で描く
 //   node scripts/stills.ts P01.en:3 P01.zh --mid     # 訳の動画（レクチャー ID.言語）
 //   npm run chalk -- stills L01 --mid                # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // npm run stills -- L01 --mid でも同じ（package.json に type が無いので Node が出す「ES module として読み直した」という注意を止める）

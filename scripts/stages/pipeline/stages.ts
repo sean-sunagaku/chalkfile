@@ -10,7 +10,7 @@
 //     voices  設計図の台詞の音声の中身（sha256）
 //     music   BGM・ジングル・効果音（public/audio/music・sfx）の中身
 //     tool    mix.py と、それが読む Python の部品・効果音の一覧・動画の値・依存の固定（pyproject.toml・uv.lock）
-//   render（動画とポスター。scripts/render.sh。単位は動画。書き出しは長いので、記録は render.sh が書き出しのたびに書く）
+//   render（動画とポスター。scripts/stages/video/render.ts。単位は動画。書き出しは長いので、記録は書き出しの道具が動画ごとに書く）
 //     script  台本の側（scripts/stages/video/inputs.ts。動画が描く台本の項目・テーマの値・クレジット・timeline）
 //     src     描き方の側（src/・engine/ などのコードと、Remotion などの依存の版）。これだけが変わったときは、既定では書き出さない（--src）
 //     audio   ミックスの音（public/audio/mix/<key>.wav）の中身
@@ -38,6 +38,7 @@ import { mediaManifestJson, readCourseMediaFile } from '../../media-lists';
 import { ttsKeysIn } from '../../voices';
 import { findVoice, type VoiceStore } from '../voice/store';
 import { readTimelineJson, scriptDigest, srcDigest } from '../video/inputs';
+import { videoFiles } from '../video/plan';
 import { codeFiles, commandVersion, digest, filesDigest, listFiles, sha256Text } from './digest';
 import type { Ctx, Recorded, RunOptions, Stage } from './runner';
 
@@ -246,9 +247,15 @@ export const makeStages = (ctx: StagesCtx): Stage[] => {
   };
 
   const captioned = (key: string) => Boolean(video(key).course.cast);
+  let langs: readonly string[] | null = null;
+  /** 公開する言語（site/config.json の publishLangs。ポスターを講座のフォルダに置く言語） */
+  const publishLangs = () => {
+    langs ??= readSiteConfig(root).publishLangs;
+    return langs;
+  };
   const render: Stage = {
     name: 'render',
-    label: '動画とポスター（render.sh）',
+    label: '動画とポスター（render.ts）',
     needs: ['mix'],
     unrecorded: 'keep',
     advisory: ['src'],
@@ -266,16 +273,12 @@ export const makeStages = (ctx: StagesCtx): Stage[] => {
       const audio = sha16(`public/audio/mix/${key}.wav`) ?? '';
       return { parts: { script: scriptDigest(v, timeline), src: once('src', () => srcDigest(root, hasher)), audio } };
     },
-    // サイト用の動画とポスター（site/media/<key>.jpg はポスターの写しなので入れない。out/ の高画質の書き出しも入れない）
-    outputs: (key) => [
-      `site/media/${key}.mp4`,
-      ...(captioned(key) ? [`site/media/${key}.cc.mp4`] : []),
-      posterFile(video(key).course.id, key),
-    ],
-    recordable: (key) =>
-      captioned(key) && env.CAPTIONS !== '1'
-        ? '字幕を焼き込んだ版を作っていない（掛け合いの講座は CAPTIONS=1 か npm run chalk -- render で書き出す）'
-        : null,
+    // サイト用の動画とポスター（公開する言語の動画は講座のフォルダのポスター。site/media/<key>.jpg はその写しなので入れない。
+    // ほかの言語の動画は、ポスターを site/media/<key>.jpg にだけ置く）。out/ の高画質の書き出しは入れない
+    outputs: (key) => {
+      const f = videoFiles(video(key), publishLangs());
+      return [f.site, ...(captioned(key) ? [f.siteCc] : []), f.poster ?? f.sitePoster];
+    },
     fallback: (key) => publishedRecord(ctx, video(key)),
     keepMissing: (key) => {
       const v = video(key);
@@ -284,23 +287,15 @@ export const makeStages = (ctx: StagesCtx): Stage[] => {
         ? `公開した動画が手元に無い（取り出すなら bun scripts/media.ts pull ${v.course.id}。書き出すなら --force）`
         : null;
     },
-    run: (keys, o: RunOptions) => {
-      const jobs: Record<string, string> = o.jobs ? { CONCURRENCY: String(o.jobs) } : {};
-      for (const [cc, list] of [
-        ['0', keys.filter((k) => !captioned(k))],
-        ['1', keys.filter(captioned)],
-      ] as const) {
-        if (!list.length) continue;
-        const code = runCommand(['bash', 'scripts/render.sh', ...list], { ...jobs, CAPTIONS: cc });
-        if (code !== 0) return code;
-      }
-      return 0;
-    },
-    tools: () => ({
-      bun: Bun.version,
-      node: commandVersion('node', ['--version']),
-      ffmpeg: commandVersion('ffmpeg'),
-    }),
+    // 字幕版を作るかは、書き出しの道具が講座で決める（掛け合いの講座は作る）。バンドルを 1 回で済ませるので、全部の動画を 1 回で渡す
+    run: (keys, o: RunOptions) =>
+      runCommand([
+        process.execPath,
+        'scripts/stages/video/render.ts',
+        ...(o.jobs ? ['--jobs', String(o.jobs)] : []),
+        ...keys,
+      ]),
+    tools: () => ({ bun: Bun.version, ffmpeg: commandVersion('ffmpeg') }),
   };
 
   const docsCourses = () => COURSES.filter((c) => c.syllabus);

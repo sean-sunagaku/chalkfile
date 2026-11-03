@@ -2,7 +2,7 @@
 
 Pull Request と main で流す GitHub Actions の形と、そうしている理由。公開の順番は [公開の順番](publish.md)、止まったときと戻したときは [戻し方](recovery.md)。
 
-- workflow は `.github/workflows/` の `ci.yml`（PR と main）と `canary.yml`（毎日）。手順の中身の正本は、それぞれの YAML と、`.github/actions/` の composite action（`setup`・`ffmpeg`・`playwright`）
+- workflow は `.github/workflows/` の `ci.yml`（PR と main）・`canary.yml`（毎日）・`render-check.yml`（Linux の書き出し。手で流すときだけ）。手順の中身の正本は、それぞれの YAML と、`.github/actions/` の composite action（`setup`・`ffmpeg`・`playwright`）
 - 公開の決まりは、形（ジョブの数・手順の順番）ではなく性質で守る。性質は下の「点検する性質」。`scripts/check_delivery.ts` が確かめ、`npm run check` の単体テスト（`tests/delivery.test.ts`）が、わざと壊して止まるかを見る
 
 ## ジョブ（ci.yml）
@@ -64,8 +64,16 @@ secret も、PR に書く権限も使わずに、組み立てたものと確か�
 ## ffmpeg
 
 - apt では入れず、版を固定した静的なビルドを使う。出どころは BtbN/FFmpeg-Builds の GitHub Releases（ffmpeg.org の Download のページの「Linux Static Builds」が案内しているもの）。月の最後のビルドは 2 年残る
-- URL・tar.xz の sha256・取り出した `ffmpeg` の sha256 と、版の上げ方の正本は `.github/actions/ffmpeg/action.yml`
+- `ffmpeg` と `ffprobe`（書き出した動画を確かめる）を入れる。URL・tar.xz の sha256・取り出した 2 つの実行ファイルの sha256 と、版の上げ方の正本は `.github/actions/ffmpeg/action.yml`
 - 素材の FLAC を WAV に戻した結果は、`materials.ts pull` が SHA256SUMS で 1 本ずつ確かめる。版を上げて WAV のバイトが変われば、build で止まる
+
+## Linux の書き出し（render-check.yml）
+
+- 動画の書き出し（`scripts/stages/video/render.ts`）が、Linux（`ubuntu-latest`）でも通るかを確かめる。手で流すときだけ動く（Actions → render-check → Run workflow。動画の名前を 1 つ渡す。既定は短い L12。掛け合いの講座の動画なら、字幕版も作る）。secret は使わず、動画の push・公開はしない
+- 手順は手元と同じ: 素材のキャッシュ（`ci.yml` の `build` と同じ鍵。戻すだけ）→ その講座の素材を取り出す → `synth --cached-only` → `npm run mix` → `npm run render`。書き出しの道具が、出力を ffprobe（長さ・形式・大きさ・音のあるなし）で確かめてから置き換える。Chrome Headless Shell は Remotion が取ってくる
+- 結果は、ジョブの要約（ffprobe の値）と artifact `render-check`（サイト用の動画・字幕版・ポスター。7 日）で見られる。見た目は、手元の書き出しと静止画で比べる（書体の描き方は OS で少し違う）
+- 流すとき: Remotion・bun・ffmpeg の版を上げたあと、書き出しの道具を直したあと
+- 止まったとき: 要約と、`書き出す（Linux）` の手順の出力を見る。Chrome のライブラリが足りないときは、runner の image が変わったかを見る
 
 ## 毎日の確かめ（canary.yml）
 

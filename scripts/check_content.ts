@@ -278,7 +278,7 @@ const MiB = 1024 ** 2;
 export const MAX_TRACKED_BYTES = 5 * MiB;
 /** 5MiB の上限から外すもの（理由つき）。外したものも LARGE_OK_MAX（GitHub が警告を出す 50MiB）を超えたら止める */
 const LARGE_OK: [RegExp, string][] = [
-  [/^content\/[^/]+\/generated\/posters\/[^/]+\.jpg$/, 'ポスターは公開に要る正本で main に置く（CI はここから組み立てる）。大きさは書き出し（render.sh の幅 1280 の JPEG）で決まる'],
+  [/^content\/[^/]+\/generated\/posters\/[^/]+\.jpg$/, 'ポスターは公開に要る正本で main に置く（CI はここから組み立てる）。大きさは書き出し（scripts/stages/video/render.config.ts の幅 1280 の JPEG）で決まる'],
   [/^tests\/fixtures\//, 'テストの入力。保存データの互換や大きさの上限を試すとき、本物と同じ形と大きさのファイルが要ることがある'],
 ];
 const LARGE_OK_MAX = 50 * MiB;

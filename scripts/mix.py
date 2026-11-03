@@ -369,7 +369,7 @@ def build(lec_id: str, plan: dict, sfx_db: dict[str, float]) -> None:
     with tempfile.TemporaryDirectory() as d:
         raw = Path(d) / "raw.wav"
         write_wav(raw, mix)
-        # 仕上げは一時の名前（ffmpeg が形を拡張子で決めるので .wav で終える）に書いてから置き換える。書き出し（render.sh）が書きかけの音を読まない
+        # 仕上げは一時の名前（ffmpeg が形を拡張子で決めるので .wav で終える）に書いてから置き換える。書き出し（npm run render）が書きかけの音を読まない
         with atomic_path(OUT_DIR / f"{lec_id}.wav", ".tmp.wav") as out:
             meas = loudnorm(raw, out)
     final = lufs(read_wav(OUT_DIR / f"{lec_id}.wav"))

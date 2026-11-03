@@ -98,13 +98,28 @@ describe('流すコマンド（--dry-run は出すだけ）', () => {
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('bun scripts/synth.ts --cached-only G01 G02 G03');
   });
-  test('render は、掛け合いの講座（cast あり）だけ字幕を焼き込んだ版も作る。--captions で全部、--jobs は並列の数', () => {
+  test('render は、選んだ動画を書き出しの道具に 1 回で渡す（バンドルは 1 回）。字幕版は掛け合いの講座（cast あり）だけ。--captions で全部、--jobs は並列の数', () => {
+    const steps = (values: Record<string, unknown>) =>
+      COMMANDS.find((c) => c.name === 'render')
+        ?.steps({ values: values as never, positionals: [] })
+        .map((s) => s.show);
+    expect(steps({ course: ['nudge-product', 'ga4-comedy'], jobs: '2', chunk: '1200' })).toEqual([
+      `bun scripts/stages/video/render.ts --jobs 2 --chunk 1200 ${VIDEOS.filter(
+        (v) => ['nudge-product', 'ga4-comedy'].includes(v.course.id) && published.includes(v.lang),
+      )
+        .map((v) => v.key)
+        .join(' ')}`,
+    ]);
+    // --dry-run は書き出しの道具に渡し、道具が、字幕版を作るか・出力・足りない入力を出す（何も書き出さない）
     const nudge = chalk('render', '--course', 'nudge-product', '--course', 'ga4-comedy', '--dry-run');
-    expect(nudge.stdout).toContain('CAPTIONS=0 bash scripts/render.sh N01');
-    expect(nudge.stdout).toContain('CAPTIONS=1 bash scripts/render.sh G01 G02 G03');
-    const all = chalk('render', '--course', 'nudge-product', '--captions', '--jobs', '4', '--dry-run');
-    expect(all.stdout).toContain('CONCURRENCY=4 CAPTIONS=1 bash scripts/render.sh N01');
+    expect(nudge.code).toBe(0);
+    expect(nudge.stdout).toMatch(/^ {2}N01 {2}通常版 {2}/m);
+    expect(nudge.stdout).toMatch(/^ {2}G01 {2}通常版と字幕版 {2}.*site\/media\/G01\.cc\.mp4/m);
+    const all = chalk('render', '--course', 'nudge-product', '--captions', '--jobs', '1', '--dry-run');
+    expect(all.stdout).toMatch(/^ {2}N01 {2}通常版と字幕版 {2}/m);
+    expect(all.stdout).toContain('並列の数 1');
     expect(chalk('render', '--jobs', 'x', '--dry-run').code).toBe(2);
+    expect(chalk('render', '--chunk', '-1', '--dry-run').code).toBe(2);
   });
   test('-v は流すコマンドも出し、voice synth・materials・media の道具には --verbose も渡す', () => {
     const r = chalk('voice', 'synth', 'G01', '--cached-only', '-v', '--dry-run');
