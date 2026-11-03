@@ -1,12 +1,19 @@
 // 場面「terminal」: 端末（コマンドと出力、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { TerminalScene } from '../../content/types';
+import type { TerminalOut, TerminalScene } from '../../content/types';
+import { terminalText } from '../../engine/core/scenes';
 import { Glass, Smart } from '../components/ui';
 import { C, CONTENT_BOTTOM, CONTENT_TOP, mix, MONO, PAD, SANS, SYNTAX } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
+
+/** 出力の行の色（書かなければ薄い色。ok は成功、info は目を向けてほしい行） */
+const outColor = (o: TerminalOut) => {
+  const t = typeof o === 'string' ? undefined : o.tone;
+  return t === 'ok' ? SYNTAX.string : t === 'info' ? SYNTAX.fn : SYNTAX.comment;
+};
 
 const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
   const frame = useCurrentFrame();
@@ -49,8 +56,8 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
                   </div>
                 ) : null}
                 {(e.out ?? []).map((o, k) => (
-                  <div key={k} style={{ whiteSpace: 'pre', color: o.includes('[200]') ? SYNTAX.string : o.startsWith('-->') ? SYNTAX.fn : SYNTAX.comment, opacity: outO, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {o}
+                  <div key={k} style={{ whiteSpace: 'pre', color: outColor(o), opacity: outO, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {terminalText(o)}
                   </div>
                 ))}
               </div>

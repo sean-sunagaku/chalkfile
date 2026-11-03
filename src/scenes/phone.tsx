@@ -4,17 +4,16 @@ import { interpolate, useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../content/types';
 import { Icon, Smart } from '../components/ui';
 import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES } from '../theme';
-import { dropY, lineStart, useAppear, useScene, useText } from '../timing';
+import { dropY, lineStart, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
-  const text = useText();
   const done = sc.kind === 'done';
   return (
     <div style={{ position: 'absolute', inset: 0, background: done ? '#F1FFF8' : '#FFF4F8', padding: '64px 22px 22px', display: 'flex', flexDirection: 'column', fontFamily: SANS }}>
-      <div style={{ fontWeight: 900, fontSize: 25, color: '#E2477F', letterSpacing: 1 }}>{sc.brand ?? text.sampleApp}</div>
-      <div style={{ fontSize: 17, color: '#9A6B7E', marginTop: 2 }}>{sc.brandSub ?? text.samplePlan}</div>
+      <div style={{ fontWeight: 900, fontSize: 25, color: '#E2477F', letterSpacing: 1 }}>{sc.brand}</div>
+      {sc.brandSub ? <div style={{ fontSize: 17, color: '#9A6B7E', marginTop: 2 }}>{sc.brandSub}</div> : null}
       <div
         style={{
           marginTop: 22,

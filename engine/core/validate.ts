@@ -10,7 +10,7 @@
 // いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から、字幕と見出しの大きさを src/video.config.ts から読む
 import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
-import type { Course, Evidence, Lecture, Line, Scene, SfxId, Theme, Tone, VoiceId } from '../../content/types';
+import type { Course, Evidence, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
 import { VIDEO_TEXT } from '../../src/i18n';
 import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
@@ -63,6 +63,8 @@ const VOICE_SET: Record<VoiceId, true> = { narrator: true, announcer: true, zund
 export const VOICE_IDS = Object.keys(VOICE_SET) as VoiceId[];
 
 const TONE_SET: Record<Tone, true> = { pink: true, violet: true, cyan: true, mint: true, amber: true, coral: true, slate: true };
+/** 端末の出力の色（src/scenes/terminal.tsx） */
+const TERMINAL_TONE_SET: Record<TerminalTone, true> = { ok: true, info: true };
 const EVIDENCE_SET: Record<Evidence, true> = { research: true, official: true, practice: true, example: true };
 
 const has = <K extends string>(set: Record<K, true>, v: unknown): v is K => typeof v === 'string' && Object.hasOwn(set, v);
@@ -298,7 +300,16 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
       }
       return;
     case 'terminal':
-      return notEmpty(s.entries, '入力と出力（entries）', w('entries'), out);
+      notEmpty(s.entries, '入力と出力（entries）', w('entries'), out);
+      list(s.entries).forEach((e, i) =>
+        list(e?.out).forEach((o, k) => {
+          if (typeof o === 'string') return;
+          const at = w(`entries[${i}].out[${k}]`);
+          if (typeof o?.text !== 'string') push(out, 'error', 'empty', `${at}.text`, '出力の行の文字（text）が無い');
+          if (o?.tone !== undefined && !has(TERMINAL_TONE_SET, o.tone)) push(out, 'error', 'tone', `${at}.tone`, `端末の出力の色「${String(o.tone)}」が無い（あるのは ${names(TERMINAL_TONE_SET)}。書かなければ薄い色）`);
+        }),
+      );
+      return;
     case 'ending':
       return;
     default:
@@ -328,9 +339,9 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
         if (typeof v !== 'number' || !Number.isInteger(v)) push(out, 'error', 'at', at, `台詞の番号が整数でない: ${String(v)}`);
         else if (v < 0 || v > lines.length) push(out, 'error', 'at', at, `台詞の番号 ${v} が範囲の外（この場面の台詞は ${lines.length} 個。0〜${lines.length} で書く）`);
       }
-      // 画面の図の部品（blocks）の tone は、注意の帯の種類（error・info・warn・success）で、図の色ではない
-      if (k === 'tone' && v !== undefined && !/(^|\.)blocks\[/.test(path) && !has(TONE_SET, v)) push(out, 'error', 'tone', at, `色の名前「${String(v)}」が無い（あるのは ${names(TONE_SET)}）`);
-      if (typeof v === 'string' && !LITERAL.has(k)) checkEmphasis(v, richField(s, path), at, out);
+      // 画面の図の部品（blocks）の tone は注意の帯の種類（error・info・warn・success）、端末の出力（out）の tone は ok・info で、図の色ではない
+      if (k === 'tone' && v !== undefined && !/(^|\.)(blocks|out)\[/.test(path) && !has(TONE_SET, v)) push(out, 'error', 'tone', at, `色の名前「${String(v)}」が無い（あるのは ${names(TONE_SET)}）`);
+      if (typeof v === 'string' && !LITERAL.has(k) && !/(^|\.)out\[\d+\]\.text$/.test(path)) checkEmphasis(v, richField(s, path), at, out);
     });
   }
   checkBody(s, sw, out);

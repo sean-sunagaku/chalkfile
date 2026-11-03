@@ -303,8 +303,9 @@ export type PhoneScreen = {
   title: string;
   /** app はアプリの画面、done は終わりの画面（緑の地にチェック） */
   kind: 'app' | 'done';
-  /** アプリの画面の上に出すサービス名（既定はサンプルアプリ／Pro プラン） */
-  brand?: string;
+  /** 画面の上に出す、架空のアプリの名前（例: サンプル家計簿）。エンジンは既定の名前を持たないので、講座ごとに書く */
+  brand: string;
+  /** 名前の下の小さな文字（例: 架空のアプリ）。書かなければ出さない */
   brandSub?: string;
   lead?: string;
   body: string[];
@@ -359,10 +360,15 @@ export type ScreensScene = Base & {
   right?: MockScreen;
 };
 
+/** 端末の出力の色。書かなければ薄い色（コードのコメントの色）。ok: 成功した行（文字列の色）、info: 目を向けてほしい行（関数の色） */
+export type TerminalTone = 'ok' | 'info';
+/** 端末の出力の 1 行。文字だけなら薄い色で出す。色を付けるときは { text, tone } と書く */
+export type TerminalOut = string | { text: string; tone?: TerminalTone };
+
 export type TerminalScene = Base & {
   kind: 'terminal';
   title: string;
-  entries: { cmd?: string; out?: string[]; at: number; note?: string }[];
+  entries: { cmd?: string; out?: TerminalOut[]; at: number; note?: string }[];
 };
 
 export type EndingScene = Base & {

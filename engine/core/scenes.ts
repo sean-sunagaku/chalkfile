@@ -2,7 +2,7 @@
 // React・Remotion・Node に依存しない純粋なデータ（scripts/build_materials.ts と engine/core/validate.ts が読む）。
 // 描く側は src/scenes/<kind>.tsx（defineScene）と、その登録表 src/scenes/index.ts。どちらも Scene['kind'] の全部を
 // 型で網羅するので、場面の種類を足すと、ここと登録表に書くまで型で止まる（足し方は .claude/skills/study-video-course/references/style.md）
-import type { Scene } from '../../content/types';
+import type { Scene, TerminalOut } from '../../content/types';
 
 export type SceneKind = Scene['kind'];
 /** その種類の場面のデータ（SceneOf<'goals'> は GoalsScene） */
@@ -17,6 +17,9 @@ export type SceneInfo<K extends SceneKind> = {
 };
 
 const plain = (s: string) => s.replace(/\*\*/g, '');
+
+/** 端末の出力の 1 行の文字（色を付けた行は { text, tone }） */
+export const terminalText = (o: TerminalOut): string => (typeof o === 'string' ? o : o.text);
 
 /** 場面の種類（並びは README・教材の一覧と同じ。stills-compare の既定の場面もこの順） */
 export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
@@ -99,7 +102,7 @@ export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
   },
   terminal: {
     label: '端末',
-    describe: (s) => s.entries.map((x) => x.cmd ?? (x.out ?? []).join(' ')).join('／'),
+    describe: (s) => s.entries.map((x) => x.cmd ?? (x.out ?? []).map(terminalText).join(' ')).join('／'),
   },
   ending: {
     label: '次の章の予告',

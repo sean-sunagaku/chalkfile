@@ -8,6 +8,7 @@
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
 - 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）
 - アイコンは `content/types.ts` の `IconName`（lucide-react）から選ぶ。絵文字は使わない
+- エンジンは講座の中身を知らない。スマホの画面（`phone`）は架空のアプリの名前を `brand`（と `brandSub`）に必ず書き、端末（`terminal`）の出力の行に色を付けるときは `{ text, tone: 'ok' }`（成功の行）・`{ text, tone: 'info' }`（目を向けてほしい行）と書く。文字だけの行は薄い色で出る
 
 ### 台詞に合わせて出す
 

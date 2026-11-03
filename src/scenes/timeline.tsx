@@ -10,7 +10,7 @@ import { defineScene } from './define';
 const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: number; focus: number }> = ({ it, x, w, focus }) => {
   const p = useAppear(it.at);
   const tt = tone(it.tone);
-  // 「SECTION 2　Stripe の基本」は前半を小さなラベルにして、見出しを割らない
+  // 「SECTION 2　基本の考え方」のような題は、前半を小さなラベルにして、見出しを割らない
   const [kicker, title] = it.title.includes('　') ? it.title.split('　') : [null, it.title];
   return (
     <>

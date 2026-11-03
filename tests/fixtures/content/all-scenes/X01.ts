@@ -217,9 +217,9 @@ export const X01: Lecture = {
       kind: 'phone',
       heading: 'スマホの画面',
       screens: [
-        { at: 0, kind: 'app', title: 'Pro にする？', lead: 'はじめての設定', body: ['月 1,000 円'], primary: '申し込む', secondary: 'あとで', caption: 'アプリの画面' },
-        { at: 1, kind: 'app', title: '支払い', lead: 'Pro プラン', body: ['14 日間無料', '月 1,000 円', 'いつでも解約できる'], primary: '申し込む', caption: '支払いの画面' },
-        { at: 2, kind: 'done', title: 'ようこそ', lead: 'Pro になりました', body: ['全部の機能が使える'], primary: 'はじめる', caption: '終わりの画面' },
+        { at: 0, kind: 'app', brand: 'サンプルアプリ', brandSub: 'Pro プラン', title: 'Pro にする？', lead: 'はじめての設定', body: ['月 1,000 円'], primary: '申し込む', secondary: 'あとで', caption: 'アプリの画面' },
+        { at: 1, kind: 'app', brand: 'サンプルアプリ', title: '支払い', lead: 'Pro プラン', body: ['14 日間無料', '月 1,000 円', 'いつでも解約できる'], primary: '申し込む', caption: '支払いの画面' },
+        { at: 2, kind: 'done', brand: 'サンプルアプリ', brandSub: 'Pro プラン', title: 'ようこそ', lead: 'Pro になりました', body: ['全部の機能が使える'], primary: 'はじめる', caption: '終わりの画面' },
       ],
       lines: [{ t: 'アプリで申し込みます。', v: Z }, { t: '支払いの画面で、カードを入れます。' }, { t: '終わりの画面が出ます。', v: Z, sfxAfter: 'chin' }],
     },
@@ -264,7 +264,7 @@ export const X01: Lecture = {
       title: 'Terminal — 見本',
       entries: [
         { cmd: 'bun scripts/validate.ts', out: ['台本の検証: 誤り 0 件'], at: 1, note: '誤りが無いことを見る' },
-        { out: ['--> done'], at: 2 },
+        { out: [{ text: '--> done', tone: 'info' }], at: 2 },
       ],
       lines: [{ t: '端末で確かめます。' }, { t: '検証を流します。', sfx: 'type' }, { t: '誤りは無しです。', bgm: 'cut' }],
     },

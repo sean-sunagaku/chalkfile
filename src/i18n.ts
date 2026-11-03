@@ -21,8 +21,6 @@ export type VideoText = {
   evidence: Record<Evidence, string>;
   /** 架空のアプリの画面の部品 */
   required: string;
-  sampleApp: string;
-  samplePlan: string;
 };
 
 export const VIDEO_TEXT: Record<Lang, VideoText> = {
@@ -36,8 +34,6 @@ export const VIDEO_TEXT: Record<Lang, VideoText> = {
     quizFalse: '誤解',
     evidence: { research: '研究・学術', official: '公式・法令・規格', practice: '実務の指針', example: '説明用の仮の例' },
     required: '必須',
-    sampleApp: 'サンプルアプリ',
-    samplePlan: 'Pro プラン',
   },
   en: {
     done: 'Well done!',
@@ -49,8 +45,6 @@ export const VIDEO_TEXT: Record<Lang, VideoText> = {
     quizFalse: 'False',
     evidence: { research: 'Research', official: 'Official / law / standard', practice: 'Practitioner guidance', example: 'Illustrative example' },
     required: 'Required',
-    sampleApp: 'Sample App',
-    samplePlan: 'Pro plan',
   },
   zh: {
     done: '辛苦了！',
@@ -62,7 +56,5 @@ export const VIDEO_TEXT: Record<Lang, VideoText> = {
     quizFalse: '误解',
     evidence: { research: '研究与学术', official: '官方、法规、标准', practice: '实务指南', example: '说明用的虚构示例' },
     required: '必填',
-    sampleApp: '示例应用',
-    samplePlan: 'Pro 套餐',
   },
 };
