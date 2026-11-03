@@ -7,12 +7,13 @@
 //   bun scripts/stills-compare.ts --head <ref>       # 今の側を別の ref にする（一時の worktree で npm ci --ignore-scripts して書き出す。Dependabot の branch など）
 //   bun scripts/stills-compare.ts --theme night      # テーマを絞る（カンマで複数。既定は content/themes.ts の全部）
 //   bun scripts/stills-compare.ts L04:3 S01.en:5,7   # 場面を指定する（動画:場面の番号。1 始まり。番号を省くと全部の場面）
-//   bun scripts/stills-compare.ts --threshold 45     # PSNR（dB）がこれより低い場面を「差あり」にする（既定 45。同じ絵は inf）
+//   bun scripts/stills-compare.ts --threshold 45     # PSNR（dB）がこれより低い場面を「差あり」にする（既定 45。同じ絵は inf。99 なら inf でないものを全部）
 //   bun scripts/stills-compare.ts --captions         # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で比べる
 //   bun scripts/stills-compare.ts --concurrency 4    # 同時に書き出す枚数（既定 4）
 //   bun scripts/stills-compare.ts --out .work/stills-compare/pr38   # 出力の置き場所（.work の下。既定 .work/stills-compare）。比較をいくつか残すとき
 // 出力（.work の下なのでコミットしない）: <out>/{base,head}/<動画>-s<場面>-<テーマ>.png、
-//   diff/（差があった場面だけ。左から基準・今・差を 4 倍に強めた絵）、report.md（PR に貼る表）、report.json。流すたびに、この 5 つだけを作り直す
+//   diff/（差があった場面だけ。左から基準・今・差を 4 倍に強めた絵）、report.md（PR に貼る表。両側の依存と Chrome の版も書く）、report.json。
+//   流すたびに、この 5 つだけを作り直す
 // 基準の版（と --head の版）は一時の worktree（git worktree add --detach）に作り、終わったら git worktree remove で片付ける。
 //   node_modules は、既定では今の作業フォルダのものを cp -c（APFS の複製）で写す。--base-install の基準と --head の側は、その版で npm ci する
 // 書き出しは側ごとに別のプロセス（stills-compare-side.ts）で、その側の @remotion/bundler・@remotion/renderer・Chrome Headless Shell を使う。
@@ -204,6 +205,17 @@ const seedBrowser = (dir: string) => {
   if (spawnSync('cp', ['-c', '-R', from, to]).status !== 0) rmSync(to, { recursive: true, force: true });
 };
 
+/** 絵に効く依存と Chrome の版（書き出したあとに読む）。報告に出して、どの版どうしを比べたかを確かめられるようにする */
+const PACKAGES = ['remotion', '@remotion/renderer', '@remotion/google-fonts', 'react', 'react-dom', 'lucide-react'];
+const versionsAt = (dir: string) => {
+  const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
+  const out: Record<string, string> = {};
+  for (const name of PACKAGES)
+    out[name] = JSON.parse(read(path.join(dir, 'node_modules', name, 'package.json')) ?? '{}').version ?? '—';
+  out.Chrome = read(path.join(dir, 'node_modules/.remotion/chrome-headless-shell/VERSION'))?.trim() ?? '—';
+  return out;
+};
+
 /* ───────────── 実行 ───────────── */
 
 const started = Date.now();
@@ -253,6 +265,7 @@ const prepare = async (side: Side, ref: string, sha: string) => {
 };
 
 const rows: Row[] = [];
+const versions: Record<Side, Record<string, string>> = { base: {}, head: {} };
 try {
   const headName = opt.head
     ? `今 ${opt.head}（${headSha.slice(0, 7)}・npm ci）`
@@ -287,27 +300,29 @@ try {
         }
       }
     }
-    if (!stills.length) continue;
-    seedBrowser(dir);
-    const job: SideJob = {
-      dir,
-      label: SIDE_LABEL[side],
-      outDir: path.join(OUT, side),
-      bundleDir: path.join(tmp, `${side}-bundle`),
-      publicDir: path.join(OUT, 'public'),
-      concurrency,
-      stills,
-    };
-    const jobPath = path.join(tmp, `${side}.json`);
-    writeFileSync(jobPath, JSON.stringify(job));
-    // cwd をその側のフォルダにする（renderer は Chrome Headless Shell を cwd の node_modules/.remotion に置く）
-    const r = await run(process.execPath, [SIDE_SCRIPT, jobPath], dir, false);
-    const resultPath = jobPath.replace(/\.json$/, '.result.json');
-    const result: SideResult = existsSync(resultPath)
-      ? JSON.parse(readFileSync(resultPath, 'utf8'))
-      : { failed: {}, fatal: `終了コード ${r.code}` };
-    if (result.fatal) throw new Error(`${SIDE_LABEL[side]}の版を書き出せない: ${result.fatal}`);
-    for (const [name, why] of Object.entries(result.failed)) failed[side].set(name, why);
+    if (stills.length) {
+      seedBrowser(dir);
+      const job: SideJob = {
+        dir,
+        label: SIDE_LABEL[side],
+        outDir: path.join(OUT, side),
+        bundleDir: path.join(tmp, `${side}-bundle`),
+        publicDir: path.join(OUT, 'public'),
+        concurrency,
+        stills,
+      };
+      const jobPath = path.join(tmp, `${side}.json`);
+      writeFileSync(jobPath, JSON.stringify(job));
+      // cwd をその側のフォルダにする（renderer は Chrome Headless Shell を cwd の node_modules/.remotion に置く）
+      const r = await run(process.execPath, [SIDE_SCRIPT, jobPath], dir, false);
+      const resultPath = jobPath.replace(/\.json$/, '.result.json');
+      const result: SideResult = existsSync(resultPath)
+        ? JSON.parse(readFileSync(resultPath, 'utf8'))
+        : { failed: {}, fatal: `終了コード ${r.code}` };
+      if (result.fatal) throw new Error(`${SIDE_LABEL[side]}の版を書き出せない: ${result.fatal}`);
+      for (const [name, why] of Object.entries(result.failed)) failed[side].set(name, why);
+    }
+    versions[side] = versionsAt(dir);
   }
 
   for (const t of targets) {
@@ -348,12 +363,20 @@ const rel = (p?: string) => (p ? path.relative(ROOT, p) : '');
 const bad = rows.filter((r) => r.status !== 'same');
 const compared = rows.flatMap((r) => (r.psnr === null ? [] : [r.psnr]));
 const minPsnr = compared.length ? Math.min(...compared) : null;
-const summary = `場面 ${targets.length} × テーマ ${themes.length} = ${rows.length} 枚。同じ ${count('same')}・差あり ${count('diff')}・基準に無い ${count('new')}・書き出せない ${count('error')}・最小の PSNR ${db(minPsnr)}（しきい値 ${threshold}dB・${sec} 秒）`;
+// しきい値より上でも、inf でなければ絵は少し変わっている（アイコンの形の違いなどは 45〜80dB になる）
+const nearSame = rows.filter((r) => r.status === 'same' && r.psnr !== Infinity).length;
+const summary = `場面 ${targets.length} × テーマ ${themes.length} = ${rows.length} 枚。同じ ${count('same')}（うち inf でない ${nearSame}）・差あり ${count('diff')}・基準に無い ${count('new')}・書き出せない ${count('error')}・最小の PSNR ${db(minPsnr)}（しきい値 ${threshold}dB・${sec} 秒）`;
 const headTitle = opt.head ? `${opt.head} ${headSha.slice(0, 7)}` : `${headSha.slice(0, 7)}${dirty ? '＋変更' : ''}`;
+// 版（基準 → 今）。同じものは 1 つだけ書く
+const versionLine = Object.keys(versions.base)
+  .map((k) => `${k} ${versions.base[k]}${versions.base[k] === versions.head[k] ? '' : ` → ${versions.head[k]}`}`)
+  .join('・');
 const md = [
   `### 静止画の比較（${opt.base} ${baseSha.slice(0, 7)} → ${headTitle}${opt.captions ? '・字幕つき' : ''}）`,
   '',
   `依存（node_modules）: 基準は${DEPS_LABEL[deps.base]}${lockDiffers ? '（基準の package-lock.json とはちがう）' : ''}、今は${DEPS_LABEL[deps.head]}`,
+  '',
+  `版（基準 → 今）: ${versionLine}`,
   '',
   summary,
   '',
@@ -374,6 +397,7 @@ const json = {
   dirty,
   deps,
   lockDiffers,
+  versions,
   threshold,
   captions: opt.captions,
   seconds: sec,
@@ -384,6 +408,7 @@ for (const r of bad)
   console.log(
     `${LABEL[r.status]}  ${r.key}:${r.scene}（${r.kind}）${r.theme}  PSNR ${db(r.psnr)}${r.note ? `  ${r.note}` : ''}${r.diff ? `  ${rel(r.diff)}` : ''}`,
   );
+console.log(`版（基準 → 今）: ${versionLine}`);
 console.log(summary);
 console.log(`表: ${rel(path.join(OUT, 'report.md'))}（PR に貼る）`);
 process.exit(count('diff') || count('error') ? 1 : 0);

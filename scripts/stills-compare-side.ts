@@ -67,14 +67,20 @@ try {
     onProgress: () => {},
   });
   browser = await openBrowser('chrome', { logLevel: 'error' });
-  const puppeteerInstance = browser;
+  // 手元が混んでいると、ページの用意（書体を読むのも含む）が既定の 30 秒を超えることがある。待つ長さは絵に効かない
+  const common = {
+    serveUrl,
+    puppeteerInstance: browser,
+    timeoutInMilliseconds: 120_000,
+    logLevel: 'error',
+    onBrowserLog: () => {},
+  } as const;
   let done = 0;
   await pool(job.stills, job.concurrency, async ({ name, composition: id, frame, inputProps }) => {
     try {
-      const common = { serveUrl, inputProps, puppeteerInstance, logLevel: 'error', onBrowserLog: () => {} } as const;
-      const composition = await selectComposition({ ...common, id });
+      const composition = await selectComposition({ ...common, id, inputProps });
       const output = path.join(job.outDir, name);
-      await renderStill({ ...common, composition, output, frame, imageFormat: 'png', overwrite: true });
+      await renderStill({ ...common, composition, inputProps, output, frame, imageFormat: 'png', overwrite: true });
     } catch (e) {
       result.failed[name] = firstLine(e);
     }
