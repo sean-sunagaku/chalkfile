@@ -7,7 +7,11 @@ import { textWidth } from '../components/fit';
 import { IconBadge, Rich, Smart } from '../components/ui';
 import { usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
+
+/** 大きい文字で並べた幅がこれを超える文は、ひと回り小さくする（px。内容の幅 1640 の 2 行の手前） */
+const LONG_STATEMENT = 3000;
 
 const Big: React.FC<{ s: BigScene }> = ({ s }) => {
   const { C, SANS, tone } = usePalette();
@@ -29,7 +33,7 @@ const Big: React.FC<{ s: BigScene }> = ({ s }) => {
           style={{
             fontFamily: SANS,
             fontWeight: 700,
-            fontSize: 32,
+            fontSize: TYPE.body.bigKicker,
             color: tt.text,
             opacity: k,
             transform: `translateY(${dropY(k, 14)}px)`,
@@ -43,7 +47,11 @@ const Big: React.FC<{ s: BigScene }> = ({ s }) => {
         style={{
           fontFamily: SANS,
           fontWeight: 900,
-          fontSize: textWidth(s.text.replace(/\*\*/g, ''), 88) > 3000 ? 70 : 88,
+          // 長い文（大きい文字で 2 行近くになる文）は、ひと回り小さくする
+          fontSize:
+            textWidth(s.text.replace(/\*\*/g, ''), TYPE.display.statement, { fontFamily: SANS, fontWeight: 900 }) > LONG_STATEMENT
+              ? TYPE.display.statementLong
+              : TYPE.display.statement,
           lineHeight: 1.28,
           color: C.ink,
           maxWidth: 1640,
@@ -58,7 +66,7 @@ const Big: React.FC<{ s: BigScene }> = ({ s }) => {
           style={{
             fontFamily: SANS,
             fontWeight: 500,
-            fontSize: 36,
+            fontSize: TYPE.body.bigSub,
             color: C.sub,
             maxWidth: 1500,
             lineHeight: 1.5,

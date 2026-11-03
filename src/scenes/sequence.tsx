@@ -3,10 +3,16 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { SequenceScene } from '../../engine/core/schema';
 import { arrowProgress, GlowDot, STEP_TIMING } from '../components/arrow';
+import { fitSize } from '../components/fit';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, useAppear, useLatestAt, useScene } from '../timing';
-import { LEAD } from '../video.config';
+import { LEAD, TYPE } from '../video.config';
+
+/** 登場人物の札の中の左右の余白（枠を含む）・アイコン・アイコンと名前の間 */
+const ACTOR_INNER = 22 * 2 + 4;
+const ACTOR_ICON = 64;
+const ACTOR_GAP = 18;
 import { defineScene } from './define';
 
 const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
@@ -93,7 +99,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
                   border: `1.5px solid ${alpha(tt.main, (isLatest ? 0xcc : 0x55) / 255)}`,
                   fontFamily: SANS,
                   fontWeight: 700,
-                  fontSize: 25,
+                  fontSize: TYPE.label.step,
                   color: isLatest ? C.ink : tt.text,
                   whiteSpace: 'nowrap',
                   boxShadow: isLatest ? `0 0 24px ${alpha(tt.main, 0x40 / 255)}` : undefined,
@@ -117,6 +123,12 @@ const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number
 }) => {
   const { C, MONO, SANS } = usePalette();
   const p = useAppear(0);
+  // 名前と補足は 1 行。札の幅に入るまで縮める（札の下限まで）
+  const room = w - ACTOR_INNER - ACTOR_ICON - ACTOR_GAP;
+  const labelSize = fitSize(a.label, { role: 'label', max: TYPE.label.actorLabel, width: room, fontFamily: SANS, fontWeight: 900 });
+  const subSize = a.sub
+    ? fitSize(a.sub, { role: 'label', max: TYPE.label.actorSub, width: room, fontFamily: a.subMono ? MONO : SANS, fontWeight: 500 })
+    : TYPE.label.actorSub;
   return (
     <div
       style={{
@@ -137,18 +149,18 @@ const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number
           height: '100%',
           display: 'flex',
           alignItems: 'center',
-          gap: 18,
+          gap: ACTOR_GAP,
           padding: '0 22px',
           boxSizing: 'border-box',
         }}
       >
-        <IconBadge name={a.icon} t={a.tone} size={64} />
+        <IconBadge name={a.icon} t={a.tone} size={ACTOR_ICON} />
         <div style={{ minWidth: 0 }}>
           <div
             style={{
               fontFamily: SANS,
               fontWeight: 900,
-              fontSize: a.label.length > 9 ? 27 : 32,
+              fontSize: labelSize,
               color: C.ink,
               whiteSpace: 'nowrap',
             }}
@@ -160,7 +172,7 @@ const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number
               style={{
                 fontFamily: a.subMono ? MONO : SANS,
                 fontWeight: 500,
-                fontSize: 20,
+                fontSize: subSize,
                 color: C.sub,
                 whiteSpace: 'nowrap',
               }}

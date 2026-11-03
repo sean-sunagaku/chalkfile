@@ -4,7 +4,8 @@ import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../engine/core/schema';
 import type { VideoText } from '../i18n';
 import { dropY, ramp, useScene, useText } from '../timing';
-import { HEADING } from '../video.config';
+import { HEADING, TYPE } from '../video.config';
+import { fitSize, textWidth } from './fit';
 import { Icon } from './ui';
 
 /** ゆっくり漂う小さな粒（暗い地では光、明るい地ではチョークの粉） */
@@ -133,7 +134,7 @@ export const CourseMark: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
       }}
     >
       <div style={{ width: 16 * scale, height: 16 * scale, borderRadius: 6 * scale, background: GRAD, boxShadow: C.glow }} />
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 22 * scale, color: chip ? C.ink : C.sub, letterSpacing: 1 }}>{course.title}</div>
+      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.meta.courseMark * scale, color: chip ? C.ink : C.sub, letterSpacing: 1 }}>{course.title}</div>
     </div>
   );
 };
@@ -169,7 +170,7 @@ const EvidenceChip: React.FC<{ kind: Evidence; p: number }> = ({ kind, p }) => {
         opacity: p,
       }}
     >
-      <Icon name={e.icon} size={22} color={t.main} />
+      <Icon name={e.icon} size={HEADING.chipSize} color={t.main} />
       {label}
     </div>
   );
@@ -181,7 +182,7 @@ export const unitOf = (course: Course, text: VideoText) => ({
   total: course.syllabus?.chapters.length ?? course.lectures.length,
 });
 
-/** 場面の見出し（ヘッダー） */
+/** 場面の見出し（ヘッダー）。見出しは 1 行で、根拠の札を除いた幅に入らなければ縮める（HEADING.minSize まで） */
 export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   const { C, GRAD, MONO, SANS } = usePalette();
   const frame = useCurrentFrame();
@@ -190,13 +191,27 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   const p = ramp(frame, 0, 16);
   const bar = ramp(frame, 6, 30);
   const chip = ramp(frame, 14, 30);
+  // 1 本だけの動画（standalone）は、根拠の札を出さない（お笑い版は表示を少なく。comedy.md）
+  const evidence = scene.evidence && !course.standalone ? scene.evidence : null;
+  const chipWidth = evidence
+    ? textWidth(text.evidence[evidence], HEADING.chipSize, { fontFamily: SANS, fontWeight: 700, letterSpacing: HEADING.chipSpacing }) + HEADING.chipPad + HEADING.gap
+    : 0;
+  const size = fitSize(heading, {
+    role: 'title',
+    max: HEADING.size,
+    min: HEADING.minSize,
+    width: W - PAD * 2 - chipWidth,
+    fontFamily: SANS,
+    fontWeight: 900,
+    letterSpacing: HEADING.spacing,
+  });
   return (
     <div style={{ position: 'absolute', left: PAD, right: PAD, top: 52, height: 150 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {course.standalone ? (
           <div />
         ) : (
-          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 21, letterSpacing: 5, color: C.muted }}>
+          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: TYPE.meta.lectureLabel, letterSpacing: 5, color: C.muted }}>
             {unitOf(course, text).label} {String(lecture.no).padStart(2, '0')}
             <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>{lecture.title}</span>
           </div>
@@ -208,7 +223,7 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
           style={{
             fontFamily: SANS,
             fontWeight: 900,
-            fontSize: HEADING.size,
+            fontSize: size,
             lineHeight: 1.18,
             color: C.ink,
             letterSpacing: HEADING.spacing,
@@ -219,22 +234,33 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
         >
           {heading}
         </div>
-        {/* 1 本だけの動画（standalone）は、根拠の札を出さない（お笑い版は表示を少なく。comedy.md） */}
-        {scene.evidence && !course.standalone ? <EvidenceChip kind={scene.evidence} p={chip} /> : null}
+        {evidence ? <EvidenceChip kind={evidence} p={chip} /> : null}
       </div>
       <div style={{ marginTop: 12, height: 5, width: 180 * bar, borderRadius: 9, background: GRAD }} />
     </div>
   );
 };
 
-/** 左下に出す出典（研究や公式の数字を見せる場面） */
-export const Cite: React.FC<{ text: string }> = ({ text }) => {
+/**
+ * 下の端の出典（左。研究や公式の数字を見せる場面）と注意書き（右。法律・税・規約の話のレクチャーで出し続ける）。
+ * 両方あるときは 1 行に並べ、出典が注意書きにかかるときは、出典を折り返す（注意書きは折り返さない）
+ */
+export const Footer: React.FC<{ cite?: string; caution?: string }> = ({ cite, caution }) => {
   const { C, SANS } = usePalette();
   const head = useText().cite;
+  if (!cite && !caution) return null;
+  const style: React.CSSProperties = { fontFamily: SANS, fontWeight: 500, fontSize: TYPE.meta.cite, color: C.muted, letterSpacing: 0.5 };
   return (
-    <div style={{ position: 'absolute', left: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>
-      {head}
-      {text}
+    <div style={{ position: 'absolute', left: PAD, right: PAD, bottom: 24, display: 'flex', alignItems: 'flex-end', gap: 40 }}>
+      <div style={{ ...style, flex: '1 1 auto', minWidth: 0 }}>
+        {cite ? (
+          <>
+            {head}
+            {cite}
+          </>
+        ) : null}
+      </div>
+      {caution ? <div style={{ ...style, fontSize: TYPE.meta.caution, flex: 'none', whiteSpace: 'nowrap' }}>{caution}</div> : null}
     </div>
   );
 };
@@ -252,10 +278,4 @@ export const Progress: React.FC<{ total: number; marks: number[] }> = ({ total, 
       ))}
     </div>
   );
-};
-
-/** 右下に出し続ける注意書き（法律・税・規約の話のレクチャー） */
-export const Caution: React.FC<{ text: string }> = ({ text }) => {
-  const { C, SANS } = usePalette();
-  return <div style={{ position: 'absolute', right: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>{text}</div>;
 };

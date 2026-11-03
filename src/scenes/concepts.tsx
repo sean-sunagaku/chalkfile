@@ -2,12 +2,18 @@
 import React from 'react';
 import type { ConceptsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
+import { fitSize } from '../components/fit';
 import { Glass, IconBadge, Pill } from '../components/ui';
-import { usePalette } from '../theme';
+import { PAD, usePalette, W } from '../theme';
 import { dropY, useAppear, useCurrentIndex } from '../timing';
+import { TYPE } from '../video.config';
+
+/** カードの間と、カードの中の左右の余白（枠を含む） */
+const GAP = 28;
+const INNER = 64;
 import { defineScene } from './define';
 
-const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean }> = ({ card, active }) => {
+const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean; width: number }> = ({ card, active, width }) => {
   const { C, SANS, tone } = usePalette();
   const p = useAppear(card.at);
   const tt = tone(card.tone);
@@ -29,7 +35,7 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <IconBadge name={card.icon} t={card.tone} size={66} glow={active ? 0.9 : 0} />
           {card.idPrefix ? (
-            <Pill t={card.tone} mono size={22}>
+            <Pill t={card.tone} mono size={TYPE.label.pill}>
               {card.idPrefix}
             </Pill>
           ) : null}
@@ -38,7 +44,8 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
           style={{
             fontFamily: SANS,
             fontWeight: 900,
-            fontSize: card.en.length > 12 ? 31 : 36,
+            // 英語の名前は 1 行に入るまで縮める（題の下限まで。それでも入らなければ折り返す）
+            fontSize: fitSize(card.en, { role: 'title', max: TYPE.title.conceptTerm, width: width - INNER, fontFamily: SANS, fontWeight: 900 }),
             color: C.ink,
             lineHeight: 1.15,
             marginTop: 6,
@@ -46,8 +53,8 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
         >
           {card.en}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 25, color: tt.text }}>{card.ja}</div>
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 23, color: C.sub, lineHeight: 1.5 }}>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.label.conceptReading, color: tt.text }}>{card.ja}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.conceptDesc, color: C.sub, lineHeight: 1.5 }}>
           {card.desc}
         </div>
       </Glass>
@@ -58,15 +65,16 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
 const Concepts: React.FC<{ s: ConceptsScene }> = ({ s }) => {
   const current = useCurrentIndex(s.cards);
   const cols = s.columns ?? 4;
+  const width = (W - PAD * 2 - GAP * (cols - 1)) / cols;
   const rows: ConceptsScene['cards'][] = [];
   for (let i = 0; i < s.cards.length; i += cols) rows.push(s.cards.slice(i, i + cols));
   return (
-    <Content style={{ gap: 28 }}>
+    <Content style={{ gap: GAP }}>
       {rows.map((row, r) => (
-        <div key={r} style={{ display: 'flex', gap: 28, alignItems: 'stretch', minHeight: 330 }}>
+        <div key={r} style={{ display: 'flex', gap: GAP, alignItems: 'stretch', minHeight: 330 }}>
           {row.map((c, k) => {
             const idx = r * cols + k;
-            return <ConceptCardView key={c.key} card={c} active={idx === current} />;
+            return <ConceptCardView key={c.key} card={c} active={idx === current} width={width} />;
           })}
           {row.length < cols
             ? Array.from({ length: cols - row.length }, (_, k) => <div key={`p${k}`} style={{ flex: 1 }} />)

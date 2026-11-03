@@ -2,9 +2,11 @@
 import React from 'react';
 import type { FlowScene, Tone } from '../../engine/core/schema';
 import { Edge, type Box } from '../components/edge';
+import { fitSize } from '../components/fit';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const NodeCard: React.FC<{
@@ -19,10 +21,15 @@ const NodeCard: React.FC<{
 }> = ({ label, sub, icon, t, box, at, mono, focus }) => {
   const { C, MONO, SANS } = usePalette();
   const p = useAppear(at);
-  // 箱の幅に収まるよう、見出しの文字を小さくする
+  // 箱の幅に収まるよう、名前の文字を小さくする（札の下限まで）
   const avail = box.w - 44 - (icon ? 72 : 0);
-  const em = [...label].reduce((w, ch) => w + (mono ? 0.6 : /[\x20-\x7E]/.test(ch) ? 0.58 : 1), 0);
-  const labelSize = Math.min(mono ? 28 : 32, Math.floor(avail / Math.max(1, em)));
+  const labelSize = fitSize(label, {
+    role: 'label',
+    max: mono ? TYPE.label.nodeLabelMono : TYPE.label.nodeLabel,
+    width: avail,
+    fontFamily: mono ? MONO : SANS,
+    fontWeight: mono ? 700 : 900,
+  });
   return (
     <div
       style={{
@@ -62,7 +69,7 @@ const NodeCard: React.FC<{
             {label}
           </div>
           {sub ? (
-            <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 21, color: C.sub, lineHeight: 1.35 }}>
+            <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.nodeSub, color: C.sub, lineHeight: 1.35 }}>
               <Smart text={sub} t={t} />
             </div>
           ) : null}
@@ -140,7 +147,7 @@ const GroupBox: React.FC<{ label: string; x: number; y: number; w: number; h: nu
           top: 14,
           fontFamily: SANS,
           fontWeight: 700,
-          fontSize: 22,
+          fontSize: TYPE.label.group,
           color: tt.text,
           letterSpacing: 1,
         }}

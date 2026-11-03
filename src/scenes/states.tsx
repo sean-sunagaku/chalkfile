@@ -2,17 +2,27 @@
 import React from 'react';
 import type { StatesScene } from '../../engine/core/schema';
 import { Edge, type Box } from '../components/edge';
+import { textWidth } from '../components/fit';
 import { Pill } from '../components/ui';
 import { alpha, usePalette } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
+import { TYPE } from '../video.config';
+
+/** 状態の札の幅の下限と、文字のほかの幅（左右の余白と枠） */
+const MIN_W = 250;
+const INNER = 64;
 import { defineScene } from './define';
 
 const States: React.FC<{ s: StatesScene }> = ({ s }) => {
+  const { MONO, SANS } = usePalette();
   const f = useFocus(s.focus);
+  // 札の幅は、名前（code）と読み（ja）の広いほうを測って決める
   const boxes = new Map(
     s.nodes.map((n) => {
-      const w = Math.max(250, Math.max(n.code.length * (n.variant === 'start' ? 30 : 17.5), n.ja.length * 21) + 64);
-      return [n.key, { x: n.x, y: n.y, w, h: 104 } as Box];
+      const start = n.variant === 'start';
+      const code = textWidth(n.code, start ? TYPE.label.stateStart : TYPE.label.stateCode, { fontFamily: start ? SANS : MONO, fontWeight: start ? 900 : 700 });
+      const ja = textWidth(n.ja, TYPE.label.stateReading, { fontFamily: SANS, fontWeight: 500 });
+      return [n.key, { x: n.x, y: n.y, w: Math.max(MIN_W, Math.ceil(Math.max(code, ja)) + INNER), h: 104 } as Box];
     }),
   );
   const isFocus = (key: string) => (!f ? 0 : f.keys.includes(key) ? 1 : -1);
@@ -68,17 +78,17 @@ const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: nu
           style={{
             fontFamily: start ? SANS : MONO,
             fontWeight: start ? 900 : 700,
-            fontSize: start ? 30 : 29,
+            fontSize: start ? TYPE.label.stateStart : TYPE.label.stateCode,
             color: C.ink,
           }}
         >
           {n.code}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 20, color: tt.text }}>{n.ja}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.stateReading, color: tt.text }}>{n.ja}</div>
       </div>
       {n.badge ? (
         <div style={{ position: 'absolute', right: -6, top: -18 }}>
-          <Pill t={n.tone} size={19}>
+          <Pill t={n.tone} size={TYPE.label.pillBadge}>
             {n.badge}
           </Pill>
         </div>

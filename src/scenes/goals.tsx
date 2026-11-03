@@ -5,6 +5,7 @@ import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { usePalette } from '../theme';
 import { dropY, useAppear, useCurrentIndex } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const GoalRow: React.FC<{ text: string; at: number; index: number; active: boolean }> = ({
@@ -44,10 +45,10 @@ const GoalRow: React.FC<{ text: string; at: number; index: number; active: boole
             strokeDashoffset={50 * (1 - draw)}
           />
         </svg>
-        <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 700, color: C.muted, letterSpacing: 3, width: 96 }}>
+        <div style={{ fontFamily: MONO, fontSize: TYPE.label.goalNo, fontWeight: 700, color: C.muted, letterSpacing: 3, width: 96 }}>
           {String(index + 1).padStart(2, '0')}
         </div>
-        <div style={{ fontFamily: SANS, fontSize: 50, fontWeight: 700, color: C.ink, lineHeight: 1.3 }}>
+        <div style={{ fontFamily: SANS, fontSize: TYPE.title.goal, fontWeight: 700, color: C.ink, lineHeight: 1.3 }}>
           <Smart text={text} t="mint" />
         </div>
       </Glass>

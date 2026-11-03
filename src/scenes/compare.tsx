@@ -2,9 +2,19 @@
 import React from 'react';
 import type { CompareScene, CompareSide } from '../../engine/core/schema';
 import { Content } from '../components/content';
+import { fitSize } from '../components/fit';
 import { Glass, Icon, IconBadge, Smart } from '../components/ui';
-import { alpha, usePalette } from '../theme';
+import { alpha, PAD, usePalette, W } from '../theme';
 import { dropY, useAppear } from '../timing';
+import { TYPE } from '../video.config';
+
+/** 左右のカードの間・カードの中の左右の余白（枠を含む）・題の前のアイコンとアイコンとの間 */
+const GAP = 40;
+const INNER = 92;
+const ICON = 76;
+const ICON_GAP = 22;
+/** 1 枚のカードの題の幅 */
+const titleWidth = (icon: boolean) => (W - PAD * 2 - GAP) / 2 - INNER - (icon ? ICON + ICON_GAP : 0);
 import { defineScene } from './define';
 
 const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) => {
@@ -20,14 +30,22 @@ const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) =
         active={0.6}
         style={{ flex: 1, padding: '38px 44px', display: 'flex', flexDirection: 'column', gap: 26 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
-          {side.icon ? <IconBadge name={side.icon} t={side.tone} size={76} glow={0.5} /> : null}
+        <div style={{ display: 'flex', alignItems: 'center', gap: ICON_GAP }}>
+          {side.icon ? <IconBadge name={side.icon} t={side.tone} size={ICON} glow={0.5} /> : null}
           <div>
             <div
               style={{
                 fontFamily: SANS,
                 fontWeight: 900,
-                fontSize: side.title.length > 14 ? 36 : 44,
+                // 1 行に入るまで縮める（compareTitle から verdict の大きさまで。それでも入らなければ折り返す）
+                fontSize: fitSize(side.title.replace(/\*\*/g, ''), {
+                  role: 'title',
+                  max: TYPE.title.compareTitle,
+                  min: TYPE.title.verdict,
+                  width: titleWidth(!!side.icon),
+                  fontFamily: SANS,
+                  fontWeight: 900,
+                }),
                 color: C.ink,
                 lineHeight: 1.2,
               }}
@@ -35,7 +53,7 @@ const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) =
               <Smart text={side.title} t={side.tone} />
             </div>
             {side.sub ? (
-              <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: tt.text, marginTop: 4 }}>
+              <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.compareSub, color: tt.text, marginTop: 4 }}>
                 <Smart text={side.sub} t={side.tone} />
               </div>
             ) : null}
@@ -77,7 +95,7 @@ const SideItem: React.FC<{ text: string; at: number; k: number; t: CompareSide['
           boxShadow: `0 0 12px ${tt.main}`,
         }}
       />
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 33, color: C.ink, lineHeight: 1.45 }}>
+      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.body.compareItem, color: C.ink, lineHeight: 1.45 }}>
         <Smart text={text} t={t} />
       </div>
     </div>
@@ -90,7 +108,7 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
   const vt = tone(s.verdict?.tone ?? 'violet');
   return (
     <Content style={{ gap: 30 }}>
-      <div style={{ display: 'flex', gap: 40, alignItems: 'stretch', minHeight: s.verdict ? 470 : 600 }}>
+      <div style={{ display: 'flex', gap: GAP, alignItems: 'stretch', minHeight: s.verdict ? 470 : 600 }}>
         <SideCard side={s.left} dir={-1} />
         <SideCard side={s.right} dir={1} />
       </div>
@@ -115,7 +133,7 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
               }}
             >
               <Icon name="check" size={44} color={vt.main} stroke={3} />
-              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 36, color: C.ink, lineHeight: 1.4 }}>
+              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: TYPE.title.verdict, color: C.ink, lineHeight: 1.4 }}>
                 <Smart text={s.verdict.text} t={s.verdict.tone} />
               </div>
             </div>

@@ -7,7 +7,7 @@ import { fitSize } from '../components/fit';
 import { gradientText, Pill, Smart } from '../components/ui';
 import { alpha, PAD, usePalette } from '../theme';
 import { dropY, ramp, useScene, useText } from '../timing';
-import { frames, STING } from '../video.config';
+import { frames, STING, TYPE } from '../video.config';
 import { defineScene } from './define';
 
 /** ジングルの「ドン」が鳴るフレーム（src/video.config.ts の STING.introHitSec。今は 2.0 秒 = 60 フレーム） */
@@ -90,7 +90,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
           style={{
             fontFamily: SANS,
             fontWeight: 900,
-            fontSize: 330,
+            fontSize: TYPE.display.openingNo,
             lineHeight: 1,
             letterSpacing: -10,
             ...gradientText(DISPLAY),
@@ -117,7 +117,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
       >
         {s.section ? (
           <div style={{ opacity: early, transform: `translateY(${dropY(early)}px)` }}>
-            <Pill t="violet" size={26}>
+            <Pill t="violet" size={TYPE.label.pillSection}>
               {s.section}
             </Pill>
           </div>
@@ -129,7 +129,13 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
               style={{
                 fontFamily: SANS,
                 fontWeight: 900,
-                fontSize: fitSize(ln, i === 0 && titleLines.length > 1 ? 104 : 96, 1160),
+                fontSize: fitSize(ln, {
+                  role: 'display',
+                  max: i === 0 && titleLines.length > 1 ? TYPE.display.openingTitleLead : TYPE.display.openingTitle,
+                  width: 1160,
+                  fontFamily: SANS,
+                  fontWeight: 900,
+                }),
                 lineHeight: 1.18,
                 color: C.ink,
                 whiteSpace: 'nowrap',
@@ -147,7 +153,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             style={{
               fontFamily: SANS,
               fontWeight: 500,
-              fontSize: 36,
+              fontSize: TYPE.title.subtitle,
               color: C.sub,
               opacity: sub2,
               transform: `translateY(${dropY(sub2, 14)}px)`,
@@ -176,7 +182,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
               style={{
                 fontFamily: MONO,
                 fontWeight: 700,
-                fontSize: 22,
+                fontSize: TYPE.meta.openingUnit,
                 color: C.muted,
                 letterSpacing: 4,
                 marginRight: 10,
@@ -206,7 +212,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
               marginLeft: 'auto',
               fontFamily: SANS,
               fontWeight: 500,
-              fontSize: 21,
+              fontSize: TYPE.meta.disclaimer,
               color: C.muted,
               textAlign: 'right',
             }}

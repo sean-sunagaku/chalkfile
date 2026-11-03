@@ -5,6 +5,7 @@ import { Content } from '../components/content';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { usePalette } from '../theme';
 import { dropY, useAppear, useCurrentIndex } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const PointCard: React.FC<{
@@ -45,16 +46,16 @@ const PointCard: React.FC<{
             <div />
           )}
           {numbered ? (
-            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: tall ? 64 : 52, color: tt.main, opacity: 0.85 }}>
+            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: tall ? TYPE.display.pointNo : TYPE.display.pointNoCompact, color: tt.main, opacity: 0.85 }}>
               {String(index + 1).padStart(2, '0')}
             </div>
           ) : null}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: tall ? 42 : 36, lineHeight: 1.3, color: C.ink }}>
+        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: tall ? TYPE.title.pointTitle : TYPE.title.pointTitleCompact, lineHeight: 1.3, color: C.ink }}>
           <Smart text={item.title} t={item.tone} />
         </div>
         {item.body ? (
-          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: tall ? 29 : 26, lineHeight: 1.55, color: C.sub }}>
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: tall ? TYPE.body.pointBody : TYPE.body.pointBodyCompact, lineHeight: 1.55, color: C.sub }}>
             <Smart text={item.body} t={item.tone} />
           </div>
         ) : null}

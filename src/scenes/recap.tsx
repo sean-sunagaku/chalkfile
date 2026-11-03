@@ -5,6 +5,7 @@ import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';
 import { dropY, useAppear, useCurrentIndex } from '../timing';
+import { TYPE } from '../video.config';
 import { defineScene } from './define';
 
 const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean }> = ({ text, at, i, active }) => {
@@ -28,7 +29,7 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
             justifyContent: 'center',
             fontFamily: MONO,
             fontWeight: 700,
-            fontSize: 34,
+            fontSize: TYPE.label.recapNo,
             color: C.onAccent,
             flexShrink: 0,
             boxShadow: active
@@ -40,7 +41,7 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
         >
           {i + 1}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 44, color: C.ink, lineHeight: 1.35 }}>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.title.recap, color: C.ink, lineHeight: 1.35 }}>
           <Smart text={text} t="violet" />
         </div>
       </Glass>

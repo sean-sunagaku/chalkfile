@@ -3,10 +3,11 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remo
 import { LANG_INFO, type Lang } from '../engine/core/i18n';
 import { upgradeLecture } from '../engine/core/legacy';
 import type { Scene, Tone } from '../engine/core/schema';
-import { Background, Caution, Cite, Header, Progress } from './components/chrome';
+import { Background, Footer, Header, Progress } from './components/chrome';
+import { fitLines, textWidth, wrappedLines } from './components/fit';
 import { useFonts } from './fonts';
 import { SCENES } from './scenes';
-import { alpha, H, ThemeProvider, usePalette, videoPalette } from './theme';
+import { alpha, H, ThemeProvider, usePalette, videoPalette, W } from './theme';
 import { fadeInOut, SceneProvider } from './timing';
 import { CAPTION, frames, LEAD } from './video.config';
 import { useProject } from './video-project';
@@ -26,8 +27,7 @@ const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = (
     <AbsoluteFill style={{ opacity: o }}>
       {s.heading && body ? <Header heading={s.heading} /> : null}
       <SceneBody s={s} />
-      {caution && body ? <Caution text={caution} /> : null}
-      {s.cite && body ? <Cite text={s.cite} /> : null}
+      {body ? <Footer cite={s.cite} caution={caution} /> : null}
     </AbsoluteFill>
   );
 };
@@ -39,11 +39,13 @@ const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = (
  */
 const CAPTION_SCALE = CAPTION.scale;
 const CAPTION_BAND = H - Math.round(H * CAPTION_SCALE);
+/** 字幕の行の高さ（文字の大きさの倍） */
+const CAPTION_LINE_HEIGHT = 1.42;
 
 /** who: 掛け合いの講座で、話している人の名前と色（講座の cast） */
 type Cue = { start: number; end: number; text: string; who?: { name: string; tone: Tone } };
 
-const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
+const Captions: React.FC<{ cues: Cue[]; lang: Lang }> = ({ cues, lang }) => {
   const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   let i = -1;
@@ -52,6 +54,14 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
   // 台詞の後の短い間では字幕を残す（ちらつかせない）。次の台詞の手前までか、CAPTION.holdSec（0.7 秒）まで
   const until = cue ? Math.min(cue.end + frames(CAPTION.holdSec), (cues[i + 1]?.start ?? Infinity) - LEAD.caption) : -1;
   const show = cue && frame <= until;
+  // 帯の 2 行に入らない台詞は、入るまで縮める（CAPTION.minSize まで。折り返した行の数を測って決める）。名前札があれば、その分だけ行が短い。
+  // 縮めても入らない台詞（台本の検証が注意にする）は、行の間を詰めて帯の中に収める
+  const wrap = { fontFamily: SANS, fontWeight: 700, letterSpacing: CAPTION.spacing, lineHeight: CAPTION_LINE_HEIGHT, lang: LANG_INFO[lang].html, wrap: WRAP[lang] };
+  const tag = show && cue?.who ? textWidth(cue.who.name, CAPTION.nameSize, { fontFamily: SANS, fontWeight: 900 }) + CAPTION.namePadX * 2 + CAPTION.gap : 0;
+  const room = W - CAPTION.sidePad * 2 - tag;
+  const size = show && cue ? fitLines(cue.text, CAPTION.lines, { ...wrap, role: 'body', max: CAPTION.size, min: CAPTION.minSize, width: room }) : CAPTION.size;
+  const rows = show && cue ? wrappedLines(cue.text, size, room, wrap) : 1;
+  const lineHeight = Math.min(CAPTION_LINE_HEIGHT, (CAPTION_BAND - 7 - 8) / (Math.max(rows, CAPTION.lines) * size));
   return (
     <div
       style={{
@@ -91,8 +101,8 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
             style={{
               fontFamily: SANS,
               fontWeight: 700,
-              fontSize: CAPTION.size,
-              lineHeight: 1.42,
+              fontSize: size,
+              lineHeight,
               color: C.onCode,
               textAlign: cue.who ? 'left' : 'center',
               letterSpacing: CAPTION.spacing,
@@ -160,7 +170,7 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
         {!ready ? null : captions ? (
           <>
             <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
-            <Captions cues={cues} />
+            <Captions cues={cues} lang={lang} />
           </>
         ) : (
           scenes

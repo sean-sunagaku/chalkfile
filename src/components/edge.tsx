@@ -4,7 +4,7 @@ import { useCurrentFrame } from 'remotion';
 import type { Tone } from '../../engine/core/schema';
 import { alpha, H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
-import { LEAD } from '../video.config';
+import { LEAD, TYPE } from '../video.config';
 import { arrowProgress, EDGE_TIMING, GlowDot } from './arrow';
 import { Smart } from './ui';
 
@@ -114,7 +114,7 @@ export const Edge: React.FC<{
               border: `1.5px solid ${t ? alpha(tt.main, 0x88 / 255) : C.line2}`,
               fontFamily: SANS,
               fontWeight: 700,
-              fontSize: 22,
+              fontSize: TYPE.label.edge,
               color: t ? tt.text : C.sub,
               whiteSpace: 'nowrap',
             }}

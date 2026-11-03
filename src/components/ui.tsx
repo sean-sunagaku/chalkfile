@@ -1,6 +1,7 @@
 import React from 'react';
 import type { IconName, Tone } from '../../engine/core/schema';
 import { alpha, usePalette, WHITE, type VideoPalette } from '../theme';
+import { TYPE } from '../video.config';
 import { ICONS } from './icons';
 
 /** アイコン。色を省くと見出しの文字の色（C.ink） */
@@ -67,7 +68,8 @@ export const Glass: React.FC<{
   );
 };
 
-export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolean; size?: number; style?: React.CSSProperties }> = ({ children, t, mono, size = 22, style }) => {
+/** 札。size は文字の大きさ（src/video.config.ts の TYPE.label から選ぶ） */
+export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolean; size?: number; style?: React.CSSProperties }> = ({ children, t, mono, size = TYPE.label.pill, style }) => {
   const { MONO, SANS, tone } = usePalette();
   const tt = tone(t);
   return (

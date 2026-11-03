@@ -3,10 +3,11 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { CodeScene, Theme } from '../../engine/core/schema';
 import { WINDOW_LIGHTS } from '../components/app-colors';
+import { textWidth } from '../components/fit';
 import { NoteCard } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useCurrentIndex, useScene } from '../timing';
-import { LEAD } from '../video.config';
+import { LEAD, TYPE, TYPE_MIN } from '../video.config';
 import { defineScene } from './define';
 
 const RX =
@@ -65,12 +66,12 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   const fit = Math.floor((CONTENT_BOTTOM - edTop - codeTop - pad * 2 - 6) / codeLines.length / 1.52);
   const hasNotes = s.marks.some((m) => m.note);
   const edW = hasNotes ? 1150 : W - PAD * 2;
-  // 横にもはみ出さないように（英数字は 0.6em、日本語は 1em として最も長い行で決める）
-  const widestEm = Math.max(
-    ...codeLines.map((ln) => [...ln].reduce((w, ch) => w + (/[\x00-\x7F]/.test(ch) ? 0.6 : 1), 0)),
-  );
-  const fitW = Math.floor((edW - 64 - 48) / Math.max(1, widestEm));
-  const fontSize = Math.min(s.fontSize ?? 26, fit, fitW);
+  // 横にもはみ出さないように、いちばん長い行を測って決める（行番号の列と左右の余白を除いた幅に入れる）
+  const sample = 100;
+  const widest = Math.max(1, ...codeLines.map((ln) => textWidth(ln, sample, { fontFamily: MONO, fontWeight: 400 })));
+  const fitW = Math.floor(((edW - 64 - 48) * sample) / widest);
+  // 縮めても、コードの下限より小さくしない（収まらないほど長いコードは、台本の検証が場面を分けるように言う）
+  const fontSize = Math.max(TYPE_MIN.code, Math.min(s.fontSize ?? TYPE.code.code, fit, fitW));
   const lh = Math.round(fontSize * 1.52);
   const show = lineStart(lines, s.showAt ?? 0) - LEAD.code;
   const editorH = Math.min(CONTENT_BOTTOM - edTop, codeTop + pad * 2 + lh * codeLines.length);
@@ -126,7 +127,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               style={{
                 marginLeft: 14,
                 fontFamily: MONO,
-                fontSize: 20,
+                fontSize: TYPE.label.windowTitle,
                 color: C.codeMuted,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -185,7 +186,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                       textAlign: 'right',
                       paddingRight: 22,
                       color: C.codeMuted,
-                      fontSize: fontSize * 0.8,
+                      fontSize: Math.max(TYPE_MIN.code, Math.round(fontSize * 0.8)),
                     }}
                   >
                     {i + 1}
@@ -254,7 +255,7 @@ const Note: React.FC<{
           text={m.note ?? ''}
           t={m.tone}
           active={1}
-          size={30}
+          size={TYPE.body.codeNote}
           lineHeight={1.38}
           style={{ height: '100%', boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center' }}
         />
