@@ -198,11 +198,6 @@ export const ALLOW_OLD: OldAllow[] = [
   { rx: /^tests\/fixtures\//, why: '旧 Pages の頃の公開物と保存の記録（互換のテストの入力）' },
   { rx: /^tests\/browser\/migration\.spec\.ts$/, words: ['/chalkfile/'], why: '旧 Pages からの移行を確かめるテスト' },
   {
-    rx: /^tests\/browser-server\.ts$/,
-    words: ['/chalkfile/'],
-    why: '移行のテストのために、旧 Pages の公開物を /chalkfile/ に配る',
-  },
-  {
     rx: /^tests\/capture-saved-records\.ts$/,
     words: ['github.io', '/chalkfile/'],
     why: '旧 Pages の保存の記録を取る（互換のテストの入力を作る）',
@@ -226,16 +221,7 @@ export const ALLOW_OLD: OldAllow[] = [
   { rx: /^scripts\/check_docs\.ts$/, why: 'この点検（古い言葉の一覧）' },
   { rx: /^tests\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
   // 直す担当が決まっている、コードの古い説明と前の形の処理（直したら、この行を消す）
-  {
-    rx: /^scripts\/build_site\.ts$/,
-    words: ['dist-media', 'GitHub Pages に出す'],
-    why: '頭書きと、前の訳の動画のサイトを消す処理',
-    pending: true,
-  },
-  { rx: /^scripts\/serve\.ts$/, words: ['dist-media'], why: '頭書きと、訳の動画のサイトを配る処理', pending: true },
   { rx: /^site\/offline-shared\.ts$/, words: ['/chalkfile/'], why: 'コメントの scope の例', pending: true },
-  { rx: /^tests\/browser-server\.ts$/, words: ['dist-media'], why: '訳の動画のサイトを配る処理のコメント', pending: true },
-  { rx: /^tests\/browser\/i18n\.spec\.ts$/, words: ['dist-media'], why: '頭書きの、組み立ての説明', pending: true },
 ];
 
 /** その場所で、その古い言葉を許す例外（無ければ undefined） */

@@ -18,15 +18,15 @@
 
 | ファイル | すること |
 |---|---|
-| `scripts/build_site.ts`・`scripts/pwa.ts` | 教材の版・ファイルごとの SHA-256 と大きさ・講座の `offline-manifest.json`・起動用のページ・Web App Manifest・アイコン・worker を作る |
+| `scripts/build_site.ts`（本体は `scripts/site/` の `buildSite`）・`scripts/pwa.ts` | 教材の版・ファイルごとの SHA-256 と大きさ・講座の `offline-manifest.json`・起動用のページ・Web App Manifest・アイコン・worker を作る |
 | `scripts/site-version.ts` | 教材の版（pageVersion）を出力から計算する。版の印を入れたまま描いたページと、保存する動画・ポスターの URL・大きさ・SHA-256 から求め、印に差し込む（テストは `tests/site-version.test.ts`） |
 | `site/offline-client.ts`・`offline-panel.html`・`offline.css` | 選んで保存・バイト単位の進み具合・保存の状態・取り消し・やり直し・削除・更新・容量の見積もり・保持の要求・インストールの案内 |
 | `site/sw.ts` | 完全な講座の確定・保存版の教材と MP4 の配信・Range・起動用のページ・途中で終わったものの片付け・読めない記録の隔離 |
 | `site/offline-shared.ts` | 保存するものの形と範囲・保存の記録の読み込み・片付けと隔離の判断・1 つの bytes の Range の読み方 |
 | `site/limits.ts` | 保存・動画・Workers の大きさの上限の正本（境目のテストは `tests/limits.test.ts`） |
 | `site/mime.ts` | 拡張子と MIME の対応表（Workers が返す型と同じ）。起動用のファイルと保存するファイルの型はここから付け、知らない拡張子なら組み立てを止める |
-| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP と script の数・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型。テストは `tests/site-invariants.test.ts`） |
-| `tests/offline.test.ts`・`tests/browser/` | 境目の値と、実ブラウザの確かめ。通信などの障害は `tests/browser-server.ts` で起こす |
+| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本のどれかで CSP と合うか・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型。テストは `tests/site-invariants.test.ts`） |
+| `tests/offline.test.ts`・`tests/browser/` | 境目の値と、実ブラウザの確かめ（合成の講座の `test:e2e:ci` と、本物の講座の `test:e2e:real`）。通信などの障害は、テストのサーバー（`tests/browser-server.ts`）が、テストごとのセッション（`tests/e2e/session.ts`）で起こす |
 | `tests/offline-compat.test.ts`・`tests/fixtures/saved-records/<日付>/` | 学ぶ人が保存した記録の互換のテスト（下の「保存データの互換」）。fixture は `tests/capture-saved-records.ts` で作る |
 
 ## 多言語と字幕版
