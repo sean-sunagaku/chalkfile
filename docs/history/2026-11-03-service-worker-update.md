@@ -12,7 +12,7 @@
 | 再生 | 保存版がそろっているかの結果を覚え、動画の Range の要求のたびに、全部のファイルを確かめ直さない |
 | 重大な不具合の直し | 無効にした保存版の一覧（`site/disabled-revisions.ts`。この回は空）を sw.js が持つ。当たる保存版は、オンラインで開くと公開中のページになり、更新を案内する。保存は消さない |
 | 起動用ファイル | 一覧のページの画像を名前の順に並べ、型を拡張子の対応表から付ける。手元の macOS と CI の Linux で、同じ sw.js になる |
-| sw.js の大きさ | 縮めて、組み立ての設定を 1 回だけ入れる。50,500 B から 22,854 B |
+| sw.js の大きさ | 縮めて、組み立ての設定を 1 回だけ入れる。50,500 B から 22,984 B |
 | 静的な応答のヘッダー | `frame-ancestors 'none'`・`X-Frame-Options: DENY`・`Permissions-Policy`・`Cross-Origin-Opener-Policy: same-origin` を足す。`/sw.js` の `Cache-Control` は、2 つの規則の値がつながっていたのを直し、`no-cache, no-transform` だけにする |
 | アイコンの PNG | bun 1.4.4 の zlib で圧縮のバイト列が変わる（画素は同じ。523・601・3,661 B から 896・972・5,131 B） |
 
@@ -29,4 +29,6 @@
 
 - 前（この回の前の main を bun 1.3.6 で組んだもの。ページ・`offline-manifest.json`・アイコンは、本番の chalkfile.com と同じバイト列）と比べて変わったのは、`sw.js`・`_headers`・アイコンの PNG 3 枚だけ。全部の講座のページ・`offline-manifest.json`・一覧のページ・ポスター・画像は同じ
 - 全 9 講座の pageVersion と revision が、前と同じ
-- 合成の講座のブラウザのテスト（`npm run test:e2e:ci`）で、教材のページだけの更新の保存が取る動画を数えた。前の Service Worker では 2 本・339,701 B（全部）、新しい Service Worker では 0 本・0 B
+- ブラウザのテストで、教材のページだけの更新の保存が取る動画を数えた
+  - 合成の講座（`npm run test:e2e:ci`）: 前の Service Worker では 2 本・339,701 B（全部）、新しい Service Worker では 0 本・0 B
+  - 本物の講座の stripe-billing（`npm run test:e2e:real`）: 前は 13 本・162,417,300 B（全部）、新しくは 0 本・0 B。写す元の 1 本の中身を壊すと、その 1 本（11,128,834 B）だけを取り直す
