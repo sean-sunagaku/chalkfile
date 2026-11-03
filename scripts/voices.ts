@@ -37,9 +37,15 @@ export const speechOf = (line: Line): string => {
   return s;
 };
 
-/** 台詞の音声ファイルの名前（.work/tts/<key>.wav）。同じ文・同じ声なら同じ名前になり、前に作った音声を使い回す */
-export const ttsKey = (text: string, voice: VoiceId): string =>
+/**
+ * 台詞の音声ファイルの名前（.work/tts/<key>.wav）。同じ文・同じ声なら同じ名前になり、前に作った音声を使い回す。
+ * v1 の計算は凍結する（素材のブランチの音声はこの名前で置いてある）。VOICES の声の中身（credit の表記・項目の並び）も名前に入るので、
+ * 声の設定を動かしたら、全台詞の名前が変わっていないかを tests/speech-snapshot.test.ts で確かめる
+ */
+export const ttsKeyV1 = (text: string, voice: VoiceId): string =>
   createHash('sha1').update(JSON.stringify([text, VOICES[voice]])).digest('hex').slice(0, 16);
+/** ttsKeyV1 の別名（今までの名前） */
+export const ttsKey = ttsKeyV1;
 
 /* ───────────── 英語と中国語の声（Kokoro） ─────────────
  * Kokoro-82M（hexgrad・Apache-2.0）を手元で動かす（scripts/tts_kokoro.py）。英語は v1.0、中国語は v1.1-zh のモデル。
@@ -107,6 +113,10 @@ export const speechIn = (line: Line, lang: Lang): string => {
   return lang === 'zh' ? toSpeechZh(s) : s;
 };
 
-/** 台詞の音声ファイルの名前。日本語は今までと同じ（ttsKey）。ほかは文と Kokoro の設定から作る（言語をまたいで重ならない） */
+/** 英語と中国語の台詞の音声ファイルの名前（v1・凍結）。文と Kokoro の設定から作る（言語をまたいで重ならない） */
+export const kokoroKeyV1 = (text: string, voice: VoiceId, lang: TranslatedLang): string =>
+  createHash('sha1').update(JSON.stringify([text, KOKORO[lang][voice]])).digest('hex').slice(0, 16);
+
+/** 台詞の音声ファイルの名前。日本語は VOICEVOX の名前（ttsKeyV1）、ほかは Kokoro の名前（kokoroKeyV1） */
 export const ttsKeyIn = (text: string, voice: VoiceId, lang: Lang): string =>
-  lang === 'ja' ? ttsKey(text, voice) : createHash('sha1').update(JSON.stringify([text, KOKORO[lang][voice]])).digest('hex').slice(0, 16);
+  lang === 'ja' ? ttsKeyV1(text, voice) : kokoroKeyV1(text, voice, lang);

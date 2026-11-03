@@ -1,0 +1,33 @@
+{
+  "credits": [
+    "VOICEVOX:No.7",
+    "VOICEVOX:青山龍星"
+  ],
+  "lines": [
+    "s1-1 announcer ade85b5dff706dbb 5fd37abb0581",
+    "s1-2 narrator dfec5f1264613a6b 5b93061fba11",
+    "s2-1 narrator 3f00fba430be25ee fbbb907f9186",
+    "s2-2 narrator c4d3b640f9f36b33 839ff08a1eb9",
+    "s3-1 narrator 78ed5dc6c59ddb5b 8b349c1c968e",
+    "s3-2 narrator 4d65018d0518f428 38fee57c98b6",
+    "s4-1 narrator a2d86bf85fba0af2 c2c917a6c869",
+    "s4-2 narrator 2ca8d60e33ccba23 cf56f1bab0f0",
+    "s5-1 narrator cb2b2e853e89ede1 5fdf445338df",
+    "s5-2 narrator f2cb61b4d1f8840f c7a143b8dbf5",
+    "s6-1 narrator 8a4cb392052d1be9 d74c5c2d40cc",
+    "s6-2 narrator 9dff5a22a3b0901c dd0f6bbe443b",
+    "s7-1 narrator 8690a4ed39cfab3d 10d76fee0978",
+    "s7-2 narrator ebe5e4c0fdf25f83 78f5e59ba235",
+    "s8-1 narrator fbc5d03efa401c7d 4602cf8304b9",
+    "s8-2 narrator 81501ac145c346a2 fcf99c6e6197",
+    "s9-1 narrator 3bb7d95486700e6d 5a6ca7f2c0ae",
+    "s9-2 narrator c745a0da662803d8 bfb255afbe1a",
+    "s9-3 narrator 16abc59ec8e7b2b9 b1a0576977d8",
+    "s10-1 narrator d0459b72b0f8bddd 6d825224496a",
+    "s10-2 narrator bed6d57c2f7c4eb0 cc900cdeccb3",
+    "s10-3 narrator 1756dfd9201d2561 bb40ec5a6218",
+    "s10-4 narrator cce69d4b3c2d511e 620c95275f89",
+    "s11-1 narrator 6977f3bc2b0362a3 47e8540d9af4"
+  ],
+  "video": "L13"
+}

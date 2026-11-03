@@ -125,6 +125,7 @@ bun scripts/serve.ts                                            # 手元で見�
 
 - 場面だけ見たいとき: `npx remotion studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
 - 読みの確認: `synth.ts` が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
+- 音声の鍵と読みの網: `npm test` が、全台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を `tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし合わせ、変わった動画と台詞を出す。台詞・`reading.ts`・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](tests/fixtures/snapshots/README.md)）
 - 見た目の確認: `node scripts/stills.mjs L04:3 --mid` で、場面の中ほどと終わりを静止画にする
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`（台本と、レクチャーの `docs` に並べた公式ページで、言い回しが続けて同じところを探す。ネットにつなぐ）
 - ディスクの空きが少ないとき: `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出してつなぐ）
