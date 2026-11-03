@@ -72,11 +72,13 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 30
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
 
-  # 確かめが通らなかったときだけ。Issue に書く権限は、このジョブだけが持つ（コードを取らず、gh だけを流す）
+  # 確かめが通らなかったとき（時間切れも）だけ。Issue に書く権限は、このジョブだけが持つ（コードを取らず、gh だけを流す）
   report:
     needs: canary
-    if: failure()
+    if: always() && (needs.canary.result == 'failure' || needs.canary.result == 'cancelled')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

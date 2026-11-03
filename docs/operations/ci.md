@@ -70,7 +70,7 @@ secret も、PR に書く権限も使わずに、組み立てたものと確か�
 
 - 毎日 1 回（日本時間の昼。米国の朝の、Actions が混む時間を避ける）と、手で流したとき（Actions → canary → Run workflow）。secret は使わない。fork では流れない
 - 見るもの: トップと全部の動画の Range（`verify_public.ts`）・本番の HTML の smoke（`tests/worker-site-smoke.ts`。runner の image の Chrome）・旧サイトの案内ページが 200 で chalkfile.com を指すか。どれかが通らなくても、残りも流す
-- 通らなければ、`report` のジョブが Issue を開く。同じ題の Issue が開いていれば、新しく開かずに書き足す。Issue に書けるのは、このジョブだけ（リポジトリのコードを取らず、gh だけを流す）
+- どれかが通らないか、時間切れで止まったら、`report` のジョブが Issue を開く。同じ題の Issue が開いていれば、新しく開かずに書き足す。Issue に書けるのは、このジョブだけ（リポジトリのコードを取らず、gh だけを流す）
 
 ### canary が Issue を開いたとき
 

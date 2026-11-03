@@ -161,6 +161,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
       - name: 要約
         env:
           DIGEST: ${{ steps.digest.outputs.sha256 }}
@@ -208,6 +210,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
 
   # build の artifact を、手元の Worker（wrangler dev。Cloudflare の認証を使わない）で配り、配信の約束を確かめる（scripts/smoke_worker.ts）。
   # 結果は、ジョブの要約と artifact（smoke-result）で見られる
@@ -271,6 +275,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
+          # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
+          overwrite: true
 
   # main への push と、main を選んだ手動の実行だけ。前の 4 つのジョブが全部通ったら、build の artifact をそのまま出す。
   # secret を渡すのは Deploy の手順だけ。Deploy は、出す → 確かめる（公開したものが artifact と同じか・verify_public・HTML の smoke）
