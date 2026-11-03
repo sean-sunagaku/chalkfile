@@ -142,7 +142,7 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | 講座 ID | サイトの URL（`/<講座 ID>/`、訳は `/<言語>/<講座 ID>/`）・保存の ID・Releases のタグ・素材ブランチのフォルダ |
 | レクチャー ID と動画の key | 動画・ポスター・音・字幕・timeline のファイル名。レクチャー ID の頭文字は講座の `prefix` |
 | 動画のパス（`/media/<言語>/<講座 ID>/<レクチャー ID>[.cc].<SHA-256>.mp4`） | 公開したページと、学ぶ人が保存した講座 |
-| コンポジション ID（`S01-en`） | 動画を書き出す道具（`render.sh`・静止画の道具）。動画の key のドットをハイフンにしたもの |
+| コンポジション ID（`S01-en`） | 動画を書き出す道具（`scripts/stages/video/render.ts`・静止画の道具）。動画の key のドットをハイフンにしたもの |
 | 章 ID・節 ID・図 ID・課題 ID | 読む教材と `chunks.jsonl`。AI チャットが答えの根拠を指すのに使う |
 | 出典の ID | 教材と台本の主張から、講座の出典の一覧を引く |
 | 声の鍵の決め方 | 素材ブランチと声のキャッシュ（`~/.cache/chalkfile/tts`・`.work/tts`）のファイル名。v2（合成のレシピから）→ v1（凍結した前の作り方）の順に探す（`scripts/voices.ts`）。決め方を変えると音声が見つからなくなり、main の CI の `synth.ts --cached-only` が止まる |
