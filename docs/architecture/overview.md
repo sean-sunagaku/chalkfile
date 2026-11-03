@@ -61,7 +61,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
             大きさと SHA-256 を確かめてブラウザに保存し、通信なしでも開けるようにする
 ```
 
-- Worker の動きの正本は `worker/src/media.ts`。設計は [配信の設計](delivery.md)、決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md)
+- Worker の入口（パスの頭で受け口を選ぶ）は `worker/src/app.ts`、`/media/*` の動きの正本は `worker/src/media.ts`。設計は [配信の設計](delivery.md)、決めた理由は [配信の ADR](../adr/2026-11-02-workers-and-releases.md) と [入口の ADR](../adr/2026-11-03-worker-api-shape.md)
 - 保存の設計は、今はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md)
 
 ## 置き場所
@@ -89,7 +89,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
 | `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）と、Python が読む動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
-| `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |
+| `worker/`・`wrangler.jsonc` | Worker の入口（`worker/src/app.ts`。パスの頭で受け口を選ぶ）・`/media/` の中継（`media.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）・AI チャットの受け口（`api.ts`。M4 で入れる）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
 | `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
 | `.claude/skills/` | Claude Code のスキル（作り方・書き方・調べ方・テーマの作り方）。AI 共通のきまりは直下の `AGENTS.md` |
