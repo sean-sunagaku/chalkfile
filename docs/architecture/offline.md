@@ -1,0 +1,93 @@
+# 保存の設計（オフライン・PWA）
+
+学ぶ人が講座を選んでブラウザに保存し、通信なしでも学べるようにする仕組みの設計。何を・どう保存し、保存した講座をどう守るか。手順は書かない（直すときの流れと確かめ方は、スキル [chalkfile-engine](../../.claude/skills/chalkfile-engine/SKILL.md)。学ぶ人への説明は [learner-offline.md](../guide/learner-offline.md)）。
+
+- 配り方（Workers・Releases・`/media/` の中継）は [配信の設計](delivery.md)、言葉の意味は [用語集](glossary.md)
+- 大きさの上限の正本は `site/limits.ts`。ここには値を写さない
+
+## 形
+
+- アプリの scope は chalkfile.com のルート `/`。教材のページとポスターは Workers の静的な assets、MP4 は同じ origin の `/media/<言語>/<講座>/<ID>[.cc].<SHA-256>.mp4` から取る
+- 動画の大きさ・SHA-256・通常版と字幕版は、講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`）が正本。組み立ては動画を静的な出力に写さず、講座の保存用の教材情報（`offline-manifest.json`）にも同じ値を渡す
+- `build_site.ts --strict` は、公開した Releases の asset があることと、その大きさ・SHA-256、手元にある MP4 の SHA-256 を照らす。手元に MP4 が無くても、公開した asset がそろっていれば組み立てられる。ポスターと講義のデータは要る
+- Service Worker は、`/media/` をページの URL より先に見て、どの講座の動画かを決める。保存するときは Range を付けずに 200 の全体を取り、大きさと SHA-256 を確かめる。URL の中のハッシュと、教材情報のハッシュも合わせる。ほかの言語・ほかの講座・任意の URL は受け入れない。再生では、保存した 200 から Range を切り出す
+- `?download=1` は、保存した同じ動画に attachment を付けて返す。通信が切れていても、1 本ずつのファイルとして保存できる
+- Workers の assets は HTML の URL をそろえるので、`.html` の URL は転送される。保存の取得は転送を受け入れないので、起動用のオフラインのページは `/offline/` に置く
+
+## 作る場所
+
+| ファイル | すること |
+|---|---|
+| `scripts/build_site.ts`・`scripts/pwa.ts` | 教材の版・ファイルごとの SHA-256 と大きさ・講座の `offline-manifest.json`・起動用のページ・Web App Manifest・アイコン・worker を作る |
+| `scripts/site-version.ts` | 教材の版（pageVersion）を出力から計算する。版の印を入れたまま描いたページと、保存する動画・ポスターの URL・大きさ・SHA-256 から求め、印に差し込む（テストは `tests/site-version.test.ts`） |
+| `site/offline-client.ts`・`offline-panel.html`・`offline.css` | 選んで保存・バイト単位の進み具合・保存の状態・取り消し・やり直し・削除・更新・容量の見積もり・保持の要求・インストールの案内 |
+| `site/sw.ts` | 完全な講座の確定・保存版の教材と MP4 の配信・Range・起動用のページ・途中で終わったものの片付け・読めない記録の隔離 |
+| `site/offline-shared.ts` | 保存するものの形と範囲・保存の記録の読み込み・片付けと隔離の判断・1 つの bytes の Range の読み方 |
+| `site/limits.ts` | 保存・動画・Workers の大きさの上限の正本（境目のテストは `tests/limits.test.ts`） |
+| `site/mime.ts` | 拡張子と MIME の対応表（Workers が返す型と同じ）。起動用のファイルと保存するファイルの型はここから付け、知らない拡張子なら組み立てを止める |
+| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP と script の数・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型。テストは `tests/site-invariants.test.ts`） |
+| `tests/offline.test.ts`・`tests/browser/` | 境目の値と、実ブラウザの確かめ。通信などの障害は `tests/browser-server.ts` で起こす |
+| `tests/offline-compat.test.ts`・`tests/fixtures/saved-records/<日付>/` | 学ぶ人が保存した記録の互換のテスト（下の「保存データの互換」）。fixture は `tests/capture-saved-records.ts` で作る |
+
+## 多言語と字幕版
+
+- 公開するのは `publishLangs` にある言語だけ。訳の講座の保存の ID は `en/pstack-comedy` の形
+- 訳の動画も、同じ origin の `/media/<言語>/<講座>/` から取る。ポスターは、教材のページの側の静的な assets に置く
+- 通常版と、字幕を焼き込んだ版の両方を、同じ教材情報から保存する
+- 保存のエラーは、ページの言語で出す。学習の記録の鍵も、言語ごとに分ける
+- 公開から外した講座の保存を、自動では消さない
+
+## 旧 Pages の保存版
+
+- 旧 Pages の scope の保存は、移行用の Service Worker（`site/legacy-sw.ts`）が守る。install と activate で、旧サイトの保存（registry・course・shell の cache）を消さない
+- オンラインでは、次のページの移動で新しいサイトへ案内する。オフラインでは、完全な旧保存版から Range と途中への移動を返し、保存し直しの案内を付ける
+- 新しい origin へ、保存・メモ・進み具合を自動では移さない。旧サイトの画面で受け付けるのは、はっきり選んだ削除だけ。新しい保存は、新しいサイトで案内する
+- 確かめるのは `tests/browser/migration.spec.ts`（本物の旧公開の HTML と Service Worker を使う）。旧公開の写しの出どころは `site/legacy-config.json`。案内の出し方と、移行のコードを終える日は [配信の設計](delivery.md) の「旧 GitHub Pages の移行」
+
+## 保存と更新の約束
+
+1. 表示するだけでは動画を保存しない。学ぶ人が講座を開いて、保存を選ぶ。worker の導入のときに持つのは、起動用の HTML・アイコン・トップの画像だけ
+2. 保存するのは、組み立てで作った、同じ origin とアプリの scope の中の教材のページ・MP4・JPG だけ。外の URL・転送・opaque の応答・206・違う MIME・別の講座へのパス・DRM や認証つきの配信は受け入れない。取るときは `credentials: omit` を付ける。権利と保存の許可がある公開のものだけを対象にする
+3. 1 ファイルずつ全体を取り、教材情報の大きさと SHA-256 に照らす。上限（1 ファイル・講座のページ・1 講座の大きさとファイルの数。`OFFLINE_FILE_MAX_BYTES`・`OFFLINE_PAGE_MAX_BYTES`・`OFFLINE_COURSE_MAX_BYTES`・`OFFLINE_COURSE_MAX_FILES`）は `site/limits.ts`。サイト用の MP4 は、`render.sh` が目安の大きさ（`VIDEO_TARGET_BYTES`）に crf を上げて合わせる。目安は上限ではなく、crf 29 でも超えたら注意だけ出して、そのまま使う。保存の上限を超える動画は `media.ts push`・`check` が、超える講座は組み立ての最後（`scripts/site-invariants.ts`）が止める。合わないデータや、足りない生成物から、教材情報を配らない
+4. 仮の Cache に全部のファイルがそろってから、registry の 1 件が指す先を切り替える。失敗や取り消しで、前の完全な版を消さない。やり直しは全体を取り直す。ブラウザを閉じて残った仮の領域は、次の状態の確認か起動のときに片付ける
+5. 版は、学ぶ人に届く出力（ページの HTML と、保存する動画・ポスター）から決める。組み立てるスクリプトのソースは版に入れないので、整形・コメント・関数の切り出しのように出力の変わらない直しでは、版が変わらない。ページと動画の URL を版に合わせ、保存した講座のページは、オンラインでも保存版を返す。新しい教材に古い MP4 を組み合わせない。更新は自動で取らず、学ぶ人が選び、全部を確かめてから切り替える
+6. 更新したあとも、すぐ前の完全な版を 1 つ持ち、開いていたタブの再生に使う。今の教材と保存の版が違えば、止めて読み込み直す案内を出す。さらに古い動画を求められたら、別の版に置き換えず、使えないと返す
+7. 削除は、その講座の全部の保存版と仮の領域を消す。学習用の localStorage は残す。Cache の名前をアプリの scope と schema で区切り、同じ origin のほかのサイトの Cache を消さない
+8. 保存は、日数では消さない（読めない記録が指す、隔離中の Cache だけは 30 日で消す）。worker の更新は、全部のタブを閉じてから効き、講座の Cache は保つ。schema を変えるときは移行を設計し、全部を消して済ませない。ブラウザや学ぶ人による消去は防げないので、欠けを見つけたら保存し直しを案内する
+
+## 保存データの互換
+
+Service Worker は、保存した記録（registry の 1 件）を使うたびに `parseRecord`（中は `validateManifest`）に通し、通らない記録は無いものとして扱う。だから検証を少し厳しくしただけで、学ぶ人が保存した講座（1 講座で数十〜百数十 MiB）が読めなくなる。次の 4 つで守る。
+
+1. **互換のテスト**: `tests/offline-compat.test.ts` は、`tests/fixtures/saved-records/<日付>/` の教材情報と記録を、今の読み込みが全部受け入れるかを確かめる。落ちたら、検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。記録や教材情報の形を変えたら、`bun tests/capture-saved-records.ts <日付>` で新しい日付の fixture を足し、古い日付も残す
+   - `2026-11-02` の fixture: main の 5ac64db で組んだ全 9 講座を本物の Chrome で保存した記録（更新して版を 2 つ持つ記録を含む）と、旧 Pages の最後の公開 a4399995 の 8 講座の記録（pstack-comedy は本物の旧 Service Worker で保存し、ほかは同じ形で組んだもの）。動画は入れない
+2. **版の決まり**: 保存データの版 `offline-v1`（Cache の名前・registry の記録の形・教材情報の `schema: 1`）を上げるのは、前の版の記録を読んで移す移行のコードと一緒のときだけ。版だけを上げると、前の版の保存は誰も読まず、学ぶ人の保存が消える
+3. **検証の分け方（方針）**: 読むとき（保存した記録と教材情報）は、安全のために要る項目だけを見る。同じ origin と scope・講座の範囲・Cache の名前の頭・再生のときの大きさと SHA-256 の照合。新しく保存するとき（`fetchManifest`）は、今の `validateManifest` の全部で厳しく見る。今は両方が同じ `validateManifest` を使うので、保存の検証を厳しくすると、読む方も厳しくなる。分けるまでは、`validateManifest` を厳しくする変更に互換のテストが当たる
+4. **読めない記録の隔離**: 記録はあるのに読めないとき、状態の確認（STATUS）はその講座を不完全として返し、画面は今の不完全の案内（保存が不完全・保存し直す）を出す。片付け（`planCleanup`）は、その記録が指す Cache を消さない。Cache API には名前を変える操作が無く、写すと容量が 2 倍要るので、中身は元の名前のまま残し、空の Cache `quarantine:<隔離した時刻（ミリ秒）>:<元の名前>` を印として作る。隔離した時刻は、この印の名前だけが持つ
+   - 検証を直した版が出て記録が読めるようになったら、印を外す。取り直さずに、同じ保存版へ戻る
+   - 保存し直し・削除で記録が指さなくなったら、そのとき中身と印を消す
+   - 印から 30 日たったら、中身と印を消す（容量を使い続けない）。記録は残るので、保存し直しの案内は続く
+   - 記録の形が壊れていて指す先が分からないときは、その講座の Cache を全部隔離する。未来の時刻の印（端末の時計のずれ）は今の時刻で付け直し、中身の無い印は外す
+
+## 再生と案内
+
+- 完全な 200 の応答から、1 つの `bytes=start-end`・`start-`・`-suffix` を切り出し、206 と正しい `Content-Range`・`Content-Length`・`video/mp4` を返す。範囲の外は 416。複数の Range と、知らない形・正しくない形は無視して 200 を返す。HEAD は本文なし。`If-Range` が保存版の ETag と違えば、全体の 200 を返す。オンラインで保存していない動画は、配信元の Range の応答を使う
+- オンラインで開いたページの応答が 4xx（無い URL・消えた講座の 404 のページ）か転送なら、配信元の応答をそのまま返す。起動用の画面と「保存されていません」（503）に頼るのは、通信の失敗と 5xx のときだけ
+- オンラインでの視聴・1 本の MP4 のダウンロード・アプリ内の講座の保存・PWA のインストールは、別の操作として見せる。インストールだけで、講座を保存したとは言わない。外の公式ドキュメントは通信が要る。書体を外から取れなくても、端末の日本語の書体で表示する
+- iOS も、ブラウザの Cache API の保存。「ファイル」アプリへの書き出しや、そこからの取り込みではない。ブラウザとホーム画面のアプリで同じ保存が使えるとは考えず、使う方で保存する。容量の見積もりや保持の許可から、保存が続くこと・実機で動くこと・裏で最後まで終わることを約束しない
+
+## 案内と進み具合・エラーの優先
+
+- 保存の状態を取れたら、最初の案内を、保存済み・保存していない・不完全のどれかに決める。オフラインで起動したときも、更新の確認の通信を待たずに案内を出す。最新の保存が不完全で、前の完全な版が残っているときは、その版を使えると伝える
+- 状態の確認で最初の案内を置き換えるのは、初めの 1 回だけ。進み具合・通信のエラー・操作の結果を消さない
+- 更新の確認を待つ間に、別の案内や保存の進み具合が出たら、遅れて届いた古い応答で、新しい文を上書きしない
+- 保存した HTML には、画面のコードも入っている。公開したあとの表示の直しは、学ぶ人が新しい版を選んで保存し直すまで届かない。保存した前の版の HTML が、自動で書き換わるとは考えない
+
+## 一次資料（2026-10-31 に確かめた）
+
+- [Service Workers の仕様の Cache.put](https://w3c.github.io/ServiceWorker/#cache-put): Cache API は、206 の応答をそのまま保存する使い方を想定していない。完全な応答を、はっきり保存する
+- [HTTP Semantics の Range（RFC 9110）](https://httpwg.org/specs/rfc9110.html#field.range): Range・206・416・If-Range の意味
+- [WebKit の Storage Policy](https://webkit.org/blog/14403/updates-to-storage-policy/): 容量の見積もりは保存できる量の保証ではなく、保持の要求が通るかと消去は、ブラウザが決める
+- [WebKit Features in Safari 26.0](https://webkit.org/blog/17333/webkit-features-in-safari-26-0/): ホーム画面への追加と、Web アプリとしての起動
+- [Chrome の PWA のインストールの案内](https://developer.chrome.com/blog/pwa-install-features/): アプリのインストールの導線。`beforeinstallprompt` が起きたときだけ、専用のボタンから呼ぶ
+- [Playwright の Service Workers](https://playwright.dev/docs/service-workers): 本物の worker を使うテストの範囲。ネットワークの障害と、OS や実機での動きは分けて考える

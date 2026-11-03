@@ -196,4 +196,34 @@ describe('Worker の入口（app.ts の createWorker）', () => {
       expect(seen.at(-1)).toBe(request);
     }
   });
+  // AI チャットの受け口（M4 で足す）。本番の要求は、run_worker_first に /api/* を足すまで届かない。届いたときに返すものを決めておく
+  test('/api/* は、受け口を足すまで、どのホスト・パス・メソッドにも決まった 404 を JSON で返す（assets にも中継にも渡さない）', async () => {
+    const { seen, env } = fakeAssets();
+    for (const origin of ['https://chalkfile.com', 'https://www.chalkfile.com', 'https://chalkfile-preview.sample.workers.dev', 'http://127.0.0.1:8787']) {
+      for (const route of ['/api/', '/api/ask', '/api/ask?lang=ja', '/api/v1/ask/', `/api/media/ja/sample-course/X01.${'c'.repeat(64)}.mp4`]) {
+        for (const method of ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']) {
+          const init: RequestInit = method === 'POST' ? { method, body: '{"question":"sample"}', headers: { 'Content-Type': 'application/json' } } : { method };
+          const response = await worker.fetch(new Request(`${origin}${route}`, init), env);
+          expect(response.status).toBe(404);
+          expect(response.headers.get('Content-Type')).toBe('application/json; charset=utf-8');
+          expect(response.headers.get('Cache-Control')).toBe('no-store');
+          expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+          expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
+          expect(response.headers.has('Access-Control-Allow-Origin')).toBeFalse();
+          expect(await response.text()).toBe('{"error":"not_found"}');
+        }
+      }
+    }
+    expect(seen).toHaveLength(0);
+  });
+  test('/api・/apix/・/api.json・講座の下の /api/ は assets へ渡す（API の受け口は /api/ で始まるパスだけ）', async () => {
+    const { seen, env } = fakeAssets();
+    for (const origin of ['https://chalkfile.com', 'https://www.chalkfile.com']) {
+      for (const route of ['/api', '/apix/ask', '/api.json', '/sample-course/api/ask']) {
+        const request = new Request(`${origin}${route}`);
+        expect((await worker.fetch(request, env)).headers.get('X-From')).toBe('assets');
+        expect(seen.at(-1)).toBe(request);
+      }
+    }
+  });
 });
