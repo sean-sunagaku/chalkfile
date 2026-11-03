@@ -50,6 +50,11 @@ jobs:
           command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck; }
           shellcheck --version
           npm run lint:sh
+      # 使っていないファイル・export・依存の一覧。はじめは止めない（ログに出すだけ。講座の PR に注釈を出さない）。
+      # 一覧を空にしたら continue-on-error を外す
+      - name: 使っていないコード（knip）
+        continue-on-error: true
+        run: npm run knip
       - run: npm run typecheck
       - run: npm test
       - run: bun scripts/check_content.ts --self-test

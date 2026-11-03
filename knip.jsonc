@@ -1,0 +1,35 @@
+// 使っていないファイル・export・依存を一覧にする（npm run knip）。CI の check では結果を出すだけで、止めない
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    // 道具（CLI。ほかから読まれる部品も兼ねる）
+    "scripts/*.ts",
+    // 動画（Remotion の入口）
+    "src/index.ts",
+    "remotion.config.ts",
+    // サイトの画面と SW。scripts/build_site.ts・pwa.ts・build_migration.ts が Bun.build で 1 本にまとめる
+    "site/offline-client.ts",
+    "site/sw.ts",
+    "site/legacy-sw.ts",
+    // テストと、本番の確認などの手で流す道具
+    "tests/**/*.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "content/**/*.ts",
+    "scripts/**/*.ts",
+    "site/*.ts",
+    "worker/src/**/*.ts",
+    "tests/**/*.ts",
+    "*.ts"
+  ],
+  // 道具は CLI と部品を兼ねるので、入口のファイルの export も見る。同じファイルの中で使っている export は「使っている」とする
+  "includeEntryExports": true,
+  "ignoreExportsUsedInFile": true,
+  // npm で入れない道具（README の前提）
+  "ignoreBinaries": ["uv", "uvx", "shellcheck", "ffmpeg"],
+  "ignoreIssues": {
+    // ttsKey は ttsKeyV1 の別名（素材の文書が指す名前なので残す）
+    "scripts/voices.ts": ["duplicates"]
+  }
+}
