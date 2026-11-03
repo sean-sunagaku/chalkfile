@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { WORKERS_ASSET_MAX_BYTES, WORKERS_MAX_ASSETS } from '../site/limits';
 import { retainedWarnings, validateMediaManifest } from '../site/media-shared';
 import { checkSecrets } from './check_content';
 
@@ -40,13 +41,13 @@ export function checkArtifact(dir: string) {
       const file = path.join(folder, f.name);
       if (f.isSymbolicLink() || /^(\.env(?:\..*)?|\.dev\.vars(?:\..*)?|.*\.(pem|key|local))$/.test(f.name)) throw new Error('公開物にローカル設定か認証ファイルがあります。');
       if (f.isDirectory()) { inspect(file); continue; }
-      if (f.name.endsWith('.mp4') || statSync(file).size > 25 * 1024 ** 2) throw new Error('静的公開物に動画か大きすぎるファイルがあります。');
+      if (f.name.endsWith('.mp4') || statSync(file).size > WORKERS_ASSET_MAX_BYTES) throw new Error('静的公開物に動画か大きすぎるファイルがあります。');
       count++;
       if (!/\.(png|jpg|jpeg|webp|ico)$/.test(f.name)) checkSecrets(readFileSync(file, 'utf8'), file, findings);
     }
   };
   inspect(dir);
-  if (count > 20000 || findings.length) throw new Error('公開物の件数か機密情報の点検に失敗しました。値は表示しません。');
+  if (count > WORKERS_MAX_ASSETS || findings.length) throw new Error('公開物の件数か機密情報の点検に失敗しました。値は表示しません。');
   return count;
 }
 if (import.meta.main) {
