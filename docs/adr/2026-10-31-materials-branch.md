@@ -2,7 +2,7 @@
 
 - 状態: 採用
 - 決めた日: 2026-10-31
-- 関連: #1（`scripts/materials.ts` を足した）
+- 関連: #1（`scripts/materials.ts` を足した）・続き: [素材は 1GB までは materials ブランチに置き、超えたら講座ごとの束を Releases に移す](2026-11-03-materials-location.md)
 
 ## 背景
 
