@@ -7,12 +7,12 @@
 
 ## 手元の準備
 
-- **初めての書き出しで、Remotion が Chrome Headless Shell をダウンロードしたまま止まる**（Node.js 26 で起きた。何も出ないまま数分止まる。展開が終わらない）。手で展開して、版を書く。下は Apple シリコンの Mac の例。`144.0.7559.20` は、今の Remotion（`package.json` の版）で使えた番号で、Remotion を上げたら合う番号に変える
+- **初めての書き出しで、Remotion が Chrome Headless Shell をダウンロードしたまま止まる**（Node.js 26 で起きた。何も出ないまま数分止まる。展開が終わらない）。手で展開して、版を書く。下は Apple シリコンの Mac の例。`157.0.8080.0-remotion-v3` は、今の Remotion（4.0.539）が待つ番号。Remotion を上げたら、`node_modules/@remotion/renderer/dist/browser/get-chrome-download-url.js` の `TESTED_VERSION` を見て合わせる（Remotion が配る版を使うときは、末尾に `-remotion-v3` が付く。`BrowserFetcher.js` の `getExpectedVersion`）。zip の名前も版で変わる（4.0.539 の Mac は `chromium-headless-shell-mac-arm64-157.0.8080.0.zip?clear`）
 
   ```bash
   cd node_modules/.remotion/chrome-headless-shell
-  rm -rf mac-arm64 && mkdir mac-arm64 && unzip -q chrome-headless-shell-mac-arm64.zip -d mac-arm64
-  printf '144.0.7559.20' > VERSION
+  rm -rf mac-arm64 && mkdir mac-arm64 && unzip -q chromium-headless-shell-mac-arm64-*.zip* -d mac-arm64
+  printf '157.0.8080.0-remotion-v3' > VERSION
   ```
 
 - **手元の ffmpeg に、字幕の焼き込み（libass）が無い**: 字幕は Remotion で描くので要らない（`CAPTIONS=1 npm run render`）
@@ -45,9 +45,9 @@
 
 - **`materials push` が止まる**: commit していない台本の変更があるか、HEAD が origin/main を含まない。commit して、main を取り込む（[公開の順番](publish.md) の 1・2）
 - **`synth --cached-only` が、声が足りないと止まる**: `npm run materials:pull` で取り出す。新しい台詞なら、VOICEVOX を動かして synth し、`materials push` する（[戻し方](recovery.md) の「素材を作り直す」）
-- **`media push` が「通常動画がありません」で止まる**: 全部の講座の日本語の通常版が手元に要る。`bun scripts/media.ts pull` で取る（[公開の順番](publish.md) の 5）
+- **`media push` が「通常動画がありません」で止まる**: 選んだ講座（`--course`）の通常版が全部手元に要る（ほかの講座の動画は要らない）。作り直さない動画は `bun scripts/media.ts pull <講座 ID>` で取る（[公開の順番](publish.md) の 5）
 - **`media.ts pull` が「上書きしません」で止まる**: 手元の動画が、動画の一覧と違う。作り直した動画なら、その講座を外して pull する。古い写しなら、消してから pull する（[公開の順番](publish.md) の「ぶつかったとき」）
-- **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `site/posters/<ID>.jpg` が要る。render で作り、`media push` で `site/posters/` に写して commit する。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、`render.sh` と同じ 4.2 秒の所・幅 1280・JPEG の品質 3 で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 site/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
+- **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、`render.sh` と同じ 4.2 秒の所・幅 1280・JPEG の品質 3 で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
 - **`media:check` が `retained` の期限の注意を出す**: 公開は止まらない。片付けるかどうかは持ち主が決める（[戻し方](recovery.md) の「古いハッシュの動画を片付ける」）
 - **Actions が、ffmpeg を入れる手順で長く止まる**: 配布の取得が進まないことがある。出し直す（[戻し方](recovery.md) の「Actions を出し直す」）
 

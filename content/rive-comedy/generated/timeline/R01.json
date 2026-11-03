@@ -1,0 +1,295 @@
+{
+  "durationInFrames": 7617,
+  "fingerprint": "e7dcbc2e8b273b87",
+  "fps": 30,
+  "key": "R01",
+  "scenes": [
+    {
+      "duration": 673,
+      "lines": [
+        {
+          "end": 97,
+          "start": 61
+        },
+        {
+          "end": 233,
+          "start": 115
+        },
+        {
+          "end": 260,
+          "start": 237
+        },
+        {
+          "end": 451,
+          "start": 269
+        },
+        {
+          "end": 650,
+          "start": 460
+        }
+      ],
+      "start": 0
+    },
+    {
+      "duration": 823,
+      "lines": [
+        {
+          "end": 157,
+          "start": 14
+        },
+        {
+          "end": 290,
+          "start": 166
+        },
+        {
+          "end": 420,
+          "start": 299
+        },
+        {
+          "end": 509,
+          "start": 429
+        },
+        {
+          "end": 611,
+          "start": 542
+        },
+        {
+          "end": 800,
+          "start": 620
+        }
+      ],
+      "start": 673
+    },
+    {
+      "duration": 1234,
+      "lines": [
+        {
+          "end": 159,
+          "start": 14
+        },
+        {
+          "end": 271,
+          "start": 168
+        },
+        {
+          "end": 459,
+          "start": 280
+        },
+        {
+          "end": 630,
+          "start": 468
+        },
+        {
+          "end": 696,
+          "start": 635
+        },
+        {
+          "end": 902,
+          "start": 705
+        },
+        {
+          "end": 1044,
+          "start": 911
+        },
+        {
+          "end": 1140,
+          "start": 1053
+        },
+        {
+          "end": 1211,
+          "start": 1149
+        }
+      ],
+      "start": 1496
+    },
+    {
+      "duration": 1507,
+      "lines": [
+        {
+          "end": 138,
+          "start": 14
+        },
+        {
+          "end": 202,
+          "start": 147
+        },
+        {
+          "end": 229,
+          "start": 207
+        },
+        {
+          "end": 382,
+          "start": 247
+        },
+        {
+          "end": 496,
+          "start": 391
+        },
+        {
+          "end": 580,
+          "start": 505
+        },
+        {
+          "end": 621,
+          "start": 589
+        },
+        {
+          "end": 705,
+          "start": 630
+        },
+        {
+          "end": 795,
+          "start": 714
+        },
+        {
+          "end": 873,
+          "start": 804
+        },
+        {
+          "end": 932,
+          "start": 882
+        },
+        {
+          "end": 1188,
+          "start": 950
+        },
+        {
+          "end": 1485,
+          "start": 1197
+        }
+      ],
+      "start": 2730
+    },
+    {
+      "duration": 815,
+      "lines": [
+        {
+          "end": 243,
+          "start": 13
+        },
+        {
+          "end": 442,
+          "start": 348
+        },
+        {
+          "end": 512,
+          "start": 446
+        },
+        {
+          "end": 692,
+          "start": 521
+        },
+        {
+          "end": 793,
+          "start": 701
+        }
+      ],
+      "start": 4237
+    },
+    {
+      "duration": 897,
+      "lines": [
+        {
+          "end": 150,
+          "start": 14
+        },
+        {
+          "end": 174,
+          "start": 159
+        },
+        {
+          "end": 326,
+          "start": 183
+        },
+        {
+          "end": 426,
+          "start": 335
+        },
+        {
+          "end": 501,
+          "start": 435
+        },
+        {
+          "end": 593,
+          "start": 510
+        },
+        {
+          "end": 661,
+          "start": 597
+        },
+        {
+          "end": 874,
+          "start": 670
+        }
+      ],
+      "start": 5052
+    },
+    {
+      "duration": 535,
+      "lines": [
+        {
+          "end": 202,
+          "start": 14
+        },
+        {
+          "end": 393,
+          "start": 211
+        },
+        {
+          "end": 482,
+          "start": 402
+        },
+        {
+          "end": 513,
+          "start": 487
+        }
+      ],
+      "start": 5949
+    },
+    {
+      "duration": 835,
+      "lines": [
+        {
+          "end": 178,
+          "start": 13
+        },
+        {
+          "end": 380,
+          "start": 187
+        },
+        {
+          "end": 570,
+          "start": 389
+        },
+        {
+          "end": 693,
+          "start": 579
+        },
+        {
+          "end": 721,
+          "start": 697
+        },
+        {
+          "end": 813,
+          "start": 730
+        }
+      ],
+      "start": 6484
+    },
+    {
+      "duration": 298,
+      "lines": [
+        {
+          "end": 121,
+          "start": 14
+        },
+        {
+          "end": 178,
+          "start": 130
+        }
+      ],
+      "start": 7319
+    }
+  ],
+  "schema": 1
+}

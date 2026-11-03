@@ -1,7 +1,7 @@
 import type { CourseL10n } from '../../i18n';
 import { R01 } from './R01';
 
-/** 「笑ってわかる Rive アニメーション」の中国語（簡体字）版。声は Kokoro（scripts/voices.ts の KOKORO.zh） */
+/** 「笑ってわかる Rive アニメーション」の中国語（簡体字）版。声は Kokoro（content/voices.ts の KOKORO.zh） */
 export const RIVE_COMEDY_ZH: CourseL10n = {
   title: '笑着搞懂 Rive 动画',
   subtitle: '和俊达萌一起快速了解 Rive（搞笑版）',

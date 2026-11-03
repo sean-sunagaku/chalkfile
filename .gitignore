@@ -10,6 +10,8 @@ site/media/
 site/data/
 site/dist/
 site/dist-media/
+# Worker の許可リスト（npm run gen が講座ごとの動画の一覧から作る。型の media-manifest.d.json.ts は追跡する）
+worker/src/generated/*.json
 test-results/
 playwright-report/
 .wrangler/

@@ -2,7 +2,7 @@
 
 ## 動画の配信（Workers / Releases）
 
-動画の制作は手元のMacで行う。`bun scripts/media.ts push` は日本語の通常版と字幕焼込み版をhash付きでReleasesへ置き、全assetを確認してから `site/media-manifest.json` を更新する。`bun scripts/media.ts check` は公開assetの存在・サイズ・提供されたSHA-256、および手元のMP4のSHA-256を照合し、欠けていれば停止する。`push` は既存のhashを上書きせず、古いassetを消さない。mainへ入れるのは小さな一覧とコードだけ。Actionsは読み取りのcheckを行い、動画の作成・uploadは行わない。
+動画の制作は手元のMacで行う。`bun scripts/media.ts push --course <講座 ID>` は、その講座の通常版と字幕焼込み版をhash付きでReleasesへ置き、全assetを確認してから、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを更新する。`bun scripts/media.ts check` は公開assetの存在・サイズ・提供されたSHA-256、および手元のMP4のSHA-256を照合し、欠けていれば停止する。`push` は既存のhashを上書きせず、古いassetを消さない。mainへ入れるのは小さな一覧とコードだけ。Actionsは読み取りのcheckを行い、動画の作成・uploadは行わない。
 
 公開用パスは `/media/<言語>/<講座>/<ID>[.cc].<SHA-256>.mp4`。上流は固定の `sean-sunagaku/chalkfile` の `media-<言語>-<講座>` タグに限る。手元の入力はrenderの形式に合わせ、日本語が `site/media/<ID>[.cc].mp4`、翻訳は `site/media/<ID>.<言語>[.cc].mp4`。
 
@@ -33,7 +33,7 @@ curl -s http://127.0.0.1:50021/version
 | `npm run gen:video-config` | `src/video.config.ts` | `scripts/audio/video_config.json`（mix.py・build_music.py が読む動画の値。コミットする） |
 | `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/music/`（合成のコード）、`scripts/audio/video_config.json` | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
 | `uv run --locked --group audio python scripts/build_music.py --check`（`npm run music:verify`） | 合成のコード、手元の `origin/materials` の `SHA256SUMS` | 作り直した WAV が素材と同じバイト列か（`public/audio/` には書かない） |
-| `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`src/generated/timeline.json`、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
+| `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |
 | `uv run --locked --group audio python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav` |
@@ -60,10 +60,10 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 ## 確かめ方
 
-- 台本: `bun scripts/validate.ts`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `site/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
+- 台本: `bun scripts/validate.ts`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
 - 読み: `.work/kana/<id>.txt`
 - 見た目: `node scripts/stills.ts L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
-- 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `timeline.json` の `durationInFrames / 30` と合う
+- 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `content/stripe-billing/generated/timeline/L04.json` の `durationInFrames / 30` と合う
 - 1 場面だけ見たいとき: `ffmpeg -ss <秒> -i site/media/L04.mp4 -frames:v 1 frame.jpg`
 - Remotion Studio: `npx remotion studio`（音つきで見るときは props の `audio` を true）
 
@@ -75,7 +75,7 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 公開の順番の正本は [publish.md](../../../../docs/operations/publish.md)。動画はMacで `media.ts push/check` を先に行い、mainへ入れる。Actionsは `npm ci --ignore-scripts`、型/単体/安全点検、素材pull、`synth --cached-only`、動画check、strict build、生成物点検、Wrangler、公開後の全動画Range確認の順。Cloudflare secretはDeploy stepだけ。音声・動画が不足したら停止する。
 
-JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4はReleasesにだけ置き、`media.ts pull [講座ID…]` で戻す。従来の `materials.ts pull --videos` もReleasesから取得し、変更済みローカル動画は上書きしない。
+JPGは講座のフォルダの `generated/posters/` の小さな静的入力としてmainに含める（render.sh が書く）。MP4はReleasesにだけ置き、`media.ts pull [講座ID…]` で戻す。従来の `materials.ts pull --videos` もReleasesから取得し、変更済みローカル動画は上書きしない。
 
 手元は `npm run dev:worker` でroot/CSP/scopeを確認。初回試験公開は `wrangler deploy --env preview`、本番は `wrangler deploy --env=""`。Workers Freeを維持する。静的assetsはMP4なし・2万files/25MiB以内。`no-transform` で本文hashとCSPを保つ。
 

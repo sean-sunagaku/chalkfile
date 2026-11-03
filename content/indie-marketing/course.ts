@@ -14,6 +14,8 @@ import { MARKETING_SYLLABUS } from './syllabus';
 /** 個人開発者のためのマーケティング（顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定） */
 export const INDIE_MARKETING: Course = {
   id: 'indie-marketing',
+  prefix: 'M',
+  order: 40,
   unitLabel: 'CHAPTER',
   theme: 'night',
   title: '個人開発者のためのマーケティング',

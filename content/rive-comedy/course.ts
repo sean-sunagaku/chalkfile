@@ -4,6 +4,8 @@ import { R01 } from './R01';
 /** Rive をざっくり知るお笑い版（1 本だけ）。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、仕組みだけを見せる */
 export const RIVE_COMEDY: Course = {
   id: 'rive-comedy',
+  prefix: 'R',
+  order: 60,
   theme: 'stage',
   disclaimer: 'Rive 社とは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています',
   title: '笑ってわかる Rive アニメーション',

@@ -22,7 +22,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `npm run check` | lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検を順に流す（CI と同じ。動画なしで流せる） |
+| `npm run check` | lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検・教材のずれを順に流す（CI と同じ。動画なしで流せる） |
 | `npm run lint` | Biome の lint（TS・TSX・JSON） |
 | `npm run lint:py` | ruff の lint（`scripts/*.py`。uv が要る） |
 | `npm run lint:sh` | shellcheck（`*.sh`。shellcheck が要る） |
@@ -32,7 +32,8 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run test:e2e`（`test:browser` も同じ） | Playwright のブラウザのテスト（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
 | `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声など）。注意も見るなら `-- --warnings` |
 | `npm run check:content` | 台本と Git に入れるファイルの点検（点検の点検も）。点検する中身は [safety.md](../../.claude/skills/study-video-course/references/safety.md) |
-| `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い |
+| `npm run check:materials` | 読む教材（`docs/courses/`）が、Git に入れている台本と timeline から作り直したものと同じか（書かない。synth は要らない） |
+| `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い・生成した表（README の講座の表・頭文字の表）のずれ |
 | `npm run music:verify` | BGM・ジングル・効果音を一時フォルダに作り直し、素材（手元の `origin/materials`）の `SHA256SUMS` と同じバイト列かを確かめる。`public/audio/` には書かない。uv が要り、15 秒ほどかかる。CI では流さない |
 
 ### 整える
@@ -47,21 +48,22 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
-| `npm run synth` | 声と時刻（`src/generated/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う |
+| `npm run synth` | 声と時刻（`content/<講座>/generated/timeline/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`） |
-| `npm run render` | 動画（`site/media/`・`site/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
+| `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
-| `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`） |
+| `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`）。時刻は Git に入れている timeline から読む。消した章の古いファイルも消す |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
+| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 
 ### 見る
 
 | コマンド | すること |
 |---|---|
 | `npm run serve` | 手元で講座サイトを見る（`http://127.0.0.1:8765/`。Range にも答える） |
-| `npm run dev:worker` | Worker を手元で動かす（`wrangler dev`。Cloudflare の認証は要らない） |
+| `npm run dev:worker` | Worker を手元で動かす（先に Worker の許可リストを作ってから `wrangler dev`。Cloudflare の認証は要らない） |
 
 ### 素材と動画
 
@@ -70,7 +72,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run materials:pull` | 素材を取り出す（`-- --videos` で Releases の動画も） |
 | `npm run materials:check` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか |
 | `npm run materials:push` | 素材を素材ブランチに足す（消さない。`-- --dry-run` で本数だけを見る） |
-| `npm run media:push` | 日本語の動画を Releases に置き、動画の一覧を書き換える |
+| `npm run media:push -- --course <講座 ID>` | その講座の動画を Releases に置き、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを書き換える。訳の動画は `--lang en` も付ける |
 | `npm run media:check` | 動画の一覧・Releases・手元の動画を照らし合わせる |
 
 ## npm run に無いもの
@@ -93,7 +95,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 ## 部分だけ作り直す・確かめる
 
 - 一部だけ: `npm run synth -- L03 L05`（mix・render も同じ）。訳の動画は `S03.en` のように、まとめて `'S03.*'`・`'*.en'` も渡せる
-- 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。`src/generated/timeline.json` は Git に入っている）
+- 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。timeline（`content/<講座>/generated/timeline/`）は Git に入っている）
 - 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
 - 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・`reading.ts`・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
 - 見た目: `npm run stills -- L04:3 --mid`（場面の中ほどと終わりを静止画にする）

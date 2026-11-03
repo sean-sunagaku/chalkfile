@@ -14,6 +14,8 @@ import { UIUX_SYLLABUS } from './syllabus';
 /** エンジニアのための UI・UX デザイン（目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ・確かめ方） */
 export const UIUX_ENGINEERS: Course = {
   id: 'uiux-engineers',
+  prefix: 'D',
+  order: 30,
   unitLabel: 'CHAPTER',
   theme: 'paper',
   title: 'エンジニアのための UI・UX デザイン',

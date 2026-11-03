@@ -1,0 +1,171 @@
+{
+  "durationInFrames": 6086,
+  "fingerprint": "da8d907178ed9a97",
+  "fps": 30,
+  "key": "L13",
+  "scenes": [
+    {
+      "duration": 440,
+      "lines": [
+        {
+          "end": 181,
+          "start": 61
+        },
+        {
+          "end": 418,
+          "start": 199
+        }
+      ],
+      "start": 0
+    },
+    {
+      "duration": 538,
+      "lines": [
+        {
+          "end": 183,
+          "start": 13
+        },
+        {
+          "end": 516,
+          "start": 288
+        }
+      ],
+      "start": 440
+    },
+    {
+      "duration": 528,
+      "lines": [
+        {
+          "end": 134,
+          "start": 14
+        },
+        {
+          "end": 506,
+          "start": 239
+        }
+      ],
+      "start": 978
+    },
+    {
+      "duration": 545,
+      "lines": [
+        {
+          "end": 133,
+          "start": 14
+        },
+        {
+          "end": 522,
+          "start": 238
+        }
+      ],
+      "start": 1506
+    },
+    {
+      "duration": 576,
+      "lines": [
+        {
+          "end": 150,
+          "start": 14
+        },
+        {
+          "end": 554,
+          "start": 255
+        }
+      ],
+      "start": 2051
+    },
+    {
+      "duration": 447,
+      "lines": [
+        {
+          "end": 136,
+          "start": 14
+        },
+        {
+          "end": 425,
+          "start": 241
+        }
+      ],
+      "start": 2627
+    },
+    {
+      "duration": 639,
+      "lines": [
+        {
+          "end": 149,
+          "start": 14
+        },
+        {
+          "end": 617,
+          "start": 254
+        }
+      ],
+      "start": 3074
+    },
+    {
+      "duration": 622,
+      "lines": [
+        {
+          "end": 174,
+          "start": 14
+        },
+        {
+          "end": 600,
+          "start": 279
+        }
+      ],
+      "start": 3713
+    },
+    {
+      "duration": 689,
+      "lines": [
+        {
+          "end": 173,
+          "start": 14
+        },
+        {
+          "end": 384,
+          "start": 182
+        },
+        {
+          "end": 667,
+          "start": 393
+        }
+      ],
+      "start": 4335
+    },
+    {
+      "duration": 737,
+      "lines": [
+        {
+          "end": 74,
+          "start": 14
+        },
+        {
+          "end": 252,
+          "start": 83
+        },
+        {
+          "end": 431,
+          "start": 261
+        },
+        {
+          "end": 714,
+          "start": 440
+        }
+      ],
+      "start": 5024
+    },
+    {
+      "duration": 325,
+      "lines": [
+        {
+          "end": 205,
+          "start": 14
+        }
+      ],
+      "start": 5761
+    }
+  ],
+  "schema": 1
+}

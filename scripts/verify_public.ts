@@ -1,5 +1,7 @@
-import manifest from '../site/media-manifest.json';
-import { mediaPath, validateMediaManifest } from '../site/media-shared';
+// 公開したサイト（既定は https://chalkfile.com/）のトップと、全講座の動画の一覧の全部の動画の Range を確かめる（deploy.yml が公開のあとに流す）。
+//   bun scripts/verify_public.ts [origin]
+import { mediaPath } from '../site/media-shared';
+import { readMediaManifest } from './media';
 
 export async function verifyPublic(origin = 'https://chalkfile.com/') {
   const base = new URL(origin);
@@ -7,7 +9,7 @@ export async function verifyPublic(origin = 'https://chalkfile.com/') {
   const home = await fetch(base, { redirect: 'error', signal: AbortSignal.timeout(20000) });
   if (home.status !== 200 || !home.headers.get('Content-Type')?.includes('text/html')) throw new Error('公開トップの200を確認できません。');
   await home.body?.cancel();
-  const entries = validateMediaManifest(manifest).entries;
+  const entries = readMediaManifest().entries;
   let next = 0;
   await Promise.all(Array.from({ length: 4 }, async () => {
     for (let e = entries[next++]; e; e = entries[next++]) {

@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 // render.sh を一時フォルダに写し、偽の npx（Remotion）と ffmpeg を PATH の先に置いて流す。本物の書き出しはしない。
-// render.sh は自分の 1 つ上のフォルダで動くので、リポジトリの out/・site/media・site/posters には触れない
+// render.sh は自分の 1 つ上のフォルダで動くので、リポジトリの out/・site/media・講座のフォルダのポスターには触れない
 const FAKE_NPX = `#!/bin/sh
 # npx remotion render src/index.ts <コンポジション> <出力> [引数…]。FAKE_REMOTION（字幕つきの版は FAKE_REMOTION_CC）で動きを決める
 echo "remotion $*" >> "$FAKE_LOG"
@@ -42,7 +42,7 @@ const PREVIOUS = [
   'site/media/T01.mp4',
   'site/media/T01.cc.mp4',
   'site/media/T01.jpg',
-  'site/posters/T01.jpg',
+  'content/t-course/generated/posters/T01.jpg',
   'out/captioned/T01.mp4',
 ];
 const UNCHANGED = {
@@ -50,14 +50,18 @@ const UNCHANGED = {
   'site/media/T01.cc.mp4': 'old',
   'site/media/T01.jpg': 'old',
   'site/media/T01.mp4': 'old',
-  'site/posters/T01.jpg': 'old',
+  'content/t-course/generated/posters/T01.jpg': 'old',
 };
 
 /**
  * 300 フレーム（10 秒）の T01 を書き出し、終わったあとの out/・site/ の中身（大きいファイルは大きさだけ）と、偽の道具の呼ばれ方を返す。
  * 上限の正本（site/limits.ts）は本物を写す。limits に中身を渡すとそれに替え、null なら置かない
  */
-const render = (env: Record<string, string> = {}, limits: string | null = readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8')) => {
+const render = (
+  env: Record<string, string> = {},
+  limits: string | null = readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8'),
+  timeline: string | null = JSON.stringify({ key: 'T01', durationInFrames: 300, fps: 30 }),
+) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-render-'));
   const put = (file: string, text: string) => {
     mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
@@ -66,7 +70,8 @@ const render = (env: Record<string, string> = {}, limits: string | null = readFi
   try {
     mkdirSync(path.join(dir, 'scripts'));
     copyFileSync(path.join(import.meta.dir, '../scripts/render.sh'), path.join(dir, 'scripts/render.sh'));
-    put('src/generated/timeline.json', JSON.stringify({ T01: { durationInFrames: 300, fps: 30 } }));
+    // timeline は講座のフォルダの generated/timeline/<id>.json（scripts/synth.ts が書く）
+    if (timeline !== null) put('content/t-course/generated/timeline/T01.json', timeline);
     put('public/audio/mix/T01.wav', 'wav');
     put('bin/npx', FAKE_NPX);
     put('bin/ffmpeg', FAKE_FFMPEG);
@@ -88,7 +93,7 @@ const render = (env: Record<string, string> = {}, limits: string | null = readFi
     const files: Record<string, string> = {};
     for (const file of readdirSync(dir, { recursive: true })
       .map(String)
-      .filter((f) => /^(out|site)\//.test(f) && f !== 'site/limits.ts')
+      .filter((f) => /^(out|site|content\/t-course\/generated\/posters)\//.test(f) && f !== 'site/limits.ts')
       .sort()) {
       const s = statSync(path.join(dir, file));
       if (s.isFile()) files[file] = s.size > 64 ? `${s.size} bytes` : readFileSync(path.join(dir, file), 'utf8');
@@ -132,7 +137,7 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
       'site/media/T01.cc.mp4': 'encoded',
       'site/media/T01.jpg': 'encoded',
       'site/media/T01.mp4': 'encoded',
-      'site/posters/T01.jpg': 'encoded',
+      'content/t-course/generated/posters/T01.jpg': 'encoded',
     });
     expect(r.calls.filter((c) => c.startsWith('remotion ')).map((c) => /--frames=\S+|captions/.exec(c)?.[0])).toEqual([
       '--frames=0-149',
@@ -149,7 +154,7 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
       'out/master/T01.mp4': 'new',
       'site/media/T01.jpg': 'encoded',
       'site/media/T01.mp4': 'encoded',
-      'site/posters/T01.jpg': 'encoded',
+      'content/t-course/generated/posters/T01.jpg': 'encoded',
     });
   });
   test('crf 29 でも目安を超えたら、警告して先へ進む', () => {
@@ -159,6 +164,22 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
     expect(r.stderr).toContain('目安（14500 KiB）');
     expect(r.stderr).not.toContain('保存の 1 ファイルの上限');
     expect(r.calls.flatMap((c) => /-crf (\d+)/.exec(c)?.[1] ?? [])).toEqual(['21', '23', '25', '27', '29']);
+  });
+});
+
+describe('render.sh は、動画の timeline を講座のフォルダから読む', () => {
+  test('timeline が無ければ、何も書き出さず・前の出力も消さずに止まる', () => {
+    const before = Object.fromEntries(PREVIOUS.map((f) => [f, 'old']));
+    const r = render({}, undefined, null);
+    expect(r.code).not.toBe(0);
+    expect(r.stderr).toContain('T01: timeline が無い');
+    expect(r.files).toEqual(before);
+    expect(r.calls).toEqual([]);
+  });
+  test('6 分より長い動画は、crf 27 から試す（長さは timeline の durationInFrames と fps）', () => {
+    const r = render({ FAKE_FFMPEG_BYTES: String(20 * 1000 * 1000) }, undefined, JSON.stringify({ key: 'T01', durationInFrames: 361 * 30, fps: 30 }));
+    expect(r.code).toBe(0);
+    expect(r.calls.flatMap((c) => /-crf (\d+)/.exec(c)?.[1] ?? [])).toEqual(['27', '29']);
   });
 });
 

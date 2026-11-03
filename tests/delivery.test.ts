@@ -32,6 +32,9 @@ test('公開は main/production・最小権限・SHA固定・検証後のsecret�
     (v) => v.jobs.deploy.steps[3].env = { VALUE: '${{ secrets.CLOUDFLARE_API_TOKEN }}' },
     (v) => v.jobs.deploy.steps.reverse(),
     (v) => v.concurrency['cancel-in-progress'] = true,
+    // Worker の許可リストを作らない・Deploy のあとで作る
+    (v) => v.jobs.deploy.steps = v.jobs.deploy.steps.filter((s: { run?: string }) => !String(s.run ?? '').includes('bun scripts/gen.ts')),
+    (v) => { const steps = v.jobs.deploy.steps; const at = steps.findIndex((s: { run?: string }) => String(s.run ?? '').includes('bun scripts/gen.ts')); steps.push(...steps.splice(at, 1)); },
   ];
   for (const mutate of mutations) { const value = workflow(); mutate(value); expect(() => validateWorkflow(value)).toThrow(); }
 });
