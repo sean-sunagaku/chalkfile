@@ -6,12 +6,14 @@ import { loadFont as loadZenMaru } from '@remotion/google-fonts/ZenMaruGothic';
 import type { Lang } from '../content/i18n';
 import { fontsFor, themeOf } from '../content/themes';
 import type { FontKey, Theme, Tone } from '../content/types';
+import { CONTENT, VIDEO } from './video.config';
 
-export const W = 1920;
-export const H = 1080;
-export const PAD = 96;
-export const CONTENT_TOP = 228;
-export const CONTENT_BOTTOM = 1000;
+// 画面の大きさと内容の枠の値は src/video.config.ts。部品はここから短い名前で読む
+export const W = VIDEO.width;
+export const H = VIDEO.height;
+export const PAD = CONTENT.pad;
+export const CONTENT_TOP = CONTENT.top;
+export const CONTENT_BOTTOM = CONTENT.bottom;
 
 /* ───────────── 色の計算 ───────────── */
 

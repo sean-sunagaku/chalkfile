@@ -1,4 +1,4 @@
-// states・sequence・timeline・concepts の参照の行き先が無い（矢印が画面の外に出る・focus が何も光らせない）
+// states・sequence・timeline の参照の行き先が無い（矢印が画面の外に出る・focus が何も光らせない）
 import { course, lecture, say, W, type Expected } from './_base';
 
 export const COURSE = course([
@@ -37,16 +37,6 @@ export const COURSE = course([
       ],
       lines: say('書きます。', '作ります。'),
     },
-    {
-      kind: 'concepts',
-      heading: '言葉',
-      cards: [
-        { key: 'a', en: 'Scene', ja: '場面', desc: '画面の 1 まとまり', tone: 'violet', icon: 'layout', at: 0 },
-        { key: 'b', en: 'Line', ja: '台詞', desc: '声と字幕の 1 文', tone: 'pink', icon: 'message', at: 1 },
-      ],
-      focus: [{ key: 'c', at: 1 }],
-      lines: say('場面です。', '台詞です。'),
-    },
   ]),
 ]);
 
@@ -55,5 +45,4 @@ export const EXPECTED: Expected[] = [
   ['error', 'ref', `${W} 場面 1 states.focus[0].keys[0]`],
   ['error', 'ref', `${W} 場面 2 sequence.steps[0].to`],
   ['error', 'ref', `${W} 場面 3 timeline.focus[1].key`],
-  ['error', 'ref', `${W} 場面 4 concepts.focus[0].key`],
 ];

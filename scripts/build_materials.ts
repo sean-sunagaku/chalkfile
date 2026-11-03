@@ -9,8 +9,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../content';
-import type { Course, Evidence, Figure, Lecture, Scene, Source } from '../content/types';
-import { assertNever } from '../engine/core/assert';
+import type { Course, Evidence, Figure, Lecture, Source } from '../content/types';
+import { describeScene, SCENE_INFO } from '../engine/core/scenes';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const OUT = path.join(ROOT, 'docs/courses');
@@ -20,29 +20,6 @@ const EVIDENCE: Record<Evidence, string> = {
   official: '公式・法令・規格',
   practice: '実務の指針',
   example: '説明用の仮の例',
-};
-
-const KIND: Record<Scene['kind'], string> = {
-  opening: 'タイトル',
-  goals: 'ゴールの一覧',
-  points: '要点のカード',
-  concepts: '用語のカード',
-  sequence: 'やりとりの図',
-  flow: '流れの図',
-  states: '状態の図',
-  code: 'コード',
-  table: '表',
-  compare: '左右の比較',
-  big: '大きな一文',
-  numbers: '数字',
-  timeline: '時間の流れ',
-  quiz: '○×クイズ',
-  recap: 'まとめ',
-  refs: '参考資料',
-  phone: '画面の流れ',
-  screens: '画面の比較（改善前・改善後）',
-  terminal: '端末',
-  ending: '次の章の予告',
 };
 
 type SiteData = {
@@ -69,58 +46,6 @@ const paras = (list: string[]): string[] => {
 };
 const cell = (s: string) => plain(s).replace(/\|/g, '｜').replace(/\n/g, ' ');
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
-/** 絵コンテの「表示内容」。場面の種類ごとに、画面に出る文字を短くまとめる */
-const describe = (s: Scene): string => {
-  switch (s.kind) {
-    case 'opening':
-      return [s.section, `タイトル「${s.title.replace(/　/g, ' ')}」`, s.subtitle].filter(Boolean).join('／');
-    case 'goals':
-      return s.items.map((x, i) => `${i + 1}. ${x.text}`).join(' ');
-    case 'points':
-      return s.items.map((x, i) => `${s.numbered ? `${i + 1}. ` : ''}${x.title}${x.body ? `（${x.body}）` : ''}`).join('／');
-    case 'concepts':
-      return s.cards.map((c) => `${c.ja}${c.en ? `（${c.en}）` : ''}: ${c.desc}`).join('／');
-    case 'sequence':
-      return `登場: ${s.actors.map((a) => a.label).join('・')}。${s.steps.map((x) => x.label).join(' → ')}`;
-    case 'flow':
-      return `${s.nodes.map((n) => n.label).join('・')}。${s.edges.filter((e) => e.label).map((e) => e.label).join('／')}`;
-    case 'states':
-      return s.nodes.map((n) => `${n.code}（${n.ja}）`).join(' → ');
-    case 'code':
-      return `${s.file}: ${s.marks.map((m) => m.note ?? `${m.from}〜${m.to} 行目`).join('／')}`;
-    case 'table':
-      return `${s.columns.join('｜')}: ${s.rows.map((r) => r.cells.join('・')).join('／')}`;
-    case 'compare':
-      return `左「${s.left.title}」${s.left.items.map((x) => x.text).join('・')}／右「${s.right.title}」${s.right.items.map((x) => x.text).join('・')}${s.verdict ? `／結論: ${s.verdict.text}` : ''}`;
-    case 'big':
-      return `${s.kicker ? `${s.kicker}／` : ''}${plain(s.text)}${s.sub ? `／${s.sub}` : ''}`;
-    case 'numbers':
-      return s.items.map((x) => `${x.op ?? ''}${x.label} ${x.prefix ?? ''}${x.value}${x.suffix ?? ''}`).join(' ') + (s.footnote ? `／${s.footnote.text}` : '');
-    case 'timeline':
-      return s.items.map((x) => `${x.title}（${x.sub}）`).join(' → ');
-    case 'quiz':
-      return `Q${s.no}. ${s.question} → 答え ${s.answer ? '○' : '×'}: ${s.explain}`;
-    case 'recap':
-      return s.items.map((x, i) => `${i + 1}. ${x.text}`).join(' ');
-    case 'refs':
-      return s.refs.map((r) => `${r.title}（${r.url}）`).join('／');
-    case 'phone':
-      return s.screens.map((x) => `${x.title}: ${x.caption}`).join(' → ');
-    case 'screens':
-      return [s.left, s.right]
-        .filter((x): x is NonNullable<typeof x> => !!x)
-        .map((x) => `${x.label}${x.title ? `「${x.title}」` : ''}: ${(x.notes ?? []).map((n) => `${n.n}. ${n.text}`).join(' ')}`)
-        .join('／');
-    case 'terminal':
-      return s.entries.map((x) => x.cmd ?? (x.out ?? []).join(' ')).join('／');
-    case 'ending':
-      return s.next ? `次: 第 ${s.next.no} 章「${s.next.title}」` : (s.closing ?? 'おつかれさまでした');
-    default:
-      // 場面の種類を足したのに、ここで扱っていないと型で止まる
-      return assertNever(s, '場面の種類');
-  }
-};
 
 const sourceMap = (c: Course) => new Map((c.sources ?? []).map((s) => [s.id, s]));
 
@@ -171,7 +96,7 @@ const lectureMd = (c: Course, lec: Lecture): string => {
   L.push('話者: 講師 = VOICEVOX:No.7、呼び込み = VOICEVOX:青山龍星。時刻は合成した音声の実測。', '');
   let k = 0;
   for (const [si, s] of lec.scenes.entries()) {
-    L.push(`### 場面 ${si + 1}　${s.kind === 'opening' ? 'オープニング' : s.kind === 'ending' ? 'エンディング' : (s.heading ?? KIND[s.kind])}`, '');
+    L.push(`### 場面 ${si + 1}　${s.kind === 'opening' ? 'オープニング' : s.kind === 'ending' ? 'エンディング' : (s.heading ?? SCENE_INFO[s.kind].label)}`, '');
     for (const ln of s.lines) {
       const cue = data?.cues[k++];
       L.push(`- ${cue ? `\`${mmss(cue.start)}\` ` : ''}${ln.v === 'announcer' ? '（呼び込み）' : ''}${ln.t}`);
@@ -187,7 +112,7 @@ const lectureMd = (c: Course, lec: Lecture): string => {
     const st = data?.chapters[si]?.start;
     const en = data ? (data.chapters[si + 1]?.start ?? data.duration) : undefined;
     const secs = st !== undefined && en !== undefined ? `${Math.round(en - st)} 秒` : '';
-    L.push(`| ${si + 1} | ${st !== undefined ? mmss(st) : ''} | ${secs} | ${KIND[s.kind]} | ${s.evidence ? EVIDENCE[s.evidence] : ''} | ${cell((s.heading ? `【${s.heading}】` : '') + describe(s))} | ${cell(s.lines.map((x) => x.t).join(' '))}${s.hold ? `（${s.hold} 秒の間）` : ''} |`);
+    L.push(`| ${si + 1} | ${st !== undefined ? mmss(st) : ''} | ${secs} | ${SCENE_INFO[s.kind].label} | ${s.evidence ? EVIDENCE[s.evidence] : ''} | ${cell((s.heading ? `【${s.heading}】` : '') + describeScene(s))} | ${cell(s.lines.map((x) => x.t).join(' '))}${s.hold ? `（${s.hold} 秒の間）` : ''} |`);
   }
   L.push('', '字幕: 全部の台詞を日本語字幕にする（講座サイトは動画の下の帯、`out/captioned/` の動画は焼き込み）。画面の文字は要点だけにし、説明はナレーションと教材本文で補う。', '');
 

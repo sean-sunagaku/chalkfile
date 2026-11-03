@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import json
 import re
 import shutil
 import subprocess
@@ -58,6 +59,9 @@ ROOT = Path(__file__).resolve().parent.parent
 MUSIC_DIR = ROOT / "public" / "audio" / "music"
 SFX_DIR = ROOT / "public" / "audio" / "sfx"
 PREVIEW_DIR = MUSIC_DIR / "preview"
+# 動画と合わせる値（src/video.config.ts から npm run gen:video-config で書き出したもの）
+VIDEO = json.loads((ROOT / "scripts" / "audio" / "video_config.json").read_text())
+STING_HIT = float(VIDEO["stingIntroHitSec"])  # イントロのジングルの「ドン」の秒（動画のタイトルの番号と題が出る時刻）
 
 
 # ----------------------------------------------------------------------------
@@ -1014,11 +1018,14 @@ def _ep_chord(buf: np.ndarray, start: int, midis, dur: float, vel: float, key: s
 
 def render_intro() -> np.ndarray:
     """1 小節のライザー + スネアロール → 明るいコードのヒットとベルのモチーフ → C に解決。"""
+    # ヒット（「ドン」）は 1 小節のライザーのあとに来る作り。動画の「ドン」の秒（src/video.config.ts）と違えば止める
+    if STING_HIT != BAR:
+        raise SystemExit(f"イントロは 1 小節（{BAR} 秒）のあとに「ドン」が来る作り。src/video.config.ts の「ドン」（{STING_HIT} 秒）と合わない")
     n = to_samples(5.5)
     ne = n + to_samples(2.0)
     parts = {k: np.zeros((2, ne)) for k in ("drums", "fx", "bass", "keys")}
     bell = np.zeros(ne)
-    hit = to_samples(BAR)
+    hit = to_samples(STING_HIT)
 
     def t(step: float) -> int:
         return hit + to_samples(step * STEP)

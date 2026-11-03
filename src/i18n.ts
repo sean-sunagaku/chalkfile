@@ -21,10 +21,6 @@ export type VideoText = {
   evidence: Record<Evidence, string>;
   /** 架空のアプリの画面の部品 */
   required: string;
-  payPage: string;
-  payNote: string;
-  sampleApp: string;
-  samplePlan: string;
 };
 
 export const VIDEO_TEXT: Record<Lang, VideoText> = {
@@ -38,10 +34,6 @@ export const VIDEO_TEXT: Record<Lang, VideoText> = {
     quizFalse: '誤解',
     evidence: { research: '研究・学術', official: '公式・法令・規格', practice: '実務の指針', example: '説明用の仮の例' },
     required: '必須',
-    payPage: '支払いページ（Stripe がホスト）',
-    payNote: '無料期間のあと毎月 1,000 円で自動更新。解約はいつでもプラン管理ページから。',
-    sampleApp: 'サンプルアプリ',
-    samplePlan: 'Pro プラン',
   },
   en: {
     done: 'Well done!',
@@ -53,10 +45,6 @@ export const VIDEO_TEXT: Record<Lang, VideoText> = {
     quizFalse: 'False',
     evidence: { research: 'Research', official: 'Official / law / standard', practice: 'Practitioner guidance', example: 'Illustrative example' },
     required: 'Required',
-    payPage: 'Payment page (hosted by Stripe)',
-    payNote: 'Renews automatically at ¥1,000 a month after the free trial. Cancel anytime from the plan page.',
-    sampleApp: 'Sample App',
-    samplePlan: 'Pro plan',
   },
   zh: {
     done: '辛苦了！',
@@ -68,9 +56,5 @@ export const VIDEO_TEXT: Record<Lang, VideoText> = {
     quizFalse: '误解',
     evidence: { research: '研究与学术', official: '官方、法规、标准', practice: '实务指南', example: '说明用的虚构示例' },
     required: '必填',
-    payPage: '付款页面（由 Stripe 托管）',
-    payNote: '免费试用期结束后，每月 1,000 日元自动续订。可随时在套餐管理页面取消。',
-    sampleApp: '示例应用',
-    samplePlan: 'Pro 套餐',
   },
 };
