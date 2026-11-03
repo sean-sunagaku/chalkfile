@@ -26,6 +26,7 @@ import type { Asset, CourseManifest } from '../site/offline-shared';
 import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
 import { checkMedia, readMediaManifest } from './media';
 import { WORKERS_ASSET_MAX_BYTES, WORKERS_MAX_ASSETS } from '../site/limits';
+import { mimeOf } from '../site/mime';
 import { mediaRootOf, readSiteConfig, siteProblems } from './validate';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -488,7 +489,8 @@ function courseCreditsAll(lang: Lang): string[] {
   return creditsIn(lang, coursesIn(lang).flatMap((c) => c.lectures.flatMap((l) => l.scenes.flatMap((s) => s.lines.map((ln) => (ln.v ?? 'narrator') as VoiceId)))));
 }
 
-// 一覧ページの画像（site/assets）を写す
+// 一覧ページの画像（site/assets）を写す。型は拡張子の対応表（site/mime.ts）から付け、知らない拡張子なら止める
+// （SW は起動用ファイルの型を、配信の Content-Type と照らし合わせる。違うと、全員の新しい SW の install が止まる）
 const copyDir = (from: string, to: string) => {
   mkdirSync(to, { recursive: true });
   for (const e of readdirSync(from, { withFileTypes: true })) {
@@ -498,7 +500,7 @@ const copyDir = (from: string, to: string) => {
     else {
       rmSync(b, { force: true });
       place(a, b);
-      shellAssets.push(asset(path.relative(DIST, b).split(path.sep).join('/'), readFileSync(b), 'image/jpeg'));
+      shellAssets.push(asset(path.relative(DIST, b).split(path.sep).join('/'), readFileSync(b), mimeOf(b)));
     }
   }
 };
