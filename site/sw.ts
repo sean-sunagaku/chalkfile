@@ -12,11 +12,13 @@ import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroa
 declare const __BUILD_CONFIG__: {
   build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string>; disabledRevisions: string[];
 };
+// 組み立ては __BUILD_CONFIG__ を、出てくる場所ごとに中身で置き換える。1 か所で受けて、sw.js に設定を 1 回だけ入れる
+const CONFIG = __BUILD_CONFIG__;
 const sw = globalThis as unknown as ServiceWorkerGlobalScope;
 const scope = sw.registration.scope;
 // GitHub Pages の同一 origin にある、ほかのサイトの保存には触れない。
 const prefix = `chalkfile:${new URL(scope).pathname}:offline-v1:`;
-const shellName = `${prefix}shell:${__BUILD_CONFIG__.build}`;
+const shellName = `${prefix}shell:${CONFIG.build}`;
 const registryName = `${prefix}registry`;
 /** unreadable: 記録はあるのに今の検証に通らない。画面では「保存し直す」を案内し、指す Cache は cleanup で隔離する（caches が null なら指す先が分からない） */
 type RecordData = SavedRecord & { unreadable?: { caches: string[] | null } };
@@ -26,9 +28,9 @@ const deleting = new Set<string>();
 // 訳の講座の ID は en/… のように / を含むので、記録の URL では符号にする
 const recordUrl = (id: string) => new URL(`.offline-records/${encodeURIComponent(id)}`, scope).href;
 const assetUrl = (f: Asset) => new URL(f.url, scope).href;
-const mediaRoots = Object.fromEntries(Object.entries(__BUILD_CONFIG__.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
+const mediaRoots = Object.fromEntries(Object.entries(CONFIG.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
 /** 重大な不具合で無効にした保存版の revision。当たる保存版は消さないが、オンラインではそのページを開かない（route） */
-const disabled = new Set(__BUILD_CONFIG__.disabledRevisions);
+const disabled = new Set(CONFIG.disabledRevisions);
 
 /** 保存機能のエラーの文字（ページの言語で返す）。ページの文字は site/i18n.ts */
 const MESSAGES: Record<string, Record<OfflineErrorCode, string>> = {
@@ -122,7 +124,7 @@ async function readRecord(id: string): Promise<RecordData> {
   let value: unknown;
   try {
     value = await res.json();
-    return parseRecord(value, id, scope, prefix, __BUILD_CONFIG__.mediaRoots);
+    return parseRecord(value, id, scope, prefix, CONFIG.mediaRoots);
   } catch { return { versions: [], unreadable: { caches: recordCaches(value, id, prefix) } }; }
 }
 
@@ -157,7 +159,7 @@ function complete(v: SavedVersion, fresh = false): Promise<boolean> {
 async function ids(): Promise<string[]> {
   const keys = await (await caches.open(registryName)).keys();
   const saved = keys.map((r) => { try { return decodeURIComponent(new URL(r.url).pathname.split('/').pop()!); } catch { return ''; } });
-  return [...new Set([...__BUILD_CONFIG__.courses, ...saved.filter((id) => COURSE_ID.test(id))])];
+  return [...new Set([...CONFIG.courses, ...saved.filter((id) => COURSE_ID.test(id))])];
 }
 
 async function statuses(): Promise<CourseStatus[]> {
@@ -196,7 +198,7 @@ async function cleanup(oldShell = false): Promise<void> {
 }
 
 async function fetchManifest(id: string): Promise<CourseManifest> {
-  if (!__BUILD_CONFIG__.courses.includes(id)) throw new OfflineError('unpublished');
+  if (!CONFIG.courses.includes(id)) throw new OfflineError('unpublished');
   let r: Response;
   let text: string;
   try {
@@ -213,7 +215,7 @@ async function fetchManifest(id: string): Promise<CourseManifest> {
   if (text.length > 100000) throw new OfflineError('tooLarge');
   let parsed: unknown;
   try { parsed = JSON.parse(text); } catch { throw new OfflineError('manifest'); }
-  const m = validateManifest(parsed, id, scope, __BUILD_CONFIG__.mediaRoots);
+  const m = validateManifest(parsed, id, scope, CONFIG.mediaRoots);
   if (await sha256(new TextEncoder().encode(JSON.stringify(m.files)).buffer) !== m.revision) throw new OfflineError('integrity');
   return m;
 }
@@ -357,7 +359,7 @@ async function remove(id: string): Promise<void> {
 sw.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(shellName);
-    for (const f of __BUILD_CONFIG__.shell) await cache.put(assetUrl(f), await download(f, AbortSignal.timeout(60000), () => {}));
+    for (const f of CONFIG.shell) await cache.put(assetUrl(f), await download(f, AbortSignal.timeout(60000), () => {}));
     // 更新中のタブや保存を強制終了しない。新版は全タブを閉じた後に有効になる。
   })());
 });

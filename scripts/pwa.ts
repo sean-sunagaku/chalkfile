@@ -90,8 +90,9 @@ export async function buildPwa(
   writeFileSync(path.join(dist, 'offline/index.html'), offline);
   shell.push(asset('offline/', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
+  // sw.js は縮める（ページに入らないので、縮めてもページの版は変わらない。offline-client はページに入るので、ここでは縮めない）
   const result = await Bun.build({
-    entrypoints: [path.join(site, 'sw.ts')], target: 'browser',
+    entrypoints: [path.join(site, 'sw.ts')], target: 'browser', minify: true,
     define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, mediaRoots, disabledRevisions }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));
