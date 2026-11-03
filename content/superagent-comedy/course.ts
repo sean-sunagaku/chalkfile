@@ -13,6 +13,8 @@ import { SUPERAGENT_SOURCES } from './sources';
  */
 export const SUPERAGENT_COMEDY: Course = {
   id: 'superagent-comedy',
+  prefix: 'S',
+  order: 80,
   unitLabel: 'CHAPTER',
   theme: 'stage',
   disclaimer: 'DeepSeek・DeepSeek Harness のチームとは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています',

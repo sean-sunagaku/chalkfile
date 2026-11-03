@@ -3,7 +3,14 @@ import {
   RETAIN_DAYS, allMediaEntries, expiredRetained, mediaFilename, mediaPath, releaseUrl, retainDeadline, retainedWarnings, validateMediaManifest,
   type MediaEntry,
 } from '../site/media-shared';
-import { mediaLimitProblems, readMediaManifest, retainEntries, verifyReleaseAssets, warnExpiredRetained } from '../scripts/media';
+import { createHash } from 'node:crypto';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { COURSES } from '../content';
+import { mediaListFile, posterFile } from '../engine/core/generated';
+import { mediaLimitProblems, pushMedia, readMediaManifest, redact, retainEntries, verifyReleaseAssets, warnExpiredRetained, type Gh } from '../scripts/media';
+import { mediaListFiles, readMediaLists } from '../scripts/media-lists';
 import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, RELEASE_MAX_ASSETS } from '../site/limits';
 const entry: MediaEntry = { lang: 'ja', course: 'sample', lecture: 'L01', kind: 'standard', sha256: 'a'.repeat(64), bytes: 100,
   filename: `L01.${'a'.repeat(64)}.mp4`, tag: 'media-ja-sample' };
@@ -116,5 +123,137 @@ describe('動画の一覧が、保存と Releases の上限に収まるか（med
     expect(mediaLimitProblems({ schema: 1, entries: [video('L001')], retained: old(RELEASE_MAX_ASSETS) })).toEqual([
       `Release の ${RELEASE_MAX_ASSETS} asset 上限を超えます: media-ja-sample（一覧に ${RELEASE_MAX_ASSETS + 1} 本）`,
     ]);
+  });
+});
+
+describe('講座ごとの動画の一覧（content/<講座>/generated/media.<言語>.json）', () => {
+  test('全講座の一覧は、講座の登録の順につなぎ、どの講座の一覧も自分の講座と言語の動画だけを持つ', () => {
+    const all = readMediaManifest();
+    expect([...new Set(all.entries.map((e) => e.course))]).toEqual(COURSES.map((c) => c.id).filter((id) => all.entries.some((e) => e.course === id)));
+    for (const f of mediaListFiles()) {
+      const m = JSON.parse(readFileSync(f, 'utf8'));
+      const [, course, lang] = /^content\/([^/]+)\/generated\/media\.([a-z]+)\.json$/.exec(f) ?? [];
+      for (const e of m.entries) expect(`${e.course}/${e.lang}`).toBe(`${course}/${lang}`);
+    }
+  });
+  test('登録に無い講座の一覧があれば止める（消した講座の動画を黙って配らない）', () => {
+    expect(() => readMediaLists(COURSES.slice(1).map((c) => c.id))).toThrow('登録に無い講座か、知らない言語の動画の一覧がある');
+  });
+});
+
+describe('media push --course（その講座だけを手元から作り、ほかの講座の一覧に触らない）', () => {
+  const sha = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
+  /** Releases の偽物（タグごとの asset）。gh の呼び方は scripts/media.ts と同じ */
+  const fakeReleases = (seed: Record<string, MediaEntry[]>) => {
+    const releases = Object.entries(seed).map(([tag, es], i) => ({
+      tag, id: i + 1, target: '', assets: es.map((e) => ({ name: e.filename, size: e.bytes, state: 'uploaded', digest: `sha256:${e.sha256}` })),
+    }));
+    const calls: string[][] = [];
+    const gh: Gh = (args) => {
+      calls.push(args);
+      const [cmd, ...rest] = args;
+      const target = rest.filter((a) => !a.startsWith('--'))[0] ?? '';
+      if (cmd === 'api' && target === 'repos/sean-sunagaku/chalkfile') return JSON.stringify({ default_branch: 'main' });
+      if (cmd === 'api' && target.startsWith('repos/sean-sunagaku/chalkfile/releases?')) return JSON.stringify([releases.map((r) => ({ tag_name: r.tag }))]);
+      const byTag = /releases\/tags\/(.+)$/.exec(target);
+      if (cmd === 'api' && byTag) {
+        const r = releases.find((x) => x.tag === byTag[1]);
+        if (!r) throw new Error('HTTP 404');
+        return JSON.stringify({ id: r.id, draft: false });
+      }
+      const assets = /releases\/(\d+)\/assets/.exec(target);
+      if (cmd === 'api' && assets) return JSON.stringify([releases.find((r) => r.id === Number(assets[1]))?.assets ?? []]);
+      if (cmd === 'release' && rest[0] === 'create') {
+        releases.push({ tag: rest[1], id: releases.length + 1, target: rest[rest.indexOf('--target') + 1], assets: [] });
+        return '';
+      }
+      if (cmd === 'release' && rest[0] === 'upload') {
+        const r = releases.find((x) => x.tag === rest[1]);
+        if (!r) throw new Error('release が無い');
+        for (const f of rest.slice(rest.indexOf('--repo') + 2)) r.assets.push({ name: path.basename(f), size: readFileSync(f).length, state: 'uploaded', digest: `sha256:${sha(readFileSync(f))}` });
+        return '';
+      }
+      throw new Error(`知らない gh: ${args.join(' ')}`);
+    };
+    return { gh, releases, calls };
+  };
+  const sandbox = () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'chalkfile-media-push-'));
+    for (const f of mediaListFiles()) {
+      mkdirSync(path.dirname(path.join(root, f)), { recursive: true });
+      cpSync(f, path.join(root, f));
+    }
+    const put = (file: string, body: string) => {
+      mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      writeFileSync(path.join(root, file), body);
+    };
+    return { root, put, read: (file: string) => readFileSync(path.join(root, file), 'utf8') };
+  };
+  const today = new Date('2026-11-03T12:00:00Z');
+
+  test('選んだ講座だけ、新しいハッシュを置いて一覧を書き直し、前のハッシュは retained に回す。ほかの講座の一覧は 1 バイトも変えない', async () => {
+    const box = sandbox();
+    try {
+      const before = Object.fromEntries(mediaListFiles(box.root).map((f) => [f, box.read(f)]));
+      const old = readMediaManifest(box.root).entries.filter((e) => e.course === 'rive-comedy');
+      const { gh, releases, calls } = fakeReleases({ 'media-ja-rive-comedy': old });
+      box.put('site/media/R01.mp4', '新しい通常版');
+      box.put('site/media/R01.cc.mp4', '新しい字幕つきの版');
+      box.put('site/media/R01.jpg', 'ポスター');
+      // ほかの講座の手元の動画が一覧と違っても、push しないで知らせるだけ
+      box.put('site/media/W01.mp4', '書き出し直したが push していない');
+      const warn = spyOn(console, 'warn').mockImplementation(() => {});
+      const lines: string[] = [];
+      await pushMedia({ courses: ['rive-comedy'], lang: 'ja', root: box.root, gh, today, log: (l) => void lines.push(l) });
+      const warned = warn.mock.calls.map((c) => String(c[0]));
+      warn.mockRestore();
+      const file = mediaListFile('rive-comedy', 'ja');
+      const now = JSON.parse(box.read(file));
+      expect(now.entries.map((e: MediaEntry) => `${e.kind} ${e.sha256}`)).toEqual([`standard ${sha('新しい通常版')}`, `captioned ${sha('新しい字幕つきの版')}`]);
+      expect(now.retained.map((e: MediaEntry & { retainedUntil: string }) => `${e.kind} ${e.sha256} ${e.retainedUntil}`)).toEqual(old.map((e) => `${e.kind} ${e.sha256} 2027-02-01`));
+      for (const [f, text] of Object.entries(before)) if (f !== file) expect(`${f} ${box.read(f) === text}`).toBe(`${f} true`);
+      // Release は作り直さず（もうある）、新しい 2 本だけを置く。前の asset は消さない
+      expect(calls.some((c) => c[0] === 'release' && c[1] === 'create')).toBe(false);
+      expect(releases[0].assets).toHaveLength(old.length + 2);
+      expect(box.read(posterFile('rive-comedy', 'R01'))).toBe('ポスター');
+      expect(warned.join('\n')).toContain('手元の動画が一覧と違う（push していない）: ja/nudge-comedy/W01/standard');
+      expect(lines.join('\n')).toContain(`${file} を書き直した（動画 2 本・retained ${old.length} 本）`);
+    } finally {
+      rmSync(box.root, { recursive: true, force: true });
+    }
+  });
+  test('Release が無ければ、既定のブランチ（HEAD の SHA ではない）を指して作る', async () => {
+    const box = sandbox();
+    try {
+      const { gh, releases } = fakeReleases({});
+      box.put('site/media/P01.mp4', '通常版');
+      box.put('site/media/P01.cc.mp4', '字幕つき');
+      rmSync(path.join(box.root, mediaListFile('pstack-comedy', 'ja')));
+      await pushMedia({ courses: ['pstack-comedy'], lang: 'ja', root: box.root, gh, today, log: () => {} });
+      expect(releases.map((r) => `${r.tag} ${r.target} ${r.assets.length}`)).toEqual(['media-ja-pstack-comedy main 2']);
+      expect(JSON.parse(box.read(mediaListFile('pstack-comedy', 'ja'))).retained).toBeUndefined();
+    } finally {
+      rmSync(box.root, { recursive: true, force: true });
+    }
+  });
+  test('講座を選ばない・通常版が手元に無いときは、何も置かずに止まる', async () => {
+    const box = sandbox();
+    try {
+      const { gh, calls } = fakeReleases({});
+      await expect(pushMedia({ courses: [], lang: 'ja', root: box.root, gh, today })).rejects.toThrow('--course');
+      await expect(pushMedia({ courses: ['ga4-comedy'], lang: 'ja', root: box.root, gh, today })).rejects.toThrow('通常動画がありません: ga4-comedy/G01');
+      await expect(pushMedia({ courses: ['no-such-course'], lang: 'ja', root: box.root, gh, today })).rejects.toThrow('講座がありません');
+      expect(calls).toEqual([]);
+    } finally {
+      rmSync(box.root, { recursive: true, force: true });
+    }
+  });
+  test('gh のエラーの出力は、token・Authorization・署名つきの URL の query を伏せてから出す', () => {
+    const token = ['ghp', 'A'.repeat(36)].join('_');
+    const out = redact(`HTTP 401: Bad credentials ${token}\nAuthorization: Bearer abc.def\nGET https://objects.githubusercontent.com/x?X-Amz-Signature=secret&a=1`);
+    expect(out).not.toContain(token);
+    expect(out).not.toContain('abc.def');
+    expect(out).not.toContain('X-Amz-Signature');
+    expect(out).toContain('https://objects.githubusercontent.com/x?［伏せた］');
   });
 });

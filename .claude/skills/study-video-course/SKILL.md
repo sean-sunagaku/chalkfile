@@ -5,11 +5,11 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 # 勉強動画の講座を作る
 
-保存機能はルート `/` とhash付き `/media/` を使う。動画URL・通常/字幕版・保存サイズとhashを `site/media-manifest.json` から生成し、ポスターは静的assetsに残す。`build_site.ts --strict` はReleasesと手元のhashを照合する。`npm run test:browser` は `tests/browser-server.ts` の同じURLで、通信断・再起動・Range・字幕版切替・単体downloadを検証する。公開されていない言語はskipとして記録する。
+保存機能はルート `/` とhash付き `/media/` を使う。動画URL・通常/字幕版・保存サイズとhashを、講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`）から生成し、ポスター（`content/<講座>/generated/posters/`）は静的assetsに残す。`build_site.ts --strict` はReleasesと手元のhashを照合する。`npm run test:browser` は `tests/browser-server.ts` の同じURLで、通信断・再起動・Range・字幕版切替・単体downloadを検証する。公開されていない言語はskipとして記録する。
 
 `/media/` の変更では `tests/worker.test.ts` を含む `npm test`、`wrangler dev` と本番の `Range: bytes=0-1` を確認する。署名付きredirect URLを保存・ログ出力しない。上流にCookieやAuthorizationを渡さず、本文はstreamのままにする。HEADではRangeを無視し、エラーはno-store。キャッシュ最適化は実測後に判断する。
 
-動画配信の正本は `site/media-manifest.json`。動画を変えたらローカルで `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。
+動画配信の正本は、講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`。Worker の許可リストは `npm run gen` がつないで作る）。動画を変えたらローカルで `bun scripts/media.ts push --course <講座 ID>` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。push はその講座の一覧だけを書き換える。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。
 
 配信移行時は `wrangler.jsonc` を正本にし、`npm run dev:worker` でルート `/` と SW scope `/` を確かめる。サイトは assets、動画は `/media/` の受付に分け、MP4 を assets に置かない。Workers Free を維持する。認証ファイルを読まず、機密情報をcommit/push/公開物/ログへ含めない。push 前に追跡ファイルと差分を点検し、API トークンは GitHub/Cloudflare の secret だけで扱う。
 
@@ -43,7 +43,7 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 ### 3. 台本を書く
 
-`content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座を `content/index.ts` の `COURSES` に足す。
+`content/<講座 ID>/L01.ts` などに、場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `content/types.ts`、見本は `content/stripe-billing/`。画面と話し方の決まりは [references/style.md](references/style.md)。講座は、フォルダの `index.ts` を作って `content/courses.ts` に 1 行で登録する（[new-course.md](../../../docs/guide/new-course.md) の「作るファイル」）。
 
 **講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる**（ユーザーの方針）。既存の講座を作り直すときも、comedy.md の「この形を基準にする」（ユーザーに好評だった掛け合いの型と例）にそろえる。笑いの入れ方、配役と声、食い気味の間、ツッコミ・チーンなどの効果音、BGM を止める演出、守ることは [references/comedy.md](references/comedy.md)。見本は `content/nudge-comedy/`（章立て）と `content/pstack-comedy/`（1 本だけの解説動画。表示を少なくした形）。
 
@@ -69,7 +69,7 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 - 読み: `.work/kana/<id>.txt` を全部読む。誤読は `content/reading.ts` に足して synth し直す
 - 見た目: `node scripts/stills.ts L01 --mid` で `out/stills/` に静止画を書き、全部見る。文字のはみ出し・重なり・小さすぎを直す
-- 長さ: `ffprobe` の動画の長さが `src/generated/timeline.json` の `durationInFrames / 30` と合う
+- 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本ファイルを渡して、主張ごとに公式で確かめてもらう（research.md の「事実確認」）
 - 型: `npm run typecheck`（動画・台本と、PWAのページ/worker）
 - オフライン/PWA: `npm test`、`bun scripts/build_site.ts --strict` → `npm run test:browser`。実動画、通信断・再起動、保存/削除、失敗/更新/キャンセル/再試行、Range・シーク・繰り返し、PC/375pxとインストール導線を確かめる（[offline.md](references/offline.md)）。実機未検証を成功とはしない。専用lintスクリプトはない
@@ -79,9 +79,9 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 ### 6. 公開する
 
-動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。公開の順番の正本は [publish.md](../../../docs/operations/publish.md)、初回の設定は [setup.md](../../../docs/operations/setup.md)、復旧は [recovery.md](../../../docs/operations/recovery.md)。
+動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push --course <講座 ID>` → `bun scripts/media.ts check`。講座のフォルダの生成物（`content/<講座>/generated/` の動画の一覧・ポスター・timeline）とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。公開の順番の正本は [publish.md](../../../docs/operations/publish.md)、初回の設定は [setup.md](../../../docs/operations/setup.md)、復旧は [recovery.md](../../../docs/operations/recovery.md)。
 
-新しい講座をReleasesへ置いたときは、全レクチャーの `site/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
+新しい講座をReleasesへ置いたときは、全レクチャーの `content/<講座>/generated/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
 
 静的応答にno-transformを付け、CSPと保存用SHA-256を変える自動挿入を防ぐ。`bash scripts/legacy/deploy_pages.sh` は旧Pagesの案内だけを出す。移行SWのcache保持テストを通し、chalkfile.comの本番確認が済んでから切り替える。通常公開に旧Pages用スクリプトを使わない。
 
@@ -107,9 +107,9 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.ts --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
 | 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → learner-offline.md とこのスキルの案内を合わせる |
-| レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
+| レクチャーを足す | 台本を書く → 講座の `course.ts` の `lectures` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
-| 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → `TRANSLATIONS` に並べる → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
+| 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → 講座の `index.ts` の `translations` に足す → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |
 | 日本語の台本を直した（訳がある講座） | 日本語を直す → `bun scripts/i18n.ts status` で「台本が変わった」訳を見直す → `stamp` → 訳の動画も synth から作り直す |
 
 ## やらないこと

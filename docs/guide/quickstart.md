@@ -78,6 +78,6 @@ npm run build:site                      # site/dist。公開と同じ確かめ�
 npm run serve                           # http://127.0.0.1:8765/（Range にも答える）
 ```
 
-- ポスターは `site/posters/` にある（main で追跡している）。動画を見ないなら `--videos` は要らない
+- ポスターは講座のフォルダの `content/<講座>/generated/posters/` にある（main で追跡している）。動画を見ないなら `--videos` は要らない
 - Worker を通して見るときは `npm run dev:worker`（番号は [commands.md](commands.md) の「ポート」）
 - サイトや Worker を変えたときの確かめ方は、[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」

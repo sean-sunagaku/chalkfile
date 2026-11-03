@@ -3,7 +3,8 @@
 #   bash scripts/render.sh                  # 全部の動画（全部の言語）
 #   bash scripts/render.sh L03 L05          # 一部だけ
 #   bash scripts/render.sh P01.en P01.zh    # 訳の動画（レクチャー ID.言語。コンポジションは P01-en）
-# 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（サイト用）、site/media/<id>.jpg（<id> は動画の名前。訳は P01.en.mp4）
+# 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（サイト用）、site/media/<id>.jpg と content/<講座>/generated/posters/<id>.jpg
+#   （ポスター。講座のフォルダのものを Git に入れる。<id> は動画の名前。訳は P01.en.mp4）
 # サイト用の動画は、site/limits.ts の VIDEO_TARGET_BYTES（14,500 KiB）を目安に crf を上げて合わせる。crf 29 でも目安を超えたら、警告して
 #   そのまま使う（目安は上限ではない）。上限は保存の 1 ファイルの OFFLINE_FILE_MAX_BYTES（32 MiB）で、超えると学ぶ人が講座を保存できない。
 #   超えても、ここでは警告だけにして書き出した動画を残す（確かめるため）。Releases に置く bun scripts/media.ts push と、組み立ての
@@ -19,12 +20,19 @@ cd "$(dirname "$0")/.."
 ids=("$@")
 if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { VIDEOS } from './content'; console.log(VIDEOS.map((v) => v.key).join(' '))")"; fi
 fail() { echo "$1" >&2; exit 1; }
+# 動画の timeline（content/<講座>/generated/timeline/<id>.json。scripts/synth.ts が書く）。動画の名前は講座をまたいで重ならないので、1 つだけ見つかる
+timeline_of() {
+  local found=(content/*/generated/timeline/"$1".json)
+  if [ ! -f "${found[0]}" ]; then echo "$1: timeline が無い（先に npm run synth -- $1）" >&2; return 1; fi
+  if [ ${#found[@]} -gt 1 ]; then echo "$1: timeline が 2 つ以上の講座にある: ${found[*]}" >&2; return 1; fi
+  echo "${found[0]}"
+}
 # サイト用の動画の大きさの目安と、保存の 1 ファイルの上限（バイト。正本は site/limits.ts）
 limits=$(bun -e "import { OFFLINE_FILE_MAX_BYTES, VIDEO_TARGET_BYTES } from './site/limits'; console.log(VIDEO_TARGET_BYTES, OFFLINE_FILE_MAX_BYTES)") ||
   fail "site/limits.ts の上限を読めません"
 read -r TARGET MAX_FILE <<< "$limits"
 case "$TARGET:$MAX_FILE" in *[!0-9:]* | :* | *:) fail "site/limits.ts の上限が数ではありません: $limits" ;; esac
-mkdir -p out/master site/media site/posters .work/render-public
+mkdir -p out/master site/media .work/render-public
 # 映像は無音で書き出すので public/（音声で 1GB 近い）は要らない。空のフォルダを渡して、一時フォルダへの複製を避ける
 # crf 29 でも目安を超えたサイト用の動画と、保存の上限も超えた動画（最後にまとめて警告する）
 over=''
@@ -32,7 +40,8 @@ big=''
 # 書きかけの一時ファイルと CHUNK の部品を消す。書き出しの前と、途中で止まったときに使う（できたものは置き換え済みなので消えない）
 leftovers() {
   rm -f "out/master/$1".tmp.mp4 "out/master/$1".cc.tmp.mp4 "out/master/$1".part*.mp4 "out/master/$1.parts.txt" \
-    "site/media/$1".tmp.mp4 "site/media/$1".cc.tmp.mp4 "site/media/$1".tmp.jpg "site/posters/$1".tmp.jpg "out/captioned/$1".tmp.mp4
+    "site/media/$1".tmp.mp4 "site/media/$1".cc.tmp.mp4 "site/media/$1".tmp.jpg "out/captioned/$1".tmp.mp4
+  if [ -n "${posters:-}" ]; then rm -f "$posters/$1".tmp.jpg; fi
 }
 trap 'if [ -n "${id:-}" ]; then leftovers "$id"; fi' EXIT
 # Remotion で映像（無音）を書き出す。$1: 出力、残り: Remotion に足す引数。
@@ -51,7 +60,7 @@ site_encode() {
   local tmp="${2%.mp4}.tmp.mp4"
   crf=21
   # 6 分より長い動画は、これまで crf 27 か 29 でしか上限（約 14MB）に近づかなかった（3 講座の 23 本）。21〜25 を試す書き出しを省く
-  if [ "$(python3 -c "import json; t=json.load(open('src/generated/timeline.json'))['$3']; print(t['durationInFrames'] // t['fps'])")" -gt 360 ]; then crf=27; fi
+  if [ "$(python3 -c 'import json, sys; t = json.load(open(sys.argv[1])); print(t["durationInFrames"] // t["fps"])' "$tl")" -gt 360 ]; then crf=27; fi
   while :; do
     ffmpeg -y -hide_banner -loglevel error -i "$1" -i "public/audio/mix/$3.wav" \
       -map 0:v:0 -map 1:a:0 -c:v libx264 -preset slow -crf "$crf" -maxrate 2000k -bufsize 4000k \
@@ -74,10 +83,16 @@ site_encode() {
 # CHUNK=1500 のように渡すと、その枚数ずつ分けて書き出して最後につなぐ。
 # Remotion は書き出し中のフレームを一時フォルダに JPEG で置く（5 分で 1〜2GB）ので、ディスクの空きが少ないとき用
 CHUNK=${CHUNK:-0}
+# 書き出す前に、全部の動画の timeline があることを確かめる（無い動画があれば、何も消さず・書き出さずに止まる）
+for want in "${ids[@]}"; do timeline_of "$want" > /dev/null || exit 1; done
 for id in "${ids[@]}"; do
   start=$(date +%s)
   # Remotion のコンポジションの ID はドットを使えない（P01.en → P01-en）
   comp=${id//./-}
+  tl=$(timeline_of "$id") || exit 1
+  # ポスターは timeline と同じ講座のフォルダ（content/<講座>/generated/posters/<id>.jpg）に置く
+  posters="$(dirname "$(dirname "$tl")")/posters"
+  mkdir -p "$posters"
   # 前の書き出しの残り（映像・字幕つきの映像・CHUNK の部品）を先に消す。残っていると、書き出しに失敗しても前の映像で先へ進んでしまう
   rm -f "out/master/$id.mp4" "out/master/$id.cc.mp4"
   leftovers "$id"
@@ -85,7 +100,7 @@ for id in "${ids[@]}"; do
     echo "注意: $id: 字幕つきの版（site/media/$id.cc.mp4）は作り直さず、前のままです。そろえるなら CAPTIONS=1 を付ける" >&2
   fi
   if [ "$CHUNK" -gt 0 ]; then
-    total=$(python3 -c "import json; print(json.load(open('src/generated/timeline.json'))['$id']['durationInFrames'])")
+    total=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["durationInFrames"])' "$tl")
     list="out/master/$id.parts.txt"
     : > "$list"
     s=0
@@ -111,9 +126,9 @@ for id in "${ids[@]}"; do
     mv -f "out/master/$id.cc.tmp.mp4" "out/master/$id.cc.mp4"
   fi
   site_encode "out/master/$id.mp4" "site/media/$id.mp4" "$id"
-  ffmpeg -y -hide_banner -loglevel error -ss 4.2 -i "out/master/$id.mp4" -frames:v 1 -vf scale=1280:-2 -q:v 3 "site/posters/$id.tmp.jpg"
-  mv -f "site/posters/$id.tmp.jpg" "site/posters/$id.jpg"
-  cp "site/posters/$id.jpg" "site/media/$id.tmp.jpg"
+  ffmpeg -y -hide_banner -loglevel error -ss 4.2 -i "out/master/$id.mp4" -frames:v 1 -vf scale=1280:-2 -q:v 3 "$posters/$id.tmp.jpg"
+  mv -f "$posters/$id.tmp.jpg" "$posters/$id.jpg"
+  cp "$posters/$id.jpg" "site/media/$id.tmp.jpg"
   mv -f "site/media/$id.tmp.jpg" "site/media/$id.jpg"
   echo "$id: $(( $(date +%s) - start )) 秒  crf=$crf  $(( size / 1024 / 1024 )) MB"
   if [ "${CAPTIONS:-0}" = "1" ]; then

@@ -31,7 +31,7 @@ export const VIDEO_TARGET_BYTES = 14500 * 1024;
 export const RELEASE_ASSET_MAX_BYTES = 2 * GiB - 1;
 /** 1 つの Release に置ける asset の数の上限 */
 export const RELEASE_MAX_ASSETS = 1000;
-/** 動画の一覧（site/media-manifest.json）の項目（retained も含む）の数の上限。Worker の許可リストに全部入る */
+/** 全講座の動画の一覧（講座ごとの content/<講座>/generated/media.<言語>.json をつないだもの）の項目（retained も含む）の数の上限。Worker の許可リストに全部入る */
 export const MEDIA_LIST_MAX_ENTRIES = 20000;
 
 /* ───────────── Workers の静的 assets（site/dist。Workers Free） ───────────── */

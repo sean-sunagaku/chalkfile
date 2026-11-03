@@ -238,7 +238,7 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
     const site = makeSite();
     const url = mediaPath(site.video);
     expect(siteInvariantProblems({ ...site.input, media: { schema: 1, entries: [entry('f')] } })).toEqual([
-      `sample/offline-manifest.json: ${url} が動画の一覧（site/media-manifest.json）に無い（Worker が配らない）`,
+      `sample/offline-manifest.json: ${url} が動画の一覧（Worker の許可リスト。content/<講座>/generated/media.<言語>.json）に無い（Worker が配らない）`,
     ]);
     expect(
       siteInvariantProblems({ ...site.input, media: { schema: 1, entries: [{ ...site.video, bytes: 999 }] } }),

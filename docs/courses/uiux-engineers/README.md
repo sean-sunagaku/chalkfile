@@ -1,3 +1,5 @@
+<!-- 生成物: bun scripts/build_materials.ts が content/ の台本と timeline から作る。手で直さない -->
+
 # エンジニアのための UI・UX デザイン
 
 見た目の前に、目的と流れから画面を直す

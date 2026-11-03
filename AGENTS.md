@@ -55,15 +55,22 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 - 本流は main だけ。branch は main の最新から切る（`git fetch origin` → `git switch -c <type>/<slug> origin/main`）。1 つの branch に入れるのは、1 つの講座か 1 つの機能
 - 作業フォルダを分けるときは worktree を使う（`git worktree add -b <type>/<slug> ../chalkfile-<slug> origin/main` → その中で `npm ci --ignore-scripts`）。声のキャッシュ（`.work/tts`）は作業フォルダごとにあるので、`npm run materials:pull` で取り出す
 - 作業が長くなったら、PR を更新する前に main を取り込む（`git fetch origin && git merge origin/main`）
-- 生成物は手で直さない・手でマージしない。ぶつかったら main の側を取り、作り直す（生成物の一覧と作り直し方は [公開の順番](docs/operations/publish.md) の「ぶつかったとき」）
-- 素材（`materials push`）と動画（`media push`）は、main を取り込んだ branch から出す。どちらも足すだけにする。消すのは、持ち主が明示したときだけ（`materials.ts gc`・`retained` から外す）
-- 講座を足すときに全員が触るファイル（`content/index.ts` の `COURSES`・README の講座の表）には、自分の行だけを足す。レクチャー ID の頭文字は、[new-course.md](docs/guide/new-course.md) の表で使っていないものを選ぶ
+- 講座のことは講座のフォルダ（`content/<講座 ID>/`）に閉じる。講座を足す PR が触るのは、自分の講座のフォルダと、登録表 `content/courses.ts` の 1 行だけ（`.gitattributes` の `merge=union` で、並行で足した行は両方残る）。講座の台本・登録（`index.ts`）・生成物（`generated/` の timeline・ポスター・動画の一覧）は、その講座のフォルダにある
+- レクチャー ID の頭文字（`prefix`）と一覧の並び（`order`）は、[new-course.md](docs/guide/new-course.md) の表で使っていないものを選ぶ。重なると `npm run validate` が止め、空いている文字を出す
+- 生成物は手で直さない・手でマージしない（`content/*/generated/**` は `.gitattributes` で生成物の印が付く）。ぶつかったら main を取り込み、ぶつかったファイルは main の側を取ってから（README と new-course.md の表はそのままで）、次のコマンドで作り直す:
+  - timeline（`content/<講座>/generated/timeline/`）: `npm run synth -- --cached-only --course <講座 ID>`（声が手元に無ければ、先に `npm run materials:pull`）
+  - README の講座の表・new-course.md の頭文字の表: そのまま `npm run gen`（印の間を作り直す。ぶつかった行の印も消える）。Worker の許可リスト（`worker/src/generated/`）は Git に入れないので、main を取り込んだら `npm run gen`
+  - 読む教材（`docs/courses/`）: `npm run build:materials`
+  - 音声の鍵のスナップショット（`tests/fixtures/snapshots/`）: `bun scripts/snapshots.ts --update`
+  - ポスター（`content/<講座>/generated/posters/`）: 作り直した動画だけ `npm run render -- <ID>`
+  - 動画の一覧（`content/<講座>/generated/media.<言語>.json`）: 講座ごとなので、ほかの講座とはぶつからない。同じ講座を 2 本の branch で push したときは、[公開の順番](docs/operations/publish.md) の「ぶつかったとき」
+- 素材（`materials push`）と動画（`media push --course <講座 ID>`）は、main を取り込んだ branch から出す。どちらも足すだけにする（動画の push は選んだ講座の一覧だけを書き換える）。消すのは、持ち主が明示したときだけ（`materials.ts gc`・`retained` から外す）
 - ポートと証跡: 番号と変え方は [commands.md](docs/guide/commands.md) の「ポート」。ブラウザのテスト（8877）は、作業フォルダが違っても同時に 2 つ流さない。証跡は `CHALKFILE_EVIDENCE_DIR` で作業フォルダごとに分けられる。証跡も動画も Git に入れない
 - 作業の前に、下の 2 つの欄を見る
 
 ### いま触っている共有ファイル
 
-次のファイルは、同時に 1 本の PR だけが触る: `package.json`・`.github/workflows/`・`AGENTS.md`・`content/index.ts` の作り（並べ替えや形の変更。講座の 1 行を足すだけなら要らない）。触る前に、この表に 1 行を足す PR を出し、それだけを入れてすぐ merge する。終わったら、その行を消す。
+次のファイルは、同時に 1 本の PR だけが触る: `package.json`・`.github/workflows/`・`AGENTS.md`・`content/courses.ts` と `content/index.ts` の作り（並べ替えや形の変更。講座の 1 行を足すだけなら要らない）。触る前に、この表に 1 行を足す PR を出し、それだけを入れてすぐ merge する。終わったら、その行を消す。
 
 | ファイル | branch | すること | 書いた日 |
 |---|---|---|---|

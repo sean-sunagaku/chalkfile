@@ -7,7 +7,7 @@ import { S05 } from './S05';
 import { S06 } from './S06';
 import { SOURCES_EN } from './sources';
 
-/** 「笑ってわかる Super-agent」の英語版。声は Kokoro（scripts/voices.ts の KOKORO.en） */
+/** 「笑ってわかる Super-agent」の英語版。声は Kokoro（content/voices.ts の KOKORO.en） */
 export const SUPERAGENT_COMEDY_EN: CourseL10n = {
   title: 'Laugh & Learn: Super-agent',
   subtitle: 'Reading a design for agents that are not tied to one session, with Zundamon',
