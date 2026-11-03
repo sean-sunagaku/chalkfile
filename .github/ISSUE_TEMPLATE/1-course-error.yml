@@ -1,0 +1,66 @@
+name: 講座の誤り
+description: 講座の事実・説明・画面の文字・リンク・訳の誤りを知らせる
+title: "[講座の誤り] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        講座の誤りを知らせてくださって、ありがとうございます。直すときは、公式ドキュメントなどの一次情報で確かめ直します。正しいと分かる出典があれば、書いてください。
+
+        - 声の読み間違いは「読み間違い」、サイトの動きの不具合は「サイトの不具合」のフォームへ
+        - 脆弱性（サイトやスクリプトの安全の問題）は、ここに書かず、[非公開の報告](https://github.com/sean-sunagaku/chalkfile/security/advisories/new)から知らせてください
+  - type: input
+    id: where
+    attributes:
+      label: 講座と動画
+      description: 講座のページの URL と、動画の番号か名前
+      placeholder: "例: https://chalkfile.com/nudge-product/ の 3 本目"
+    validations:
+      required: true
+  - type: input
+    id: time
+    attributes:
+      label: 場所
+      description: 動画の中なら、その時刻。サイトの文（台本・教材・確認クイズ）なら、どのタブのどこか
+      placeholder: "例: 03:15 ／ 確認クイズの 2 問目"
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 誤りの種類
+      options:
+        - 事実の誤り・古くなった情報
+        - 説明が分かりにくい・誤解を招く
+        - 画面の文字・図・表の誤り
+        - 字幕・台本の誤字
+        - リンクの切れ・誤り
+        - 訳（英語・中国語）の誤り
+        - そのほか
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: 今の内容
+      description: 動画の台詞・画面の文字・サイトの文を、そのまま書いてください
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: 正しいと思う内容
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: 出典
+      description: 正しいと分かる一次情報（公式ドキュメント・法令・規格・論文）の URL と、確かめた日
+      placeholder: "例: https://docs.example.com/…（2026-11-03 に確かめた）"
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 書く前に
+      options:
+        - label: 公開の場に書いてよいことだけを書いた（個人の情報・秘密情報・勤め先の内部の情報を書いていない）
+          required: true

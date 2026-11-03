@@ -1,0 +1,67 @@
+name: 読み間違い
+description: ナレーションの声の読み間違い（漢字・英語の語・数字・記号の読み）を知らせる
+title: "[読み間違い] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        声の読み間違いを知らせてくださって、ありがとうございます。日本語の声は VOICEVOX、英語と中国語の声は Kokoro で作っています。読みを直して、声と動画を作り直します。
+  - type: input
+    id: where
+    attributes:
+      label: 講座と動画
+      description: 講座のページの URL と、動画の番号か名前
+      placeholder: "例: https://chalkfile.com/ga4-comedy/ の 2 本目"
+    validations:
+      required: true
+  - type: input
+    id: time
+    attributes:
+      label: 動画の時刻
+      placeholder: "例: 01:42"
+    validations:
+      required: true
+  - type: dropdown
+    id: lang
+    attributes:
+      label: 動画の言語
+      options:
+        - 日本語
+        - 英語
+        - 中国語
+    validations:
+      required: true
+  - type: input
+    id: word
+    attributes:
+      label: 読み間違えた言葉
+      description: 字幕や画面に出ている文字のまま
+      placeholder: "例: GA4"
+    validations:
+      required: true
+  - type: input
+    id: heard
+    attributes:
+      label: 聞こえた読み
+      placeholder: "例: ジーエーヨン"
+  - type: input
+    id: reading
+    attributes:
+      label: 正しい読み
+      description: "日本語はカタカナかひらがなで。英語と中国語は、発音の書き方（中国語はピンインなど）でもよい"
+      placeholder: "例: ジーエーフォー"
+    validations:
+      required: true
+  - type: textarea
+    id: basis
+    attributes:
+      label: 読みの根拠
+      description: 公式の読み方のページなど。分かれば
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 書く前に
+      options:
+        - label: 公開の場に書いてよいことだけを書いた（個人の情報・秘密情報を書いていない）
+          required: true
