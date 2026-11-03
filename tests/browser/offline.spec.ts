@@ -301,6 +301,63 @@ test('保存ファイルの欠損を検出し、保存済み表示と再生を�
   await expect(page.locator('#offlineSave')).toBeEnabled(); await save(page);
 });
 
+test('読めない保存の記録は、動画を消さずに隔離して保存し直しを案内する。読めるように戻れば保存版に戻り、30日たった隔離だけを消す', async ({ page }) => {
+  await ready(page); await save(page);
+  const saved = (await status(page)).saved!;
+  // 検証を厳しくした版を真似て、記録を今の検証に通らない形にする（break）。text を渡すと、その本文に戻す
+  const record = (text?: string) => page.evaluate(async (text) => {
+    const registry = await caches.open('chalkfile:/:offline-v1:registry');
+    const key = new URL('.offline-records/stripe-billing', location.origin + '/').href;
+    const before = await (await registry.match(key))!.text();
+    const r = JSON.parse(before);
+    r.versions[0].manifest.pageVersion = 'stricter';
+    await registry.put(key, text ? new Response(text, { headers: { 'Content-Type': 'application/json' } }) : Response.json(r));
+    return before;
+  }, text);
+  const marks = () => page.evaluate(async () => (await caches.keys()).filter((n) => n.startsWith('quarantine:')));
+  const original = await record();
+  await page.reload();
+  await expect(page.locator('#savedState')).toContainText('保存が不完全');
+  await expect(page.locator('#offlineMessage')).toHaveText('保存が不完全です。オンラインで保存し直してください。');
+  await expect(page.locator('#offlineSave')).toHaveText('保存し直す');
+  expect(await page.evaluate(() => caches.keys())).toContain(saved.cache);
+  expect(await marks()).toEqual([expect.stringMatching(new RegExp(`^quarantine:\\d+:${saved.cache}$`))]);
+  // 検証を直した版を真似て記録を戻すと、取り直さずに同じ保存版へ戻り、印は外れる
+  await record(original);
+  await page.reload();
+  await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
+  expect((await status(page)).saved!.cache).toBe(saved.cache);
+  expect(await marks()).toEqual([]);
+  // 隔離から30日たつと、中身の Cache と印を消す（記録は読めないまま残るので、保存し直しの案内は続く）
+  await record();
+  await page.reload();
+  await expect(page.locator('#savedState')).toContainText('保存が不完全');
+  const [mark] = await marks();
+  await page.evaluate(async ({ mark, cache }) => {
+    await caches.delete(mark);
+    await caches.open(`quarantine:${Date.now() - 31 * 24 * 60 * 60 * 1000}:${cache}`);
+  }, { mark, cache: saved.cache });
+  await page.reload();
+  await expect(page.locator('#savedState')).toContainText('保存が不完全');
+  expect(await page.evaluate(async () => (await caches.keys()).filter((n) => n.includes(':course:stripe-billing:')))).toEqual([]);
+  await save(page);
+  expect(await marks()).toEqual([]);
+});
+
+test('オンラインで存在しない URL を開くと、保存されていないとは言わずに 404 のページを返す。オフラインは今までどおり', async ({ page, context }) => {
+  await ready(page);
+  const online = await page.goto('/no-such-course/');
+  expect(online!.fromServiceWorker()).toBeTruthy();
+  expect(online!.status()).toBe(404);
+  await expect(page.getByRole('heading', { name: '教材が見つかりません' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'この教材は保存されていません' })).toHaveCount(0);
+  await context.setOffline(true);
+  const offline = await page.reload();
+  expect(offline!.status()).toBe(503);
+  await expect(page.getByRole('heading', { name: 'この教材は保存されていません' })).toBeVisible();
+  await context.setOffline(false);
+});
+
 test('外部動画を指す教材情報は拒否し、取得しない', async ({ page, request }) => {
   const requests: string[] = [];
   page.context().on('request', (r) => { if (r.url().includes('example.com')) requests.push(r.url()); });

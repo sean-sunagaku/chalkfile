@@ -214,7 +214,9 @@ const lectureMd = (c: Course, lec: Lecture): string => {
 
   // 8. AI チャットの質問例
   L.push('## 8. 学習画面の右側の AI チャットに聞ける質問例', '', '（チャットはまだ作っていません。質問ごとに、答えの根拠にする節 ID を付けています）', '');
-  m.askExamples.forEach((a, i) => L.push(`${i + 1}. ${a.q}　→ 参照: ${a.refs.map((r) => `\`${r}\``).join('、')}`));
+  m.askExamples.forEach((a, i) => {
+    L.push(`${i + 1}. ${a.q}　→ 参照: ${a.refs.map((r) => `\`${r}\``).join('、')}`);
+  });
   L.push('');
   return L.join('\n');
 };
@@ -280,7 +282,9 @@ const chunksOf = (c: Course): Chunk[] => {
     for (const f of m.figures) out.push({ id: f.id, course: c.id, chapter: m.id, type: 'figure', title: f.title, text: [f.caption, ...(f.table ?? []).map((r) => r.join(' | ')), ...(f.flow ? [f.flow.join(' → ')] : []), f.code ?? ''].filter(Boolean).join('\n'), evidence: [EVIDENCE[f.evidence]], sources: [] });
     const ex = m.exercise;
     out.push({ id: ex.id, course: c.id, chapter: m.id, type: 'exercise', title: ex.title, text: [ex.goal, ...ex.steps, `出すもの: ${ex.deliverable}`, `回答例: ${ex.example.body.join(' ')}`, ...ex.rubric.map((r) => `${r.criterion}: できている=${r.good} もう一歩=${r.fair} やり直し=${r.poor}`)].join('\n'), evidence: [EVIDENCE.example], sources: [] });
-    lec.quiz.forEach((q, i) => out.push({ id: `${m.id}-q${i + 1}`, course: c.id, chapter: m.id, type: 'quiz', title: q.q, text: `${q.choices.map((x, j) => `${j + 1}. ${x}`).join(' ')}\n答え: ${q.choices[q.answer]}\n${q.explain}`, evidence: [], sources: [] }));
+    lec.quiz.forEach((q, i) => {
+      out.push({ id: `${m.id}-q${i + 1}`, course: c.id, chapter: m.id, type: 'quiz', title: q.q, text: `${q.choices.map((x, j) => `${j + 1}. ${x}`).join(' ')}\n答え: ${q.choices[q.answer]}\n${q.explain}`, evidence: [], sources: [] });
+    });
     out.push({ id: `${m.id}-summary`, course: c.id, chapter: m.id, type: 'summary', title: `${lec.title} の要点`, text: m.summary.join('\n'), evidence: [], sources: cite(m.references) });
   }
   return out;

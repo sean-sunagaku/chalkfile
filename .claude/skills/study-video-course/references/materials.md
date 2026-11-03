@@ -60,7 +60,7 @@
 
 ```bash
 CAPTIONS=1 bash scripts/render.sh N01   # site/media/N01.mp4（字幕なし）、site/media/N01.cc.mp4（サイト用の字幕焼き込み）、out/captioned/N01.mp4（配る用の字幕焼き込み・高画質）
-node scripts/stills.mjs N01@2400 --captions   # 字幕つきの見た目を静止画で確かめる
+node scripts/stills.ts N01@2400 --captions   # 字幕つきの見た目を静止画で確かめる
 ```
 
 - 講座サイトは、`site/media/<id>.cc.mp4` があるレクチャーでは、字幕オンのとき字幕を焼き込んだ版を流し、「字幕」ボタン（C キー）で字幕なしの版に差し替える（再生位置はそのまま）。字幕が動画の中にあるので、標準のコントロールの全画面でも字幕が見える。お笑い版の講座は必ず `CAPTIONS=1` で書き出す
@@ -73,7 +73,7 @@ node scripts/stills.mjs N01@2400 --captions   # 字幕つきの見た目を静�
 
 ```bash
 bun scripts/synth.ts N01 D01 M01
-uv run --with numpy --with scipy python scripts/mix.py N01 D01 M01
+uv run --locked --group audio python scripts/mix.py N01 D01 M01
 CAPTIONS=1 bash scripts/render.sh N01 D01 M01
 bun scripts/build_materials.ts            # docs/courses/ の Markdown と chunks.jsonl
 bun scripts/build_site.ts nudge-product uiux-engineers indie-marketing

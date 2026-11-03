@@ -624,7 +624,7 @@ button { font: inherit; color: inherit; }
     clearNext();
   });
 
-  // ── 端末の保存（使えない環境でも動くように）。講座ごとに分ける。GitHub Pages は同じ持ち主のほかのサイトと保存場所を共有するので、頭に名前を付ける ──
+  // ── 端末の保存（使えない環境でも動くように）。講座ごとに分け、頭に名前を付ける（旧 GitHub Pages では同じ origin をほかのサイトと共有していた。保存済みの記録を読めるよう、名前は今のまま変えない） ──
   // 訳の講座は言語ごとに分ける（動画の長さが違うので、進捗とメモの時刻を言語をまたいで使わない。日本語は前と同じ鍵）
   var KEY = "chalkfile:" + (DATA.lang.code === "ja" ? "" : DATA.lang.code + "/") + DATA.course.id + ":";
   var store = {
