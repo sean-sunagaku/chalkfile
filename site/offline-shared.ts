@@ -201,3 +201,44 @@ export function byteRange(header: string | null, size: number): ByteRange {
   if (start >= size || start > end || (a === null && b === 0)) return { kind: 'unsatisfiable' };
   return { kind: 'partial', start, end };
 }
+
+/*
+ * SW とページのやりとり（型だけ。送る値は site/sw.ts と site/offline-client.ts が作る）。
+ * ページは MessageChannel の port を 1 つ添えて SW に頼み、SW はその port に答える。保存・削除が終わると、SW は全部のタブに知らせる。
+ * 形を変えると、開いたままの古いページと新しい SW（またはその逆）の組で、保存の画面が動かなくなる。変えるときは protocol を上げ、古い形も受ける
+ */
+
+/** ページから SW への頼みごと（type で分ける）。lang は、SW が返すエラーの文の言語 */
+export type OfflineRequest =
+  /** このサイトの講座と、保存してある講座の、保存の状態（id は送らない） */
+  | { protocol: 1; type: 'STATUS'; id?: undefined; lang: string }
+  /** id の講座の、今の保存用の教材情報（保存はしない） */
+  | { protocol: 1; type: 'CHECK'; id: string; lang: string }
+  /** id の講座を保存する。答えの前に、進み具合を何度か送る */
+  | { protocol: 1; type: 'SAVE'; id: string; lang: string }
+  /** 進んでいる保存を止める。止める講座が分からないときは id が無い（SW は「講座を選んで」と答える） */
+  | { protocol: 1; type: 'CANCEL'; id: string | undefined; lang: string }
+  /** id の講座の保存を消す（学習メモと進み具合は消さない） */
+  | { protocol: 1; type: 'DELETE'; id: string; lang: string };
+export type OfflineOperation = OfflineRequest['type'];
+
+/** 頼みごとごとの、うまくいったときの答え */
+export type OfflineResults = {
+  STATUS: { ok: true; courses: CourseStatus[] };
+  CHECK: { ok: true; manifest: CourseManifest };
+  SAVE: { ok: true };
+  CANCEL: { ok: true };
+  DELETE: { ok: true };
+};
+
+/**
+ * SW が port に送るもの。SAVE の途中の進み具合・うまくいった答え・うまくいかなかった答え（error は頼みごとの lang の文）のどれか。
+ * 受け取る側が progress と ok で分けられるよう、それぞれに無い項目は undefined と書いておく
+ */
+export type OfflineReply<K extends OfflineOperation = OfflineOperation> =
+  | { progress: DownloadProgress; ok?: undefined; error?: undefined }
+  | (OfflineResults[K] & { progress?: undefined; error?: undefined })
+  | { ok: false; error: string; progress?: undefined };
+
+/** SW から全部のタブへの知らせ。保存（止めた・失敗したときも）と削除が終わると送り、受け取ったタブは STATUS で状態を取り直す */
+export type OfflineBroadcast = { protocol: 1; type: 'CHANGED' };

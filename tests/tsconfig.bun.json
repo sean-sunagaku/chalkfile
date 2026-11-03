@@ -1,0 +1,8 @@
+{
+  // テスト（tests/）の型。Bun のテストと道具・Playwright のブラウザのテストを、DOM と Bun と Playwright の型で見る。
+  // Worker の単体テスト（worker.test.ts）だけは、worker/tsconfig.json が Workers の型（wrangler types）で見る（ここの型とは混ぜない）
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "types": ["bun", "@playwright/test"] },
+  "include": ["**/*.ts", "../playwright.config.ts"],
+  "exclude": ["worker.test.ts"]
+}

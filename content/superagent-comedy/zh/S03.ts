@@ -8,7 +8,6 @@ import { docsTitles } from './sources';
 // 読み: 台詞では「为（wéi）」「交还（huán）」「琢磨（zuó）」「用不着（zháo）」「看得到・用得（de）」を使わない（pypinyin が違う音を選ぶ）。
 // 「切」も pypinyin が qiè と読むので、糸で「切る」ボケは「串」にした
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const; // この章では涙声を使わない（日本語の台本と同じ）
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 

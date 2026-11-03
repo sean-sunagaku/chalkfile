@@ -3,10 +3,12 @@
 ## 画面
 
 - 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う
+- 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・焼き込み字幕と見出しの文字の大きさ）は `src/video.config.ts` に 1 か所で持つ。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
 - コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
 - 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）
 - アイコンは `content/types.ts` の `IconName`（lucide-react）から選ぶ。絵文字は使わない
+- エンジンは講座の中身を知らない。スマホの画面（`phone`）は架空のアプリの名前を `brand`（と `brandSub`）に必ず書き、端末（`terminal`）の出力の行に色を付けるときは `{ text, tone: 'ok' }`（成功の行）・`{ text, tone: 'info' }`（目を向けてほしい行）と書く。文字だけの行は薄い色で出る
 
 ### 台詞に合わせて出す
 
@@ -40,7 +42,7 @@
 | 呼び込み | VOICEVOX 青山龍星（ノーマル）、抑揚 1.25 |
 | お笑い版の掛け合い | ボケ: ずんだもん（ノーマル・なみだめ）、ツッコミ: No.7 を話速 1.14・抑揚 1.3、天の声: 玄野武宏（ノーマル）。使い方は [comedy.md](comedy.md) |
 | 間 | 台詞の前 0.45 秒、台詞の間 0.3 秒、場面の終わり 0.75 秒、エンディングの後 4 秒 |
-| 冒頭 | ジングルの「ドン」（2.0 秒）に合わせて呼び込む |
+| 冒頭 | ジングルの「ドン」（2.0 秒。`src/video.config.ts` の `STING`）の 0.05 秒あとに呼び込む |
 | BGM | 話している間は -17 dB、話していない間は -7 dB |
 | 仕上がり | -16 LUFS、true peak -1.5 dB |
 
@@ -57,3 +59,14 @@ synth が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。
 | 一行 | イッコウ | いちぎょう |
 
 人を指す「方」（かた／ほう）、「角」「行」なども疑う。語句は長いものから順に置き換わるので、短い語を足すと別の語を壊すことがある。足したら、変わった台詞の読みをもう一度見る。
+
+## 場面の種類を足すとき（エンジン）
+
+今の 20 種類で描けないときだけ足す。場面の種類は、描く側と描かない側の 2 つの一覧で持つ（教材を作る `scripts/build_materials.ts` と台本の検証 `engine/core/` は、描く部品の React・Remotion を読まないので、同じファイルには置かない）。どちらの一覧も全部の種類を型で網羅するので、足し忘れると型で止まる。
+
+1. 型: `content/types.ts` に `XxxScene` を書き、`Scene` の union に足す
+2. 描かない側: `engine/core/scenes.ts` の `SCENE_INFO` に 1 つ足す（`label` は教材の絵コンテの「図解の種類」、`describe` は絵コンテの表示内容）
+3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の大きさ `fit.ts`・箱から箱への矢印 `edge.tsx` など）
+4. 登録: `src/scenes/index.ts` の `SCENES` に 1 行（と、その import）を足す。`src/Lecture.tsx` は場面の `kind` でここを引いて描く
+
+あわせて、台本の検証（`engine/core/validate.ts` の `checkBody`。その種類の参照と範囲。書かないと型で止まる）と、全場面の見本（`tests/fixtures/content/all-scenes/X01.ts`。足さないとテストで止まる）にも足し、静止画で確かめる。

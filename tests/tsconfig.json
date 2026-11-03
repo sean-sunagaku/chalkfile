@@ -1,5 +1,9 @@
 {
+  // tests の型は、ふつうのテスト（tsconfig.bun.json）と、Worker の単体テスト（worker.test.ts を見る worker/tsconfig.json）に分けて見る（npm run typecheck）。
+  // このファイルは、エディタがファイルごとに正しい方を選ぶための目次で、ここでは何も検査しない（files と include を空にする）。
+  // root を extends するのは、このフォルダの tsconfig を読む道具（bun test・Playwright）に、これまでと同じ設定を見せるため
   "extends": "../tsconfig.json",
-  "compilerOptions": { "types": ["bun", "@playwright/test"] },
-  "include": ["**/*.ts", "../playwright.config.ts"]
+  "files": [],
+  "include": [],
+  "references": [{ "path": "./tsconfig.bun.json" }, { "path": "../worker/tsconfig.json" }]
 }

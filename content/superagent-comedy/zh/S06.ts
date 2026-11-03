@@ -9,7 +9,6 @@ import { docsTitles } from './sources';
 // 「数（かぞえる）」を shù、「以…为前提」の为 を wèi と読むので、s は同じ音の字にした（本帝・原帝・就帝・常时间・打赚・属・维）。
 // 中の英語: API は空けずに書く（「A P I」の A は冠詞 ɐ になる）。A2A は数字が中国語の「二」に変わるので、s は「A-to-A」
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const;
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 

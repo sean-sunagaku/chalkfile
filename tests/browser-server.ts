@@ -45,7 +45,6 @@ function variant() {
 }
 
 function legacyResponse(req: Request, relative: string): Response {
-  const u = new URL(req.url);
   const folder = path.resolve(import.meta.dir, control.legacyPhase === 'old' ? 'fixtures/legacy-pages' : '../site/migration-dist');
   let file = path.resolve(folder, relative || 'index.html');
   if (!file.startsWith(folder + path.sep) && file !== folder) return new Response(null, { status: 403 });
