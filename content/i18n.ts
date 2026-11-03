@@ -219,10 +219,9 @@ export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, course: 
     // 読む教材は、まだ日本語だけ（訳の講座には出さない）
     material: undefined,
   });
-  // 直すところの無い動画は resolveLecture が同じオブジェクトを返すので、誤りは写しに付ける（日本語の動画に付かないように）
-  const out = lecture === (base as unknown) ? { ...lecture } : lecture;
-  if (problems.length) PROBLEMS.set(out, problems);
-  return out;
+  // 訳の動画は、日本語の動画とは別のオブジェクト（上で作った写し）なので、誤りは訳の動画にだけ付く
+  if (problems.length) PROBLEMS.set(lecture, problems);
+  return lecture;
 };
 
 /** 講座の訳。日本語の講座（at の id を番号に直す前のもの）に訳を重ねる */
