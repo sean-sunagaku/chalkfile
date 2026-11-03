@@ -5,15 +5,16 @@ import { lectureCredits } from '../../content/voices';
 import { unitOf } from '../components/chrome';
 import { Content } from '../components/content';
 import { fitSize } from '../components/fit';
-import { Glass, Icon } from '../components/ui';
-import { C, DISPLAY, GRAD, MONO, SANS, TONES } from '../theme';
+import { Glass, gradientText, Icon } from '../components/ui';
+import { usePalette } from '../theme';
 import { dropY, useAppear, useScene, useText } from '../timing';
 import { defineScene } from './define';
 
 const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
+  const { C, DISPLAY, GRAD, MONO, SANS, TONES } = usePalette();
   const { lecture, course, lang } = useScene();
   const text = useText();
-  const { label: unit, total } = unitOf(course);
+  const { label: unit, total } = unitOf(course, text);
   const p = useAppear(0);
   const q = useAppear(0, 14);
   const c = useAppear(0, 26);
@@ -24,7 +25,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
           <div
             style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}
           >
-            NEXT {unit}
+            {text.next} {unit}
           </div>
           <div style={{ opacity: q, transform: `translateY(${dropY(q)}px)` }}>
             <Glass
@@ -38,10 +39,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
                   fontWeight: 900,
                   fontSize: 120,
                   lineHeight: 1,
-                  background: DISPLAY,
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
+                  ...gradientText(DISPLAY),
                 }}
               >
                 {String(s.next.no).padStart(2, '0')}
@@ -69,10 +67,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
               fontWeight: 900,
               fontSize: 110,
               opacity: p,
-              background: DISPLAY,
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
+              ...gradientText(DISPLAY),
             }}
           >
             {text.done}

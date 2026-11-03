@@ -40,6 +40,23 @@
 | `syntax` | コードの色分け（`code` の面の上で読める明るさ） |
 | `decor` | 背景の飾り。`chalk`（方眼の点とチョークのにじみ）・`band`（右上の角を斜めに切る帯と縦の補助線）・`stars`（暗い地に光の粒） |
 | `radius` | カードの角の丸み |
+| `dark` | 暗い地（`scheme: 'dark'`）の面と線（カードの面・札の面・色の付かない矢印・補助線・進み具合の溝・薄い光・薄い面・図の色の上の文字）。暗い地のテーマには必ず書く（`NIGHT` が見本）。明るい地は `color` から作るので書かない。`#RRGGBB` か `rgba()` で書く |
+
+テーマの形（`#RRGGBB`・要る項目・暗い地の `dark`）は、台本の検証（`bun scripts/validate.ts`）が確かめる。
+
+## 部品で色を使う
+
+- テーマから、描くときの色の組（パレット）を作るのは `engine/core/theme.ts` の `derivePalette(theme, lang)`。React・Remotion に依存しない純粋な関数で、テーマと言語ごとに 1 回だけ作る
+- 動画は `src/Lecture.tsx` が `ThemeProvider` で全体を包む。部品は頭で `usePalette()`（`src/theme.ts`）を呼んで読む
+
+  ```tsx
+  const { C, tone, SANS } = usePalette();
+  ```
+
+- 読める名前: `C`（地・文字・線・面・コードの面の色）、`TONES` と `tone(t)`（図の色の組。`main`・`soft`・`deep`・`text`）、`GRAD`・`DISPLAY`・`SYNTAX`・`MESH`、`THEME`（テーマそのもの）、`SANS`・`MONO`（書体）
+- 透明度は `alpha(色, 0x55 / 255)`、2 色を混ぜるのは `mix(a, b, t)`（`engine/core/color.ts`）。`${色}55` のように 16 進の透明度をつながない
+- テーマで変えない「そのものの色」（架空のアプリの画面・スマホの枠・窓の信号）は、`src/components/app-colors.ts` にだけ書く
+- 講座サイト（`scripts/site_theme.ts`）も同じパレットから CSS を作る。図の文字色の作り方だけ、動画とサイトで違う（`TONE_TEXT_MIX`。そろえるのは見た目の更新のとき）
 
 ## 新しいテーマを作る
 

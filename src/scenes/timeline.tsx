@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { TimelineScene } from '../../content/types';
 import { Glass, Pill, Smart } from '../components/ui';
-import { C, GRAD, MONO, PAD, SANS, tone, W } from '../theme';
+import { PAD, usePalette, W } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
 import { defineScene } from './define';
 
@@ -13,10 +13,11 @@ const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: num
   w,
   focus,
 }) => {
+  const { C, MONO, SANS, tone } = usePalette();
   const p = useAppear(it.at);
   const tt = tone(it.tone);
-  // 「SECTION 2　基本の考え方」のような題は、前半を小さなラベルにして、見出しを割らない
-  const [kicker, title] = it.title.includes('　') ? it.title.split('　') : [null, it.title];
+  // 題の上の小さな札（kicker。例: SECTION 2）。古い書き方（title の全角の空白で分ける）は、描く前に engine/core/legacy.ts が読み替える
+  const { kicker, title } = it;
   return (
     <>
       <div
@@ -86,6 +87,7 @@ const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: num
 };
 
 const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
+  const { C, GRAD } = usePalette();
   const frame = useCurrentFrame();
   const f = useFocus(s.focus);
   const n = s.items.length;

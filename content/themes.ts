@@ -122,6 +122,18 @@ export const NIGHT: Theme = {
   syntax: { plain: '#E6E9FA', comment: '#7F89B0', string: '#8EF0C6', keyword: '#FF8FB8', deco: '#FFB38A', number: '#FFC260', fn: '#7FDBFF' },
   decor: 'stars',
   radius: 26,
+  // 暗い地の面と線（地に白を薄く重ねる。札の面は地の紺、矢印は薄い藤色、図の色の上の文字は onAccent と同じ紺）
+  dark: {
+    glass: 'rgba(255,255,255,0.07)',
+    glass2: 'rgba(255,255,255,0.025)',
+    overlay: 'rgba(12,16,40,0.92)',
+    edge: 'rgba(210,216,240,0.75)',
+    lane: 'rgba(255,255,255,0.16)',
+    track: 'rgba(255,255,255,0.10)',
+    sheen: 'rgba(255,255,255,0.10)',
+    faint: 'rgba(255,255,255,0.05)',
+    onTone: '#0B0F24',
+  },
 };
 
 /**

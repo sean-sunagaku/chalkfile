@@ -4,9 +4,9 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { OpeningScene } from '../../content/types';
 import { CourseMark, unitOf } from '../components/chrome';
 import { fitSize } from '../components/fit';
-import { Pill, Smart } from '../components/ui';
-import { alpha, C, DISPLAY, GRAD, MESH, MONO, PAD, SANS, THEME } from '../theme';
-import { dropY, useScene } from '../timing';
+import { gradientText, Pill, Smart } from '../components/ui';
+import { alpha, PAD, usePalette } from '../theme';
+import { dropY, ramp, useScene, useText } from '../timing';
 import { frames, STING } from '../video.config';
 import { defineScene } from './define';
 
@@ -14,12 +14,14 @@ import { defineScene } from './define';
 const HIT_FRAME = frames(STING.introHitSec);
 
 const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
+  const { C, DISPLAY, GRAD, MESH, MONO, SANS, THEME } = usePalette();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { lecture, course } = useScene();
+  const text = useText();
   const hit = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 14, mass: 0.7 }, durationInFrames: 40 });
   const soft = spring({ frame: frame - HIT_FRAME, fps, config: { damping: 200 }, durationInFrames: 26 });
-  const early = interpolate(frame, [4, 28], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const early = ramp(frame, 4, 28);
   const sweep = interpolate(frame, [HIT_FRAME - 30, HIT_FRAME + 8], [-0.3, 1.3], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -31,11 +33,11 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
       o: interpolate(f, [0, 8, 50], [0, 0.55, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
     };
   };
-  // 全角の空白（日本語）か改行で、タイトルを 2 行に分ける
-  const titleLines = s.title.split(/　|\n/);
+  // タイトルの行（titleLines。書かなければ 1 行）。古い書き方（全角の空白・改行で分ける）は、描く前に engine/core/legacy.ts が読み替える
+  const titleLines = s.titleLines ?? [s.title];
   const sub2 = spring({ frame: frame - HIT_FRAME - 12, fps, config: { damping: 200 }, durationInFrames: 24 });
   const no = String(lecture.no).padStart(2, '0');
-  const { label: unit, total } = unitOf(course);
+  const { label: unit, total } = unitOf(course, text);
   const solo = course.standalone === true;
   return (
     <>
@@ -91,10 +93,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
             fontSize: 330,
             lineHeight: 1,
             letterSpacing: -10,
-            background: DISPLAY,
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
+            ...gradientText(DISPLAY),
             transform: `scale(${0.7 + 0.3 * hit})`,
             opacity: soft,
             filter: `blur(${(1 - soft) * 14}px)${THEME.scheme === 'dark' ? ` drop-shadow(0 0 40px ${alpha(C.accent, 0.45)})` : ''}`,
@@ -135,7 +134,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
                 color: C.ink,
                 whiteSpace: 'nowrap',
                 ...(i === 0 && titleLines.length > 1
-                  ? { background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
+                  ? gradientText(DISPLAY)
                   : {}),
               }}
             >

@@ -1,38 +1,14 @@
 // 場面「screens」: 画面の比較（改善前・改善後。架空のアプリの画面と、部品の右の番号つきの注）
 import React from 'react';
 import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../content/types';
+import { DEVICE, MOCK, WINDOW_LIGHTS } from '../components/app-colors';
 import { Icon, Pill, Rich } from '../components/ui';
-import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, PAD, SANS, tone } from '../theme';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, useAppear, useText } from '../timing';
 import { defineScene } from './define';
 
-/*
- * 架空のアプリの画面（改善前・改善後）。画面の中の色は「そのアプリの色」なので、講座のテーマではなくここの M で描く。
- * 改善後の文字は、白い地に対して WCAG のコントラスト比 4.5:1 以上（プレースホルダーの M.muted も 4.83:1。1.4.3 の対象）。
- * 入力欄・白地のボタン・チェックボックス・トグルのオフ・まだ進んでいないステップの枠（M.field）は 3:1 以上（1.4.11。部品と状態の手がかりになるため）。
- * weak を付けた部品は、改善前の悪い例としてわざと薄く描く（コントラスト比 2:1 前後）。
- */
-const M = {
-  bg: '#FFFFFF',
-  bar: '#EEF1F5',
-  ink: '#1F2430',
-  sub: '#4A5160',
-  /** プレースホルダー（白と 4.83:1） */
-  muted: '#6B7280',
-  weak: '#BCC2CC',
-  /** 入力欄・白地のボタン（secondary）・チェックボックス・トグルのオフ・まだのステップの枠（白と 3.31:1。部品の境目の 3:1 を満たす） */
-  field: '#858E9C',
-  weakLine: '#E6E9EE',
-  primary: '#2459D6',
-  primaryWeak: '#C7D3F1',
-  danger: '#C62D2D',
-  alert: {
-    error: { bg: '#FDEEEE', fg: '#A61F1F', icon: 'alert' },
-    info: { bg: '#EAF1FE', fg: '#1D4AAE', icon: 'bell' },
-    warn: { bg: '#FFF4D6', fg: '#7A5000', icon: 'alert' },
-    success: { bg: '#E5F5ED', fg: '#146B43', icon: 'check' },
-  },
-} as const;
+// 架空のアプリの画面（改善前・改善後）。画面の中の色は「そのアプリの色」なので、講座のテーマではなく M（src/components/app-colors.ts の MOCK）で描く
+const M = MOCK;
 
 type Variant = 'primary' | 'secondary' | 'link' | 'danger';
 
@@ -42,8 +18,8 @@ const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean; flex?: boo
   }
   const base: React.CSSProperties = { height: 52, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 800, padding: '0 12px', flex: flex ? 1 : undefined, whiteSpace: 'nowrap' };
   if (variant === 'secondary') return <div style={{ ...base, border: `1.5px solid ${weak ? M.weakLine : M.field}`, color: weak ? M.weak : M.ink, background: M.bg }}>{text}</div>;
-  if (variant === 'danger') return <div style={{ ...base, background: M.danger, color: '#FFFFFF' }}>{text}</div>;
-  return <div style={{ ...base, background: weak ? M.primaryWeak : M.primary, color: '#FFFFFF' }}>{text}</div>;
+  if (variant === 'danger') return <div style={{ ...base, background: M.danger, color: M.onPrimary }}>{text}</div>;
+  return <div style={{ ...base, background: weak ? M.primaryWeak : M.primary, color: M.onPrimary }}>{text}</div>;
 };
 
 const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
@@ -115,7 +91,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
             {b.sub ? <div style={{ fontSize: 15, color: M.sub, marginTop: 2 }}>{b.sub}</div> : null}
           </div>
           <div style={{ width: 54, height: 30, borderRadius: 99, background: b.on ? M.primary : M.field, position: 'relative', flexShrink: 0 }}>
-            <div style={{ position: 'absolute', top: 3, left: b.on ? 27 : 3, width: 24, height: 24, borderRadius: 99, background: '#FFFFFF' }} />
+            <div style={{ position: 'absolute', top: 3, left: b.on ? 27 : 3, width: 24, height: 24, borderRadius: 99, background: M.onPrimary }} />
           </div>
         </div>
       );
@@ -135,7 +111,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
               flexShrink: 0,
             }}
           >
-            {b.checked ? <Icon name="check" size={16} color="#FFFFFF" stroke={3.2} /> : null}
+            {b.checked ? <Icon name="check" size={16} color={M.onPrimary} stroke={3.2} /> : null}
           </div>
           <div style={{ fontSize: b.weak ? 14 : 17, color: b.weak ? M.weak : M.ink, lineHeight: 1.4 }}>{b.label}</div>
         </div>
@@ -157,7 +133,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
                       borderRadius: 99,
                       background: done || on ? M.primary : M.bg,
                       border: `2px solid ${done || on ? M.primary : M.field}`,
-                      color: done || on ? '#FFFFFF' : M.sub,
+                      color: done || on ? M.onPrimary : M.sub,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -165,7 +141,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
                       fontWeight: 800,
                     }}
                   >
-                    {done ? <Icon name="check" size={15} color="#FFFFFF" stroke={3.2} /> : i + 1}
+                    {done ? <Icon name="check" size={15} color={M.onPrimary} stroke={3.2} /> : i + 1}
                   </div>
                   <div style={{ fontSize: 15, fontWeight: on ? 800 : 600, color: on ? M.ink : M.sub, whiteSpace: 'nowrap' }}>{x}</div>
                 </div>
@@ -186,7 +162,7 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
         </div>
       );
     case 'badge':
-      return <div style={{ alignSelf: 'flex-start', fontSize: 14, fontWeight: 800, color: '#7A5000', background: '#FFF1CF', borderRadius: 99, padding: '3px 12px' }}>{b.text}</div>;
+      return <div style={{ alignSelf: 'flex-start', fontSize: 14, fontWeight: 800, color: M.badge.fg, background: M.badge.bg, borderRadius: 99, padding: '3px 12px' }}>{b.text}</div>;
     case 'divider':
       return <div style={{ height: 1, background: M.weakLine }} />;
     case 'spacer':
@@ -194,32 +170,36 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
   }
 };
 
-const NoteDot: React.FC<{ n: number; t: Tone; p: number; size?: number }> = ({ n, t, p, size = 38 }) => (
-  <div
-    style={{
-      width: size,
-      height: size,
-      borderRadius: 99,
-      background: tone(t).main,
-      color: C.onTone,
-      fontFamily: SANS,
-      fontWeight: 900,
-      fontSize: size * 0.52,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      opacity: p,
-      transform: `scale(${0.6 + 0.4 * p})`,
-      boxShadow: `0 0 0 4px ${alpha(tone(t).main, 0.22)}`,
-    }}
-  >
-    {n}
-  </div>
-);
+const NoteDot: React.FC<{ n: number; t: Tone; p: number; size?: number }> = ({ n, t, p, size = 38 }) => {
+  const { C, SANS, tone } = usePalette();
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 99,
+        background: tone(t).main,
+        color: C.onTone,
+        fontFamily: SANS,
+        fontWeight: 900,
+        fontSize: size * 0.52,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        opacity: p,
+        transform: `scale(${0.6 + 0.4 * p})`,
+        boxShadow: `0 0 0 4px ${alpha(tone(t).main, 0.22)}`,
+      }}
+    >
+      {n}
+    </div>
+  );
+};
 
 /** 画面 1 枚（窓の枠・部品・部品の右の番号） */
 const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; h: number; zoom?: number }> = ({ sc, device, w, h, zoom = 1 }) => {
+  const { C, SANS } = usePalette();
   const phone = device === 'phone';
   return (
     <div
@@ -227,8 +207,8 @@ const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; 
         width: w,
         height: h,
         borderRadius: phone ? 44 : 16,
-        background: phone ? '#0B0E18' : M.bg,
-        border: phone ? '2px solid rgba(255,255,255,0.18)' : `1.5px solid ${C.line2}`,
+        background: phone ? DEVICE.mock.body : M.bg,
+        border: phone ? `2px solid ${DEVICE.mock.rim}` : `1.5px solid ${C.line2}`,
         boxShadow: C.shadow,
         padding: phone ? 12 : 0,
         overflow: 'hidden',
@@ -241,7 +221,7 @@ const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; 
           <div style={{ height: 46, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 6, fontSize: 16, fontWeight: 800, color: M.sub }}>{sc.title ?? ''}</div>
         ) : (
           <div style={{ height: 42, background: M.bar, display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', flexShrink: 0 }}>
-            {['#F2A19B', '#F5D27B', '#9ED8A5'].map((c) => (
+            {WINDOW_LIGHTS.browser.map((c) => (
               <div key={c} style={{ width: 12, height: 12, borderRadius: 99, background: c }} />
             ))}
             <div style={{ marginLeft: 14, flex: 1, height: 26, borderRadius: 8, background: M.bg, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 14, color: M.sub, fontWeight: 600 }}>{sc.title ?? ''}</div>
@@ -268,6 +248,7 @@ const BlockWithNote: React.FC<{ b: MockBlock; notes: NonNullable<MockScreen['not
 );
 
 const NoteOnBlock: React.FC<{ n: NonNullable<MockScreen['notes']>[number]; t: Tone; k: number }> = ({ n, t, k }) => {
+  const { tone } = usePalette();
   const p = useAppear(n.at);
   return (
     <>
@@ -289,6 +270,7 @@ const NoteList: React.FC<{ sc: MockScreen; size: number }> = ({ sc, size }) => (
 );
 
 const NoteRow: React.FC<{ n: NonNullable<MockScreen['notes']>[number]; t: Tone; size: number }> = ({ n, t, size }) => {
+  const { C, SANS } = usePalette();
   const p = useAppear(n.at);
   return (
     <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', opacity: p, transform: `translateY(${dropY(p, 12)}px)` }}>

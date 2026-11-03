@@ -84,8 +84,8 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `content/index.ts` | 登録表から作る講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
 | `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
 | `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット |
-| `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` がテーマの色と書体を差し込む。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
-| `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・色のコントラスト） |
+| `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む）。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
+| `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・timeline の形と指紋 `timeline.ts`・生成物の置き場所 `generated.ts`・テーマのパレット `theme.ts` と色の計算 `color.ts`・色のコントラスト） |
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |

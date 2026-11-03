@@ -3,10 +3,11 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remo
 import { videoOf } from '../content';
 import { LANG_INFO, type Lang } from '../content/i18n';
 import { themeOf } from '../content/themes';
+import { upgradeLecture } from '../engine/core/legacy';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import { SCENES } from './scenes';
-import { alpha, applyTheme, C, H, SANS, tone } from './theme';
+import { alpha, H, ThemeProvider, usePalette, videoPalette } from './theme';
 import { TIMELINE } from './timelines';
 import { fadeInOut, SceneProvider } from './timing';
 import { CAPTION, frames, LEAD } from './video.config';
@@ -44,6 +45,7 @@ const CAPTION_BAND = H - Math.round(H * CAPTION_SCALE);
 type Cue = { start: number; end: number; text: string; who?: { name: string; tone: Tone } };
 
 const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
+  const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   let i = -1;
   for (let k = 0; k < cues.length; k++) if (frame >= cues[k].start - LEAD.caption) i = k;
@@ -75,7 +77,8 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
                 fontFamily: SANS,
                 fontWeight: 900,
                 fontSize: CAPTION.nameSize,
-                color: '#FFFFFF',
+                // 名前札の文字も、今は字幕と同じ白（onCode）。図の色の上の文字（onTone）にするのは見た目の更新（計画の T3A-14）
+                color: C.onCode,
                 background: tone(cue.who.tone).main,
                 borderRadius: 999,
                 padding: `6px ${CAPTION.namePadX}px`,
@@ -91,7 +94,7 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
               fontWeight: 700,
               fontSize: CAPTION.size,
               lineHeight: 1.42,
-              color: '#FFFFFF',
+              color: C.onCode,
               textAlign: cue.who ? 'left' : 'center',
               letterSpacing: CAPTION.spacing,
               textWrap: 'balance' as React.CSSProperties['textWrap'],
@@ -118,10 +121,14 @@ const WRAP: Record<Lang, React.CSSProperties> = {
  * captions を true にすると、台詞の字幕を焼き込む（音を出せない場所でも要点が分かる動画）。
  */
 export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string; captions?: boolean }> = ({ id, audio = false, theme, captions = false }) => {
-  const { lecture, course, lang } = videoOf(id);
+  const video = videoOf(id);
+  const { course, lang } = video;
+  // 台本の古い書き方（中身の文字を見て描き分けていた決まり）を、明示の項目に読み替えてから描く（engine/core/legacy.ts）
+  const lecture = upgradeLecture(video.lecture);
   const tl = TIMELINE[id];
-  // 子の部品より先に、この動画のテーマの色と書体（言語に合わせる）に差し替える
-  applyTheme(themeOf(theme || course.theme), true, lang);
+  // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
+  const th = themeOf(theme || course.theme);
+  const { SANS } = videoPalette(th, lang);
   const scenes = lecture.scenes.map((s, i) => {
     const st = tl.scenes[i];
     return (
@@ -139,18 +146,20 @@ export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: strin
       )
     : [];
   return (
-    <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>
-      <Background />
-      {captions ? (
-        <>
-          <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
-          <Captions cues={cues} />
-        </>
-      ) : (
-        scenes
-      )}
-      <Progress total={tl.durationInFrames} marks={tl.scenes.slice(1).map((s) => s.start)} />
-      {audio ? <Audio src={staticFile(`audio/mix/${id}.wav`)} /> : null}
-    </AbsoluteFill>
+    <ThemeProvider theme={th} lang={lang}>
+      <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>
+        <Background />
+        {captions ? (
+          <>
+            <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
+            <Captions cues={cues} />
+          </>
+        ) : (
+          scenes
+        )}
+        <Progress total={tl.durationInFrames} marks={tl.scenes.slice(1).map((s) => s.start)} />
+        {audio ? <Audio src={staticFile(`audio/mix/${id}.wav`)} /> : null}
+      </AbsoluteFill>
+    </ThemeProvider>
   );
 };
