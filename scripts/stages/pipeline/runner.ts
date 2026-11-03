@@ -3,7 +3,7 @@
 // 段は単位（動画・講座・サイト全体）ごとに、次を持つ:
 //   fingerprint(単位)  入力の部分ごとの指紋（ファイルを読むだけ。同じ入力なら同じ値）。入力がそろわないときは、その理由
 //   outputs(単位)      出力のパス。記録には、その sha256 を書く（出力を手で変えた・消したら、古いとみなす）
-//   run(単位…)         今ある道具（synth・mix.py・render.sh・build_materials・build_site）を流す
+//   run(単位…)         今ある道具（synth・mix.py・書き出しの render.ts・build_materials・build_site）を流す
 // 単位の状態:
 //   新しい（fresh）       記録の指紋が今の指紋と同じで、出力も記録のとおり
 //   古い（stale）         指紋が違う・出力が無いか記録と違う・入力がそろわない
@@ -52,7 +52,7 @@ export type Stage = {
   unrecorded: 'run' | 'keep';
   /** それだけが変わっても、既定では流さない部分（描き方のコードなど。build の --src で流す） */
   advisory?: readonly string[];
-  /** 流した道具が、自分で記録する（render.sh が書き出しのたびに記録する） */
+  /** 流した道具が、自分で記録する（書き出しの道具が、動画ごとに書き出しの前後で記録する。pipeline.ts record では記録しない） */
   selfRecord?: boolean;
   units: (t: Target) => string[];
   /** 単位の入力を作る、前の段の単位 */

@@ -8,8 +8,9 @@
 //       記録の無い動画は書き出し直さない（今の動画を残す。書き出すなら --force）。--cached-only は voice を素材の声だけで作る。
 //       --jobs は書き出しの並列の数。--dry-run は流すものを出すだけ
 //   bun scripts/pipeline.ts record <段> [--begin] <単位…>
-//       道具が自分で記録する。--begin は流す前の指紋を置き、付けなければ流したあとで比べてから記録する（render.sh が書き出しの前後に、
-//       npm run mix がミックスの前後に流す）。記録できなくても 0 で終える（道具を止めない。理由は標準エラーに出す）
+//       道具が自分で記録する。--begin は流す前の指紋を置き、付けなければ流したあとで比べてから記録する（npm run mix がミックスの前後に
+//       流す）。記録できなくても 0 で終える（道具を止めない。理由は標準エラーに出す）。書き出し（render）は、書き出しの道具
+//       （scripts/stages/video/render.ts）が動画ごとに自分で記録するので、ここでは受けない
 //   npm run chalk -- status|build …   # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 対象を選ばなければ、公開する言語（site/config.json の publishLangs）の全部の動画。教材とサイトは、いつも全部を 1 つの単位で見る。
 // 段と指紋に入れるものは scripts/stages/pipeline/stages.ts、状態の見方は runner.ts、記録の形は state.ts
@@ -279,6 +280,10 @@ const main = async (argv: string[]) => {
     const ctx = ctxOf();
     const stages = makeStages(ctx);
     const stage = stageOf(stages, name);
+    if (stage.selfRecord)
+      throw new UsageError(
+        `${stage.name} は、流した道具が自分で記録する（書き出しは scripts/stages/video/render.ts が、動画ごとに書き出しの前後で記録する）`,
+      );
     if (!units.length) throw new UsageError('記録する単位（動画の名前など）を渡す');
     const known = new Set(stage.units({ keys: VIDEOS.map((v) => v.key) }));
     for (const u of units) if (!known.has(u)) throw new UsageError(`${stage.name} に無い単位: ${u}`);

@@ -1,6 +1,6 @@
 # npm で入れて bun で動かす
 
-- 状態: 採用
+- 状態: 採用（「決めたこと」のうち、Remotion の書き出しの動かし方だけ [書き出しは、bun の TS から @remotion/renderer を呼ぶ](2026-11-04-render-with-remotion-renderer.md) に置き換え済み）
 - 決めた日: 2026-11-02 に記録（決めた日は分からない。分かる範囲の時期は「背景」）
 - 関連: [clone した人の手元で勝手に動くものを置かない](2026-10-30-no-auto-run-on-clone.md)
 

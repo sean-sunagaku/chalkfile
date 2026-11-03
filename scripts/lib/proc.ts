@@ -74,13 +74,26 @@ export const run = (cmd: string, args: string[], opts: RunOptions = {}): RunResu
 
 /**
  * 流して、終了コードと出力を返す（非同期。ffmpeg を並べて流すときなど）。失敗しても止めない。道具が無ければ MissingError。
- * timeoutMs を過ぎたら止め（SIGKILL）、timedOut を true にする。出力は maxBuffer（既定 64 MiB）を超えたら、終わりの分だけを残す
+ * timeoutMs を過ぎたら止め（SIGKILL）、timedOut を true にする。出力は maxBuffer（既定 64 MiB）を超えたら、終わりの分だけを残す。
+ * signal が止められたら（Ctrl-C を受けた道具など）、道具に SIGTERM を送る（止めたかどうかは、渡した側が signal で見る）
  */
-export const runAsync = (cmd: string, args: string[], opts: Omit<RunOptions, 'input'> = {}): Promise<RunResult> =>
+export const runAsync = (
+  cmd: string,
+  args: string[],
+  opts: Omit<RunOptions, 'input'> & { signal?: AbortSignal } = {},
+): Promise<RunResult> =>
   new Promise((resolve, reject) => {
     trace(`> ${shown(cmd, args)}`);
     const limit = opts.maxBuffer ?? 64 * 1024 * 1024;
     const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+      child.kill('SIGTERM');
+    };
+    if (opts.signal?.aborted) stop();
+    else opts.signal?.addEventListener('abort', stop, { once: true });
+    child.on('close', () => opts.signal?.removeEventListener('abort', stop));
     const collect = () => {
       let chunks: Buffer[] = [];
       let size = 0;
@@ -126,9 +139,9 @@ export const runAsync = (cmd: string, args: string[], opts: Omit<RunOptions, 'in
       traceFailure(cmd, result);
       resolve(result);
     };
-    // 時間切れで止めたときは、出力が閉じるのを待たない（止めた道具の子のプロセスが、出力を開いたまま残ることがある）
+    // 時間切れか signal で止めたときは、出力が閉じるのを待たない（止めた道具の子のプロセスが、出力を開いたまま残ることがある）
     child.on('exit', (code) => {
-      if (!timedOut) return;
+      if (!timedOut && !stopped) return;
       child.stdout.destroy();
       child.stderr.destroy();
       finish(code);

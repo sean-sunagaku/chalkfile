@@ -174,6 +174,12 @@ export const OLD_WORDS: { rx: RegExp; word: string; now: string }[] = [
     word: 'site/media-manifest.json',
     now: '動画の一覧は講座ごとの content/<講座>/generated/media.<言語>.json',
   },
+  // 消した道具
+  {
+    rx: /\brender\.sh\b/,
+    word: 'render.sh',
+    now: '書き出しは scripts/stages/video/render.ts（npm run render・npm run chalk -- render）',
+  },
 ];
 
 /**
@@ -220,7 +226,14 @@ export const ALLOW_OLD: OldAllow[] = [
   // この点検そのもの
   { rx: /^scripts\/check_docs\.ts$/, why: 'この点検（古い言葉の一覧）' },
   { rx: /^tests\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
-  // 直す担当が決まっている、コードの古い説明と前の形の処理は、pending: true を付けてここに足す（直したら、その行を消す）
+  { rx: /^CHANGELOG\.md$/, words: ['render.sh'], why: '変更の記録（当時の道具の名前をそのまま残す）' },
+  { rx: /^tests\/render\.test\.ts$/, words: ['render.sh'], why: '前の書き出しの道具と同じ値で書き出すかのテスト' },
+  // 直す担当が決まっている、コードの古い説明と前の形の処理（直したら、この行を消す）
+  { rx: /^site\/offline-shared\.ts$/, words: ['/chalkfile/'], why: 'コメントの scope の例', pending: true },
+  { rx: /^site\/limits\.ts$/, words: ['render.sh'], why: 'コメントの、大きさの目安を読む道具の名前', pending: true },
+  { rx: /^scripts\/build_site\.ts$/, words: ['render.sh'], why: '頭書きの、ポスターを書く道具の名前', pending: true },
+  { rx: /^scripts\/site\/build\.ts$/, words: ['render.sh'], why: '動画かポスターが無いときの案内の文', pending: true },
+  { rx: /^src\/Lecture\.tsx$/, words: ['render.sh'], why: 'コメントの、字幕版を作る道具の名前', pending: true },
 ];
 
 /** その場所で、その古い言葉を許す例外（無ければ undefined） */

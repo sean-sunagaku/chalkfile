@@ -4,6 +4,8 @@ import { afterAll, describe, expect, test } from 'bun:test';
 import { existsSync, lstatSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { VIDEOS } from '../content';
+import { timelineFile } from '../engine/core/generated';
 import { headerOf } from '../scripts/lib/args';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -50,7 +52,11 @@ type Case = { name: string; argv: string[]; file: string };
 const CLI: Case[] = [
   ...TS.map((n) => ({ name: `${n}.ts`, argv: [process.execPath, `scripts/${n}.ts`], file: `scripts/${n}.ts` })),
   { name: 'stills.ts（node）', argv: [...NODE, 'scripts/stills.ts'], file: 'scripts/stills.ts' },
-  { name: 'render.sh', argv: ['bash', 'scripts/render.sh'], file: 'scripts/render.sh' },
+  {
+    name: 'stages/video/render.ts',
+    argv: [process.execPath, 'scripts/stages/video/render.ts'],
+    file: 'scripts/stages/video/render.ts',
+  },
 ];
 const python = Bun.which('python3');
 const PY: Case[] = ['mix', 'tts_kokoro', 'check_speech'].map((n) => ({
@@ -108,7 +114,7 @@ describe('--help は頭書きを出すだけで、何も消さず・何も書か
       });
       // 頭書きを出す（cli.ts は、そのあとにコマンドの一覧も出す）
       expect(r.stdout.startsWith(`${headerOf(path.join(ROOT, c.file)).trim()}\n`)).toBe(true);
-      expect(r.stdout).toMatch(/scripts\/[\w-]+\.(ts|sh)/);
+      expect(r.stdout).toMatch(/scripts\/[\w/-]+\.(ts|sh)/);
     }, 60_000);
   for (const c of PY)
     test.skipIf(!python)(
@@ -153,12 +159,17 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
     ['stills.ts（形の違う動画の名前）', [...NODE, 'scripts/stills.ts', 'L01@abc']],
     ['stills.ts（無い場面）', [...NODE, 'scripts/stills.ts', 'L01:99']],
     ['stills.ts（形の違うテーマ）', [...NODE, 'scripts/stills.ts', 'L01', '--theme=../x']],
-    ['render.sh', ['bash', 'scripts/render.sh', '--nope']],
+    ['render.ts', [process.execPath, 'scripts/stages/video/render.ts', '--nope']],
+    ['render.ts（無い動画）', [process.execPath, 'scripts/stages/video/render.ts', 'ZZ99']],
+    ['render.ts（形の違う動画の名前）', [process.execPath, 'scripts/stages/video/render.ts', '../L01']],
+    ['render.ts（並列の数が 0）', [process.execPath, 'scripts/stages/video/render.ts', 'L12', '--jobs', '0']],
+    ['render.ts（知らない CAPTIONS）', ['env', 'CAPTIONS=yes', process.execPath, 'scripts/stages/video/render.ts', 'L12']],
     ['pipeline.ts（コマンドなし）', [process.execPath, 'scripts/pipeline.ts']],
     ['pipeline.ts（知らない引数）', [process.execPath, 'scripts/pipeline.ts', 'status', '--nope']],
     ['pipeline.ts（--to が無い）', [process.execPath, 'scripts/pipeline.ts', 'build']],
     ['pipeline.ts（無い段）', [process.execPath, 'scripts/pipeline.ts', 'build', '--to', 'nope', '--dry-run']],
-    ['pipeline.ts（無い単位の記録）', [process.execPath, 'scripts/pipeline.ts', 'record', 'render', 'ZZ99']],
+    ['pipeline.ts（無い単位の記録）', [process.execPath, 'scripts/pipeline.ts', 'record', 'mix', 'ZZ99']],
+    ['pipeline.ts（書き出しは道具が自分で記録する）', [process.execPath, 'scripts/pipeline.ts', 'record', 'render', 'G01']],
     ['worktree.ts', [process.execPath, 'scripts/worktree.ts', 'bad-name']],
     ['clean.ts', [process.execPath, 'scripts/clean.ts', '--nope']],
   ];
@@ -169,6 +180,26 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
       // 何がおかしいかを 1 行以上で出す（使い方の誤りの文）
       expect(r.stderr.trim()).not.toBe('');
     }, 60_000);
+  // timeline はあるが、ミックスの音が手元に無い動画（CI はどの動画も。無ければ確かめない）
+  const lacking = VIDEOS.find(
+    (v) =>
+      existsSync(path.join(ROOT, timelineFile(v.course.id, v.key))) &&
+      !existsSync(path.join(ROOT, `public/audio/mix/${v.key}.wav`)),
+  );
+  test.skipIf(!lacking)(
+    'render.ts は、ミックスの音の無い動画を、バンドルを作る前に「前提が足りない」（3）で止め、何も書かない',
+    () => {
+      const r = runChild([process.execPath, 'scripts/stages/video/render.ts', lacking?.key ?? '']);
+      expect({ code: r.code, changed: r.changed, cache: r.cache, tmp: r.tmp }).toEqual({
+        code: 3,
+        changed: [],
+        cache: [],
+        tmp: [],
+      });
+      expect(r.stderr).toContain(`${lacking?.key}: ミックスの音が無い（先に npm run mix -- ${lacking?.key}）`);
+    },
+    60_000,
+  );
   test('stills.ts は、timeline の無い動画を、バンドルを作る前に「前提が足りない」（3）で止める', () => {
     const r = runChild([...NODE, 'scripts/stills.ts', 'ZZ99']);
     expect({ code: r.code, changed: r.changed, cache: r.cache, tmp: r.tmp }).toEqual({
