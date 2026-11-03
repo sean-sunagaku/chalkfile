@@ -59,3 +59,6 @@ jobs:
       - run: npm test
       - run: bun scripts/check_content.ts --self-test
       - run: bun scripts/check_content.ts
+      # 文書のリンク・アンカー・スキルの説明の長さは止める。古い言葉・一覧の食い違い・生成物の印・使い方は、今は注意だけ
+      # （片付けたら --strict にする）
+      - run: npm run check:docs

@@ -9,7 +9,7 @@
     "npm": ">=11"
   },
   "scripts": {
-    "check": "npm run lint && npm run typecheck && npm test && npm run check:content",
+    "check": "npm run lint && npm run typecheck && npm test && npm run check:content && npm run check:docs",
     "lint": "biome ci --formatter-enabled=false --assist-enabled=false",
     "lint:py": "uvx ruff@0.17.3 check scripts",
     "lint:sh": "shellcheck --exclude=SC2086 scripts/render.sh && git ls-files -z '*.sh' ':!scripts/render.sh' | xargs -0 shellcheck",
@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "test:browser": "playwright test",
     "check:content": "bun scripts/check_content.ts --self-test && bun scripts/check_content.ts",
+    "check:docs": "bun scripts/check_docs.ts",
     "build:music": "uv run --locked --group audio python scripts/build_music.py",
     "synth": "bun scripts/synth.ts",
     "mix": "uv run --locked --group audio python scripts/mix.py",

@@ -24,7 +24,7 @@
 
 ```bash
 npm ci --ignore-scripts
-npm run check    # lint・型・単体テスト・台本とファイルの点検（CI と同じ）
+npm run check    # lint・型・単体テスト・台本とファイルの点検・文書の点検（CI と同じ）
 ```
 
 - 新しく足した TS・JSON は `npm run format:new` で整える（CI は、足したファイルの整形を見る）。全体の整形（`npm run format`）は、開いている講座の PR が 0 の日に 1 回だけ行うので、それまで流さない
