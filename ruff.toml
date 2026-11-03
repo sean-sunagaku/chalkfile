@@ -19,7 +19,5 @@ ignore = [
 ]
 
 [lint.per-file-ignores]
-# ffmpeg の終了コードを見ていない（P-23）。失敗の扱いは T3B-07 で直す。check=True を足すと、失敗したときの動きが変わる
-"scripts/mix.py" = ["PLW1510"]
 # pipe() はループの同じ回の中でだけ呼ぶので、ループの変数をあとから読むことが無い
 "scripts/tts_kokoro.py" = ["B023"]

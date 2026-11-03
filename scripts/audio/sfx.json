@@ -1,0 +1,42 @@
+{
+  "_note": "content/sfx.ts から npm run gen（bun scripts/gen.ts）で作る。手で直さない",
+  "schema": 1,
+  "sfx": {
+    "pop": {
+      "db": -14
+    },
+    "whoosh": {
+      "db": -15
+    },
+    "chime": {
+      "db": -13
+    },
+    "tick": {
+      "db": -9
+    },
+    "reveal": {
+      "db": -7
+    },
+    "correct": {
+      "db": -7
+    },
+    "type": {
+      "db": -14
+    },
+    "harisen": {
+      "db": -4
+    },
+    "chin": {
+      "db": -14
+    },
+    "drumroll": {
+      "db": -10
+    },
+    "deden": {
+      "db": -7
+    },
+    "zuko": {
+      "db": -16
+    }
+  }
+}

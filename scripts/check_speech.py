@@ -11,7 +11,8 @@
 # ///
 """訳の動画（英語・中国語）の台詞を Whisper で聞き取り直して、読み上げの間違いを探す（日本語の .work/kana/ を読む代わり）。
 
-synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対応）を読む。
+synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対応）を読む。読むときに形を確かめる（scripts/audio/handoff.py。
+形の正本は scripts/lib/handoff.ts）。Whisper を読み込む前に、渡した全部の動画の対応がそろっているかを見る。
 
   uv run --locked --script scripts/check_speech.py P01.en P01.zh       # 動画ごと
   uv run --locked --script scripts/check_speech.py --all                # .work/speech/ の全部
@@ -27,7 +28,7 @@ synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対�
 直し方: 台詞に s（読み上げ用の文）を書いて、bun scripts/synth.ts <key> で作り直す。
 Whisper のモデル（medium、MIT）は初めて使うときに Hugging Face からダウンロードされる。
 聞き取りの記録（.work/speech/heard.json）と報告は、一時の名前に書いてから置き換える（途中で止めても壊れない）。
-終了コード: 0 できた・1 失敗・2 使い方の誤り
+終了コード: 0 できた・1 失敗（形の違う対応）・2 使い方の誤り・3 前提が足りない（対応が無い＝先に synth）
 """
 
 from __future__ import annotations
@@ -41,17 +42,23 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
 
-from audio.common import USAGE, stop, voice_file, wants_help, write_atomic
+from audio.common import FAILED, MISSING, USAGE, stop, video_keys, voice_file, wants_help, write_atomic
+from audio.handoff import HandoffError, read_speech
 
-if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy・Whisper）を読む前に、使い方だけを出す
-    print(__doc__)
-    raise SystemExit(0)
+USAGE_TEXT = "使い方: uv run --locked --script scripts/check_speech.py P01.en P01.zh | --all（--help で説明）"
+if __name__ == "__main__":
+    if wants_help(sys.argv):  # 依存（numpy・Whisper）を読む前に、使い方だけを出す
+        print(__doc__)
+        raise SystemExit(0)
+    if sys.argv[1:] != ["--all"]:
+        video_keys(sys.argv[1:], USAGE_TEXT)  # 依存を読む前に、引数を確かめる（使い方の誤りは 2）
 
 import numpy as np
 from scipy.signal import resample_poly
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEECH = ROOT / ".work" / "speech"
+HEARD = SPEECH / "heard.json"  # 聞き取りの記録（音声ファイル → 聞き取った文。動画の対応ではない）
 LIMIT = 0.2
 # 中国語の多音字（読みを確かめる字）
 POLY = set("行重长还得地着为都数处差发调量应角种便只和乐空藏传当好教省相正背难几假降曲给结尽卷看落露模宁朝强塞散少盛似")
@@ -95,14 +102,25 @@ def dist(a: list, b: list) -> int:
     return d[len(b)]
 
 
+def load(key: str) -> dict:
+    """動画の、台詞と音声の対応（形を確かめたもの）"""
+    try:
+        return read_speech(SPEECH / f"{key}.json")
+    except FileNotFoundError:
+        stop(MISSING, f"{key}: 聞き取りの対応（.work/speech/{key}.json）が無い。先に npm run synth -- {key}")
+    except HandoffError as e:
+        stop(FAILED, f"{e}（作り直す: npm run synth -- {key}）")
+
+
 def main() -> None:
-    keys = sys.argv[1:]
-    if keys == ["--all"]:
-        keys = sorted(p.stem for p in SPEECH.glob("*.json"))
-    elif not keys or any(k.startswith("-") for k in keys):
-        stop(USAGE, "使い方: uv run --locked --script scripts/check_speech.py P01.en P01.zh | --all（--help で説明）")
-    if not keys:
-        stop(USAGE, "聞き取る動画が無い（.work/speech/ が空。先に訳の動画で npm run synth -- <key>）")
+    if sys.argv[1:] == ["--all"]:
+        keys = sorted(p.stem for p in SPEECH.glob("*.json") if p != HEARD)
+        if not keys:
+            stop(USAGE, "聞き取る動画が無い（.work/speech/ が空。先に訳の動画で npm run synth -- <key>）")
+    else:
+        keys = video_keys(sys.argv[1:], USAGE_TEXT)
+    # Whisper を読み込む前に、全部の対応を読んで形を確かめる（足りなければ、聞き取りを始めない）
+    speech = {key: load(key) for key in keys}
 
     from faster_whisper import WhisperModel
     from opencc import OpenCC
@@ -112,11 +130,11 @@ def main() -> None:
     t2s = OpenCC("t2s")
     asr = WhisperModel("medium", device="cpu", compute_type="int8")
     # 聞き取りの結果は音声ファイルごとに覚えておく（名前は文と声から決まるので、台詞を直した所だけ聞き直す）
-    cache_file = SPEECH / "heard.json"
+    cache_file = HEARD
     heard: dict[str, str] = json.loads(cache_file.read_text()) if cache_file.exists() else {}
     worst_all = 0
     for key in keys:
-        data = json.loads((SPEECH / f"{key}.json").read_text())
+        data = speech[key]
         lang = data["lang"]
         rows = []
         for ln in data["lines"]:
@@ -166,7 +184,7 @@ def main() -> None:
         text = "\n".join(out)
         print(text, flush=True)
         write_atomic(SPEECH / f"{key}.report.txt", text + "\n")
-    print(f"要確認 {worst_all} 台詞" if worst_all else "全部の台詞が聞き取れた（誤り率 0.25 以下）")
+    print(f"要確認 {worst_all} 台詞" if worst_all else f"全部の台詞が聞き取れた（誤り率 {LIMIT} 以下）")
 
 
 if __name__ == "__main__":

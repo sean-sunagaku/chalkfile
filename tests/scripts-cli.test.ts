@@ -156,6 +156,23 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
       // 何がおかしいかを 1 行以上で出す（使い方の誤りの文）
       expect(r.stderr.trim()).not.toBe('');
     }, 60_000);
+  // Python の道具は、依存（numpy など）を読む前に引数を確かめる（依存の無い python3 でも 2 で止まる）
+  const pyUnknown: [string, string[]][] = [
+    ['mix.py', ['scripts/mix.py', '--nope']],
+    ['mix.py（動画を渡していない）', ['scripts/mix.py']],
+    ['mix.py（形の違う動画の名前）', ['scripts/mix.py', '../L01']],
+    ['check_speech.py', ['scripts/check_speech.py', 'P01.en', '--nope']],
+  ];
+  for (const [name, args] of pyUnknown)
+    test.skipIf(!python)(
+      `${name}（依存を入れる前でも止める）`,
+      () => {
+        const r = runChild([python ?? 'python3', ...args]);
+        expect({ code: r.code, changed: r.changed, cache: r.cache }).toEqual({ code: 2, changed: [], cache: [] });
+        expect(r.stderr.trim()).not.toBe('');
+      },
+      60_000,
+    );
 });
 
 test('頭書きの読み方（// の行・/** */ のかたまり・# の行・Python の docstring）', () => {

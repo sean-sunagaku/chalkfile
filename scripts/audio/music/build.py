@@ -1,4 +1,8 @@
-"""書き出す一覧と、コマンドの引数（入口は scripts/build_music.py）。"""
+"""書き出す一覧と、コマンドの引数（入口は scripts/build_music.py）。
+
+効果音の名前の正本は content/sfx.ts（npm run gen が scripts/audio/sfx.json に書く）。合成する効果音（sfx.py の SFX）が
+その一覧と合わなければ、何も作らずに止める。
+"""
 
 from __future__ import annotations
 
@@ -10,6 +14,7 @@ from typing import NamedTuple
 
 import numpy as np
 
+from ..handoff import HandoffError, read_sfx
 from .bed import BED_LUFS, render_bed
 from .dsp import CEILING_DB, SR, write_wav
 from .paths import AUDIO_DIR, ROOT
@@ -39,6 +44,22 @@ def music_jobs() -> list[Job]:
 def sfx_job(name: str) -> Job:
     """効果音 1 つ（ディザの鍵は sfx-<名前>）。"""
     return Job(f"sfx/{name}.wav", f"sfx-{name}", lambda: finish_sfx(SFX[name]()), Target(peak=SFX_PEAK_DB))
+
+
+def check_sfx_names() -> None:
+    """合成する効果音（sfx.py の SFX）が、効果音の一覧（content/sfx.ts。scripts/audio/sfx.json）と同じ名前か。違えば 1 で終える。"""
+    try:
+        listed = read_sfx()
+    except (FileNotFoundError, HandoffError) as e:
+        raise SystemExit(
+            f"効果音の一覧（scripts/audio/sfx.json）が読めない: {e}（npm run gen で content/sfx.ts から作る）"
+        ) from None
+    only_list, only_synth = sorted(set(listed) - set(SFX)), sorted(set(SFX) - set(listed))
+    if only_list or only_synth:
+        raise SystemExit(
+            "効果音の一覧（content/sfx.ts）と合成（scripts/audio/music/sfx.py の SFX）が合わない: "
+            f"一覧だけ {only_list}・合成だけ {only_synth}（両方に足すか、両方から消して npm run gen）"
+        )
 
 
 def check(jobs: list[Job], sums_file: Path | None, whole: bool) -> None:
@@ -80,6 +101,7 @@ def main() -> None:
     args = ap.parse_args()
     if args.sums and not args.check:
         ap.error("--sums は --check と一緒に使う")
+    check_sfx_names()
 
     if args.only:
         unknown = [k for k in args.only if k not in SFX]

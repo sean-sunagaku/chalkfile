@@ -83,11 +83,11 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `content/courses.ts` | 講座の登録表（1 講座 1 行。`.gitattributes` で `merge=union`）。並びは各講座の `order` で決まる |
 | `content/index.ts` | 登録表から作る講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
 | `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
-| `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット |
+| `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts`・`sfx.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット・効果音の一覧（名前とミックスの音量） |
 | `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む）。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
 | `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・timeline の形と指紋 `timeline.ts`・生成物の置き場所 `generated.ts`・テーマのパレット `theme.ts` と色の計算 `color.ts`・色のコントラスト） |
-| `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
-| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）と、Python が読む動画の値（`video_config.json`） |
+| `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/lib/` は道具の共有の部品（TS の道具が書き、Python の道具が読む JSON の形と版は `lib/handoff.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
+| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）、Python の道具の共有の部品（`common.py`）、TS の道具が書く JSON を読んで形を確かめる部品（`handoff.py`。形の正本は `scripts/lib/handoff.ts`）、`npm run gen` が書き出す効果音の一覧（`sfx.json`。正本は `content/sfx.ts`）と動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | Worker の入口（`worker/src/app.ts`。パスの頭で受け口を選ぶ）・`/media/` の中継（`media.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）・AI チャットの受け口（`api.ts`。M4 で入れる）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
