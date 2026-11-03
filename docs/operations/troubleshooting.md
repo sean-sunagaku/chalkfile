@@ -7,12 +7,12 @@
 
 ## 手元の準備
 
-- **初めての書き出しで、Remotion が Chrome Headless Shell をダウンロードしたまま止まる**（Node.js 26 で起きた。何も出ないまま数分止まる。展開が終わらない）。手で展開して、版を書く。下は Apple シリコンの Mac の例。`144.0.7559.20` は、今の Remotion（`package.json` の版）で使えた番号で、Remotion を上げたら合う番号に変える
+- **初めての書き出しで、Remotion が Chrome Headless Shell をダウンロードしたまま止まる**（Node.js 26 で起きた。何も出ないまま数分止まる。展開が終わらない）。手で展開して、版を書く。下は Apple シリコンの Mac の例。`157.0.8080.0-remotion-v3` は、今の Remotion（4.0.539）が待つ番号。Remotion を上げたら、`node_modules/@remotion/renderer/dist/browser/get-chrome-download-url.js` の `TESTED_VERSION` を見て合わせる（Remotion が配る版を使うときは、末尾に `-remotion-v3` が付く。`BrowserFetcher.js` の `getExpectedVersion`）。zip の名前も版で変わる（4.0.539 の Mac は `chromium-headless-shell-mac-arm64-157.0.8080.0.zip?clear`）
 
   ```bash
   cd node_modules/.remotion/chrome-headless-shell
-  rm -rf mac-arm64 && mkdir mac-arm64 && unzip -q chrome-headless-shell-mac-arm64.zip -d mac-arm64
-  printf '144.0.7559.20' > VERSION
+  rm -rf mac-arm64 && mkdir mac-arm64 && unzip -q chromium-headless-shell-mac-arm64-*.zip* -d mac-arm64
+  printf '157.0.8080.0-remotion-v3' > VERSION
   ```
 
 - **手元の ffmpeg に、字幕の焼き込み（libass）が無い**: 字幕は Remotion で描くので要らない（`CAPTIONS=1 npm run render`）
