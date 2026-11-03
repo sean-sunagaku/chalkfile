@@ -8,7 +8,7 @@ import { KOKORO, speechIn } from '../../../content/voices';
 import { withLock } from '../../lib/fsx';
 import { ROOT } from '../../lib/paths';
 import { runInherit } from '../../lib/proc';
-import { ttsKeyIn } from '../../voices';
+import { ttsKeysIn } from '../../voices';
 import { findVoice, type VoiceStore } from './store';
 
 /** Kokoro に渡す 1 本（scripts/tts_kokoro.py の jobs.json の 1 つ） */
@@ -20,7 +20,7 @@ export type KokoroJob = { key: string; text: string } & (typeof KOKORO)['en'][Vo
  */
 export const kokoroTimeoutMs = (jobs: number): number => (15 * 60 + 30 * jobs) * 1000;
 
-/** 訳の動画で、まだ声の無い台詞（同じ鍵は 1 本にまとめる） */
+/** 訳の動画で、まだ声の無い台詞（v2 → v1 の順に探して、どちらも無いもの）。新しい声の名前は v2 の鍵。同じ鍵は 1 本にまとめる */
 export const kokoroJobs = (store: VoiceStore, videos: Video[]): KokoroJob[] => {
   const jobs = new Map<string, KokoroJob>();
   for (const vid of videos) {
@@ -29,8 +29,8 @@ export const kokoroJobs = (store: VoiceStore, videos: Video[]): KokoroJob[] => {
       for (const line of scene.lines) {
         const voice = line.v ?? 'narrator';
         const text = speechIn(line, vid.lang);
-        const key = ttsKeyIn(text, voice, vid.lang);
-        if (!findVoice(store, [key])) jobs.set(key, { key, text, ...KOKORO[vid.lang][voice] });
+        const keys = ttsKeysIn(text, voice, vid.lang);
+        if (!findVoice(store, keys)) jobs.set(keys[0], { key: keys[0], text, ...KOKORO[vid.lang][voice] });
       }
   }
   return [...jobs.values()];

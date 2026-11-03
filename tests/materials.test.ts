@@ -73,10 +73,11 @@ const audio = (repo: Repo, make: (name: string) => string | Buffer = (name) => `
     for (const name of a.names) writeFileSync(path.join(repo.root, a.local, `${name}.wav`), make(name));
   }
 };
-const course = (id: string, keys: string[]): CourseKeys => ({
+/** 講座。台詞ごとの探す鍵は 1 つ（v2 → v1 の探し方は、lines に 2 つの鍵を渡すテストで見る） */
+const course = (id: string, keys: string[], lines: string[][] = keys.map((k) => [k])): CourseKeys => ({
   id,
   langs: ['ja'],
-  keys,
+  lines,
   about: `講座 ${id}（1 章・ja）`,
 });
 
@@ -263,7 +264,7 @@ test('gc の --keep は、その ref の台本（content/ と scripts/voices.ts�
     {
       id: 'alpha',
       langs: ['ja'],
-      keys: ['ja-narrator-こんにちは', 'ja-zundamon-またね'],
+      lines: [['ja-narrator-こんにちは'], ['ja-zundamon-またね']],
       about: 'アルファ（1 章・ja）',
     },
   ]);
@@ -293,7 +294,63 @@ test('gc の --keep は、読み上げる文を content/voices.ts から読む�
   git(a.root, 'commit', '--quiet', '-m', '台本');
   git(a.root, 'push', '--quiet', 'origin', 'HEAD:main');
   const keep = await keepAt(a, ['origin/main']);
-  expect(keep.courses.map((c) => c.keys)).toEqual([['ja-narrator-こんにちわ']]);
+  expect(keep.courses.map((c) => c.lines)).toEqual([[['ja-narrator-こんにちわ']]]);
+}, 30_000);
+
+test('台詞は v2 → v1 の順に探し、手元にある最初の鍵の音声を置く。gc は台詞の v2 と v1 の両方を残す', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  voice(a, 'v1a');
+  voice(a, 'v2b');
+  voice(a, 'v1b');
+  // 1 つ目の台詞は前の声（v1）だけがある。2 つ目は両方ある（v2 を置く）
+  const lines = [
+    ['v2a', 'v1a'],
+    ['v2b', 'v1b'],
+  ];
+  const lines1: string[] = [];
+  expect(check(a, [course('alpha', [], lines)], (l) => void lines1.push(l))).toBe(true);
+  expect(lines1).toContain('alpha（ja）: 台詞の音声 2/2');
+  expect((await push(a, [course('alpha', [], lines)], logs().opts)).pushed).toBe(true);
+  const files = branchOf(remote).files();
+  expect(files).toEqual(expect.arrayContaining(['tts/alpha/v1a.flac', 'tts/alpha/v1a.kana', 'tts/alpha/v2b.flac']));
+  for (const no of ['tts/alpha/v2a.flac', 'tts/alpha/v1b.flac']) expect(files).not.toContain(no);
+  // どの鍵の声も無い台詞は、足りない
+  expect(check(a, [course('alpha', [], [['v2c', 'v1c']])], () => {})).toBe(false);
+  // gc は、台詞の v2 と v1 の両方を残す（どちらの名前の声も使える）
+  const out = logs();
+  expect((await gc(a, { refs: ['テストの台本'], courses: [course('alpha', [], lines)] }, out.opts)).pushed).toBe(false);
+  expect(out.text()).toContain('消すものは無い');
+}, 30_000);
+
+test('gc の --keep は、その ref の scripts/voices.ts に ttsKeysIn があれば、台詞ごとの v2 と v1 の鍵を作る', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  const write = (p: string, body: string) => {
+    mkdirSync(path.dirname(path.join(a.root, p)), { recursive: true });
+    writeFileSync(path.join(a.root, p), body);
+  };
+  write(
+    'content/index.ts',
+    [
+      "const ALPHA = { id: 'alpha', title: 'アルファ', lectures: [{ scenes: [{ lines: [{ t: 'こんにちは' }, { t: 'こんにちは' }] }] }] };",
+      'export const COURSES = [ALPHA];',
+      "export const coursesIn = (lang: string) => (lang === 'ja' ? COURSES : []);",
+    ].join('\n'),
+  );
+  write('content/i18n.ts', "export const LANGS = ['ja'];\n");
+  write('content/voices.ts', 'export const speechIn = (line: { t: string }) => line.t;\n');
+  write(
+    'scripts/voices.ts',
+    'export const ttsKeysIn = (text: string, voice: string, lang: string) => [`v2-${voice}-${text}`, `v1-${voice}-${text}`];\n',
+  );
+  git(a.root, 'add', '-A');
+  git(a.root, 'commit', '--quiet', '-m', '台本');
+  git(a.root, 'push', '--quiet', 'origin', 'HEAD:main');
+  const keep = await keepAt(a, ['origin/main']);
+  // 同じ文と声の台詞は 1 つにまとめる
+  expect(keep.courses.map((c) => c.lines)).toEqual([[['v2-narrator-こんにちは', 'v1-narrator-こんにちは']]]);
 }, 30_000);
 
 test('HEAD が origin/main を含まなければ push を止め、取り込む手順を出す（dry-run は知らせるだけ）', async () => {

@@ -15,7 +15,7 @@ import { creditsIn, speechIn } from '../content/voices';
 import { fingerprint } from './i18n';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { ROOT } from './lib/paths';
-import { ttsKeyIn } from './voices';
+import { ttsKeysIn } from './voices';
 
 export const SNAPSHOT_DIR = path.join(ROOT, 'tests/fixtures/snapshots');
 
@@ -27,7 +27,10 @@ export type LineValue = { at: string; voice: VoiceId; key: string; speech: strin
  */
 export type VideoValue = { video: string; fingerprint?: string; credits: string[]; lines: LineValue[] };
 
-/** 全部の動画（日本語の全講座と全部の訳）の値。synth.ts と同じ関数・同じ選び方（声は v か先生、読みは speechIn、鍵は ttsKeyIn）で求める */
+/**
+ * 全部の動画（日本語の全講座と全部の訳）の値。synth.ts と同じ関数・同じ選び方（声は v か先生、読みは speechIn、鍵は ttsKeysIn）で求める。
+ * 鍵は、素材の今の声の名前（v1 が当たる台詞は v1、当たらない台詞は v2）
+ */
 export const speechValues = (videos: Video[] = VIDEOS): VideoValue[] => {
   const translated = new Set(videos.filter((v) => v.lang !== 'ja').map((v) => v.lecture.id));
   return videos.map(({ key, lang, lecture }) => {
@@ -35,7 +38,8 @@ export const speechValues = (videos: Video[] = VIDEOS): VideoValue[] => {
       scene.lines.map((line, li): LineValue => {
         const voice = line.v ?? 'narrator';
         const speech = speechIn(line, lang);
-        return { at: `s${si + 1}-${li + 1}`, voice, key: ttsKeyIn(speech, voice, lang), speech };
+        const keys = ttsKeysIn(speech, voice, lang);
+        return { at: `s${si + 1}-${li + 1}`, voice, key: keys[keys.length - 1], speech };
       }),
     );
     const ja = LECTURES.find((l) => l.id === lecture.id);

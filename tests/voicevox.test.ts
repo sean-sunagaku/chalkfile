@@ -1,7 +1,7 @@
 // VOICEVOX の呼び出し（scripts/stages/voice/voicevox.ts）と、synth の声のそろえ方を、偽の VOICEVOX（手元の HTTP サーバー）で確かめる。
 // 本物のエンジンにはつながない。止まったままのエンジン・つながらないエンジン・5xx・4xx・正しい応答を作る
 import { afterAll, describe, expect, test } from 'bun:test';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Video } from '../content';
@@ -9,6 +9,7 @@ import { MissingError, UsageError } from '../scripts/lib/args';
 import { outDirs } from '../scripts/stages/timeline/emit';
 import { kanaOf, timeoutFromEnv, voicevox } from '../scripts/stages/voice/voicevox';
 import { type Ctx, synthVideos } from '../scripts/synth';
+import { ttsKeysIn, voicevoxRecipe } from '../scripts/voices';
 import { course, lecture } from './fixtures/content/invalid/_base';
 
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-voicevox-test-'));
@@ -82,7 +83,8 @@ const working = (fail: Partial<Record<string, number[]>> = {}) => {
   });
   return { url, calls, bodies, queries };
 };
-const VOICE = { speaker: 29, speed: 1.06, intonation: 1.12, pitch: 0 };
+/** 合成のレシピ（先生の声と、全部の声で共通の出力の形） */
+const VOICE = voicevoxRecipe({ speaker: 29, speed: 1.06, intonation: 1.12, pitch: 0 });
 const quiet = { warn: () => {} };
 
 describe('VOICEVOX の呼び出し', () => {
@@ -144,6 +146,19 @@ describe('VOICEVOX の呼び出し', () => {
       outputStereo: false,
     });
   });
+  test('レシピがエンジンの版を決めていて、今のエンジンと違えば、合成せずに止める（終了コード 3）', async () => {
+    const e = working();
+    const pinned = voicevoxRecipe({ speaker: 29, speed: 1.06, intonation: 1.12, pitch: 0, engineVersion: '0.14.0' });
+    const err = await voicevox({ url: e.url, ...quiet })
+      .synthesize('こんにちは', pinned)
+      .catch((x: unknown) => x);
+    expect(err).toBeInstanceOf(MissingError);
+    expect((err as Error).message).toContain('VOICEVOX 0.14.0 を決めているが');
+    expect(e.calls).toEqual({ version: 1 });
+    // 同じ版なら合成し、その版を返す
+    const same = voicevoxRecipe({ speaker: 29, speed: 1.06, intonation: 1.12, pitch: 0, engineVersion: '0.99.0' });
+    expect((await voicevox({ url: e.url, ...quiet }).synthesize('こんにちは', same)).engineVersion).toBe('0.99.0');
+  });
   test('4xx は流し直さない（どの台詞かを出す。終了コード 1）', async () => {
     const e = working({ audio_query: [422, 422, 422] });
     const err = await voicevox({ url: e.url, attempts: 3, backoffMs: 10, ...quiet })
@@ -194,6 +209,10 @@ describe('synth の声のそろえ方（偽の VOICEVOX と一時のフォルダ
     await synthVideos(ctx, [video]);
     expect(e.calls).toEqual({ version: 1, audio_query: 2, synthesis: 2 });
     const cached = readdirSync(ctx.store.cache).sort();
+    // 新しく作った声は、v2 の鍵（合成のレシピから作る）の名前で置く
+    const [v2] = ttsKeysIn('はじめます。', 'announcer', 'ja');
+    expect(cached).toContain(`${v2}.wav`);
+    expect(readFileSync(path.join(ctx.store.cache, `${v2}.kana`), 'utf8')).toBe('コン、ニチワ');
     expect(cached.filter((f) => f.endsWith('.wav'))).toHaveLength(2);
     expect(cached.filter((f) => f.endsWith('.kana'))).toHaveLength(2);
     expect(existsSync(path.join(dir, 'root/content/invalid-sample/generated/timeline/X01.json'))).toBe(true);
@@ -203,5 +222,22 @@ describe('synth の声のそろえ方（偽の VOICEVOX と一時のフォルダ
     expect(readdirSync(again.ctx.out.plan)).toEqual(['X01.json']);
     // キャッシュに無ければ、--cached-only は前提が足りない（終了コード 3）
     await expect(synthVideos(again.ctx, [video])).rejects.toBeInstanceOf(MissingError);
+  });
+  test('前の名前（v1）の声があれば、それを使い、VOICEVOX にはつながない（作業フォルダの .work/tts も探す）', async () => {
+    const e = working();
+    const { ctx } = ctxOf(e.url);
+    const v1 = (text: string, voice: 'announcer' | 'narrator') => ttsKeysIn(text, voice, 'ja')[1];
+    mkdirSync(ctx.store.local, { recursive: true });
+    for (const [text, voice] of [
+      ['はじめます。', 'announcer'],
+      ['おわりです。', 'narrator'],
+    ] as const) {
+      writeFileSync(path.join(ctx.store.local, `${v1(text, voice)}.wav`), wav(0.5));
+      writeFileSync(path.join(ctx.store.local, `${v1(text, voice)}.kana`), 'カナ');
+    }
+    await synthVideos(ctx, [video]);
+    expect(e.calls).toEqual({});
+    const plan = JSON.parse(readFileSync(path.join(ctx.out.plan, 'X01.json'), 'utf8'));
+    expect(plan.scenes[0].lines[0].file).toBe(`.work/tts/${v1('はじめます。', 'announcer')}.wav`);
   });
 });

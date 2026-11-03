@@ -33,7 +33,7 @@ import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { pool } from './lib/pool';
 import { gitFetch, run as runTool, runAsync, setVerbose, tailOf, trace } from './lib/proc';
 import { pullMedia } from './media';
-import { ttsKeyIn } from './voices';
+import { ttsKeysIn } from './voices';
 
 const TTS = TTS_REL;
 const README = 'README.md';
@@ -90,8 +90,13 @@ const copyAtomic = (from: string, to: string) => {
   }
 };
 
-/** 講座ごとの、台詞の音声の名前（.work/tts/<key>.wav）と、素材の README に出す説明 */
-export type CourseKeys = { id: string; langs: string[]; keys: string[]; about: string };
+/**
+ * 講座ごとの台詞の音声の名前と、素材の README に出す説明。lines は台詞ごとの探す鍵（v2 → v1 の順。scripts/voices.ts の ttsKeysIn）で、
+ * 同じ文と声の台詞は 1 つにまとめる。どれか 1 つの鍵の音声と読み（.work/tts/<鍵>.wav・.kana）があれば、その台詞は足りている
+ */
+export type CourseKeys = { id: string; langs: string[]; lines: string[][]; about: string };
+/** 台詞の鍵の全部（v2 と v1。gc が残す鍵） */
+const allKeys = (c: CourseKeys): string[] => c.lines.flat();
 
 /** WAV と FLAC の変換（テストでは、ffmpeg を使わないものに差し替える） */
 export type Convert = (jobs: [from: string, to: string][], to: 'flac' | 'wav') => Promise<void>;
@@ -174,23 +179,35 @@ type Scripts = {
   coursesIn: (lang: Lang) => Course[];
   LANGS: Lang[];
   speechIn: (line: Line, lang: Lang) => string;
-  ttsKeyIn: (text: string, voice: VoiceId, lang: Lang) => string;
+  /** 台詞の音声を探す鍵（探す順） */
+  keysIn: (text: string, voice: VoiceId, lang: Lang) => string[];
 };
-const HERE: Scripts = { COURSES, coursesIn, LANGS, speechIn, ttsKeyIn };
+const HERE: Scripts = { COURSES, coursesIn, LANGS, speechIn, keysIn: ttsKeysIn };
 
 /** 講座の台本（全部の言語）の全部の台詞の、音声ファイルの名前（synth.ts と同じ決め方）。only を渡すと、その講座だけ */
 const courseKeys = (s: Scripts, only?: string[]): CourseKeys[] =>
   (only ? only.map((id) => s.COURSES.find((c) => c.id === id)!) : s.COURSES).map((course) => {
-    const keys = new Set<string>();
+    // 同じ文と声の台詞は 1 つにまとめ、台詞の並びは先頭の鍵の順にする（台本の並び替えで変わらない）
+    const lines = new Map<string, string[]>();
     const langs: Lang[] = [];
     for (const lang of s.LANGS) {
       const c = s.coursesIn(lang).find((x) => x.id === course.id);
       if (!c) continue;
       langs.push(lang);
-      for (const lec of c.lectures) for (const scene of lec.scenes) for (const line of scene.lines) keys.add(s.ttsKeyIn(s.speechIn(line, lang), line.v ?? 'narrator', lang));
+      for (const lec of c.lectures)
+        for (const scene of lec.scenes)
+          for (const line of scene.lines) {
+            const keys = s.keysIn(s.speechIn(line, lang), line.v ?? 'narrator', lang);
+            lines.set(keys.join(' '), keys);
+          }
     }
     const unit = course.unitLabel === 'CHAPTER' ? '章' : 'レクチャー';
-    return { id: course.id, langs, keys: [...keys].sort(), about: `${course.title}（${course.lectures.length} ${unit}・${langs.join('・')}）` };
+    return {
+      id: course.id,
+      langs,
+      lines: [...lines.values()].sort((a, b) => byPath(a.join(' '), b.join(' '))),
+      about: `${course.title}（${course.lectures.length} ${unit}・${langs.join('・')}）`,
+    };
   });
 
 /**
@@ -200,11 +217,17 @@ const courseKeys = (s: Scripts, only?: string[]): CourseKeys[] =>
 const scriptsIn = async (dir: string): Promise<Scripts> => {
   const index = (await import(path.join(dir, 'content/index.ts'))) as typeof import('../content');
   const i18n = (await import(path.join(dir, 'content/i18n.ts'))) as typeof import('../content/i18n');
-  const voices = (await import(path.join(dir, 'scripts/voices.ts'))) as typeof import('./voices') & Partial<Pick<Scripts, 'speechIn'>>;
+  // 鍵の作り方: ttsKeysIn（v2 → v1。2026-11-03 より後の版）か、前の版の ttsKeyIn（鍵は 1 つ）
+  const voices = (await import(path.join(dir, 'scripts/voices.ts'))) as Partial<Pick<typeof import('./voices'), 'ttsKeysIn'>> &
+    Partial<{ ttsKeyIn: (text: string, voice: VoiceId, lang: Lang) => string }> &
+    Partial<Pick<Scripts, 'speechIn'>>;
   const speech = existsSync(path.join(dir, 'content/voices.ts')) ? ((await import(path.join(dir, 'content/voices.ts'))) as Partial<Pick<Scripts, 'speechIn'>>) : {};
   const speechInRef = speech.speechIn ?? voices.speechIn;
   if (!speechInRef) throw new Error('読み上げる文の作り方（speechIn）が content/voices.ts にも scripts/voices.ts にも無い');
-  return { COURSES: index.COURSES, coursesIn: index.coursesIn, LANGS: i18n.LANGS, speechIn: speechInRef, ttsKeyIn: voices.ttsKeyIn };
+  const { ttsKeysIn: keysIn, ttsKeyIn: keyIn } = voices;
+  const keys = keysIn ?? (keyIn ? (text: string, voice: VoiceId, lang: Lang) => [keyIn(text, voice, lang)] : undefined);
+  if (!keys) throw new Error('台詞の音声の鍵の作り方（ttsKeysIn か ttsKeyIn）が scripts/voices.ts に無い');
+  return { COURSES: index.COURSES, coursesIn: index.coursesIn, LANGS: i18n.LANGS, speechIn: speechInRef, keysIn: keys };
 };
 
 /** gc で残すもの（--keep の ref と、その台本の講座ごとの鍵） */
@@ -408,12 +431,12 @@ const commitAndPush = async (repo: Repo, from: string | null, tree: string, mess
 
 const hasVoice = (repo: Repo, key: string) => readPath(repo, `${TTS}/${key}.wav`) !== null && readPath(repo, `${TTS}/${key}.kana`) !== null;
 
-/** 台本の全部の台詞の音声と、BGM・効果音（決まった名前の一覧）が手元にあるか */
+/** 台本の全部の台詞の音声（台詞ごとに、どれか 1 つの鍵の音声と読み）と、BGM・効果音（決まった名前の一覧）が手元にあるか */
 export const check = (repo: Repo, courses: CourseKeys[], log: (line: string) => void = console.log): boolean => {
   let ok = true;
   for (const c of courses) {
-    const missing = c.keys.filter((k) => !hasVoice(repo, k));
-    log(`${c.id}（${c.langs.join('・')}）: 台詞の音声 ${c.keys.length - missing.length}/${c.keys.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX・Kokoro で bun scripts/synth.ts）' : ''}`);
+    const missing = c.lines.filter((keys) => !keys.some((k) => hasVoice(repo, k)));
+    log(`${c.id}（${c.langs.join('・')}）: 台詞の音声 ${c.lines.length - missing.length}/${c.lines.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX・Kokoro で bun scripts/synth.ts）' : ''}`);
     if (missing.length) ok = false;
   }
   for (const a of AUDIO) {
@@ -445,7 +468,7 @@ const fileOf = (local: Local, rel: string): string => {
 /** 手元の素材の sha256 と、読みの blob を 1 回だけ求める（無いファイルは飛ばす。台詞は共有のキャッシュ → .work/tts の順に探す） */
 const readLocal = (repo: Repo, courses: CourseKeys[]): Local => {
   const rels = new Set<string>();
-  for (const c of courses) for (const k of c.keys) rels.add(`${TTS}/${k}.wav`).add(`${TTS}/${k}.kana`);
+  for (const c of courses) for (const k of allKeys(c)) rels.add(`${TTS}/${k}.wav`).add(`${TTS}/${k}.kana`);
   for (const a of AUDIO) for (const n of a.names) rels.add(`${a.local}/${n}.wav`);
   const present = new Map([...rels].flatMap((rel) => {
     const file = readPath(repo, rel);
@@ -504,15 +527,15 @@ const planPush = (remote: Remote, local: Local, courses: CourseKeys[]): Plan => 
   };
   const lack = (group: string) => plan.missing.set(group, (plan.missing.get(group) ?? 0) + 1);
   for (const c of courses) {
-    for (const k of c.keys) {
-      const wav = `${TTS}/${k}.wav`;
-      const kana = `${TTS}/${k}.kana`;
-      if (!local.sha256.has(wav) || !local.sha256.has(kana)) {
+    for (const keys of c.lines) {
+      // 台詞ごとに、synth と同じ順（v2 → v1）で、手元に音声と読みがそろっている最初の鍵を置く
+      const k = keys.find((x) => local.sha256.has(`${TTS}/${x}.wav`) && local.sha256.has(`${TTS}/${x}.kana`));
+      if (!k) {
         lack(c.id);
         continue;
       }
-      place(`tts/${c.id}/${k}.flac`, wav);
-      place(`tts/${c.id}/${k}.kana`, kana);
+      place(`tts/${c.id}/${k}.flac`, `${TTS}/${k}.wav`);
+      place(`tts/${c.id}/${k}.kana`, `${TTS}/${k}.kana`);
     }
   }
   for (const a of AUDIO) {
@@ -698,7 +721,7 @@ export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boo
   const want = new Map<string, Set<string>>();
   const abouts = new Map<string, string>();
   for (const c of keep.courses) {
-    want.set(c.id, new Set([...(want.get(c.id) ?? []), ...c.keys]));
+    want.set(c.id, new Set([...(want.get(c.id) ?? []), ...allKeys(c)]));
     if (!abouts.has(c.id)) abouts.set(c.id, c.about);
   }
   let tmp: string | undefined;

@@ -29,9 +29,5 @@
   // 生成物の JSON（npm run gen が作る worker/src/generated/media-manifest.json）の型。TypeScript が JSON の代わりに読む（knip は JSON を読む）
   "ignore": ["worker/src/generated/media-manifest.d.json.ts"],
   // npm で入れない道具（docs/guide/quickstart.md の「前提の道具」）
-  "ignoreBinaries": ["uv", "uvx", "shellcheck", "ffmpeg"],
-  "ignoreIssues": {
-    // ttsKey は ttsKeyV1 の別名（素材の文書が指す名前なので残す）
-    "scripts/voices.ts": ["duplicates"]
-  }
+  "ignoreBinaries": ["uv", "uvx", "shellcheck", "ffmpeg"]
 }

@@ -13,8 +13,9 @@
 // VOICEVOX（VOICEVOX_URL。既定 http://127.0.0.1:50021）の呼び出しは、1 回 60 秒（VOICEVOX_TIMEOUT＝秒で変える）で時間切れにし、
 //   つながらない・時間切れ・5xx は 3 回まで試す。エンジンが止まったままでも、決まった時間で終了コード 3 で止まる。Kokoro も台詞の数から決めた時間で止める
 // 出力（<key> は動画の名前。日本語は L01、訳は L01.en）。どのファイルも一時の名前に書いてから置き換える（別々の動画を同時に流しても壊れない）:
-//   <キャッシュ>/tts/<hash>.wav・.kana   台詞の音声と読み（同じ文・同じ声なら再利用）。作業フォルダの間で共有する
-//                                        （CHALKFILE_CACHE_DIR。既定 ~/.cache/chalkfile）。読むときは、無ければ前の置き場所の .work/tts/ も探す
+//   <キャッシュ>/tts/<鍵>.wav・.kana     台詞の音声と読み（同じ文・同じ合成のレシピなら再利用）。作業フォルダの間で共有する
+//                                        （CHALKFILE_CACHE_DIR。既定 ~/.cache/chalkfile）。読むときは、無ければ前の置き場所の .work/tts/ も探す。
+//                                        鍵は v2 → v1 の順に探し、新しく作る声には v2 の鍵を付ける（scripts/voices.ts の ttsKeysIn）
 //   content/<講座>/generated/timeline/<key>.json   Remotion が読む場面・台詞の開始フレーム（指紋つき。Git に入れる。自分の動画のファイルだけを書く）
 //   .work/plan/<key>.json                mix.py が読むミックスの設計図（音声は場所に縛られない名前 .work/tts/<hash>.wav で書く）
 //   .work/kana/<key>.txt                 台詞ごとの読み（カナ。訳は Kokoro に渡した音素）。.work/speech/<key>.json は訳の聞き取りの点検用
@@ -23,7 +24,7 @@
 import { mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { VIDEOS, type Video } from '../content';
-import { speechIn, VOICES } from '../content/voices';
+import { speechIn } from '../content/voices';
 import { timelineFile } from '../engine/core/generated';
 import { formatIssues, validateLecture } from '../engine/core/validate';
 import { VIDEO } from '../src/video.config';
@@ -36,7 +37,7 @@ import { runKokoro } from './stages/voice/kokoro';
 import { readVoice, type Voice, type VoiceStore, writeVoice } from './stages/voice/store';
 import { timeoutFromEnv, type Voicevox, voicevox } from './stages/voice/voicevox';
 import { timelineFiles } from './timelines';
-import { ttsKeyIn } from './voices';
+import { recipeIn, ttsKeysIn, type VoicevoxRecipe } from './voices';
 
 /** 書く場所と、合成のしかた（main が引数を確かめてから作る。テストは一時のフォルダと偽の VOICEVOX で作る） */
 export type Ctx = {
@@ -50,8 +51,8 @@ export type Ctx = {
   log?: (line: string) => void;
 };
 
-const lacking = (key: string) =>
-  new MissingError(`音声のキャッシュが足りません: ${key}。先に materials.ts pull で確認してください。`);
+const lacking = (keys: string[]) =>
+  new MissingError(`音声のキャッシュが足りません: ${keys.join(' か ')}。先に materials.ts pull で確認してください。`);
 
 /** --verbose に出す、台詞の番号（s<場面>-<台詞>。.work/kana と同じ数え方） */
 const at = (lines: unknown[], scenes: unknown[]) => `s${scenes.length + 1}-${lines.length + 1}`;
@@ -64,17 +65,19 @@ const voicesOf = async (ctx: Ctx, { lecture, lang }: Video): Promise<Voice[][]> 
     for (const line of scene.lines) {
       const voice = line.v ?? 'narrator';
       const text = speechIn(line, lang);
-      const key = ttsKeyIn(text, voice, lang);
-      const found = readVoice(ctx.store, [key]);
+      const recipe = recipeIn(voice, lang);
+      const keys = ttsKeysIn(text, voice, lang, recipe);
+      const found = readVoice(ctx.store, keys);
       if (found) {
-        trace(`  ${at(lines, out)} [${voice}] キャッシュ ${key}`);
+        trace(`  ${at(lines, out)} [${voice}] キャッシュ ${found.key}（${found.key === keys[0] ? 'v2' : 'v1'}）`);
         lines.push(found);
-      } else if (ctx.cacheOnly) throw lacking(key);
+      } else if (ctx.cacheOnly) throw lacking(keys);
       else if (lang !== 'ja') throw new Error(`音声が無い（Kokoro で作れなかった）: ${text}`);
       else {
-        trace(`  ${at(lines, out)} [${voice}] 合成 ${key}`);
-        const { wav, kana } = await ctx.engine.synthesize(text, VOICES[voice]);
-        lines.push(writeVoice(ctx.store, key, wav, kana));
+        // 新しく作る声は、v2 の鍵（合成のレシピから作る）の名前で置く
+        trace(`  ${at(lines, out)} [${voice}] 合成 ${keys[0]}（v2）`);
+        const { wav, kana } = await ctx.engine.synthesize(text, recipe as VoicevoxRecipe);
+        lines.push(writeVoice(ctx.store, keys[0], wav, kana));
       }
     }
     out.push(lines);

@@ -4,9 +4,7 @@
 // エンジンの版（GET /version）は、最初に読み上げる前に 1 回だけ問い合わせる
 import { MissingError, UsageError } from '../../lib/args';
 import { trace } from '../../lib/proc';
-
-/** 声の設定（content/voices.ts の VOICES の 1 つ） */
-export type VoicevoxVoice = { speaker: number; speed: number; intonation: number; pitch: number };
+import type { VoicevoxRecipe } from '../../voices';
 
 export type VoicevoxOptions = {
   /** エンジンの URL（VOICEVOX_URL。既定 http://127.0.0.1:50021） */
@@ -30,8 +28,11 @@ export type Voicevox = {
   url: string;
   /** エンジンの版（例 0.25.0）。最初の 1 回だけ問い合わせる */
   version: () => Promise<string>;
-  /** 1 つの台詞を読み上げ、WAV と読み（カナ）を返す */
-  synthesize: (text: string, v: VoicevoxVoice) => Promise<{ wav: Buffer; kana: string }>;
+  /**
+   * 1 つの台詞を、合成のレシピ（scripts/voices.ts の voicevoxRecipe）どおりに読み上げ、WAV と読み（カナ）と、エンジンの版を返す。
+   * レシピがエンジンの版を決めていて、今のエンジンと違えば、前提が足りない（終了コード 3）
+   */
+  synthesize: (text: string, recipe: VoicevoxRecipe) => Promise<{ wav: Buffer; kana: string; engineVersion: string }>;
 };
 
 /** audio_query の読み（アクセント句のモーラをつなぎ、句の切れ目に「、」） */
@@ -142,32 +143,36 @@ export const voicevox = (o: VoicevoxOptions): Voicevox => {
       return v;
     }));
 
-  const synthesize = async (text: string, v: VoicevoxVoice) => {
-    await version();
+  const synthesize = async (text: string, r: VoicevoxRecipe) => {
+    const engineVersion = await version();
+    if (r.engineVersion && r.engineVersion !== engineVersion)
+      throw new MissingError(
+        `声の設定が VOICEVOX ${r.engineVersion} を決めているが、${o.url} は ${engineVersion}。その版のエンジンで合成する: ${text}`,
+      );
     const query = await call(
       'audio_query',
-      `/audio_query?speaker=${v.speaker}&text=${encodeURIComponent(text)}`,
+      `/audio_query?speaker=${r.speaker}&text=${encodeURIComponent(text)}`,
       { method: 'POST' },
-      (r) => r.json() as Promise<Record<string, unknown> & { accent_phrases: AccentPhrase[] }>,
+      (res) => res.json() as Promise<Record<string, unknown> & { accent_phrases: AccentPhrase[] }>,
       text,
     );
-    query.speedScale = v.speed;
-    query.intonationScale = v.intonation;
-    query.pitchScale = v.pitch;
-    query.volumeScale = 1.0;
-    query.prePhonemeLength = 0.08;
-    query.postPhonemeLength = 0.12;
-    query.outputSamplingRate = 48000;
-    query.outputStereo = false;
+    query.speedScale = r.speed;
+    query.intonationScale = r.intonation;
+    query.pitchScale = r.pitch;
+    query.volumeScale = r.volumeScale;
+    query.prePhonemeLength = r.pre;
+    query.postPhonemeLength = r.post;
+    query.outputSamplingRate = r.sampleRate;
+    query.outputStereo = r.channels === 2;
     const kana = kanaOf(query.accent_phrases);
     const wav = await call(
       'synthesis',
-      `/synthesis?speaker=${v.speaker}`,
+      `/synthesis?speaker=${r.speaker}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query) },
-      async (r) => Buffer.from(await r.arrayBuffer()),
+      async (res) => Buffer.from(await res.arrayBuffer()),
       text,
     );
-    return { wav, kana };
+    return { wav, kana, engineVersion };
   };
 
   return { url: o.url, version, synthesize };
