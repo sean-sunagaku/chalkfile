@@ -677,9 +677,18 @@ describe('書く権限は、毎日の確かめで Issue を開くジョブだけ
       },
     },
   });
-  test('schedule と workflow_dispatch で動き、コードを取らないジョブの issues: write は通る', () => {
-    expect(rulesOf(daily(), 'daily.yml')).toEqual([]);
-  });
+  /** Issue を開くジョブ（issues: write）と、コードを取るジョブ */
+  const writer = (v: Workflow) =>
+    Object.values(v.jobs).find((j) => (j.permissions as { issues?: string } | undefined)?.issues === 'write') as Job;
+  const checksOut = (v: Workflow) =>
+    Object.values(v.jobs).find((j) => j !== writer(v) && stepUsing(j.steps ?? [], 'actions/checkout')) as Job;
+  const sources: [string, () => Workflow][] = [
+    ['daily.yml', daily],
+    ...FILES.filter((f) =>
+      Object.values(read(f).jobs).some((j) => (j.permissions as { issues?: string } | undefined)?.issues === 'write'),
+    ).map((f): [string, () => Workflow] => [f, () => read(f)]),
+  ];
+  test('Issue を開く workflow がリポジトリにある（毎日の確かめ）', () => expect(sources.length).toBeGreaterThan(1));
   const broken: [string, (v: Workflow) => void][] = [
     [
       'push でも動く',
@@ -696,28 +705,39 @@ describe('書く権限は、毎日の確かめで Issue を開くジョブだけ
     [
       'Issue を開くジョブがコードを取る',
       (v) => {
-        v.jobs.report.steps.unshift({ uses: `actions/checkout@${SHA}`, with: { 'persist-credentials': false } });
+        writer(v).steps.unshift({ uses: `actions/checkout@${SHA}`, with: { 'persist-credentials': false } });
+      },
+    ],
+    [
+      'コードを取るジョブも Issue に書ける',
+      (v) => {
+        checksOut(v).permissions = { issues: 'write' };
       },
     ],
     [
       'contents: write',
       (v) => {
-        v.jobs.report.permissions = { issues: 'write', contents: 'write' };
+        writer(v).permissions = { issues: 'write', contents: 'write' };
       },
     ],
     [
       'actions: write',
       (v) => {
-        v.jobs.report.permissions = { actions: 'write' };
+        writer(v).permissions = { actions: 'write' };
       },
     ],
   ];
-  for (const [name, mutate] of broken)
-    test(name, () => {
-      const value = daily();
-      mutate(value);
-      expect(rulesOf(value, 'daily.yml')).toContain(WORKFLOW_RULES.permissions);
+  for (const [file, source] of sources) {
+    test(`${file}: schedule と workflow_dispatch で動き、コードを取らないジョブの issues: write は通る`, () => {
+      expect(rulesOf(source(), file)).toEqual([]);
     });
+    for (const [name, mutate] of broken)
+      test(`${file}: ${name} → 「${WORKFLOW_RULES.permissions}」`, () => {
+        const value = source();
+        mutate(value);
+        expect(rulesOf(value, file)).toContain(WORKFLOW_RULES.permissions);
+      });
+  }
 });
 
 describe('リポジトリの中の composite action は、中の手順まで同じ性質で見る', () => {
