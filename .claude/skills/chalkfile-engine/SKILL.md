@@ -1,6 +1,6 @@
 ---
 name: chalkfile-engine
-description: Chalkfile の講座サイト（PWA）・保存（オフライン）・Worker と動画の配信を直すときの決まりと確かめ方。サイトのひな形（site/）・Service Worker と保存（site/sw.ts・site/offline-*.ts）・組み立て（scripts/build_site.ts・scripts/pwa.ts）・Worker（worker/・wrangler.jsonc）を変えたら、ここを読む。単体テスト・strict の組み立て・実 Chrome のブラウザのテスト・手元の Worker・公開したサイトの確かめ直し・Mac の Safari の確かめ方をまとめる。講座の中身（台本・声・動画）は study-video-course。Use when 講座サイトの画面・保存・オフライン再生・PWA・インストールの案内を直したい、Service Worker を変えたい、Worker や /media/ の配信を直したい、公開したサイトを確かめ直したい、Safari や iPhone で確かめたい。Triggers "講座サイト", "オフライン", "アプリ内保存", "PWA", "Service Worker", "Worker", "/media/", "配信", "Safari", "本番を確かめる"
+description: Chalkfile の講座サイト（PWA）・保存（オフライン）・Worker と動画の配信を直すときの決まりと確かめ方。サイトのひな形（site/）・講座のページの画面（site/course-page.ts・site/page/）・Service Worker と保存（site/sw.ts・site/offline-*.ts）・組み立て（scripts/build_site.ts・scripts/pwa.ts）・Worker（worker/・wrangler.jsonc）を変えたら、ここを読む。単体テスト・strict の組み立て・実 Chrome のブラウザのテスト・手元の Worker・公開したサイトの確かめ直し・Mac の Safari の確かめ方をまとめる。講座の中身（台本・声・動画）は study-video-course。Use when 講座サイトの画面・保存・オフライン再生・PWA・インストールの案内を直したい、Service Worker を変えたい、Worker や /media/ の配信を直したい、公開したサイトを確かめ直したい、Safari や iPhone で確かめたい。Triggers "講座サイト", "オフライン", "アプリ内保存", "PWA", "Service Worker", "Worker", "/media/", "配信", "Safari", "本番を確かめる"
 ---
 
 # 講座サイト・保存・Worker を直す
@@ -21,6 +21,10 @@ description: Chalkfile の講座サイト（PWA）・保存（オフライン）
 - Workers Free のままにする。手元から `wrangler deploy` しない（[AGENTS.md](../../../AGENTS.md) の「公開と Workers のきまり」）
 - サイトの版は、出力から決まる（`scripts/site-version.ts`）。ページの HTML や、保存する動画・ポスターが変わると、保存した全員に「新しい版」の案内が出て、取り直しになる。見た目の変わる直しは、まとめて出す。整形・コメント・関数の切り出しのように出力の変わらない直しで、版が変わらないことを確かめる
 - 保存した講座を壊さない。検証を厳しくする変更には、互換のテスト（`tests/offline-compat.test.ts`）が当たる。fixture を書き換えて通さない（[保存の設計](../../../docs/architecture/offline.md) の「保存データの互換」）
+- 講座のページの画面は `site/course-page.ts` と `site/page/` に TypeScript で書く。`site/template.html` に script を書かない（組み立てが Bun で 1 本にまとめ、`__PAGE_SCRIPT__` の所に入れる。CSP のハッシュも組み立てが作る）。部品は `site/page/dom.ts` で作り、innerHTML を使わない
+- ページの JSON の形は `site/page/data.ts` の `CourseData` が正本（組み立ての `courseJson` が `satisfies` で確かめる）。学習の記録（localStorage）の形を変えるときは、前の版の画面が読み書きしても壊れない形にし、見本（`tests/fixtures/local-storage/`）を残したまま互換のテストを通す（[保存の設計](../../../docs/architecture/offline.md) の「学習の記録の互換」）
+- 画面を変えたら、キーボードだけで使えることと、axe を確かめる。axe の重大（critical）と深刻（serious）は 0 にする（既知の一覧 `tests/fixtures/a11y-known/` に入れても落ちる）。1 文字のショートカットは、動画を選んでいるときだけ効かせる。フォーカスのある要素を作り直さない（作り直すときは、同じ所へフォーカスを戻す）
+- 講座の版が変わる回（「新しい版」が出る回）は、何が変わったかの 1 文を `site/news.ts` に、その回のお知らせを `docs/history/` に足す（[保存の設計](../../../docs/architecture/offline.md) の「新しい版の案内」）
 - 不完全な保存を、成功として扱わない。オンラインの視聴・1 本のダウンロード・アプリ内の保存・インストールを、分けて見せる
 - 生成物が古いことを理由に、本番の保存の cache を消さない。移行のテストが落ちたら、旧保存の fixture・今の移行用の Service Worker・旧 Pages の本番のどれのせいかを分けて調べる（ブラウザのテストのサーバーは、起動のたびに、移行の案内と Service Worker を今のソースから作り直す）
 - 動画・生成物・ブラウザの profile・証跡・秘密情報を main に入れない。`scripts/legacy/deploy_pages.sh` は、持ち主が旧 Pages の移行の案内を出すときだけに使う
@@ -39,6 +43,7 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/                              
 
 - 再生を確かめるには、本物の動画と字幕のデータが要る（`bun scripts/media.ts pull stripe-billing pstack-comedy`）。mock・型・ブラウザのスマホの幅から、iPhone の実機での成功を推し量らない
 - 見るもの: PC と 375px の画面・本当の通信断・ブラウザを閉じてからの起動・保存と削除・更新の失敗と成功・取り消しとやり直し・容量の例外・バイトを照らした Range と途中への移動・字幕版の切り替え・1 本のダウンロード。移行を変えたら、新しいブラウザの context で、Service Worker の install と scope も見る
+- 画面を変えたら、`npm run test:e2e:ci -- tests/browser/a11y.spec.ts` で axe と、キーボードだけでの操作（本文へ飛ぶ・再生・タブ・クイズ・チャプターとレクチャーの移動）を見る
 - 案内（保存の状態・進み具合・通信のエラー）を変えたら、`npm run test:browser -- tests/browser/offline-status.spec.ts` も流す。一時の profile で全部の動画を 1 回保存し、完全に閉じたあとのオフラインの起動・完全な版がある／無いときの保存の欠け・遅い確認のエラーと保存の進み具合の取り合い・エラーと操作の結果が消えないことを見る。テストで起こした欠けや通信のエラーを、本物の故障と混ぜない
 - 公開していない訳の講座の場面を、日本語の成功に数えない（公開していない言語のテストは、skip として記録する）
 - 公開したあとの表示の直しは、新しい版を選んで保存し直してから、オフラインで確かめる（保存した前の版の HTML は書き換わらない）
