@@ -27,6 +27,7 @@
     "validate": "bun scripts/validate.ts",
     "gen:video-config": "bun scripts/gen_video_config.ts",
     "build:music": "uv run --locked --group audio python scripts/build_music.py",
+    "music:verify": "uv run --locked --group audio python scripts/build_music.py --check",
     "synth": "bun scripts/synth.ts",
     "mix": "uv run --locked --group audio python scripts/mix.py",
     "render": "bash scripts/render.sh",

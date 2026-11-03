@@ -33,6 +33,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声など）。注意も見るなら `-- --warnings` |
 | `npm run check:content` | 台本と Git に入れるファイルの点検（点検の点検も）。点検する中身は [safety.md](../../.claude/skills/study-video-course/references/safety.md) |
 | `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い |
+| `npm run music:verify` | BGM・ジングル・効果音を一時フォルダに作り直し、素材（手元の `origin/materials`）の `SHA256SUMS` と同じバイト列かを確かめる。`public/audio/` には書かない。uv が要り、15 秒ほどかかる。CI では流さない |
 
 ### 整える
 
@@ -45,7 +46,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `npm run build:music` | BGM・ジングル・効果音（`public/audio/`） |
+| `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
 | `npm run synth` | 声と時刻（`src/generated/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う |
 | `npm run mix` | 音のミックス（`public/audio/mix/`） |
 | `npm run render` | 動画（`site/media/`・`site/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
