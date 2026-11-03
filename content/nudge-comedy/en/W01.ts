@@ -14,7 +14,7 @@ const TEN = 'tennokoe' as const;
 const APP = 'Sample Budget';
 
 export const W01: LectureL10n = {
-  source: 'df4fece261f5',
+  source: '329575d8028f',
   title: 'What is a nudge?',
   summary:
     "The comedy version of Chapter 1 of the nudge course. As the Teacher gives each of Zundamon's over-the-top ideas a name (coercion, money, dark patterns), learn how they differ from nudges, and the 3 conditions of a good nudge.",

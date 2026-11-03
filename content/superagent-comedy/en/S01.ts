@@ -13,7 +13,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness team, "Exploring Super-agent Design" (2026)';
 
 export const S01: LectureL10n = {
-  source: '7160ef4289a9',
+  source: '0e2909ca6d9b',
   title: 'What is a Super-agent?',
   summary:
     "The limits of today's way, where a person watches over AI agents one conversation (session) at a time, and the Super-agent idea that goes beyond it. Through Zundamon's back-and-forth, meet the 4 properties and a map of the 5 components behind them.",

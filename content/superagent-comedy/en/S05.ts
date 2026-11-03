@@ -12,7 +12,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness team, "Exploring Super-agent Design" (2026)';
 
 export const S05: LectureL10n = {
-  source: '0f769585c229',
+  source: '9934c899d4fe',
   title: 'No waiting, and talking to fit the place',
   summary:
     'A plain ReAct loop stops while it waits for a tool (half-duplex). In an async ReAct loop, start() returns at once and the result comes back as a new event (full-duplex). And talking to fit each channel: short in a group chat, packed and tidy on GitHub and in email.',

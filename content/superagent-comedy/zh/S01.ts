@@ -16,7 +16,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness 团队《Exploring Super-agent Design》（2026）';
 
 export const S01: LectureL10n = {
-  source: '7160ef4289a9',
+  source: '0e2909ca6d9b',
   title: 'Super-agent 是什么？',
   summary:
     '如今人要按会话（session）一个一个地盯着 AI 智能体，这种做法有它的极限；本章介绍超越它的 Super-agent 思路。通过俊达萌的搞笑对话，了解 4 个特性，以及支撑它们的 5 个部件的地图。',

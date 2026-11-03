@@ -12,6 +12,7 @@ import { buildSite } from '../../scripts/site/build';
 import { type MediaFiles, mediaFilesOf } from '../../scripts/site/serve-files';
 import { type MediaEntry, mediaFilename } from '../../site/media-shared';
 import type { CourseManifest } from '../../site/offline-shared';
+import { resolveCourse } from '../../content/lines';
 import SAMPLE from '../fixtures/content/site-sample';
 import type { SiteMode, SiteSession } from './site';
 
@@ -111,7 +112,7 @@ const makeVideo = (file: string, source: string) => {
 
 /** 合成の講座を、work の下に組み立てる */
 export async function prepareFixtureSite(work: string): Promise<PreparedSite> {
-  const course = SAMPLE.course;
+  const course = resolveCourse(SAMPLE.course);
   const fixture = path.join(ROOT, 'tests/fixtures/content/site-sample');
   const mediaDir = path.join(work, 'media');
   mkdirSync(mediaDir, { recursive: true });

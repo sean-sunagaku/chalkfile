@@ -1,48 +1,40 @@
-// 台本の表示文（t）から読み上げ文を作る。英字は VOICEVOX が読めないので、カナに開く。
-// 知らない英単語が出たら例外にして、黙って英字のまま合成しないようにする。
+// 読み上げる文の作り方（読みのエンジン）と、全講座で共通の読みの辞書。台本の表示文（t）から読み上げ文を作る。
+// 英字は VOICEVOX が読めないので、カナに開く。知らない英単語が出たら例外にして、黙って英字のまま合成しないようにする。
+// 辞書は 2 つに分ける:
+//   共通（このファイル）: 英字・数字の開き方と、どの講座でも同じ読みにしたい語（一般の語・IT の用語・VOICEVOX がよく読み違える日本語）
+//   講座（content/<講座>/reading.ts）: その講座の用語・固有名詞・その講座だけの読みの直し。講座の index.ts の reading に登録する。
+//     共通の辞書より優先する（同じ語は講座の読み。語句は長いものから当て、長さが同じなら講座の語句が先）
+// 講座の辞書を直しても、ほかの講座の読みは変わらない。共通の辞書を直すと全講座の読みが変わりうるので、npm test（音声の鍵と読みの
+// スナップショット）と npm run reading:diff（main との読みの差分）で、変わった台詞と動画を見て、合成し直す。
+// content/ の外を実行時に import しない（scripts/materials.ts の gc と scripts/reading-diff.ts は、content/ だけを取り出して読む）
 
-/** 単語より先に置き換える語句（長いものから順に当てる） */
-const PHRASES: [string, string][] = [
-  ['Checkout Session', 'チェックアウト・セッション'],
-  ['Customer Portal', 'カスタマーポータル'],
-  ['Stripe-Signature', 'ストライプ・シグネチャー'],
-  ['Stripe Billing', 'ストライプ・ビリング'],
-  ['Stripe Tax', 'ストライプ・タックス'],
-  ['Stripe.js', 'ストライプ・ジェイエス'],
-  ['Stripe CLI', 'ストライプ・シーエルアイ'],
+/** 読みの辞書。phrases: 単語より先に置き換える語句（長いものから順に当てる）。words: 英単語の読み（小文字で引く） */
+export type Reading = {
+  readonly phrases?: readonly (readonly [string, string])[];
+  readonly words?: Readonly<Record<string, string>>;
+};
+
+/**
+ * 共通の語句（単語より先に置き換える。長いものから順に当てる。長さが同じ語句は、この並びの順に当てる）。
+ * 足すときは、全講座の台詞に当たる。1 つの講座の用語や、その講座だけの直しは、講座の辞書に足す
+ */
+const PHRASES: readonly (readonly [string, string])[] = [
+  // 講座を問わない名前（英字のまま画面に出し、読みだけ開く）
   ['App Store', 'アップストア'],
-  ['Test clock', 'テストクロック'],
-  ['request.body', 'リクエスト・ドット・ボディ'],
   ['FastAPI', 'ファスト・エーピーアイ'],
   ['PayPay', 'ペイペイ'],
   ['iOS', 'アイオーエス'],
   ['3D', 'スリーディー'],
-  ['3.1.3(b)', 'さんてんいちてんさんのビー'],
+  // 小数の読み（「三・六」を「さん・ろく」と読ませない）
   ['三・六パーセント', 'さんてんろくパーセント'],
   ['〇・七パーセント', 'れいてんななパーセント'],
-  // VOICEVOX が「せいの」「くだり」「いっこう」「おもキー」「そのかん」と読んでいた語
-  ['生の本文', 'なまの本文'],
+  // VOICEVOX が読み違えた日本語（「いっこう」「そのかん」「おもキー」「ふりがえり」「おもてけいさん」など）
   ['一行', 'いちぎょう'],
-  ['契約の行', '契約のぎょう'],
-  ['複数の行', '複数のぎょう'],
-  ['行が複数', 'ぎょうが複数'],
-  ['最初の行', '最初のぎょう'],
-  ['だった行', 'だったぎょう'],
-  ['の行は', 'のぎょうは'],
-  ['の行と', 'のぎょうと'],
-  ['いる行は', 'いるぎょうは'],
   ['その間', 'そのあいだ'],
   ['主キー', 'しゅキー'],
-  ['App 内課金', 'アプリ内課金'],
-  // ナッジ・UI/UX・マーケティングの講座で VOICEVOX が読み違えた語（「ふりがえり」など）
   ['振り返り', 'ふりかえり'],
   ['表計算', 'ひょうけいさん'],
   ['A/B テスト', 'エービーテスト'],
-  ['BASIC', 'ベーシック'],
-  ['BEST', 'ベスト'],
-  ['EAST', 'イースト'],
-  ['B=MAP', 'ビー・イコール・マップ'],
-  ['The Mom Test', 'ザ・マムテスト'],
   ['どうやって作', 'どうやってつく'],
   ['深刻度で', 'しんこくどで'],
   ['作り手', 'つくりて'],
@@ -53,24 +45,13 @@ const PHRASES: [string, string][] = [
   ['日本', 'にほん'],
   ['最初の行動', 'さいしょのこうどう'],
   ['四・三パーセント', 'よんてんさんパーセント'],
-  ['ナッジ・ユニット', 'ナッジユニット'],
-  // Super-agent の講座の用語（英字のまま画面に出し、読みだけ開く）
-  ['Super-agent', 'スーパーエージェント'],
-  ['DeepSeek Harness', 'ディープシーク・ハーネス'],
-  ['DeepSeek', 'ディープシーク'],
+  // 講座を問わない名前
   ['GitHub', 'ギットハブ'],
   ['ReAct', 'リアクト'],
-  ['Chain of Recall', 'チェーン・オブ・リコール'],
-  ['Inline & Spill', 'インライン・アンド・スピル'],
-  ['Fast Path', 'ファストパス'],
-  ['Slow Path', 'スローパス'],
-  ['Agent Team', 'エージェントチーム'],
-  ['A2A', 'エーツーエー'],
-  ['Anthropic', 'アンソロピック'],
 ];
 
-const WORDS: Record<string, string> = {
-  stripe: 'ストライプ',
+/** 共通の英単語の読み（小文字で引く） */
+const WORDS: Readonly<Record<string, string>> = {
   webhook: 'ウェブフック',
   db: 'ディービー',
   checkout: 'チェックアウト',
@@ -89,7 +70,6 @@ const WORDS: Record<string, string> = {
   subscriptions: 'サブスクリプションズ',
   canceled: 'キャンセルド',
   snapshot: 'スナップショット',
-  trialing: 'トライアリング',
   thin: 'シン',
   created: 'クリエイテッド',
   sync: 'シンク',
@@ -106,7 +86,6 @@ const WORDS: Record<string, string> = {
   status: 'ステータス',
   incomplete: 'インコンプリート',
   expired: 'エクスパイアド',
-  whsec: 'ダブリューエイチセック',
   cli: 'シーエルアイ',
   required: 'リクワイアド',
   upsert: 'アップサート',
@@ -123,7 +102,6 @@ const WORDS: Record<string, string> = {
   success: 'サクセス',
   unpaid: 'アンペイド',
   paused: 'ポーズド',
-  basil: 'バジル',
   items: 'アイテムズ',
   http: 'エイチティーティーピー',
   post: 'ポスト',
@@ -132,7 +110,6 @@ const WORDS: Record<string, string> = {
   insert: 'インサート',
   processed: 'プロセスト',
   listen: 'リッスン',
-  cus: 'シー・ユー・エス',
   payment: 'ペイメント',
   method: 'メソッド',
   sandbox: 'サンドボックス',
@@ -173,18 +150,7 @@ const WORDS: Record<string, string> = {
   cycle: 'サイクル',
   proration: 'プロレーション',
   google: 'グーグル',
-  aarrr: 'エーエーアールアールアール',
-  amplitude: 'アンプリチュード',
-  wcag: 'ダブリューシーエージー',
-  w3c: 'ダブリュースリーシー',
-  aa: 'ダブルエー',
-  aaa: 'トリプルエー',
-  div: 'ディヴ',
-  rem: 'レム',
   chrome: 'クローム',
-  rive: 'ライブ',
-  pstack: 'ピースタック',
-  poteto: 'ポテト',
   cursor: 'カーソル',
   agent: 'エージェント',
   router: 'ルーター',
@@ -197,6 +163,32 @@ const WORDS: Record<string, string> = {
   daemon: 'デーモン',
 };
 
+/** 共通の辞書 */
+const COMMON: Reading = { phrases: PHRASES, words: WORDS };
+
+/* ───────────── 台詞と講座の辞書 ─────────────
+ * 読み上げる文（content/voices.ts の speechOf）は、台詞のオブジェクトに付けた講座の辞書で読む。付けるのは content/index.ts（日本語の講座を
+ * 読み込むとき）。付いていない台詞（テストの見本など）は、共通の辞書だけで読む。台詞のオブジェクトを写すと（structuredClone など）辞書は
+ * 付いていないので、台本から読んだ台詞のまま渡す
+ */
+const READING_OF = new WeakMap<object, Reading>();
+
+/** 台詞に講座の辞書を付ける。もう別の講座の辞書が付いている台詞（2 つの講座で同じ台詞のオブジェクトを使っている）を返す（付け替えない） */
+export const useReading = (lines: Iterable<object>, reading: Reading): object[] => {
+  const shared: object[] = [];
+  for (const line of lines) {
+    const had = READING_OF.get(line);
+    if (had && had !== reading) shared.push(line);
+    else READING_OF.set(line, reading);
+  }
+  return shared;
+};
+
+/** 台詞に付いた講座の辞書（無ければ undefined。共通の辞書だけで読む） */
+export const readingOf = (line: object): Reading | undefined => READING_OF.get(line);
+
+/* ───────────── 読みのエンジン ───────────── */
+
 const LETTERS: Record<string, string> = {
   A: 'エー', B: 'ビー', C: 'シー', D: 'ディー', E: 'イー', F: 'エフ', G: 'ジー', H: 'エイチ', I: 'アイ',
   J: 'ジェイ', K: 'ケー', L: 'エル', M: 'エム', N: 'エヌ', O: 'オー', P: 'ピー', Q: 'キュー', R: 'アール',
@@ -207,8 +199,13 @@ const DIGITS = ['ゼロ', 'ワン', 'ツー', 'スリー', 'フォー', 'ファ�
 const splitCamel = (w: string): string[] =>
   w.replace(/([a-z])([A-Z])/g, '$1 $2').split(' ').filter(Boolean);
 
-const word = (w: string): string => {
-  const hit = WORDS[w.toLowerCase()];
+/** 英単語の読み（講座の辞書が先、無ければ共通の辞書。小文字で引く） */
+const lookup = (dict: Readonly<Record<string, string>> | undefined, w: string): string | undefined =>
+  dict && Object.hasOwn(dict, w) ? dict[w] : undefined;
+
+const word = (w: string, course?: Reading): string => {
+  const lower = w.toLowerCase();
+  const hit = lookup(course?.words, lower) ?? lookup(WORDS, lower);
   if (hit) return hit;
   const m = /^([A-Z]+)(\d+)$/.exec(w);
   if (m) return [...m[1]].map((c) => LETTERS[c]).join('') + [...m[2]].map((d) => DIGITS[Number(d)]).join('');
@@ -216,18 +213,33 @@ const word = (w: string): string => {
   throw new Error(`読みが未登録の英単語: ${w}`);
 };
 
-const token = (tok: string): string =>
+const token = (tok: string, course?: Reading): string =>
   tok
     .split(/[_.\-\/]+/)
     .filter(Boolean)
     .flatMap(splitCamel)
-    .map(word)
+    .map((w) => word(w, course))
     .join('・');
 
-export const toSpeech = (text: string): string => {
+/** 当てる語句の並び（講座の語句と共通の語句。長いものから順に当てる。長さが同じなら講座の語句が先。同じ語句は講座のものを使う） */
+const sorted = new WeakMap<Reading, readonly (readonly [string, string])[]>();
+const phrasesOf = (course?: Reading): readonly (readonly [string, string])[] => {
+  const key = course ?? COMMON;
+  let out = sorted.get(key);
+  if (!out) {
+    const own = course?.phrases ?? [];
+    const mine = new Set(own.map(([from]) => from));
+    out = [...own, ...PHRASES.filter(([from]) => !mine.has(from))].sort((a, b) => b[0].length - a[0].length);
+    sorted.set(key, out);
+  }
+  return out;
+};
+
+/** 読み上げる文。course はその講座の辞書（content/<講座>/reading.ts）。渡さなければ共通の辞書だけで読む */
+export const toSpeech = (text: string, course?: Reading): string => {
   let s = text;
-  for (const [from, to] of [...PHRASES].sort((a, b) => b[0].length - a[0].length)) s = s.split(from).join(to);
-  s = s.replace(/[A-Za-z][A-Za-z0-9_.\-\/]*[A-Za-z0-9]|[A-Za-z]/g, token);
+  for (const [from, to] of phrasesOf(course)) s = s.split(from).join(to);
+  s = s.replace(/[A-Za-z][A-Za-z0-9_.\-\/]*[A-Za-z0-9]|[A-Za-z]/g, (tok) => token(tok, course));
   // 読まなくてよい記号と、表示用の半角スペース
   s = s.replace(/[{}`]/g, '').replace(/ +/g, '');
   return s;

@@ -13,7 +13,7 @@ const TEN = 'tennokoe' as const;
 const CITE = 'DeepSeek Harness 团队《Exploring Super-agent Design》（2026）';
 
 export const S05: LectureL10n = {
-  source: '0f769585c229',
+  source: '9934c899d4fe',
   title: '不让人等，看场合换说法',
   summary:
     '等工具时会停下的普通 ReAct 循环（半双工），以及 start() 马上返回、结果作为新事件收到的异步 ReAct 循环（全双工）。还有按渠道换说法：群聊里要简短，GitHub 和邮件里要写足、排好。',

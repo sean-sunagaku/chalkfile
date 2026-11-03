@@ -77,7 +77,9 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run test:e2e:ci` | ブラウザのテストを、合成の講座（`tests/fixtures/content/site-sample`）で流す。本物の講座も動画も要らない（ffmpeg が要る）。CI の e2e と同じ |
 | `npm run test:e2e:real` | ブラウザのテストを、本物の講座（`site/dist` と手元の動画）と入れてある Chrome で流す |
 | `npm run test:e2e`（`test:browser` も同じ） | 上の 2 つを両方（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
-| `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声など）。注意も見るなら `-- --warnings` |
+| `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声・訳の重ね方など）。注意も見るなら `-- --warnings` |
+| `npm run reading:diff` | 全部の台詞の読みを main と比べ、変わった台詞と動画を出す（`-- --base <ref>`。PR の CI で流すときは、マージの commit の 1 つ目の親 `HEAD^1`）。公開する言語の公開中の動画で読みが変わったのに、動画を作り直していなければ止める |
+| `npm run i18n -- status`・`try`・`stamp`・`restamp`・`scaffold` | 訳の状態・講座に並べる前の訳の確かめ・訳したときの台本の指紋・訳のひな形（下の「多言語の動画を作る」） |
 | `npm run check:content` | 台本と Git に入れるファイルの点検（点検の点検も）。点検する中身は [safety.md](../../.claude/skills/study-video-course/references/safety.md) |
 | `npm run check:materials` | 読む教材（`docs/courses/`）が、Git に入れている台本と timeline から作り直したものと同じか（書かない。synth は要らない） |
 | `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い・生成した表（README の講座の表・頭文字の表）のずれ |
@@ -135,7 +137,6 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 |---|---|
 | `bun scripts/media.ts pull [講座 ID…]` | Releases の動画を取り出す（手元の動画は上書きしない） |
 | `bun scripts/materials.ts gc [--keep <ref>…] [--confirm]` | 台本が使わない声を消す。持ち主だけ（[戻し方](../operations/recovery.md) の「素材を片付ける」） |
-| `bun scripts/i18n.ts status`・`try`・`stamp` | 訳の状態・講座に並べる前の訳の確かめ・訳したときの台本の指紋（下の「多言語の動画を作る」） |
 | `uv run --locked --script scripts/check_speech.py <key…>` | 訳の声を Whisper で聞き取り直す |
 | `bun scripts/check_overlap.ts <講座 ID>` | 台本と出典の公式ページで、言い回しが続けて同じところを探す（ネットにつなぐ。`--query=locale=ja-JP`・`--lang=en`） |
 | `bun scripts/snapshots.ts`（`--update`） | 音声の鍵と読みのスナップショットと比べる（作り直す） |
@@ -150,8 +151,8 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 - 一部だけ: `npm run synth -- L03 L05`（mix・render も同じ）。訳の動画は `S03.en` のように、まとめて `'S03.*'`・`'*.en'` も渡せる
 - 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。timeline（`content/<講座>/generated/timeline/`）は Git に入っている）
-- 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は `content/reading.ts` に足す
-- 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・`reading.ts`・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
+- 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は講座の辞書 `content/<講座>/reading.ts` に足す（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）
+- 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・読みの辞書・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
 - 見た目: `npm run stills -- L04:3 --mid`（場面の中ほどと終わりを静止画にする）
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`
 - ディスクの空きが少ないとき: `CHUNK=1200 npm run render -- L04`（1,200 フレームずつ書き出してつなぐ）
@@ -159,14 +160,15 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 ## 多言語の動画を作る
 
 ```bash
-bun scripts/i18n.ts try superagent-comedy en S03   # 訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ）
-bun scripts/i18n.ts stamp 'S03.*'                  # 訳したときの日本語の台本の指紋を書く
+npm run i18n -- scaffold S03.en                    # 訳のひな形（日本語を注釈に入れたもの）を content/<講座>/en/S03.ts に作る
+npm run i18n -- try superagent-comedy en S03       # 訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ）
+npm run i18n -- stamp 'S03.*'                      # 訳したときの日本語の台本の指紋を書く
 npm run synth -- S03.en S03.zh                     # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルを取ってくる）
 uv run --locked --script scripts/check_speech.py S03.en S03.zh   # 聞き取りの点検
 npm run mix -- S03.en S03.zh
 CAPTIONS=1 npm run render -- S03.en S03.zh
 npm run build:site
-bun scripts/i18n.ts status                         # 訳の表（訳あり・日本語の台本が変わった・未訳）と訳し残し
+npm run i18n -- status                             # 訳の表（訳あり・日本語の台本が変わった・未訳）と訳し残し
 ```
 
 - 書き方・声・確かめ方は [i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。訳の動画の名前は `S01.en.mp4`・`S01.en.cc.mp4`（字幕を焼き込んだ版）・`S01.zh.mp4`。Remotion のコンポジションは `S01-en`

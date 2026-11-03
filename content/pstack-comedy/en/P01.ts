@@ -8,7 +8,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const P01: LectureL10n = {
-  source: 'f82fd84b77a0',
+  source: '1dd22a9b4536',
   title: 'What is pstack?',
   summary:
     'Who made it and the idea behind it, how to start (/add-plugin, /setup-pstack, /poteto-mode), the 23 playbooks, the main skills (/tdd, /interrogate, /arena, /unslop), and what to watch out for.',
