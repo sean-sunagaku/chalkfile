@@ -5,6 +5,7 @@
 //   bun scripts/materials.ts check [講座 ID …]                 # 台本の全部の台詞の音声と、BGM・効果音が手元にあるか
 //   bun scripts/materials.ts push [--dry-run] [--message 文]    # 手元の素材を `materials` ブランチに足す（消さない）
 //   bun scripts/materials.ts gc [--keep ref …] [--confirm]     # --keep（既定 origin/main）の台本が使わない台詞の音声を消す
+//   npm run chalk -- materials pull|check|push|gc …            # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 素材は main の履歴に入れず、素材だけを置くブランチに置く。
 // push は、リモートの木に手元の素材を足すか上書きするだけにする。並行する worktree が順に push しても、ほかの講座の素材は消えない。
 // push のコミットは前の版を親にする（送るのは新しい素材だけで済み、前の版にも戻せる。親の無いコミットだと、全部の素材を送り直す）。

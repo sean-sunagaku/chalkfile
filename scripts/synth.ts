@@ -6,6 +6,7 @@
 //   bun scripts/synth.ts --course ga4-comedy   # その講座の全部の動画（全部の言語）
 //   --cached-only                        # 声を作らない（素材の声だけを使う。CI と、timeline を作り直すとき）
 //   --prune                              # 台本に無い動画の timeline のファイルを消す（付けなければ、残っていることを知らせるだけ）
+//   npm run chalk -- voice synth …        # 1 つの入口からも流せる（対象の選び方は --course・--video・--lang。docs/guide/commands.md の「chalk」）
 // 出力（<key> は動画の名前。日本語は L01、訳は L01.en）。どのファイルも一時の名前に書いてから置き換える（別々の動画を同時に流しても壊れない）:
 //   <キャッシュ>/tts/<hash>.wav・.kana   台詞の音声と読み（同じ文・同じ声なら再利用）。作業フォルダの間で共有する
 //                                        （CHALKFILE_CACHE_DIR。既定 ~/.cache/chalkfile）。読むときは、無ければ前の置き場所の .work/tts/ も探す

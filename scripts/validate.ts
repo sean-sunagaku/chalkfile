@@ -2,6 +2,7 @@
 //   bun scripts/validate.ts             # 誤りの一覧と、注意（warning）の数と内訳
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）
+//   npm run chalk -- validate           # 1 つの入口から、台本とファイルの点検（check_content.ts）と一緒に流す
 // 見るもの
 //   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）・
 //     講座をまたいだもの（レクチャー ID の頭文字・一覧の並び・講座 ID が重ならないか）

@@ -93,6 +93,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 ## コマンド
 
 - コマンドの入口は `package.json` の scripts（`npm run …`）。引数は `--` のあとに渡す。一覧は [commands.md](docs/guide/commands.md)
+- 道具をまとめた 1 つの入口は `npm run chalk -- <コマンド>`（一覧は `npm run chalk -- help`、手元の前提は `npm run chalk -- doctor`）。流すコマンドだけを見るときは `--dry-run`
 - PR を出す前は `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検。CI と同じ）
 - 新しく足した TS と JSON は `npm run format:new` で整える。全体の整形（`npm run format`）は、静かな日にだけ流す
 - 始め方は [quickstart.md](docs/guide/quickstart.md)、講座を足すチェックリストは [new-course.md](docs/guide/new-course.md)、公開は [公開の順番](docs/operations/publish.md)

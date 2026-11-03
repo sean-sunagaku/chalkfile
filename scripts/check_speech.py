@@ -15,6 +15,7 @@ synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対�
 
   uv run --locked --script scripts/check_speech.py P01.en P01.zh       # 動画ごと
   uv run --locked --script scripts/check_speech.py --all                # .work/speech/ の全部
+  npm run chalk -- voice speech-check --course <講座 ID>              # 1 つの入口からも流せる
 
 依存の版は頭書きと scripts/check_speech.py.lock で固定する。頭書きを変えたら uv lock --script scripts/check_speech.py でロックも作り直す。
 

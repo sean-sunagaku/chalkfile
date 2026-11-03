@@ -12,6 +12,7 @@ public/audio/mix/<id>.wav（48kHz・ステレオ・16bit、-16 LUFS / true peak 
 
   uv run --locked --group audio python scripts/mix.py            # 全部（npm run mix でも同じ）
   uv run --locked --group audio python scripts/mix.py L01 L05    # 一部だけ（npm run mix -- L01 L05）
+  npm run chalk -- mix --course <講座 ID>                        # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 
 numpy の版は pyproject.toml と uv.lock で固定している。ffmpeg は PATH から使う。
 仕上げの音は一時の名前に書いてから置き換える（書き出しが書きかけの音を読まない）。

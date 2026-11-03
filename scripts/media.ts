@@ -4,6 +4,7 @@
 //       だけを書き直す。ほかの講座の一覧には触らない（手元の動画が一覧と違えば、知らせるだけ）。前のハッシュの動画は消さず retained に回す
 //   bun scripts/media.ts check            # 全講座の一覧の動画が Releases にあり、大きさと SHA-256 が合うか（手元にあれば手元の動画も）
 //   bun scripts/media.ts pull [講座 ID…]  # 一覧の日本語の動画を、Releases から site/media/ に取り出す（手元の変更は上書きしない）
+//   npm run chalk -- media push|check|pull …   # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 全講座の一覧（Worker の許可リスト）は、npm run gen が講座ごとの一覧をつないで worker/src/generated/media-manifest.json に作る（Git に入れない）
 // gh の認証が要る（push と pull。check も Releases を読む）。終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（gh が無い）
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';

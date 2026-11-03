@@ -7,6 +7,7 @@
 //                                              content/<講座>/generated/media.<言語>.json を、講座の登録の順につなぐ（scripts/media.ts）
 //   README.md の講座の表                        <!-- courses:start --> と <!-- courses:end --> の間。講座の登録（COURSES）と timeline から
 //   docs/guide/new-course.md の頭文字の表        <!-- prefixes:start --> と <!-- prefixes:end --> の間。各講座の prefix と order から
+//   docs/guide/commands.md の chalk の表          <!-- cli:start --> と <!-- cli:end --> の間。scripts/cli.ts のコマンドの一覧（npm run chalk -- help の元）から
 // 表のずれは npm run check:docs（scripts/check_docs.ts）も止める。終了コード: 0 できた（--check は同じ）・1 違う・2 使い方の誤り
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -14,6 +15,7 @@ import { COURSES, coursesIn } from '../content';
 import { type Lang, TRANSLATED_LANGS, videoKey } from '../content/i18n';
 import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
+import { commandTable } from './cli';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { readSiteConfig } from './lib/config';
 import { writeAtomic } from './lib/fsx';
@@ -104,13 +106,14 @@ export const prefixTable = (): string =>
     '',
   ].join('\n');
 
-/** 生成した表を入れた文書（リポジトリの直下からのパス → 中身） */
+/** 生成した表を入れた文書（リポジトリの直下からのパス → 中身）。scripts/check_docs.ts も、これと比べてずれを止める */
 export const docOutputs = (root = ROOT): Map<string, string> => {
   const out = new Map<string, string>();
   const put = (file: string, name: string, body: string) =>
     out.set(file, replaceBlock(out.get(file) ?? readFileSync(path.join(root, file), 'utf8'), name, body, file));
   put('README.md', 'courses', courseTable());
   put('docs/guide/new-course.md', 'prefixes', prefixTable());
+  put('docs/guide/commands.md', 'cli', commandTable());
   return out;
 };
 

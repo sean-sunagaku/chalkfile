@@ -5,6 +5,7 @@
 //   node scripts/stills.ts L02:3 --theme=chalkfile   # 講座のテーマの代わりに別のテーマで描く（テーマを作るとき）
 //   node scripts/stills.ts N01 --captions            # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で描く
 //   node scripts/stills.ts P01.en:3 P01.zh --mid     # 訳の動画（レクチャー ID.言語）
+//   npm run chalk -- stills L01 --mid                # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // npm run stills -- L01 --mid でも同じ（package.json に type が無いので Node が出す「ES module として読み直した」という注意を止める）
 // 出力: out/stills/<動画>-<場面>.jpg。終了コード: 0 できた・1 失敗・2 使い方の誤り（動画を渡していない・知らない引数）
 // Node で動かすので、型だけを読むときは import type にする（型を取り除いたあとに import が残らない）。

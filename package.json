@@ -4,11 +4,15 @@
   "private": true,
   "description": "台本（コード）から、ナレーション付きの講座動画と講座サイトを作る（Remotion・VOICEVOX・Cloudflare Workers）",
   "packageManager": "npm@12.2.1",
+  "bin": {
+    "chalkfile": "scripts/cli.ts"
+  },
   "engines": {
     "node": ">=24",
     "npm": ">=11"
   },
   "scripts": {
+    "chalk": "bun scripts/cli.ts",
     "check": "npm run lint && npm run typecheck && npm test && npm run validate && npm run check:content && npm run check:docs && npm run check:materials",
     "lint": "biome ci --formatter-enabled=false --assist-enabled=false",
     "lint:py": "uvx ruff@0.17.3 check scripts",

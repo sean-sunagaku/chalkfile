@@ -3,6 +3,7 @@
 //   bun scripts/build_materials.ts                 # 教材を持つ全講座（消した章・講座の古いファイルも消す）
 //   bun scripts/build_materials.ts nudge-product   # 一部の講座だけ（その講座のフォルダの古いファイルも消す）
 //   bun scripts/build_materials.ts --check         # 書かずに、作り直したものと docs/courses を比べる（違えば一覧を出して 1 で終える。CI の check）
+//   npm run chalk -- docs build [--check]          # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 出力（docs/courses/<講座 ID>/）:
 //   README.md            講座の設計（全体の目次・到達目標・動画構成）
 //   <章 ID>.md           章の一式（教材本文・ナレーション台本・絵コンテ・図解と比較例・確認問題・実践課題・要点と参考資料・AI チャットの質問例）

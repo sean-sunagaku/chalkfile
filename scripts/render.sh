@@ -3,6 +3,7 @@
 #   bash scripts/render.sh                  # 全部の動画（全部の言語）
 #   bash scripts/render.sh L03 L05          # 一部だけ
 #   bash scripts/render.sh P01.en P01.zh    # 訳の動画（レクチャー ID.言語。コンポジションは P01-en）
+#   npm run chalk -- render --course <ID>   # 1 つの入口からも流せる（掛け合いの講座は、字幕を焼き込んだ版も作る）
 # 出力: out/master/<id>.mp4（映像のみ・高画質）、site/media/<id>.mp4（サイト用）、site/media/<id>.jpg と content/<講座>/generated/posters/<id>.jpg
 #   （ポスター。講座のフォルダのものを Git に入れる。<id> は動画の名前。訳は P01.en.mp4）
 # サイト用の動画は、site/limits.ts の VIDEO_TARGET_BYTES（14,500 KiB）を目安に crf を上げて合わせる。crf 29 でも目安を超えたら、警告して

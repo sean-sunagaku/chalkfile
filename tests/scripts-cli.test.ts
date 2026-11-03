@@ -15,7 +15,9 @@ const TS = [
   'build_materials',
   'check_content',
   'clean',
+  'cli',
   'check_overlap',
+  'doctor',
   'export_deliverables',
   'format_new',
   'gen',
@@ -99,7 +101,8 @@ describe('--help は頭書きを出すだけで、何も消さず・何も書か
         cache: [],
         tmp: [],
       });
-      expect(r.stdout.trim()).toBe(headerOf(path.join(ROOT, c.file)).trim());
+      // 頭書きを出す（cli.ts は、そのあとにコマンドの一覧も出す）
+      expect(r.stdout.startsWith(`${headerOf(path.join(ROOT, c.file)).trim()}\n`)).toBe(true);
       expect(r.stdout).toMatch(/scripts\/[\w-]+\.(ts|sh)/);
     }, 60_000);
   for (const c of PY)

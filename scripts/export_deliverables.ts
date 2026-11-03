@@ -1,6 +1,7 @@
 // 章ごとの「完成動画と編集用データ」を 1 つのフォルダにまとめる（講座サイトの外で使うとき）。
 //   bun scripts/export_deliverables.ts N01 D01 M01
 //   bun scripts/export_deliverables.ts S01.en S01.zh    # 訳の動画（出力は out/deliverables/<講座 ID>/S01.en/ など）
+//   npm run chalk -- export --course <講座 ID>          # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 出力: out/deliverables/<講座 ID>/<レクチャー ID>/
 //   <id>.captioned.mp4   日本語字幕を焼き込んだ動画（CAPTIONS=1 bash scripts/render.sh の出力）
 //   <id>.mp4             字幕なしの動画（講座サイト用。字幕は .vtt を重ねる）
