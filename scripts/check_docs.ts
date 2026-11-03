@@ -6,7 +6,7 @@
 //   1. Markdown の相対リンクとアンカー（リンク先のファイルと見出しがあるか）                    止める
 //   2. スキルの description の長さ（1,024 字以下。.claude/skills/*/SKILL.md）                    止める
 //   3. 古い言葉（GitHub Pages の頃の公開の仕方など）。許す場所（ALLOW_OLD）では見ない            注意
-//   4. テーマの表と content/themes.ts の THEMES、README の講座の表と content/index.ts の COURSES  注意
+//   4. テーマの表（theme.md）と content/themes.ts の THEMES、README の講座の表と content/index.ts の COURSES  注意
 //   5. 生成物の印（docs/courses の教材の頭に「生成物」のコメントがあるか）                       注意
 //   6. 直接流す道具（scripts/）の頭書きに、流し方（使い方）の行があるか                           注意
 // 3〜6 は、今は食い違いが多いので注意にしている。片付けたら --strict で止める
@@ -215,11 +215,8 @@ export const compareSets = (where: string, what: string, inDoc: string[], inCode
     out.push({ level: 'warn', check: '一覧', where, what: `${what}にあるが実装に無い: ${extra.join('・')}` });
 };
 
-/** テーマの表（1 列目が `id`）。どこに表があるかはここで決める */
-const THEME_TABLES = [
-  { file: 'README.md', heading: '講座ごとのテーマ' },
-  { file: '.claude/skills/study-video-course/references/theme.md', heading: '今あるテーマ' },
-];
+/** テーマの表（1 列目が `id`）。どこに表があるかはここで決める（テーマの表は theme.md の 1 か所だけに置く） */
+const THEME_TABLES = [{ file: '.claude/skills/study-video-course/references/theme.md', heading: '今あるテーマ' }];
 /** README の講座の表（1 列目のリンクが https://chalkfile.com/<講座 ID>/）。T2-05 で生成に変えたら、生成の --check にする */
 const COURSE_TABLE = { file: 'README.md', heading: 'Chalkfile で作った講座' };
 

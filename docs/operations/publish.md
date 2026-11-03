@@ -129,6 +129,7 @@ npm run test:e2e                   # 入れてある Chrome と、生成した�
 ```
 
 - テストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
+- ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
 - ブラウザのテストは、`127.0.0.1:8877` に本物の組み立てを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
 - ブラウザは、入れてある Chrome を一時の profile で使う。`PW_CHANNEL=chromium npm run test:browser` で、Playwright の Chromium も選べる（別に入れる）
 - 証跡の既定の置き場所は `/tmp/chalkfile-pwa-evidence/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない

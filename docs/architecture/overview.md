@@ -69,12 +69,29 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | 置き場所 | 中身 | 正本か | 作り直し方 |
 |---|---|---|---|
 | main ブランチ | 台本（`content/`）・動画を描くコード（`src/`）・作る道具（`scripts/`）・サイトのひな形（`site/`）・Worker（`worker/`・`wrangler.jsonc`）・テスト・文書。生成物のうち、時刻とクレジット（`src/generated/`）・ポスター（`site/posters/`）・動画の一覧（`site/media-manifest.json`）・読む教材（`docs/courses/`）も入れている | 台本とコードの正本。入れている生成物は写し。ただし動画の一覧は、Releases に置いた動画の記録 | 生成物は、時刻とクレジット → synth、ポスター → render、読む教材 → build_materials、動画の一覧 → media push |
-| `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材から作り直して置き換える。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
+| `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材を足す（消すのは `materials.ts gc` だけ）。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-ja-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の動画の一覧が決める | render のあと、`media.ts push` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、deploy.yml が組み立てて出す |
 | `gh-pages` ブランチ（旧 `sean-sunagaku.github.io/chalkfile/`） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
 | 手元だけ（`.gitignore`） | `.work/`（声のキャッシュ・ミックスの設計図・読み）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts` |
 | リポジトリの外 | Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 初回に自動で取ってくる |
+
+## リポジトリのフォルダ
+
+| パス | 中身 |
+|---|---|
+| `content/index.ts` | 講座の一覧（`COURSES`）と訳の一覧（`TRANSLATIONS`）。Stripe 講座の定義もここにある |
+| `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・講座の定義（`course.ts`）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・訳（`<言語>/`）。Stripe 講座のフォルダは台本だけ |
+| `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み |
+| `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` がテーマの色と書体を差し込む。`src/generated/` は synth が書く生成物 |
+| `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・色のコントラスト） |
+| `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
+| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・動画の一覧（`media-manifest.json`）・ポスター（`posters/`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
+| `worker/`・`wrangler.jsonc` | `/media/` の中継と、Workers の assets・Custom Domain の設定 |
+| `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
+| `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
+| `.claude/skills/` | Claude Code のスキル（作り方・書き方・調べ方・テーマの作り方）。AI 共通のきまりは直下の `AGENTS.md` |
+| `.github/` | CI（`workflows/`）・Dependabot・CODEOWNERS・PR のひな形 |
 
 ## 外から指される名前（変えると壊れる）
 
