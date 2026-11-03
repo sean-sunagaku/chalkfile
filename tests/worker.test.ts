@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { mediaFilename, mediaPath, releaseUrl, validateMediaManifest, type MediaEntry } from '../site/media-shared';
-import worker, { type Env } from '../worker/src/index';
+import worker from '../worker/src/index';
 import { createMediaHandler, type MediaLog } from '../worker/src/media';
 
 // 本物の一覧（講座を足すと先頭が変わる）に頼らない、合成の動画。
@@ -151,9 +151,11 @@ describe('/media/ の中継', () => {
 describe('Worker の入口（index.ts）', () => {
   // 一覧に無い合成の動画。中継に渡ったことは、中継の 404・405 で分かる（上流へは出ない）。
   const unknown = `/media/ja/sample-course/X99.${'e'.repeat(64)}.mp4`;
+  // Env は wrangler types が作る型（worker/worker-configuration.d.ts）。Worker が使うのは ASSETS の fetch だけなので、偽物も fetch だけを持つ
   const fakeAssets = () => {
-    const seen: Request[] = [];
-    const env: Env = { ASSETS: { fetch: async (request) => { seen.push(request); return new Response('assets', { headers: { 'X-From': 'assets' } }); } } };
+    const seen: (RequestInfo | URL)[] = [];
+    const assets: Pick<Fetcher, 'fetch'> = { fetch: async (request) => { seen.push(request); return new Response('assets', { headers: { 'X-From': 'assets' } }); } };
+    const env = { ASSETS: assets } as Env;
     return { seen, env };
   };
   test('www の /media/ は path と query を保ったまま apex へ 301（assets にも中継にも渡さない）', async () => {

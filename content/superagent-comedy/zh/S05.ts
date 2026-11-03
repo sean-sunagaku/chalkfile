@@ -7,7 +7,6 @@ import { docsTitles } from './sources';
 // グループのチャットの場面は、百語のきまりの台詞を 2 つに分けたので（日本語 14・中国語 15）、画面の要素の at を全部書いた
 // 読み: Kokoro（misaki の pypinyin）は「长」を zhǎng、語の「吐槽」を tù と読むので、s は同じ音の字（常・土槽）にした
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const;
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 

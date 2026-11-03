@@ -19,7 +19,6 @@ export type IconName =
   | 'server'
   | 'database'
   | 'card'
-  | 'stripe'
   | 'bell'
   | 'receipt'
   | 'tag'
@@ -42,11 +41,9 @@ export type IconName =
   | 'scale'
   | 'yen'
   | 'flag'
-  | 'map'
   | 'list'
   | 'alert'
   | 'link'
-  | 'apple'
   | 'gift'
   | 'calendar'
   | 'route'
@@ -56,12 +53,10 @@ export type IconName =
   | 'target'
   | 'megaphone'
   | 'users'
-  | 'trend'
   | 'chart'
   | 'palette'
   | 'type'
   | 'pointer'
-  | 'accessibility'
   | 'message'
   | 'idea'
   | 'sliders'
@@ -84,7 +79,6 @@ export type IconName =
   | 'gauge'
   | 'smile'
   | 'frown'
-  | 'sprout'
   | 'wallet'
   | 'rocket'
   | 'handshake'
@@ -155,7 +149,6 @@ export type ConceptCard = {
 export type ConceptsScene = Base & {
   kind: 'concepts';
   cards: ConceptCard[];
-  focus?: { key: string | null; at: number }[];
   columns?: 2 | 3 | 4;
 };
 
@@ -308,17 +301,16 @@ export type RefsScene = Base & {
 export type PhoneScreen = {
   at: number;
   title: string;
-  /** app と done はアプリの画面、stripe は Stripe がホストする支払いページ */
-  kind: 'app' | 'stripe' | 'done';
-  /** アプリの画面の上に出すサービス名（既定はサンプルアプリ／Pro プラン） */
-  brand?: string;
+  /** app はアプリの画面、done は終わりの画面（緑の地にチェック） */
+  kind: 'app' | 'done';
+  /** 画面の上に出す、架空のアプリの名前（例: サンプル家計簿）。エンジンは既定の名前を持たないので、講座ごとに書く */
+  brand: string;
+  /** 名前の下の小さな文字（例: 架空のアプリ）。書かなければ出さない */
   brandSub?: string;
   lead?: string;
   body: string[];
   primary?: string;
   secondary?: string;
-  /** stripe の画面で、申し込むボタンの上に出す説明 */
-  note?: string;
   caption: string;
 };
 
@@ -368,10 +360,15 @@ export type ScreensScene = Base & {
   right?: MockScreen;
 };
 
+/** 端末の出力の色。書かなければ薄い色（コードのコメントの色）。ok: 成功した行（文字列の色）、info: 目を向けてほしい行（関数の色） */
+export type TerminalTone = 'ok' | 'info';
+/** 端末の出力の 1 行。文字だけなら薄い色で出す。色を付けるときは { text, tone } と書く */
+export type TerminalOut = string | { text: string; tone?: TerminalTone };
+
 export type TerminalScene = Base & {
   kind: 'terminal';
   title: string;
-  entries: { cmd?: string; out?: string[]; at: number; note?: string }[];
+  entries: { cmd?: string; out?: TerminalOut[]; at: number; note?: string }[];
 };
 
 export type EndingScene = Base & {

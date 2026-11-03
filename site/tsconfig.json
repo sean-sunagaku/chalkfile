@@ -1,5 +1,9 @@
 {
+  // site の型は、画面の側（tsconfig.client.json）と Service Worker の側（tsconfig.sw.json）に分けて見る（npm run typecheck）。
+  // このファイルは、エディタがファイルごとに正しい方を選ぶための目次で、ここでは何も検査しない（files と include を空にする）。
+  // root を extends するのは、このフォルダの tsconfig を読む道具（Bun.build で画面と SW をまとめるとき）に、これまでと同じ設定を見せるため
   "extends": "../tsconfig.json",
-  "compilerOptions": { "lib": ["DOM", "DOM.Iterable", "WebWorker", "ES2022"] },
-  "include": ["*.ts"]
+  "files": [],
+  "include": [],
+  "references": [{ "path": "./tsconfig.client.json" }, { "path": "./tsconfig.sw.json" }]
 }

@@ -28,7 +28,7 @@ import { VIDEOS } from '../content';
 import { compositionId } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Scene } from '../content/types';
-import { SCENE_KINDS } from '../engine/core/validate';
+import { SCENE_KINDS } from '../engine/core/scenes';
 import type { SideJob, SideResult } from './stills-compare-side';
 
 const ROOT = path.resolve(import.meta.dir, '..');

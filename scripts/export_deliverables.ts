@@ -73,7 +73,7 @@ for (const id of ids) {
         ? `- 正本は台本 \`content/${course.id}/${id}.ts\`（台詞・画面・教材・課題）と、出典 \`content/${course.id}/sources.ts\``
         : `- 正本は日本語の台本 \`content/${course.id}/${lec.id}.ts\` と、それに重ねる訳 \`content/${course.id}/${lang}/${lec.id}.ts\`（台詞と画面の文字）`,
       `- 台詞を直したら: \`bun scripts/synth.ts ${id}\` → \`uv run --locked --group audio python scripts/mix.py ${id}\` → \`CAPTIONS=1 bash scripts/render.sh ${id}\` → \`bun scripts/build_materials.ts\` → \`bun scripts/export_deliverables.ts ${id}\``,
-      '- 台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出す: `bun scripts/materials.ts pull`（README の「素材から作り直す」）',
+      '- 台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出す: `bun scripts/materials.ts pull`（docs/guide/quickstart.md の「B. 素材から作る」）',
       '- 場面だけ見る: `npx remotion studio`（props の captions を true にすると字幕つき）',
       lang === 'ja'
         ? '- ナレーション: VOICEVOX:No.7（講師）、VOICEVOX:青山龍星（呼び込み）。BGM・効果音はプログラムで合成したオリジナル'

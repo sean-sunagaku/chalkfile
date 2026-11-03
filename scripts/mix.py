@@ -5,7 +5,7 @@ public/audio/mix/<id>.wav（48kHz・ステレオ・16bit、-16 LUFS / true peak 
 
 - ナレーションは -17 LUFS にそろえる
 - BGM（bed.wav、-18 LUFS のループ）は、話している間は -17 dB、話していない間は -7 dB（自動で下げる）
-- 冒頭は sting_intro（2.0 秒で「ドン」）、最後は sting_outro
+- 冒頭は sting_intro（「ドン」の秒は src/video.config.ts の STING。今は 2.0 秒）、最後は sting_outro
 - 効果音: 台詞の sfx（台詞の頭）と sfxAfter（台詞の後の間）、場面の切り替わりの whoosh、クイズの考える時間の tick
 - 台詞の bgm: cut で BGM を止め、back（なければ場面の終わり）で戻す（急にシリアスにする）
 
@@ -33,6 +33,9 @@ PLAN_DIR = ROOT / ".work" / "plan"
 MUSIC = ROOT / "public" / "audio" / "music"
 SFX_DIR = ROOT / "public" / "audio" / "sfx"
 OUT_DIR = ROOT / "public" / "audio" / "mix"
+# 動画と合わせる値（src/video.config.ts から npm run gen:video-config で書き出したもの）
+VIDEO = json.loads((ROOT / "scripts" / "audio" / "video_config.json").read_text())
+STING_HIT = float(VIDEO["stingIntroHitSec"])  # ジングルの「ドン」の秒（呼び込みの声はこの 0.05 秒あと。synth.ts）
 
 VOICE_LUFS = -17.0
 BED_SPEECH_DB = -17.0
@@ -263,10 +266,10 @@ def build(lec_id: str) -> None:
     bed_bus *= (env * speech_gain(n, intervals) * bgm_cuts(n, plan["scenes"]))[:, None]
 
     stings = np.zeros((n, 2), dtype=np.float32)
-    # 「ドン」（2.0 秒）のあとは呼び込みの声の下に回す
+    # 「ドン」（STING_HIT 秒）のあとは呼び込みの声の下に回す
     intro = read_wav(MUSIC / "sting_intro.wav")
     t = np.arange(len(intro)) / RATE
-    duck = np.interp(t, [0.0, 2.1, 2.45], [0.0, 0.0, -7.0])
+    duck = np.interp(t, [0.0, STING_HIT + 0.1, STING_HIT + 0.45], [0.0, 0.0, -7.0])
     place(stings, intro * (10 ** (duck / 20))[:, None].astype(np.float32), 0.0, db(STING_DB))
     place(stings, read_wav(MUSIC / "sting_outro.wav"), out_at, db(STING_DB))
 

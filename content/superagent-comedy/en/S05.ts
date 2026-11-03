@@ -6,7 +6,6 @@ import { docsTitles } from './sources';
 // 事実・数字・画面の正しい名前・出典は日本語の台本と同じ。v を省いた台詞は先生。
 // グループのチャットの場面は、百語のきまりの台詞を 2 つに分けたので（日本語 14・英語 15）、画面の要素の at を全部書いた
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const;
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 

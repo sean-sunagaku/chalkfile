@@ -3,6 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 import { alpha, C, GRAD, H, MESH, MONO, PAD, SANS, THEME, tone, W } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../content/types';
 import { dropY, useScene, useText } from '../timing';
+import { HEADING } from '../video.config';
 import { Icon } from './ui';
 
 /** ゆっくり漂う小さな粒（暗い地では光、明るい地ではチョークの粉） */
@@ -47,7 +48,7 @@ export const Background: React.FC = () => {
         {/* 右上の角を斜めに切る帯（見出しの右端より右・講座名の札の後ろ） */}
         <AbsoluteFill
           style={{
-            clipPath: 'polygon(1060px 0, 1920px 0, 1920px 330px)',
+            clipPath: `polygon(1060px 0, ${W}px 0, ${W}px 330px)`,
             background: [
               `radial-gradient(520px 300px at 92% 4%, ${alpha(MESH[3] ?? MESH[0], 0.9)}, transparent 70%)`,
               `linear-gradient(118deg, ${MESH[0]} 52%, ${MESH[1]} 68%, ${MESH[2] ?? MESH[1]} 86%)`,
@@ -57,7 +58,7 @@ export const Background: React.FC = () => {
         {/* 左下にも細い斜めの帯を 1 本（画面の重心を下げる） */}
         <AbsoluteFill
           style={{
-            clipPath: 'polygon(0 1006px, 640px 1080px, 0 1080px)',
+            clipPath: `polygon(0 1006px, 640px ${H}px, 0 ${H}px)`,
             background: `linear-gradient(100deg, ${alpha(MESH[0], 0.55)}, ${alpha(MESH[3] ?? MESH[1], 0.55)})`,
           }}
         />
@@ -158,8 +159,8 @@ const EvidenceChip: React.FC<{ kind: Evidence; p: number }> = ({ kind, p }) => {
         color: t.text,
         fontFamily: SANS,
         fontWeight: 700,
-        fontSize: 22,
-        letterSpacing: 1,
+        fontSize: HEADING.chipSize,
+        letterSpacing: HEADING.chipSpacing,
         opacity: p,
       }}
     >
@@ -192,15 +193,15 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
         )}
         <CourseMark />
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: HEADING.gap, marginTop: 14 }}>
         <div
           style={{
             fontFamily: SANS,
             fontWeight: 900,
-            fontSize: 60,
+            fontSize: HEADING.size,
             lineHeight: 1.18,
             color: C.ink,
-            letterSpacing: 1,
+            letterSpacing: HEADING.spacing,
             opacity: p,
             transform: `translateY(${dropY(p, 18)}px)`,
             whiteSpace: 'nowrap',

@@ -1,0 +1,5 @@
+{
+  "_note": "src/video.config.ts から npm run gen:video-config（bun scripts/gen_video_config.ts）で作る。手で直さない",
+  "fps": 30,
+  "stingIntroHitSec": 2
+}

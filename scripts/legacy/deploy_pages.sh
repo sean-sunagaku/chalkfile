@@ -7,7 +7,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 旧 GitHub Pages（gh-pages）を、chalkfile.com への移行案内に置き換える。旧 Pages の移行の案内を出すときだけ使う。
-通常の公開には使わない（main へのマージで Actions / Wrangler が公開する。README の「公開（Workers / Releases）」）。
+通常の公開には使わない（main へのマージで Actions / Wrangler が公開する。docs/operations/publish.md）。
 
   bash scripts/legacy/deploy_pages.sh                  下見（既定）。確かめて、置き換える中身と今の gh-pages の SHA を出すだけ。push しない
   bash scripts/legacy/deploy_pages.sh --confirm <SHA>  下見で出た今の gh-pages の SHA を渡したときだけ、gh-pages を置き換える（強制 push）
