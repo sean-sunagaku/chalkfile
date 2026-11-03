@@ -1,14 +1,24 @@
 /// <reference lib="webworker" />
-import { byteRange, COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
+import { rangeResponse } from './lib/http-range';
+import { esc } from './lib/text';
+import { downloadName, parseMediaPath } from './media-shared';
+import { COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
 import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineReply, OfflineRequest, SavedRecord, SavedVersion } from './offline-shared';
 
-/** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。例 en → /chalkfile-media-en/） */
-declare const __BUILD_CONFIG__: { build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string> };
+/**
+ * 組み立て（scripts/pwa.ts の buildPwa）が入れる設定。mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。
+ * 例 en → /chalkfile-media-en/）。disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts）
+ */
+declare const __BUILD_CONFIG__: {
+  build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string>; disabledRevisions: string[];
+};
+// 組み立ては __BUILD_CONFIG__ を、出てくる場所ごとに中身で置き換える。1 か所で受けて、sw.js に設定を 1 回だけ入れる
+const CONFIG = __BUILD_CONFIG__;
 const sw = globalThis as unknown as ServiceWorkerGlobalScope;
 const scope = sw.registration.scope;
 // GitHub Pages の同一 origin にある、ほかのサイトの保存には触れない。
 const prefix = `chalkfile:${new URL(scope).pathname}:offline-v1:`;
-const shellName = `${prefix}shell:${__BUILD_CONFIG__.build}`;
+const shellName = `${prefix}shell:${CONFIG.build}`;
 const registryName = `${prefix}registry`;
 /** unreadable: 記録はあるのに今の検証に通らない。画面では「保存し直す」を案内し、指す Cache は cleanup で隔離する（caches が null なら指す先が分からない） */
 type RecordData = SavedRecord & { unreadable?: { caches: string[] | null } };
@@ -18,7 +28,9 @@ const deleting = new Set<string>();
 // 訳の講座の ID は en/… のように / を含むので、記録の URL では符号にする
 const recordUrl = (id: string) => new URL(`.offline-records/${encodeURIComponent(id)}`, scope).href;
 const assetUrl = (f: Asset) => new URL(f.url, scope).href;
-const mediaRoots = Object.fromEntries(Object.entries(__BUILD_CONFIG__.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
+const mediaRoots = Object.fromEntries(Object.entries(CONFIG.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
+/** 重大な不具合で無効にした保存版の revision。当たる保存版は消さないが、オンラインではそのページを開かない（route） */
+const disabled = new Set(CONFIG.disabledRevisions);
 
 /** 保存機能のエラーの文字（ページの言語で返す）。ページの文字は site/i18n.ts */
 const MESSAGES: Record<string, Record<OfflineErrorCode, string>> = {
@@ -112,34 +124,52 @@ async function readRecord(id: string): Promise<RecordData> {
   let value: unknown;
   try {
     value = await res.json();
-    return parseRecord(value, id, scope, prefix, __BUILD_CONFIG__.mediaRoots);
+    return parseRecord(value, id, scope, prefix, CONFIG.mediaRoots);
   } catch { return { versions: [], unreadable: { caches: recordCaches(value, id, prefix) } }; }
 }
 
-async function complete(v: SavedVersion): Promise<boolean> {
+/** 保存した 1 ファイルが、教材情報の大きさと SHA-256 の印を持った 200 か（中身の SHA-256 は、保存するときに確かめてある） */
+const storedAs = (response: Response | undefined, f: Asset): response is Response =>
+  !!response && response.status === 200 && response.headers.get('X-Chalkfile-SHA256') === f.sha256 &&
+  Number(response.headers.get('Content-Length')) === f.bytes;
+
+async function verify(v: SavedVersion): Promise<boolean> {
   if (!(await caches.has(v.cache))) return false;
   const cache = await caches.open(v.cache);
-  for (const f of v.manifest.files) {
-    const response = await cache.match(assetUrl(f));
-    if (!response || response.status !== 200 || response.headers.get('X-Chalkfile-SHA256') !== f.sha256 ||
-        Number(response.headers.get('Content-Length')) !== f.bytes) return false;
-  }
+  for (const f of v.manifest.files) if (!storedAs(await cache.match(assetUrl(f)), f)) return false;
   return true;
+}
+
+/**
+ * 保存版がそろっているかの結果（Cache の名前と revision の組ごと）。動画の Range の要求のたびに、全部のファイルを確かめ直さない。
+ * 状態の確認（STATUS）と保存は、覚えた結果を使わずに確かめ直す（fresh）。保存・削除が終わったら（broadcast）全部を捨てる
+ */
+const checked = new Map<string, Promise<boolean>>();
+function complete(v: SavedVersion, fresh = false): Promise<boolean> {
+  const key = `${v.cache}\n${v.manifest.revision}`;
+  const known = fresh ? undefined : checked.get(key);
+  if (known) return known;
+  const result = verify(v);
+  checked.set(key, result);
+  // 確かめられなかった（Cache を開けないなど）ときは覚えない。次の要求で確かめ直す
+  result.catch(() => { if (checked.get(key) === result) checked.delete(key); });
+  return result;
 }
 
 async function ids(): Promise<string[]> {
   const keys = await (await caches.open(registryName)).keys();
   const saved = keys.map((r) => { try { return decodeURIComponent(new URL(r.url).pathname.split('/').pop()!); } catch { return ''; } });
-  return [...new Set([...__BUILD_CONFIG__.courses, ...saved.filter((id) => COURSE_ID.test(id))])];
+  return [...new Set([...CONFIG.courses, ...saved.filter((id) => COURSE_ID.test(id))])];
 }
 
 async function statuses(): Promise<CourseStatus[]> {
   return Promise.all((await ids()).map(async (id) => {
     const r = await readRecord(id);
-    const valid = await Promise.all(r.versions.map(complete));
+    const valid = await Promise.all(r.versions.map((v) => complete(v, true)));
     // 読めない記録も「不完全」として、保存し直しを案内する（画面の文字は今の不完全の案内を使う）
-    return { id, saved: r.versions.find((_, i) => valid[i]) ?? null,
-      incomplete: !!r.unreadable || r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null };
+    const saved = r.versions.find((_, i) => valid[i]) ?? null;
+    return { id, saved, incomplete: !!r.unreadable || r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null,
+      disabled: !!saved && disabled.has(saved.manifest.revision) };
   }));
 }
 
@@ -168,7 +198,7 @@ async function cleanup(oldShell = false): Promise<void> {
 }
 
 async function fetchManifest(id: string): Promise<CourseManifest> {
-  if (!__BUILD_CONFIG__.courses.includes(id)) throw new OfflineError('unpublished');
+  if (!CONFIG.courses.includes(id)) throw new OfflineError('unpublished');
   let r: Response;
   let text: string;
   try {
@@ -185,7 +215,7 @@ async function fetchManifest(id: string): Promise<CourseManifest> {
   if (text.length > 100000) throw new OfflineError('tooLarge');
   let parsed: unknown;
   try { parsed = JSON.parse(text); } catch { throw new OfflineError('manifest'); }
-  const m = validateManifest(parsed, id, scope, __BUILD_CONFIG__.mediaRoots);
+  const m = validateManifest(parsed, id, scope, CONFIG.mediaRoots);
   if (await sha256(new TextEncoder().encode(JSON.stringify(m.files)).buffer) !== m.revision) throw new OfflineError('integrity');
   return m;
 }
@@ -213,13 +243,35 @@ async function download(f: Asset, signal: AbortSignal, onBytes: (bytes: number) 
     }
   } catch (e) { await reader.cancel().catch(() => {}); throw failed(e); }
   if (length !== f.bytes || await sha256(data.buffer) !== f.sha256) throw new OfflineError('corrupt');
-  return new Response(data, { headers: {
-    'Content-Type': f.type, 'Content-Length': String(f.bytes), 'X-Chalkfile-SHA256': f.sha256,
-    'Accept-Ranges': 'bytes', ETag: `"${f.sha256}"`,
-  } });
+  return stored(f, data);
+}
+
+/** Cache に入れる応答（大きさと SHA-256 を確かめたバイト列だけ。X-Chalkfile-SHA256 は、そろっているかの確かめに使う印） */
+const stored = (f: Asset, data: Uint8Array<ArrayBuffer>) => new Response(data, { headers: {
+  'Content-Type': f.type, 'Content-Length': String(f.bytes), 'X-Chalkfile-SHA256': f.sha256,
+  'Accept-Ranges': 'bytes', ETag: `"${f.sha256}"`,
+} });
+
+/**
+ * 前の版の Cache（sources。新しい版から）に、同じ URL・SHA-256・大きさのファイルがあれば、取り直さずに写す応答を作る。
+ * 動画の URL には SHA-256 が入るので、変わっていない動画だけが当たる。写す前に中身の SHA-256 を計算し直し、合わなければ null（取り直す）
+ */
+async function copyOf(sources: string[], f: Asset): Promise<Response | null> {
+  for (const name of sources) {
+    try {
+      if (!(await caches.has(name))) continue;
+      const old = await (await caches.open(name)).match(assetUrl(f));
+      if (!storedAs(old, f)) continue;
+      const data = new Uint8Array(await old.arrayBuffer());
+      if (data.byteLength === f.bytes && await sha256(data.buffer) === f.sha256) return stored(f, data);
+    } catch { /* 読めなければ、ほかの版か取り直す */ }
+  }
+  return null;
 }
 
 async function broadcast(): Promise<void> {
+  // 保存版が変わった（保存・削除）。そろっているかの結果を捨ててから、全部のタブに知らせる
+  checked.clear();
   for (const c of await sw.clients.matchAll()) c.postMessage({ protocol: 1, type: 'CHANGED' } satisfies OfflineBroadcast);
 }
 
@@ -235,7 +287,7 @@ async function save(id: string, report: (p: DownloadProgress) => void): Promise<
       const manifest = await fetchManifest(id);
       controller.signal.throwIfAborted();
       const before = await readRecord(id);
-      if (before.versions[0]?.manifest.revision === manifest.revision && await complete(before.versions[0])) return;
+      if (before.versions[0]?.manifest.revision === manifest.revision && await complete(before.versions[0], true)) return;
       const estimate = await sw.navigator.storage?.estimate?.().catch(() => null);
       if (estimate?.quota && estimate.quota - (estimate.usage ?? 0) < manifest.bytes * 1.1) {
         throw new DOMException('quota', 'QuotaExceededError');
@@ -245,10 +297,19 @@ async function save(id: string, report: (p: DownloadProgress) => void): Promise<
       job.progress.total = manifest.bytes;
       job.progress.count = manifest.files.length;
       let lastReport = 0;
+      // 前の版（読める記録が指す版）から写せるファイルは、取り直さない。写すものも、Cache に入れる前に SHA-256 を確かめる
+      const sources = before.versions.map((v) => v.cache);
       for (const [i, f] of manifest.files.entries()) {
         controller.signal.throwIfAborted();
         job.progress.file = i + 1;
         report({ ...job.progress });
+        const copied = await copyOf(sources, f);
+        controller.signal.throwIfAborted();
+        if (copied) {
+          await cache.put(assetUrl(f), copied);
+          job.progress.loaded += f.bytes;
+          continue;
+        }
         // 1 ファイル最大 32 MiB。MP4 全体を検証し、206 や途中のデータは Cache に入れない。
         const timeout = setTimeout(() => controller.abort(new OfflineError('timeout')), 120000);
         try {
@@ -262,10 +323,10 @@ async function save(id: string, report: (p: DownloadProgress) => void): Promise<
       }
       controller.signal.throwIfAborted();
       const version: SavedVersion = { cache: staging, manifest, savedAt: new Date().toISOString() };
-      if (!await complete(version)) throw new OfflineError('verify');
+      if (!await complete(version, true)) throw new OfflineError('verify');
       controller.signal.throwIfAborted();
       const previous: SavedVersion[] = [];
-      for (const v of before.versions) if (await complete(v)) { previous.push(v); break; }
+      for (const v of before.versions) if (await complete(v, true)) { previous.push(v); break; }
       controller.signal.throwIfAborted();
       // この 1 件の書込みが完了するまで、前の保存版だけが再生対象。途中の保存は公開しない。
       await (await caches.open(registryName)).put(recordUrl(id), Response.json({ versions: [version, ...previous] }));
@@ -298,7 +359,7 @@ async function remove(id: string): Promise<void> {
 sw.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(shellName);
-    for (const f of __BUILD_CONFIG__.shell) await cache.put(assetUrl(f), await download(f, AbortSignal.timeout(60000), () => {}));
+    for (const f of CONFIG.shell) await cache.put(assetUrl(f), await download(f, AbortSignal.timeout(60000), () => {}));
     // 更新中のタブや保存を強制終了しない。新版は全タブを閉じた後に有効になる。
   })());
 });
@@ -336,19 +397,11 @@ sw.addEventListener('message', (event) => {
   })());
 });
 
-async function cachedResponse(req: Request, response: Response): Promise<Response> {
+/** 保存した応答（200 の全体）を、要求の Range に合わせて返す（site/lib/http-range.ts）。保存の印 X-Chalkfile-SHA256 は外す */
+function cachedResponse(req: Request, response: Response): Promise<Response> {
   const headers = new Headers(response.headers);
   headers.delete('X-Chalkfile-SHA256');
-  const size = Number(headers.get('Content-Length'));
-  if (req.method === 'HEAD') return new Response(null, { headers });
-  const ifRange = req.headers.get('If-Range');
-  const range = byteRange(ifRange && ifRange !== headers.get('ETag') ? null : req.headers.get('Range'), size);
-  if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}`, 'Accept-Ranges': 'bytes' } });
-  if (range.kind === 'full') return new Response(response.body, { headers });
-  const blob = await response.blob();
-  headers.set('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
-  headers.set('Content-Length', String(range.end - range.start + 1));
-  return new Response(blob.slice(range.start, range.end + 1), { status: 206, headers });
+  return rangeResponse(req, response, headers);
 }
 
 /**
@@ -356,8 +409,8 @@ async function cachedResponse(req: Request, response: Response): Promise<Respons
  * media は動画のサイトの URL（relative は動画のサイトの中のパス）。2 文字の英小文字の講座 ID は使わない（content/index.ts）
  */
 function courseIdOf(url: URL): { id: string; relative: string; media: boolean } {
-  const hashed = /^\/media\/([a-z]{2})\/([A-Za-z0-9][A-Za-z0-9_-]*)\//.exec(url.pathname);
-  if (hashed) return { id: `${hashed[1] === 'ja' ? '' : `${hashed[1]}/`}${hashed[2]}`, relative: url.pathname.slice(1), media: true };
+  const hashed = parseMediaPath(url.pathname);
+  if (hashed) return { id: `${hashed.lang === 'ja' ? '' : `${hashed.lang}/`}${hashed.course}`, relative: url.pathname.slice(1), media: true };
   for (const [lang, root] of Object.entries(mediaRoots)) {
     if (url.href.startsWith(root)) {
       const relative = url.pathname.slice(new URL(root).pathname.length);
@@ -382,19 +435,30 @@ async function route(req: Request): Promise<Response> {
     for (const v of record.versions) {
       const file = v.manifest.files.find((f) => navigation ? f.url === `${id}/` : assetUrl(f) === url.href);
       if (file && await complete(v)) {
+        // 無効にした版のページは、公開中のページが 200 で返ればそれを返す（保存は消さない。画面が更新を案内する）。届かなければ保存版を返す
+        if (navigation && disabled.has(v.manifest.revision)) {
+          const current = await fetch(req).catch(() => null);
+          if (current?.ok) return current;
+          await current?.body?.cancel().catch(() => {});
+        }
         const response = await (await caches.open(v.cache)).match(assetUrl(file));
         if (response) {
           const served = await cachedResponse(req, response);
           if (download && file.type === 'video/mp4') {
-            const name = /\/([A-Za-z0-9_-]+)(\.cc)?\.[a-f0-9]{64}\.mp4$/.exec(url.pathname);
-            if (name) served.headers.set('Content-Disposition', `attachment; filename="${name[1]}${name[2] ? '.captioned' : ''}.mp4"`);
+            const name = parseMediaPath(url.pathname);
+            if (name) served.headers.set('Content-Disposition', `attachment; filename="${downloadName(name)}"`);
           }
           return served;
         }
       }
     }
     if (record.versions.length && (media || relative.includes('/media/')) && (media || url.searchParams.has('v'))) {
-      return new Response('この保存版の動画は利用できません。講座を再読み込みし、オンラインで保存し直してください。 / This saved video is not available. Reload the course and save it again online.', { status: 503 });
+      // 開く保存版を無効にした講座は、オンラインでは公開中のページになるので、保存版に無い動画とポスターは、公開中のものを取りに行く
+      let opened: SavedVersion | undefined;
+      for (const v of record.versions) if (await complete(v)) { opened = v; break; }
+      if (!opened || !disabled.has(opened.manifest.revision)) {
+        return new Response('この保存版の動画は利用できません。講座を再読み込みし、オンラインで保存し直してください。 / This saved video is not available. Reload the course and save it again online.', { status: 503 });
+      }
     }
   }
   try {
@@ -409,7 +473,7 @@ async function route(req: Request): Promise<Response> {
   if (cached) return cachedResponse(req, cached);
   if (req.mode === 'navigate') {
     const fallback = await shell.match(new URL('offline/', scope).href);
-    if (fallback) return new Response((await fallback.text()).replaceAll('__ROOT__', new URL(scope).pathname), { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    if (fallback) return new Response((await fallback.text()).replaceAll('__ROOT__', esc(new URL(scope).pathname)), { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('オフラインです。この教材はアプリ内に保存されていません。 / Offline. This file is not saved in the app.', { status: 503 });
 }

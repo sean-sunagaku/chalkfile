@@ -38,7 +38,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | プライバシー（端末に残るもの・外に送られるもの・持ち主が見られる記録） | [guide/privacy.md](guide/privacy.md) | |
 | 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
 | 変更の記録（エンジン）と版の扱い | [CHANGELOG.md](../CHANGELOG.md) | 講座ごとの更新は、講座のフォルダの `content/<講座 ID>/CHANGES.md` |
-| 日付つきの記録 | [history/](history/) | [2026-10-30 の制作メモ](history/2026-10-30-production-notes.md)・[2026-11-03 の公開確認](history/2026-11-03-workers-verification.md)・[2026-11-04 の動画の見た目の更新のお知らせ（下書き）](history/2026-11-04-visual-update-notice.md)。記録で、今の手順ではない |
+| 日付つきの記録 | [history/](history/) | [2026-10-30 の制作メモ](history/2026-10-30-production-notes.md)・[2026-11-03 の公開確認](history/2026-11-03-workers-verification.md)・[2026-11-03 の Service Worker の更新のお知らせ](history/2026-11-03-service-worker-update.md)・[2026-11-04 の動画の見た目の更新のお知らせ（下書き）](history/2026-11-04-visual-update-notice.md)。記録で、今の手順ではない |
 | 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない |
 | 参加の仕方（branch・commit・Pull Request・merge・スクリプトの頭書き・Issue のフォーム） | [CONTRIBUTING.md](../CONTRIBUTING.md) | ひな形は `.github/pull_request_template.md` と `.github/ISSUE_TEMPLATE/` |
 | 脆弱性の報告と、守っていること | [SECURITY.md](../SECURITY.md) | |
