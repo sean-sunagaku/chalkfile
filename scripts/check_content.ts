@@ -20,7 +20,8 @@
 //        .vscode/settings.json のシェル・実行ファイルの場所・自動で動く tasks の許可、Git の hooks を入れる package.json の項目も
 //      - npm のインストール時スクリプト［install-script］
 //      - Claude Code［claude］: .claude/ に入れてよいのはスキルと launch.json だけ。スキルの頭書きに hooks・allowed-tools を書かない
-//      - .claude/launch.json が起動するのは、決めたコマンドだけ［launch］（LAUNCH_COMMANDS）
+//      - .claude/launch.json が起動するのは、決めたコマンドだけ［launch］（LAUNCH_COMMANDS。npm run で package.json の scripts を起こす。
+//        その scripts の中身も決めたものだけにし、npm が前後に流す pre・post のスクリプトを置かない）
 //      - AI への指示のファイル（CLAUDE.md・AGENTS.md）［agents］: リポジトリの直下にだけ置く。@ で読み込むのはリポジトリの中のファイルだけ
 //        （Claude Code は @<パス> のファイルを開いた人の手元から読んで AI に渡す。~ や / で始まるパス・.. で外に出るパス・.git/・認証ファイルを止める）
 //
@@ -339,17 +340,25 @@ export const checkPath = (f: string, bytes: number | undefined, out: Finding[]) 
   if (AGENT_FILE.test(f) && f.includes('/')) stop('agents', 'AI への指示のファイル（CLAUDE.md・AGENTS.md）は、リポジトリの直下にだけ置く（下のフォルダのものは、そこで作業するときだけ AI が読むので、見落としやすい）');
 };
 
-/** .claude/launch.json（Claude Code のプレビューが起動するコマンド）で起動してよいもの。後ろに付けてよいのは、port が true のものの --port <番号> だけ */
-export const LAUNCH_COMMANDS: { argv: string[]; port: boolean }[] = [
-  { argv: ['bun', 'scripts/serve.ts'], port: false }, // 講座サイト（番号は環境変数 PORT で変える）
-  { argv: ['npx', 'remotion', 'studio'], port: true }, // Remotion Studio（--config などで別のファイルを読ませない）
-  { argv: ['npx', 'wrangler', 'dev'], port: true }, // Worker を手元で（--remote で Cloudflare のアカウントを使わせない）
+/**
+ * .claude/launch.json（Claude Code のプレビューが起動するコマンド）で起動してよいもの。どれも package.json の scripts を npm run で起こす
+ * （npx は、手元に無い依存をネットから取ってくるので使わない）。script はその scripts の中身で、ほかの中身にすると止める。
+ * 後ろに付けてよいのは、port が true のものの -- --port <番号> だけ（-- が無いと、npm が --port を自分の設定として読む）
+ */
+export const LAUNCH_COMMANDS: { argv: string[]; port: boolean; script: string }[] = [
+  // 講座サイト（番号は環境変数 PORT で変える）
+  { argv: ['npm', 'run', 'serve'], port: false, script: 'bun scripts/serve.ts' },
+  // Remotion Studio（--config などで別のファイルを読ませない）
+  { argv: ['npm', 'run', 'studio'], port: true, script: 'remotion studio' },
+  // Worker を手元で（先に Worker の許可リストを作る。--remote で Cloudflare のアカウントを使わせない）
+  { argv: ['npm', 'run', 'dev:worker'], port: true, script: 'bun scripts/gen.ts --media && wrangler dev' },
 ];
 /** launch.json の 1 つの設定に書いてよい項目。env・cwd などがあると、決めた一覧の外のものが動きうる */
 const LAUNCH_KEYS = ['name', 'runtimeExecutable', 'runtimeArgs', 'port', 'url'];
 const LOCAL_URL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?\/?$/;
 const isPortArgs = (rest: string[]) =>
-  !rest.length || (rest.length === 1 && /^--port=\d{1,5}$/.test(rest[0])) || (rest.length === 2 && rest[0] === '--port' && /^\d{1,5}$/.test(rest[1]));
+  !rest.length ||
+  (rest[0] === '--' && ((rest.length === 2 && /^--port=\d{1,5}$/.test(rest[1])) || (rest.length === 3 && rest[1] === '--port' && /^\d{1,5}$/.test(rest[2]))));
 export const checkLaunch = (where: string, text: string, out: Finding[]) => {
   const stop = (what: string) => { out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' }); };
   let value: unknown;
@@ -380,7 +389,7 @@ export const checkLaunch = (where: string, text: string, out: Finding[]) => {
     const argv = [c.runtimeExecutable, ...(Array.isArray(c.runtimeArgs) ? c.runtimeArgs : c.runtimeArgs === undefined ? [] : [c.runtimeArgs])];
     const ok = argv.every((a) => typeof a === 'string') &&
       LAUNCH_COMMANDS.some(({ argv: cmd, port }) => cmd.every((x, k) => argv[k] === x) && (port ? isPortArgs(argv.slice(cmd.length) as string[]) : argv.length === cmd.length));
-    if (!ok) stop(`${at}の起動コマンドが、決めた一覧の外（${shown(argv.map(String).join(' '))}）。起動してよいのは ${LAUNCH_COMMANDS.map((x) => `${x.argv.join(' ')}${x.port ? ' [--port <番号>]' : ''}`).join('・')}`);
+    if (!ok) stop(`${at}の起動コマンドが、決めた一覧の外（${shown(argv.map(String).join(' '))}）。起動してよいのは ${LAUNCH_COMMANDS.map((x) => `${x.argv.join(' ')}${x.port ? ' [-- --port <番号>]' : ''}`).join('・')}`);
   });
 };
 
@@ -431,7 +440,7 @@ const checkBunfig = (where: string, text: string, out: Finding[]) => {
 const INSTALL_SCRIPTS = ['preinstall', 'install', 'postinstall', 'preprepare', 'prepare', 'postprepare', 'prepublish', 'dependencies'];
 /** 依存のインストール時スクリプトで、Git の hooks を入れる設定 */
 const HOOK_INSTALLERS = ['husky', 'simple-git-hooks'];
-const checkPackageJson = (where: string, text: string, out: Finding[]) => {
+const checkPackageJson = (where: string, text: string, out: Finding[], root: boolean) => {
   let pkg: unknown;
   try {
     pkg = JSON.parse(text);
@@ -446,6 +455,15 @@ const checkPackageJson = (where: string, text: string, out: Finding[]) => {
   }
   for (const k of HOOK_INSTALLERS) {
     if (pkg[k] !== undefined) out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: Git の hooks を入れる設定（${k}）`, sample: '', rule: 'autorun' });
+  }
+  if (!root) return;
+  // .claude/launch.json が npm run で起こす scripts は、決めた中身だけにする。npm がその前後に流す pre・post も置かない
+  for (const { argv, script } of LAUNCH_COMMANDS) {
+    const name = argv[2];
+    if (scripts[name] !== undefined && scripts[name] !== script) out.push({ level: 'error', where, what: `.claude/launch.json が起こす npm run ${name} の中身が、決めたもの（${script}）と違う。変えるなら scripts/check_content.ts の LAUNCH_COMMANDS も直す`, sample: shown(String(scripts[name])), rule: 'launch' });
+    for (const k of [`pre${name}`, `post${name}`]) {
+      if (scripts[k] !== undefined) out.push({ level: 'error', where, what: `.claude/launch.json が起こす npm run ${name} の前後に、npm が流すスクリプト（${k}）は置かない`, sample: shown(String(scripts[k])), rule: 'launch' });
+    }
   }
 };
 
@@ -470,7 +488,7 @@ export const checkFileText = (f: string, text: string, out: Finding[], deny: str
   if (/(^|\/)\.claude\/launch\.json$/.test(f)) checkLaunch(where, text, out);
   if (/(^|\/)\.vscode\/settings\.json$/.test(f)) checkVscodeSettings(where, text, out);
   if (/(^|\/)\.?bunfig\.toml$/.test(f)) checkBunfig(where, text, out);
-  if (/(^|\/)package\.json$/.test(f)) checkPackageJson(where, text, out);
+  if (/(^|\/)package\.json$/.test(f)) checkPackageJson(where, text, out, f === 'package.json');
   if (/(^|\/)\.claude\/skills\/.+\/SKILL\.md$/.test(f)) checkSkill(where, text, out);
   if (AGENT_FILE.test(f)) {
     for (const p of agentImportsOutside(text)) out.push({ level: 'error', where, what: 'AI への指示のファイルが、リポジトリの外か Git に入れないファイルを @ で読み込む（開いた人の手元のファイルが AI に渡る）', sample: shown(p), rule: 'agents' });
