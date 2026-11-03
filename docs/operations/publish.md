@@ -2,7 +2,7 @@
 
 台本・声・動画を変えて、chalkfile.com に出すまでの順番。公開の順番を書くのは、この文書だけにする。ほかの文書は、ここへリンクする。
 
-- 本番に出すのは、main への merge で動く Actions（`.github/workflows/deploy.yml`）だけ。手元から `wrangler deploy` しない。初回の設定と緊急の戻しは、持ち主だけが行う（[初回の設定](setup.md)・[戻し方](recovery.md)）
+- 本番に出すのは、main への merge で動く Actions（`.github/workflows/ci.yml` の deploy のジョブ）だけ。手元から `wrangler deploy` しない。初回の設定と緊急の戻しは、持ち主だけが行う（[初回の設定](setup.md)・[戻し方](recovery.md)）
 - main への merge は、本番の公開になる。merge は持ち主が決める
 - 言葉の意味は [用語集](../architecture/glossary.md)、置き場所の全体は [全体図](../architecture/overview.md)、配り方の設計は [配信の設計](../architecture/delivery.md)
 
@@ -104,17 +104,17 @@ npm run build:site -- --strict      # merge で動く Actions と同じ組み立
 ## 8. PR → merge → Actions → 公開後の確認
 
 - PR は、テンプレート（`.github/pull_request_template.md`）の項目を埋める。新しい講座のときに書くことは [new-course.md](../guide/new-course.md) の「PR に書くこと」
-- merge すると、Actions（deploy）が次の順に流す。どこかで止まったら、公開しない
-  1. `npm ci --ignore-scripts`・型・単体テスト・台本とファイルの点検
-  2. 素材ブランチから声を取り出し、`synth --cached-only` で時刻とサイトのデータを作る（声を合成しない）
-  3. `media.ts check` で、動画の一覧と Releases を照らし合わせる
-  4. `gen.ts --media` で、Worker の許可リスト（講座ごとの動画の一覧をつないだもの。Git に入れない）を作る
-  5. `build_site.ts --strict` で組み立て、`check_delivery.ts` で公開物と Worker の許可リストを点検する
-  6. `wrangler deploy` で出し、全部の動画の Range を確かめる（`verify_public.ts`）
+- merge すると、Actions（`ci.yml`）が次の順に流す。どこかで止まったら、公開しない。ジョブの中身と理由は [CI の形](ci.md)
+  1. `check`: `npm run check` と同じ点検（lint・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検）
+  2. `build`: 素材ブランチから声を取り出し、`synth --cached-only` で時刻とサイトのデータを作る（声を合成しない）→ `media.ts check` で動画の一覧と Releases を照らす → `gen.ts --media` で Worker の許可リスト（講座ごとの動画の一覧をつないだもの。Git に入れない）を作る → `build_site.ts --strict` で組み立て、`check_delivery.ts` で点検する → 組み立てた公開物を artifact に残す
+  3. `e2e`（合成の講座で、ブラウザのテスト）と `smoke`（build の artifact を手元の Worker で配って確かめる）
+  4. `deploy`: build の artifact を、build が出した sha256 の一覧と照らしてから `wrangler deploy` で出す。公開したページが組み立てたものと同じか・全部の動画の Range（`verify_public.ts`）・HTML の smoke（`tests/worker-site-smoke.ts`）を確かめ、通らなければ前の版に戻す
 - 公開の実行は、同じ時に 1 つだけ（あとから来たものは、前のものが終わるのを待つ）
-- 止まったら [戻し方](recovery.md) の「Actions を出し直す」
+- 止まったときと、前の版に戻ったときは [戻し方](recovery.md) の「Actions を出し直す」と「公開後の確かめが通らず、前の版に戻ったとき」
 
 ### 公開後の確認
+
+deploy のジョブは、出したあとに `verify_public.ts` と HTML の smoke を自分で流す。手で確かめるときは、次を流す。
 
 ```bash
 bun scripts/verify_public.ts                            # トップの 200 と、全部の動画の Range（206）
@@ -135,7 +135,7 @@ npm run test:e2e                   # 入れてある Chrome と、生成した�
 
 - テストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
 - ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
-- PR の CI（`.github/workflows/check.yml`）は 2 つのジョブ。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）でサイトを組み立てる。公開はせず、秘密情報も使わない
+- PR の CI（`.github/workflows/ci.yml`）は `check`・`build`・`e2e`・`smoke` の 4 つのジョブ（[CI の形](ci.md)）。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）でサイトを組み立て、artifact に残す。`smoke` は、その artifact を手元の Worker で配って確かめる。公開はせず、秘密情報も使わない。組み立てた公開物と smoke の結果は、PR の Checks の要約と artifact で見られる
 - `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP のハッシュと動く script の数・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
 - 大きさの上限の正本は `site/limits.ts`（保存は 1 ファイル 32 MiB・ページ 4 MiB・1 講座 1 GiB・201 ファイル、Workers の静的 assets は 1 ファイル 25 MiB・2 万ファイル、Releases の動画は 2 GiB 未満）。サイト用の動画は 14,500 KiB を目安に書き出す（上限ではない）。保存の上限を超える動画は `media.ts push`・`check` が止める
 - ファイルの型は、拡張子の対応表 `site/mime.ts` から付ける。知らない拡張子のファイルを `site/assets` に置くと、組み立てが止まる
@@ -156,6 +156,7 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 ```
 
 - Worker の許可リスト（`worker/src/generated/media-manifest.json`）は `npm run gen` が作る。`npm run dev:worker` は先に作る。`npx wrangler dev`（`.claude/launch.json` の worker も）を直に流すときは、先に `npm run gen`
+- PR の CI の `smoke` のジョブも、同じ smoke を、build の artifact と `wrangler dev` の手元のモードで流す（[CI の形](ci.md)）
 
 - HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る
 - ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 かを見る
