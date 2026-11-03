@@ -36,6 +36,7 @@ export async function registerGeneratedToken(token: { id: string; value: string 
   } catch { throw new Error('GitHubへの登録を完了できません。値は表示しません');
   } finally {
     if (!registered) {
+      // biome-ignore lint/correctness/noUnsafeFinally: 失効できなかったときは、登録の失敗より先にそれを知らせる（token が残っているかもしれないため）
       try { await revoke(token.id); } catch { throw new Error('未登録tokenの失効を確認できません。providerで確認してください。値は表示しません'); }
     }
   }

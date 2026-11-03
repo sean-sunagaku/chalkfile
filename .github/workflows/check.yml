@@ -1,4 +1,4 @@
-# 型・台本とファイルの点検（AI への指示文・HTML・見えない文字・秘密情報）を、Pull Request と main への push で流す
+# lint・型・台本とファイルの点検（AI への指示文・HTML・見えない文字・秘密情報）を、Pull Request と main への push で流す
 name: check
 
 on:
@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # 足したファイルの整形を見るため、マージの commit の 1 つ目の親（base の先頭）まで取る
+          fetch-depth: 2
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
@@ -28,6 +30,11 @@ jobs:
           bun-version-file: .bun-version
       # 依存のインストール時スクリプトは動かさない
       - run: npm ci --ignore-scripts
+      - run: npm run lint
+      # 全体の整形は、開いている講座の PR が 0 の日に 1 回で行う。それまでは、足したファイルだけを整った形で入れる
+      - name: 足したファイルの整形
+        if: github.event_name == 'pull_request'
+        run: bun scripts/format_new.ts --base HEAD^1
       - run: npm run typecheck
       - run: npm test
       - run: bun scripts/check_content.ts --self-test

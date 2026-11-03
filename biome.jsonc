@@ -1,0 +1,122 @@
+// Biome の設定（TS・TSX・JSON の lint と整形）。コメントを書くので biome.jsonc にしている
+//   npm run lint        lint だけ（CI の check でも流す）
+//   npm run format:new  足したファイルだけを整形する（CI の pull_request は、足したファイルの整形を確かめる）
+//   npm run format      全体の整形と lint の安全な直し。開いている講座の PR が 0 の日に 1 回だけ流す（下の「整形」）
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "root": true,
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true, "defaultBranch": "main" },
+  "files": {
+    "ignoreUnknown": true,
+    // 対象: 動画（src）・台本（content）・道具（scripts）・サイトの TS・Worker・テスト・設定の JSON
+    // HTML（site/template.html・site/home.html）と CSS は当面は見ない（画面の JS を TS に出したあとで見直す）
+    "includes": [
+      "src/**",
+      "content/**",
+      "scripts/**",
+      "site/*.ts",
+      "site/*.json",
+      "worker/**",
+      "tests/**",
+      "*.ts",
+      "*.json",
+      "*.jsonc",
+      ".claude/launch.json",
+      // 生成物（手で直さない。作り直す）と、テストの記録（そのままの形で残す）
+      "!src/generated",
+      "!tests/fixtures",
+      "!package-lock.json"
+    ]
+  },
+  // 整形: 書き方は今の多数派に合わせる（シングルクォート・セミコロン・2 スペース・末尾のカンマ）。
+  // 行幅は 120（content を除くコードの行の 92% が 120 字以内。100 字以内は 88%、80 字以内は 80%。2026-11-02 に数えた）
+  // 今は切ってある。全体の整形は、開いている講座の PR が 0 の日に 1 回の PR で行い（enabled を true にして npm run format）、
+  // その commit を .git-blame-ignore-revs に書く。それまで、新しく足したファイルだけを npm run format:new で整える
+  "formatter": {
+    "enabled": false,
+    // 台本（content）は lint だけにする。台本の 1 行は長く、整形すると差分が大きく、講座の PR と必ずぶつかる
+    // 動画の一覧（site/media-manifest.json）は scripts/media.ts が書く生成物
+    "includes": ["**", "!content/**", "!site/media-manifest.json"],
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all",
+      "arrowParentheses": "always",
+      "bracketSpacing": true
+    }
+  },
+  // import の並べ替えも、全体の整形と同じ日に入れる
+  "assist": { "enabled": false },
+  "linter": {
+    "enabled": true,
+    "domains": {
+      "react": "recommended",
+      // Playwright の規則は tests/browser だけで使う（下の overrides）。scripts の describe() を Playwright のものと取り違えるため
+      "playwright": "none"
+    },
+    "rules": { "preset": "recommended" }
+  },
+  "plugins": [
+    // 描画と台本で、乱数・今の時刻を使わない（error）
+    { "path": "./biome/plugins/no-nondeterminism.grit", "includes": ["src/**", "content/**"] },
+    // 部品に色を直接書かない（今は warn。T3A-05 で直書きを片付けてから error にする）
+    { "path": "./biome/plugins/no-hardcoded-color.grit", "includes": ["src/scenes/**", "src/components/**"] }
+  ],
+  "overrides": [
+    {
+      // 動画の描画（Remotion）。画面は動画の絵になるだけで、人が DOM を操作しない
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          // 支援技術が DOM を読まない（読むのは講座サイトの側）
+          "a11y": "off",
+          "suspicious": {
+            // 場面の項目は台本のとおりに並び、描いている間に並びが変わらない。添字の key で困らない
+            "noArrayIndexKey": "off",
+            // コードの場面の文字幅の見積もりで、ASCII（0x00〜0x7F）かどうかを見る正規表現（意図した書き方）。
+            // src/scenes は別の作業（場面を 1 種類 1 ファイルに分ける）で動いているので、ここでは直さずに warn にする。
+            // 分けたあとで、その行に理由を書いて抑止し（biome-ignore lint/suspicious/noControlCharactersInRegex）、この行を消す
+            "noControlCharactersInRegex": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["tests/browser/**", "playwright.config.ts"],
+      "linter": { "domains": { "playwright": "recommended" } }
+    },
+    {
+      // サイトの版に入るファイル（scripts/build_site.ts の pageVersion と、scripts/pwa.ts が作る sw.js）と、旧 Pages の移行の SW。
+      // 版を出力から決める直し（T0-08・#26）が入るまで、整形も lint の直しもしない（版が変わると、保存した全員に更新の案内が出る）。
+      // #26 が入ったら、この override を消してから整形する
+      "includes": [
+        "scripts/build_site.ts",
+        "scripts/pwa.ts",
+        "site/i18n.ts",
+        "site/offline-client.ts",
+        "site/offline-shared.ts",
+        "site/sw.ts",
+        "site/legacy-sw.ts"
+      ],
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    },
+    {
+      // 別の PR（#30）が直している最中なので、ここでは直さない。#30 が入ったあとに直すか、理由を書いて抑止する
+      // CONTROL の正規表現は、制御文字を見つけるための意図した書き方
+      "includes": ["scripts/check_content.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": { "noControlCharactersInRegex": "warn", "useIterableCallbackReturn": "warn" }
+        }
+      }
+    }
+  ]
+}

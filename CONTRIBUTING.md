@@ -24,15 +24,16 @@
 
 ```bash
 npm ci --ignore-scripts
-npm run check    # 型・単体テスト・台本とファイルの点検（CI と同じ）
+npm run check    # lint・型・単体テスト・台本とファイルの点検（CI と同じ）
 ```
 
+- 新しく足した TS・JSON は `npm run format:new` で整える（CI は、足したファイルの整形を見る）。全体の整形（`npm run format`）は、開いている講座の PR が 0 の日に 1 回だけ行うので、それまで流さない
 - 動画の見た目を変えたら `npm run stills -- <ID>` で静止画を見る
 - 台詞を変えたら synth → mix → render の順に作り直し、`.work/kana/<id>.txt` の読みを見る
 - 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
 - 動画（`site/media/`）と生成物はコミットしない
 - ポスターは `site/posters/`、Releasesの動画一覧は `site/media-manifest.json` としてコミットする。動画の公開を先に確認し、サイトはActions/Wranglerで配る（[配信手順](docs/workers-delivery.md)）
-- 講座サイト・PWAを変えたら、生成した動画と教材で `npm run build:site -- --strict` → `npm run test:e2e`。保存の失敗・更新・オフライン再起動も確認する。専用lintスクリプトはない
+- 講座サイト・PWAを変えたら、生成した動画と教材で `npm run build:site -- --strict` → `npm run test:e2e`。保存の失敗・更新・オフライン再起動も確認する。HTML（`site/template.html` など）は lint の対象外
 
 Pull Request のひな形の確認項目を埋めてください。
 
