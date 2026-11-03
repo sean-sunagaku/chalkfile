@@ -4,6 +4,7 @@
 import { chromium } from '@playwright/test';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { headersFor } from './site/headers';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const args = process.argv.slice(2);
@@ -65,6 +66,19 @@ check(
     header(sw, 'Cache-Control').includes('no-transform'),
   `${sw.status} ${header(sw, 'Cache-Control')}`,
 );
+// 静的な応答のヘッダーが、_headers の規則（scripts/site/headers.ts）のとおり（セキュリティのヘッダー・no-transform。
+// 同じパスに 2 つの規則が当たって、値がカンマでつながっていない）
+{
+  const differ: string[] = [];
+  for (const route of ['/', '/sw.js']) {
+    const response = await get(route, { headers: { 'Sec-Fetch-Mode': route === '/' ? 'navigate' : 'no-cors' } });
+    await response.body?.cancel();
+    for (const [name, value] of headersFor(route).headers) {
+      if (header(response, name) !== value) differ.push(`${route} ${name}: ${header(response, name) || '(無い)'}`);
+    }
+  }
+  check('静的な応答のヘッダー（_headers の規則のとおり）', !differ.length, differ.join(' / '));
+}
 for (const mode of ['navigate', 'no-cors']) {
   const missing = await get('/__smoke__/missing/', { headers: { 'Sec-Fetch-Mode': mode } });
   await missing.body?.cancel();

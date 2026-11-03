@@ -15,16 +15,20 @@ export const place = (from: string, to: string) => {
   }
 };
 
+/** 名前の順（文字コードの順。ロケールとファイルシステムに左右されない） */
+const byName = (a: { name: string }, b: { name: string }) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+
 /**
  * フォルダを写し、写したファイルを起動用ファイルとして返す。型は拡張子の対応表（site/mime.ts）から付け、知らない拡張子なら止める
  * （SW は起動用ファイルの型を、配信の Content-Type と照らし合わせる。違うと、全員の新しい SW の install が止まる）。
- * 名前を変えた画像が残らないように、写す前に消す
+ * 名前を変えた画像が残らないように、写す前に消す。並びは名前の順にする（起動用ファイルの一覧は sw.js に入るので、
+ * フォルダを読む順が違う手元の macOS と CI の Linux でも、同じ sw.js にする）
  */
 export const copyAssets = (from: string, to: string, dist: string): Asset[] => {
   const shell: Asset[] = [];
   const copyDir = (a: string, b: string) => {
     mkdirSync(b, { recursive: true });
-    for (const e of readdirSync(a, { withFileTypes: true })) {
+    for (const e of readdirSync(a, { withFileTypes: true }).sort(byName)) {
       const src = path.join(a, e.name);
       const dst = path.join(b, e.name);
       if (e.isDirectory()) copyDir(src, dst);
@@ -48,5 +52,5 @@ export const copyAssets = (from: string, to: string, dist: string): Asset[] => {
 export const thumbnailAssets = (dist: string, posters: string[]): Asset[] =>
   posters.flatMap((f) => {
     const local = path.join(dist, f);
-    return existsSync(local) ? [asset(f, readFileSync(local), 'image/jpeg')] : [];
+    return existsSync(local) ? [asset(f, readFileSync(local), mimeOf(f))] : [];
   });

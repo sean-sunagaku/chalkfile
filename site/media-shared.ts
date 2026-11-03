@@ -16,12 +16,25 @@ export type MediaEntry = {
 export type RetainedMediaEntry = MediaEntry & { retainedUntil?: string };
 export type MediaManifest = { schema: 1; entries: MediaEntry[]; retained?: RetainedMediaEntry[] };
 export const allMediaEntries = (manifest: MediaManifest) => [...manifest.entries, ...(manifest.retained ?? [])];
-const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
-const LANG = /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
-const HASH = /^[a-f0-9]{64}$/;
+// 講座・レクチャーの ID、言語、SHA-256 の形。一覧の検査（validateMediaManifest）と、配るパスの読み方（parseMediaPath）が同じものを使う
+const ID_PART = '[A-Za-z0-9][A-Za-z0-9_-]*';
+const LANG_PART = '[a-z]{2,3}(?:-[A-Z]{2})?';
+const HASH_PART = '[a-f0-9]{64}';
+const ID = new RegExp(`^${ID_PART}$`);
+const LANG = new RegExp(`^${LANG_PART}$`);
+const HASH = new RegExp(`^${HASH_PART}$`);
+const MEDIA_PATH = new RegExp(`^/media/(${LANG_PART})/(${ID_PART})/(${ID_PART})(\\.cc)?\\.(${HASH_PART})\\.mp4$`);
 export const mediaFilename = (entry: Pick<MediaEntry, 'lecture' | 'kind' | 'sha256'>) =>
   `${entry.lecture}${entry.kind === 'captioned' ? '.cc' : ''}.${entry.sha256}.mp4`;
 export const mediaPath = (entry: MediaEntry) => `/media/${entry.lang}/${entry.course}/${entry.filename}`;
+/** 配るパス（/media/<言語>/<講座>/<レクチャー>[.cc].<SHA-256>.mp4。mediaPath の形）を読む。形が違えば null（query の付いたものも null） */
+export const parseMediaPath = (pathname: string): Pick<MediaEntry, 'lang' | 'course' | 'lecture' | 'kind' | 'sha256'> | null => {
+  const m = MEDIA_PATH.exec(pathname);
+  return m ? { lang: m[1], course: m[2], lecture: m[3], kind: m[4] ? 'captioned' : 'standard', sha256: m[5] } : null;
+};
+/** 単体で保存するときのファイルの名前（字幕を焼き込んだ版は .captioned）。Worker・SW・手元の配信が同じ名前を付ける */
+export const downloadName = (entry: Pick<MediaEntry, 'lecture' | 'kind'>) =>
+  `${entry.lecture}${entry.kind === 'captioned' ? '.captioned' : ''}.mp4`;
 export const mediaKey = (entry: Pick<MediaEntry, 'lang' | 'course' | 'lecture' | 'kind'>) =>
   `${entry.lang}/${entry.course}/${entry.lecture}/${entry.kind}`;
 export const releaseUrl = (entry: MediaEntry) =>

@@ -18,6 +18,8 @@ export default defineConfig<{ siteMode: SiteMode }>({
   workers: Number(process.env.PW_WORKERS ?? 2),
   timeout: 120000,
   expect: { timeout: 20000 },
+  // CI だけ 1 回流し直す（遅い runner で、SW の準備の待ち時間がときどき揺れる）。流し直して通ったものは、記録に flaky と出る
+  retries: process.env.CI ? 1 : 0,
   outputDir: path.join(evidence, 'test-results'),
   reporter: 'line',
   use: {

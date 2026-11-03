@@ -8,8 +8,10 @@ import { LANG_INFO, LANGS, type Lang } from '../../content/i18n';
 import { THEMES, themeOf } from '../../content/themes';
 import type { Course } from '../../content/types';
 import { posterFile } from '../../engine/core/generated';
+import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
 import { SITE_TEXT, THEME_SUMMARY } from '../../site/i18n';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
+import { mimeOf } from '../../site/mime';
 import type { Asset, CourseManifest } from '../../site/offline-shared';
 import { asset, buildPwa, bundle } from '../pwa';
 import { assertSiteInvariants } from '../site-invariants';
@@ -49,6 +51,10 @@ export type BuildSiteOptions = {
   config?: SiteConfig;
   /** ポスターの置き場所（既定は本物の講座の置き場所。config.ts の realPosterOf） */
   posterOf?: (courseId: string, key: string) => string;
+  /** 一覧のページの画像のフォルダ（既定は site/assets。写したものは全部、SW の起動用ファイルになる） */
+  assetsDir?: string;
+  /** 無効にした保存版の revision（既定は site/disabled-revisions.ts。sw.js の設定に入れる） */
+  disabledRevisions?: readonly string[];
   /** 進み具合の出力（既定は console.log）と注意（既定は console.warn） */
   log?: (line: string) => void;
   warn?: (line: string) => void;
@@ -58,10 +64,29 @@ export type BuildSiteOptions = {
 export type BuildSiteResult = {
   /** 書き出したファイル（outDir からの場所と大きさ） */
   files: { name: string; bytes: number }[];
-  /** 保存の manifest を作った講座（sw.js に入れた講座） */
+  /** この組み立てで保存の manifest を作った講座（講座を指定したときは、その講座だけ） */
   manifests: CourseManifest[];
+  /** sw.js に入れた、保存できる講座の ID（出す言語の全部の講座のうち、組み立てたサイトに保存の manifest があるもの） */
+  courses: string[];
   /** まだ動画かポスターが無いもの */
   missing: string[];
+};
+
+/**
+ * 無効にした保存版の一覧（site/disabled-revisions.ts）の誤り: revision の形（64 字の SHA-256）・重なり・今公開する版
+ * （無効にすると、直した版を保存した人まで、オンラインでは保存版を開けなくなる）
+ */
+export const disabledRevisionProblems = (revisions: readonly string[], manifests: readonly CourseManifest[]): string[] => {
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const r of revisions) {
+    if (!/^[a-f0-9]{64}$/.test(r)) problems.push(`無効にした保存版の revision の形が違う（64 字の SHA-256）: ${r}`);
+    else if (seen.has(r)) problems.push(`無効にした保存版の revision が重なっている: ${r}`);
+    seen.add(r);
+    const current = manifests.find((m) => m.revision === r);
+    if (current) problems.push(`今公開する版を無効にしている（${current.id}）: ${r}。直した版を公開してから、前の版の revision を入れる`);
+  }
+  return problems;
 };
 
 /** 講座サイトを組み立てる（outDir を書き換える）。安全のための確かめ・公開物の決まりに通らなければ止める */
@@ -100,6 +125,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   };
   const videos = new Map(o.mediaManifest.entries.map((e) => [mediaKey(e), e]));
   const posterOf = o.posterOf ?? realPosterOf;
+  const assetsDir = o.assetsDir ?? path.join(SITE_DIR, 'assets');
   const missing: string[] = [];
   const manifests: CourseManifest[] = [];
   const shell: Asset[] = [];
@@ -122,7 +148,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       for (const lec of lectures) {
         const from = posterOf(course.id, lec.key);
         if (existsSync(from))
-          posters.push({ file: `${lec.key}.jpg`, from, data: readFileSync(from), type: 'image/jpeg' });
+          posters.push({ file: `${lec.key}.jpg`, from, data: readFileSync(from), type: mimeOf(`${lec.key}.jpg`) });
         else missing.push(posterFile(course.id, lec.key));
       }
       // 版は出力から決める（scripts/site-version.ts）。ページとポスターの ?v= には版の印を入れて描き、版が決まってから差し込む
@@ -185,7 +211,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       brand,
       themes: Object.values(THEMES),
       themeOf,
-      hasThemeImage: (id) => existsSync(path.join(SITE_DIR, `assets/themes/${id}.jpg`)),
+      hasThemeImage: (id) => existsSync(path.join(assetsDir, `themes/${id}.jpg`)),
       themeSummary: (t) => (lang === 'ja' ? t.summary : (THEME_SUMMARY[lang][t.id] ?? t.summary)),
       minutesOf: (c) => minutesOf(c, (c.lang ?? 'ja') as Lang, readData),
       credits: homeCredits(coursesIn(lang), lang),
@@ -203,7 +229,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
 
   /* ───────────── 画像・PWA・ヘッダー ───────────── */
   // 一覧のページの画像と、講座のサムネイル（日本語の講座の最初の動画のポスター）は、SW の起動用ファイルにする
-  shell.push(...copyAssets(path.join(SITE_DIR, 'assets'), path.join(dist, 'assets'), dist));
+  shell.push(...copyAssets(assetsDir, path.join(dist, 'assets'), dist));
   shell.push(
     ...thumbnailAssets(
       dist,
@@ -213,14 +239,20 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const mediaRoots = Object.fromEntries(
     langs.flatMap((l) => (mediaRootOf(config, l) ? [[l, mediaRootOf(config, l) as string]] : [])),
   );
-  await buildPwa(
-    SITE_DIR,
-    dist,
-    brand,
-    manifests.map((m) => m.id),
-    shell,
-    mediaRoots,
+  // sw.js に入れる講座（保存できる講座）は、出す言語の全部の講座から、組み立てたサイトに保存の manifest があるものを選ぶ。
+  // 講座を指定して組み立てたときも、前に組んだ講座を外さない（外すと、その講座を保存できず、一覧のページの保存の欄からも消える）
+  const saveable = langs
+    .flatMap((lang) => coursesIn(lang).map((c) => `${LANG_INFO[lang].path}${c.id}`))
+    .filter((cid) => existsSync(path.join(dist, cid, 'offline-manifest.json')));
+  const published = saveable.map(
+    (cid) =>
+      manifests.find((m) => m.id === cid) ??
+      (JSON.parse(readFileSync(path.join(dist, cid, 'offline-manifest.json'), 'utf8')) as CourseManifest),
   );
+  const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
+  const disabledProblems = disabledRevisionProblems(disabledRevisions, published);
+  if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
+  await buildPwa(SITE_DIR, dist, brand, saveable, shell, mediaRoots, disabledRevisions);
   writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
@@ -231,7 +263,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     mediaRoots,
     media: o.mediaManifest,
     shell,
-    courses: manifests.map((m) => m.id),
+    courses: saveable,
     scripts: [WWW_REDIRECT_SCRIPT, pageScript, app.offlineClient],
   });
   const files = listOutput(dist);
@@ -244,5 +276,5 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     if (o.strict) throw new Error(msg);
     warn(msg);
   }
-  return { files, manifests, missing };
+  return { files, manifests, courses: saveable, missing };
 }
