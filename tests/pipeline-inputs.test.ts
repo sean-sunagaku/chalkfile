@@ -125,6 +125,8 @@ describe('動画の台本の側の指紋（render の script・動画の一覧�
       ['出典', courseWith((c) => Object.assign(c, { sources: [] }))],
       ['並び', courseWith((c) => Object.assign(c, { order: c.order + 100 }))],
       ['ほかのレクチャーの中身', courseWith((c) => Object.assign(c.lectures[1], { title: '別の題' }))],
+      // 台詞の id は、画面の要素の at を台詞に結ぶ名前（読み込むときに番号に直す）。番号が同じなら動画は同じ
+      ['台詞の id', lectureWith((l) => Object.assign(l.scenes[1].lines[0], { id: 'renamed' }))],
     ];
     for (const [what, v] of cases) expect(`${what} ${scriptDigest(v, timeline) === base}`).toBe(`${what} true`);
   });
@@ -425,5 +427,39 @@ describe('段の指紋（本物の段 voice・mix・render を、一時のフォ
       publishedChecks(w.root, [lectureWith((l) => Object.assign(l, { title: '別' }))], src).map((c) => c.result),
     ).toEqual(['script', 'script']);
     expect(publishedChecks(w.root, [video], 'ffffffffffffffff').map((c) => c.result)).toEqual(['src', 'src']);
+  });
+});
+
+describe('段が流す道具（本物の段の run。道具は偽物の runCommand で受けるだけ）', () => {
+  test('voice は synth.ts、mix は mix.py、render は render.sh（掛け合いの講座は CAPTIONS=1、並列の数は CONCURRENCY）、docs と site は全部', async () => {
+    const calls: string[] = [];
+    const stages = makeStages({
+      root: ROOT,
+      hasher: fileHasher(ROOT, null),
+      store: { cache: tmp(), local: tmp() },
+      runCommand: (argv, env = {}) => {
+        calls.push(
+          [
+            ...Object.entries(env).map(([k, v]) => `${k}=${v}`),
+            ...argv.slice(argv[0] === process.execPath ? 1 : 0),
+          ].join(' '),
+        );
+        return 0;
+      },
+    });
+    const run = (name: string, units: string[], o = {}) => stages.find((s) => s.name === name)?.run(units, o);
+    await run('voice', ['G01', 'N01'], { cachedOnly: true });
+    await run('mix', ['G01']);
+    await run('render', ['G01', 'N01'], { jobs: 4 });
+    await run('docs', ['docs']);
+    await run('site', ['site']);
+    expect(calls).toEqual([
+      'scripts/synth.ts --cached-only G01 N01',
+      'uv run --locked --group audio python scripts/mix.py G01',
+      'CONCURRENCY=4 CAPTIONS=0 bash scripts/render.sh N01',
+      'CONCURRENCY=4 CAPTIONS=1 bash scripts/render.sh G01',
+      'scripts/build_materials.ts',
+      'scripts/build_site.ts',
+    ]);
   });
 });

@@ -54,11 +54,17 @@ export const RENDER_DEPS = [
   'react-dom',
 ] as const;
 
-/** 台本の側の入力（指紋にする前の値）。timeline は Git に入れた timeline のファイルを読んだもの */
+/**
+ * 台本の側の入力（指紋にする前の値）。timeline は Git に入れた timeline のファイルを読んだもの。
+ * 台詞の id は入れない（画面の要素の at を台詞に結ぶ名前で、読み込むときに番号に直す。番号が同じなら、名前を変えても動画は同じ）
+ */
 export const scriptInputs = ({ key, lang, lecture, course }: Video, timeline: unknown) => ({
   key,
   lang,
-  lecture: Object.fromEntries(LECTURE_FIELDS.map((k) => [k, lecture[k]])),
+  lecture: {
+    ...Object.fromEntries(LECTURE_FIELDS.map((k) => [k, lecture[k]])),
+    scenes: lecture.scenes.map((s) => ({ ...s, lines: s.lines.map(({ id: _id, ...line }) => line) })),
+  },
   course: {
     id: course.id,
     title: course.title,
