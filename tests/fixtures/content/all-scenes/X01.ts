@@ -63,10 +63,6 @@ export const X01: Lecture = {
         { key: 'scene', en: 'Scene', ja: '場面', desc: '画面の 1 まとまり', tone: 'violet', icon: 'layout', at: 0 },
         { key: 'line', en: 'Line', ja: '台詞', desc: '声と字幕の 1 文', tone: 'pink', icon: 'message', at: 1 },
       ],
-      focus: [
-        { key: 'scene', at: 0 },
-        { key: null, at: 1 },
-      ],
       lines: [{ t: '場面は、画面の一まとまりです。' }, { t: '台詞は、声と字幕の一文です。', sfx: 'pop' }],
     },
     {
@@ -222,7 +218,7 @@ export const X01: Lecture = {
       heading: 'スマホの画面',
       screens: [
         { at: 0, kind: 'app', title: 'Pro にする？', lead: 'はじめての設定', body: ['月 1,000 円'], primary: '申し込む', secondary: 'あとで', caption: 'アプリの画面' },
-        { at: 1, kind: 'stripe', title: '支払い', lead: 'Pro プラン', body: ['14 日間無料', '月 1,000 円', 'いつでも解約できる'], primary: '申し込む', caption: '支払いの画面' },
+        { at: 1, kind: 'app', title: '支払い', lead: 'Pro プラン', body: ['14 日間無料', '月 1,000 円', 'いつでも解約できる'], primary: '申し込む', caption: '支払いの画面' },
         { at: 2, kind: 'done', title: 'ようこそ', lead: 'Pro になりました', body: ['全部の機能が使える'], primary: 'はじめる', caption: '終わりの画面' },
       ],
       lines: [{ t: 'アプリで申し込みます。', v: Z }, { t: '支払いの画面で、カードを入れます。' }, { t: '終わりの画面が出ます。', v: Z, sfxAfter: 'chin' }],

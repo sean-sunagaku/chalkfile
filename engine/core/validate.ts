@@ -219,12 +219,10 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
     case 'points':
     case 'recap':
       return notEmpty(s.items, '項目（items）', w('items'), out);
-    case 'concepts': {
+    case 'concepts':
       notEmpty(s.cards, 'カード（cards）', w('cards'), out);
-      const keys = keysOf(list(s.cards), w('cards'), out);
-      list(s.focus).forEach((f, i) => f?.key !== null && refTo(keys, f?.key, 'focus のカード', 'focus が何も光らせない', w(`focus[${i}].key`), out));
+      keysOf(list(s.cards), w('cards'), out);
       return;
-    }
     case 'sequence': {
       notEmpty(s.actors, '登場人物（actors）', w('actors'), out);
       notEmpty(s.steps, '矢印（steps）', w('steps'), out);

@@ -249,11 +249,11 @@ export const Points: React.FC<{ s: PointsScene }> = ({ s }) => {
   );
 };
 
-const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean; dim: boolean }> = ({ card, active, dim }) => {
+const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean }> = ({ card, active }) => {
   const p = useAppear(card.at);
   const tt = tone(card.tone);
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', opacity: p * (dim ? 0.5 : 1), transform: `translateY(${dropY(p)}px) scale(${active ? 1.03 : 1})` }}>
+    <div style={{ flex: 1, minWidth: 0, display: 'flex', opacity: p, transform: `translateY(${dropY(p)}px) scale(${active ? 1.03 : 1})` }}>
       <Glass t={card.tone} active={active ? 1 : 0} style={{ flex: 1, padding: '30px 30px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <IconBadge name={card.icon} t={card.tone} size={66} glow={active ? 0.9 : 0} />
@@ -283,7 +283,7 @@ export const Concepts: React.FC<{ s: ConceptsScene }> = ({ s }) => {
         <div key={r} style={{ display: 'flex', gap: 28, alignItems: 'stretch', minHeight: 330 }}>
           {row.map((c, k) => {
             const idx = r * cols + k;
-            return <ConceptCardView key={c.key} card={c} active={idx === current} dim={false} />;
+            return <ConceptCardView key={c.key} card={c} active={idx === current} />;
           })}
           {row.length < cols ? Array.from({ length: cols - row.length }, (_, k) => <div key={`p${k}`} style={{ flex: 1 }} />) : null}
         </div>

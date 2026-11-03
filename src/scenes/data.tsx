@@ -513,29 +513,6 @@ export const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
 
 const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
   const text = useText();
-  if (sc.kind === 'stripe') {
-    return (
-      <div style={{ position: 'absolute', inset: 0, background: '#FFFFFF', padding: '68px 26px 26px', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: SANS }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#5B6178', fontSize: 19, fontWeight: 700 }}>
-          <Icon name="lock" size={20} color="#5B6178" /> {text.payPage}
-        </div>
-        <div style={{ fontSize: 31, fontWeight: 900, color: '#1D2340' }}>{sc.lead}</div>
-        <div style={{ borderRadius: 14, background: '#F4F5FA', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {sc.body.slice(0, 2).map((b, i) => (
-            <div key={i} style={{ fontSize: 21, fontWeight: i === 0 ? 900 : 500, color: i === 0 ? '#1F9D6E' : '#30365A' }}>{b}</div>
-          ))}
-        </div>
-        <div style={{ fontSize: 19, color: '#6B718C', marginTop: 4 }}>{sc.body[2]}</div>
-        {['1234 1234 1234 1234', 'MM / YY　　CVC'].map((ph) => (
-          <div key={ph} style={{ height: 54, borderRadius: 10, border: '1.5px solid #D5D8E6', display: 'flex', alignItems: 'center', padding: '0 14px', fontFamily: MONO, fontSize: 19, color: '#9AA0B8' }}>
-            {ph}
-          </div>
-        ))}
-        <div style={{ fontSize: 17, color: '#6B718C', lineHeight: 1.5 }}>{sc.note ?? text.payNote}</div>
-        <div style={{ marginTop: 'auto', height: 62, borderRadius: 12, background: '#1D2340', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 23 }}>{sc.primary}</div>
-      </div>
-    );
-  }
   const done = sc.kind === 'done';
   return (
     <div style={{ position: 'absolute', inset: 0, background: done ? '#F1FFF8' : '#FFF4F8', padding: '64px 22px 22px', display: 'flex', flexDirection: 'column', fontFamily: SANS }}>
@@ -614,7 +591,7 @@ export const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
         {s.screens.map((x, i) => {
           const on = i === cur;
           const seen = i <= cur;
-          const tt = TONES[x.kind === 'stripe' ? 'cyan' : x.kind === 'done' ? 'mint' : 'pink'];
+          const tt = TONES[x.kind === 'done' ? 'mint' : 'pink'];
           return (
             <div key={i} style={{ display: 'flex', gap: 24, alignItems: 'flex-start', opacity: seen ? (on ? 1 : 0.5) : 0.18 }}>
               <div
@@ -721,8 +698,7 @@ export const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
 
 const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> = ({ at, text, y, left }) => {
   const p = useAppear(at, 10);
-  const active = useActiveLine();
-  const on = active === at || (active > at && active < at + 1);
+  const on = useActiveLine() === at;
   return (
     <div style={{ position: 'absolute', left, right: PAD, top: y, opacity: p * (on ? 1 : 0.6), transform: `translateX(${(1 - p) * -16}px)` }}>
       <Glass t="mint" active={on ? 1 : 0} style={{ padding: '18px 22px' }}>
