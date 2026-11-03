@@ -11,7 +11,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const S03: LectureL10n = {
-  source: 'abaf8e88fb47',
+  source: '8d4573cd2134',
   title: 'Moved by events (event-driven)',
   summary:
     "The Triggers that move a Super-agent (the events around it), and the two-stage filter that sifts a noisy stream of events (a code Fast Path and a model Slow Path). The Worker in charge subscribes to a Thread (one running PR or topic), and pass-through hands it the follow-ups directly, easing the front desk's load.",

@@ -7,8 +7,8 @@
 | 値 | 持つ動画 | 求め方（作るときと同じ関数） | 変わると |
 |---|---|---|---|
 | 音声の鍵 | 全部 | `scripts/voices.ts` の v1（`ttsKeyV1In`。凍結した前の作り方。声の設定が v1 のときと違う声は無い）と v2（`ttsKeyV2`。合成のレシピから。表示用の credit は入らない）。synth と素材は v2 → v1 の順に探す（`ttsKeysIn`）。声は台詞の `v`（無ければ先生） | v1 も v2 も変わった台詞は、素材の音声が当たらなくなる。合成し直しが要る（CI の `synth.ts --cached-only` で公開が止まる） |
-| 読み | 全部 | `content/voices.ts` の `speechIn`（日本語は `content/reading.ts` の `toSpeech`、中国語は `toSpeechZh`） | VOICEVOX・Kokoro に渡す文が変わる（鍵も変わる） |
-| 訳の指紋 | 訳がある動画だけ（訳の動画と、その元の日本語の動画） | `scripts/i18n.ts` の `fingerprint`（`stamp` が訳のファイルの `source` に書く値。訳の動画も、元の日本語の台本から求める） | その訳が stale になる |
+| 読み | 全部 | `content/voices.ts` の `speechIn`（日本語は `content/reading.ts` の `toSpeech` と、講座の辞書 `content/<講座>/reading.ts`。中国語は `toSpeechZh`） | VOICEVOX・Kokoro に渡す文が変わる（鍵も変わる） |
+| 訳の指紋 | 訳がある動画だけ（訳の動画と、その元の日本語の動画） | `scripts/i18n.ts` の `fingerprint`（`stamp` が訳のファイルの `source` に書く値。訳の動画も、元の日本語の台本の訳す文字から求める） | その訳が stale になる |
 | クレジット | 全部 | `content/voices.ts` の `creditsIn`（動画のエンディングが、台詞の声から作る値。`VOICES` の並びと `credit` の表記で決まる） | 動画の終わりの画面が変わる（書き出し直し） |
 
 全体の値（鍵の一覧など）は置かず、テストが動画ごとのファイルから求めます。講座を足す PR は自分の動画のファイルを足すだけなので、ほかの PR とぶつかりません。

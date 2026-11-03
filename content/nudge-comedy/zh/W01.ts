@@ -16,7 +16,7 @@ const TEN = 'tennokoe' as const;
 const APP = '示例记账';
 
 export const W01: LectureL10n = {
-  source: 'df4fece261f5',
+  source: '329575d8028f',
   title: '什么是助推？',
   summary: '助推课程第 1 章的搞笑版。老师一边吐槽，一边给俊达萌过火的点子（强制、金钱、暗黑模式）起名字，带你记住它们和助推的区别，以及好助推的 3 个条件。',
   docs: docsTitles(['thaler-sunstein-2008', 'thaler-2015-nyt', 'dellavigna-linos-2022', 'ftc-2022-dark-patterns', 'caa-tokushoho-2022', 'thaler-2018-sludge']),

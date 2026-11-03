@@ -12,7 +12,7 @@ const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
 export const S03: LectureL10n = {
-  source: 'abaf8e88fb47',
+  source: '8d4573cd2134',
   title: '跟着事件动起来（事件驱动）',
   summary:
     '驱动 Super-agent 的 Trigger（身边发生的事件），以及把嘈杂的事件流筛掉的两段筛子（代码的 Fast Path 与模型的 Slow Path）。负责的 Worker 订阅同一个 PR 或话题的一连串事件（Thread），后续事件通过直通（pass-through）原样交给它，减轻前台的负担。',

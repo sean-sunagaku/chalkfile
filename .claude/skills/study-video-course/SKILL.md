@@ -50,7 +50,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 
 公開の前に、全部やる。
 
-- 読み: `.work/kana/<ID>.txt` を全部読む。誤読は台詞の `s` か `content/reading.ts` で直して synth し直す
+- 読み: `.work/kana/<ID>.txt` を全部読む。誤読は台詞の `s` か講座の辞書 `content/<講座>/reading.ts`（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）で直して synth し直す（[style.md](references/style.md) の「読み間違いの直し方」）
 - 見た目: `npm run stills -- L01 --mid` で `out/stills/` に静止画を書き、全部見る（はみ出し・重なり・小さすぎ）。字幕つきは `--captions`。共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`
 - 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本のファイルだけを渡し、主張ごとに公式で確かめてもらう（[research.md](references/research.md) の「事実確認を別の目でやる」）。お笑い版では、ツッコミを直させない
@@ -67,7 +67,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 | 頼まれたこと | やること |
 |---|---|
 | 台詞を直す | 台本 → synth → kana を見る → mix → render → stills → 公開の順番 |
-| 読み間違いを直す | `reading.ts` の `PHRASES`（語句）か `WORDS`（英単語）に足す → synth（読みが変わった台詞だけ作り直す）→ mix → render。`reading.ts` は全講座で共有なので、ほかの講座の読みが変わっていないかも見る |
+| 読み間違いを直す | 講座の辞書 `content/<講座>/reading.ts` の `phrases`（語句）か `words`（英単語）に足す（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）→ `npm test`・`npm run reading:diff` で変わった台詞を見る → synth（読みが変わった台詞だけ作り直す）→ mix → render |
 | 図や画面の文字だけ直す | 台本 → stills → render（声は変わらないので synth と mix は要らない） |
 | トンマナを変える | テーマを選ぶか作る → 講座の `theme` を書き換える → `npm run stills -- <ID> --theme=<id>` で試す → 全部の動画を render（[theme.md](references/theme.md)） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |

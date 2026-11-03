@@ -24,7 +24,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 章 ID・節 ID | 読む教材の章（`nudge-01`）と節（`nudge-01-s02`）の名前。レクチャー ID（`N01`）とは別の名前。AI チャットが答えの根拠を指すのに使うので、公開したら変えない | `ChapterMaterial.id`・`MaterialSection.id` |
 | 場面 | 動画の中の 1 画面ぶん。種類（`kind`）ごとに描き方が決まっている | `content/types.ts` の `Scene` |
 | 台詞 | 場面の中の 1 つの発話。`t` は画面の台本と字幕に出す文、`s` は読み上げだけを変えたいときの文、`v` は声 | `content/types.ts` の `Line` |
-| `at` | 画面の要素を、その場面の何番目の台詞の頭で出すか（0 から数える） | `content/types.ts` の頭の説明 |
+| `at` | 画面の要素を、その場面の何番目の台詞の頭で出すか（0 から数える）。同じ場面の台詞の `id` でも書ける（読み込むときに番号に直す） | `content/types.ts` の `At` |
 | 動画 | レクチャー 1 本を、1 つの言語で作ったもの。日本語と訳は、別の動画として扱う | `content/index.ts` の `Video`・`VIDEOS` |
 | 動画の key | 動画の名前。日本語はレクチャー ID のまま（`S01`）、訳は言語を付ける（`S01.en`）。timeline・音・字幕・動画のファイル名に使う | `content/i18n.ts` の `videoKey` |
 | コンポジション ID | Remotion の中での動画の名前。ドットが使えないので、`S01.en` は `S01-en` になる | `content/i18n.ts` の `compositionId` |
@@ -36,7 +36,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 声 | 台詞を読む役（講師の `narrator`・天の声の `tennokoe` など）。日本語は VOICEVOX、英語と中国語は Kokoro-82M の話者に当てる | `content/types.ts` の `VoiceId`。話者と話し方は `content/voices.ts`（音声の鍵の計算は `scripts/voices.ts`） |
 | 配役 | 掛け合いの講座で、声ごとに付ける名前と色。焼き込んだ字幕の名前の札と、サイトの台本の「ずんだもん：…」に出る | `Course.cast` |
 | 声の鍵 | 台詞の音声ファイルの名前。読み上げる文と合成のレシピ（話者・話し方・音量・前後の無音・出力の形。表示用のクレジットは入れない）から作るので、同じ文・同じレシピなら、前に作った音声を使い回す。v2 → v1（凍結した前の作り方）の順に探し、新しく作る声には v2 の鍵を付ける | `scripts/voices.ts` の `ttsKeysIn`・`recipeIn` |
-| 読み | 声に読ませる文。英字をカナに開く辞書は `content/reading.ts`。合成したときの読みは `.work/kana/<key>.txt` で確かめる | `content/reading.ts` |
+| 読み | 声に読ませる文。英字をカナに開く辞書は、共通の `content/reading.ts` と講座の `content/<講座>/reading.ts`（その講座の台詞にだけ効き、共通より優先）。合成したときの読みは `.work/kana/<key>.txt` で確かめる | `content/reading.ts`・`content/<講座>/reading.ts` |
 | timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む。時刻に効く入力の指紋を持ち、台本を直したのに合成し直していない動画を Studio と validate が止める | `content/<講座>/generated/timeline/<key>.json`（動画ごと）。形と指紋は `engine/core/timeline.ts` |
 | ミックス | 台詞・BGM・ジングル・効果音を 1 本にまとめた音 | `scripts/mix.py` が `public/audio/mix/<key>.wav` に書く |
 
@@ -74,8 +74,8 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
 | 言語の記号 | `ja`・`en` のような 2 文字の名前。`zh` は中国語の簡体字 | `content/i18n.ts` の `Lang`・`LANGS` |
-| 訳の上書き | 日本語の台本に重ねる訳のファイル。画面の文字は日本語と同じ数・同じ順で上書きし、台詞は丸ごと書き直す。理由は [ADR](../adr/2026-11-02-japanese-source-translation-overlay.md) | `content/<講座 ID>/<言語>/`。重ね方は `content/i18n.ts` |
-| 訳の指紋 | 訳したときの日本語の台本の指紋。台本が変わると `scripts/i18n.ts status` が知らせる | `LectureL10n.source` |
+| 訳の上書き | 日本語の台本に重ねる訳のファイル。画面の文字は日本語と同じ数・同じ順で上書きし（`key` を書いた項目は `key` で重ねる）、台詞は丸ごと書き直す。理由は [ADR](../adr/2026-11-02-japanese-source-translation-overlay.md) | `content/<講座 ID>/<言語>/`。重ね方は `content/i18n.ts`、項目の役目は `content/fields.ts` |
+| 訳の指紋 | 訳したときの日本語の台本の、訳す文字の指紋。訳す文字が変わると `scripts/i18n.ts status` が知らせ、公開する言語の訳なら `check_content.ts` が止める | `LectureL10n.source` |
 | publishLangs | 公開する言語。サイトに出す言語と、引数なしの synth が作る動画を決める | `site/config.json` |
 
 ## 講座の種類と見た目
