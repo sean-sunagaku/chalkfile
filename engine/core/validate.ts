@@ -7,11 +7,13 @@
 // 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
 //   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い
 //   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い
-// いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から読む
+// いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から、字幕と見出しの大きさを src/video.config.ts から読む
 import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
-import type { Course, Evidence, Lecture, Line, Scene, SfxId, Theme, Tone, VoiceId } from '../../content/types';
+import type { Course, Evidence, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
 import { VIDEO_TEXT } from '../../src/i18n';
+import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
+import { SCENE_INFO, SCENE_KINDS } from './scenes';
 
 export type Level = 'error' | 'warning';
 
@@ -50,31 +52,7 @@ export type Rule = keyof typeof RULES;
 export type Issue = { where: string; message: string; level: Level; rule: Rule };
 
 /* ───────────── 名前の一覧（型と同じものを、実行時に確かめる用に持つ。足し忘れると型で止まる） ───────────── */
-
-const SCENE_KIND_SET: Record<Scene['kind'], true> = {
-  opening: true,
-  goals: true,
-  points: true,
-  concepts: true,
-  sequence: true,
-  flow: true,
-  states: true,
-  code: true,
-  table: true,
-  compare: true,
-  big: true,
-  numbers: true,
-  timeline: true,
-  quiz: true,
-  recap: true,
-  refs: true,
-  phone: true,
-  screens: true,
-  terminal: true,
-  ending: true,
-};
-/** 場面の種類（20 種類） */
-export const SCENE_KINDS = Object.keys(SCENE_KIND_SET) as Scene['kind'][];
+// 場面の種類の一覧は engine/core/scenes.ts の SCENE_INFO（教材の絵コンテと同じ一覧）
 
 /** 効果音（scripts/mix.py の SFX_DB と public/audio/sfx/<名前>.wav） */
 const SFX_SET: Record<SfxId, true> = { pop: true, whoosh: true, chime: true, tick: true, reveal: true, correct: true, type: true, harisen: true, chin: true, drumroll: true, deden: true, zuko: true };
@@ -85,21 +63,23 @@ const VOICE_SET: Record<VoiceId, true> = { narrator: true, announcer: true, zund
 export const VOICE_IDS = Object.keys(VOICE_SET) as VoiceId[];
 
 const TONE_SET: Record<Tone, true> = { pink: true, violet: true, cyan: true, mint: true, amber: true, coral: true, slate: true };
+/** 端末の出力の色（src/scenes/terminal.tsx） */
+const TERMINAL_TONE_SET: Record<TerminalTone, true> = { ok: true, info: true };
 const EVIDENCE_SET: Record<Evidence, true> = { research: true, official: true, practice: true, example: true };
 
 const has = <K extends string>(set: Record<K, true>, v: unknown): v is K => typeof v === 'string' && Object.hasOwn(set, v);
 const names = (set: Record<string, true>) => Object.keys(set).join('・');
 
 /* ───────────── 画面の大きさの見込み ─────────────
- * src/ の値を写したもの（T3A-07 で 1 か所にまとめ、T3A-14 で実際に測る形に変える）。文字の幅は見積もりなので、注意にとどめる。
+ * 大きさは部品と同じ src/video.config.ts の値（T3A-14 で実際に測る形に変える）。文字の幅は見積もりなので、注意にとどめる。
  * 半角の英数字と記号は平均 0.5em、ほか（かな・漢字・全角の記号）は 1em と見る。2026-11-02 に、字幕つきの静止画 22 枚（日本語・英語・中国語）と
  * 見出し 4 枚を書き出して、行数と幅がこの見込みと合うことを確かめた（Zen Maru Gothic の英字は約 0.44em、Inter はもう少し広い）
  */
 const LAYOUT = {
-  /** 焼き込み字幕（src/Lecture.tsx の Captions）: 38px・字間 1px・左右の余白 120px（使える幅 1680px）・帯に入るのは 2 行まで。名前札は 28px で左右に 20px ずつ・札と文の間 22px */
-  caption: { size: 38, spacing: 1, width: 1920 - 120 * 2, lines: 2, nameSize: 28, namePad: 40, gap: 22 },
-  /** 場面の見出し（src/components/chrome.tsx の Header）: 60px・字間 1px・折り返さない。内容の幅は 1920 − 左右の 96px。根拠の札（22px・字間 1px）は、札の余白とアイコンで 64px・見出しとの間 28px */
-  heading: { size: 60, spacing: 1, width: 1920 - 96 * 2, chipSize: 22, chipSpacing: 1, chipPad: 64, gap: 28 },
+  /** 焼き込み字幕（src/Lecture.tsx の Captions）。使える幅は画面の幅から左右の余白を引いたもの（今は 1680px）。名前札は、文字の幅に左右の余白と札と文の間を足す */
+  caption: { size: CAPTION.size, spacing: CAPTION.spacing, width: VIDEO.width - CAPTION.sidePad * 2, lines: CAPTION.lines, nameSize: CAPTION.nameSize, namePad: CAPTION.namePadX * 2, gap: CAPTION.gap },
+  /** 場面の見出し（src/components/chrome.tsx の Header）。折り返さない。使える幅は内容の枠の幅（今は 1728px）。根拠の札は、文字の幅に札の余白とアイコン（chipPad）と見出しとの間を足す */
+  heading: { size: HEADING.size, spacing: HEADING.spacing, width: VIDEO.width - CONTENT.pad * 2, chipSize: HEADING.chipSize, chipSpacing: HEADING.chipSpacing, chipPad: HEADING.chipPad, gap: HEADING.gap },
 };
 
 /** 文字の幅の見込み（px）。半角の英数字と記号は 0.5em、ほか（かな・漢字・全角の記号）は 1em。字間は 1 字ごとに足す */
@@ -219,12 +199,10 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
     case 'points':
     case 'recap':
       return notEmpty(s.items, '項目（items）', w('items'), out);
-    case 'concepts': {
+    case 'concepts':
       notEmpty(s.cards, 'カード（cards）', w('cards'), out);
-      const keys = keysOf(list(s.cards), w('cards'), out);
-      list(s.focus).forEach((f, i) => { f?.key !== null && refTo(keys, f?.key, 'focus のカード', 'focus が何も光らせない', w(`focus[${i}].key`), out); });
+      keysOf(list(s.cards), w('cards'), out);
       return;
-    }
     case 'sequence': {
       notEmpty(s.actors, '登場人物（actors）', w('actors'), out);
       notEmpty(s.steps, '矢印（steps）', w('steps'), out);
@@ -322,7 +300,16 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
       }
       return;
     case 'terminal':
-      return notEmpty(s.entries, '入力と出力（entries）', w('entries'), out);
+      notEmpty(s.entries, '入力と出力（entries）', w('entries'), out);
+      list(s.entries).forEach((e, i) => {
+        list(e?.out).forEach((o, k) => {
+          if (typeof o === 'string') return;
+          const at = w(`entries[${i}].out[${k}]`);
+          if (typeof o?.text !== 'string') push(out, 'error', 'empty', `${at}.text`, '出力の行の文字（text）が無い');
+          if (o?.tone !== undefined && !has(TERMINAL_TONE_SET, o.tone)) push(out, 'error', 'tone', `${at}.tone`, `端末の出力の色「${String(o.tone)}」が無い（あるのは ${names(TERMINAL_TONE_SET)}。書かなければ薄い色）`);
+        });
+      });
+      return;
     case 'ending':
       return;
     default:
@@ -335,7 +322,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
 const checkScene = (s: Scene, i: number, where: string, course: Course, lang: Lang, out: Issue[]) => {
   const sw = `${where} 場面 ${i + 1}`;
   if (!s || typeof s !== 'object') { push(out, 'error', 'kind', sw, '場面が空'); return; }
-  if (!has(SCENE_KIND_SET, s.kind)) {
+  if (!Object.hasOwn(SCENE_INFO, s.kind)) {
     push(out, 'error', 'kind', sw, `場面の種類「${String((s as { kind?: unknown }).kind)}」が無い（あるのは ${SCENE_KINDS.join('・')}）`);
     return;
   }
@@ -352,9 +339,9 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
         if (typeof v !== 'number' || !Number.isInteger(v)) push(out, 'error', 'at', at, `台詞の番号が整数でない: ${String(v)}`);
         else if (v < 0 || v > lines.length) push(out, 'error', 'at', at, `台詞の番号 ${v} が範囲の外（この場面の台詞は ${lines.length} 個。0〜${lines.length} で書く）`);
       }
-      // 画面の図の部品（blocks）の tone は、注意の帯の種類（error・info・warn・success）で、図の色ではない
-      if (k === 'tone' && v !== undefined && !/(^|\.)blocks\[/.test(path) && !has(TONE_SET, v)) push(out, 'error', 'tone', at, `色の名前「${String(v)}」が無い（あるのは ${names(TONE_SET)}）`);
-      if (typeof v === 'string' && !LITERAL.has(k)) checkEmphasis(v, richField(s, path), at, out);
+      // 画面の図の部品（blocks）の tone は注意の帯の種類（error・info・warn・success）、端末の出力（out）の tone は ok・info で、図の色ではない
+      if (k === 'tone' && v !== undefined && !/(^|\.)(blocks|out)\[/.test(path) && !has(TONE_SET, v)) push(out, 'error', 'tone', at, `色の名前「${String(v)}」が無い（あるのは ${names(TONE_SET)}）`);
+      if (typeof v === 'string' && !LITERAL.has(k) && !/(^|\.)out\[\d+\]\.text$/.test(path)) checkEmphasis(v, richField(s, path), at, out);
     });
   }
   checkBody(s, sw, out);
