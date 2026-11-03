@@ -15,8 +15,9 @@ import { VIDEOS, type Video } from '../content';
 import type { Lang } from '../content/i18n';
 import type { Lecture, Scene, VoiceId } from '../content/types';
 import { formatIssues, validateLecture } from '../engine/core/validate';
+import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { STING, VIDEO } from '../src/video.config';
-import { creditsIn, KOKORO, SITE_CREDITS, speechIn, ttsKeyIn, VOICES } from './voices';
+import { ttsKeyIn } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const CACHE_ONLY = process.argv.includes('--cached-only');
@@ -257,9 +258,4 @@ try {
 } finally {
   rmSync(lockDir, { recursive: true, force: true });
 }
-// 講座サイトのクレジット（全講座で共通の声）と、動画のエンディングに出すレクチャーごとのクレジット（使った声だけ）
-writeFileSync(path.join(GEN_DIR, 'credits.json'), JSON.stringify(SITE_CREDITS));
-const lectureCredits: Record<string, string[]> = Object.fromEntries(
-  VIDEOS.map((v) => [v.key, creditsIn(v.lang, v.lecture.scenes.flatMap((s) => s.lines.map((ln) => ln.v ?? 'narrator')))]),
-);
-writeFileSync(path.join(GEN_DIR, 'lecture-credits.json'), JSON.stringify(lectureCredits));
+// 声のクレジットは書かない（動画のエンディングは台詞の声から、講座サイトは content/voices.ts の SITE_CREDITS から作る）

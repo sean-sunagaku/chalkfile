@@ -2,7 +2,7 @@ import type { CourseL10n } from '../../i18n';
 import { SOURCES_ZH } from './sources';
 import { W01 } from './W01';
 
-/** 「笑って覚えるナッジ理論」の中国語（簡体字）版。声は Kokoro（scripts/voices.ts の KOKORO.zh）。真面目版（nudge-product）は日本語だけなので、リンクにそう書く */
+/** 「笑って覚えるナッジ理論」の中国語（簡体字）版。声は Kokoro（content/voices.ts の KOKORO.zh）。真面目版（nudge-product）は日本語だけなので、リンクにそう書く */
 export const NUDGE_COMEDY_ZH: CourseL10n = {
   title: '笑着记住助推理论',
   subtitle: '助推课程的搞笑版，在装傻与吐槽的一来一回中记住',

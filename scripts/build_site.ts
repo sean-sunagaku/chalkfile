@@ -17,11 +17,11 @@ import { COURSES, coursesIn } from '../content';
 import { isLang, LANG_INFO, LANGS, videoKey, type Lang } from '../content/i18n';
 import { THEMES, themeOf } from '../content/themes';
 import type { ChapterMaterial, Course, Source, VoiceId } from '../content/types';
+import { creditsIn, SITE_CREDITS } from '../content/voices';
 import { fill, SITE_TEXT, THEME_SUMMARY, type SiteText } from '../site/i18n';
 import { fontLink, themeCss } from './site_theme';
 import { asset, buildPwa, bundle, hash } from './pwa';
 import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from './site-version';
-import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
 import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
 import { checkMedia, readMediaManifest } from './media';
@@ -64,7 +64,8 @@ const plain = (s: string) => s.replace(/\*\*/g, '');
 /** テンプレートの {{key}} を、その言語の決まった文字（エスケープ済み）にする */
 const fillText = (html: string, T: SiteText) => html.replace(/\{\{(\w+)\}\}/g, (m, k: string) => (k in T ? esc(T[k as keyof SiteText]) : m));
 
-const credits = JSON.parse(readFileSync(path.join(ROOT, 'src/generated/credits.json'), 'utf8')) as string[];
+/** 講座サイトのクレジット（日本語は全講座で共通の講師と呼び込み。content/voices.ts） */
+const credits = SITE_CREDITS;
 const template = readFileSync(path.join(SITE, 'template.html'), 'utf8');
 const home = readFileSync(path.join(SITE, 'home.html'), 'utf8');
 const offlinePanel = readFileSync(path.join(SITE, 'offline-panel.html'), 'utf8');

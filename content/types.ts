@@ -5,7 +5,7 @@ import type { Lang } from './i18n';
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
 
 /**
- * 声（VOICEVOX の話者と話し方は scripts/voices.ts）。narrator: 講師、announcer: 呼び込み。
+ * 声（VOICEVOX・Kokoro の話者と話し方は content/voices.ts）。narrator: 講師、announcer: 呼び込み。
  * お笑い版の掛け合い: zundamon（ボケ）・zundamon-cry（ボケの涙声）・tsukkomi（講師の声で短く刺すツッコミ）・tennokoe（天の声）
  */
 export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | 'tsukkomi' | 'tennokoe';

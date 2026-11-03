@@ -10,8 +10,9 @@ import path from 'node:path';
 import { LECTURES, VIDEOS, type Video } from '../content';
 import { LANGS, parseVideoKey } from '../content/i18n';
 import type { VoiceId } from '../content/types';
+import { creditsIn, speechIn } from '../content/voices';
 import { fingerprint } from './i18n';
-import { creditsIn, speechIn, ttsKeyIn } from './voices';
+import { ttsKeyIn } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 export const SNAPSHOT_DIR = path.join(ROOT, 'tests/fixtures/snapshots');

@@ -59,7 +59,7 @@ export type Issue = { where: string; message: string; level: Level; rule: Rule }
 const SFX_SET: Record<SfxId, true> = { pop: true, whoosh: true, chime: true, tick: true, reveal: true, correct: true, type: true, harisen: true, chin: true, drumroll: true, deden: true, zuko: true };
 export const SFX_IDS = Object.keys(SFX_SET) as SfxId[];
 
-/** 声（scripts/voices.ts の VOICES と KOKORO） */
+/** 声（content/voices.ts の VOICES と KOKORO） */
 const VOICE_SET: Record<VoiceId, true> = { narrator: true, announcer: true, zundamon: true, 'zundamon-cry': true, tsukkomi: true, tennokoe: true };
 export const VOICE_IDS = Object.keys(VOICE_SET) as VoiceId[];
 

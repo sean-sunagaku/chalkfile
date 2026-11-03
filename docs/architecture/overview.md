@@ -14,7 +14,6 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  ├─ scripts/synth.ts ── 日本語は VOICEVOX、英語と中国語は Kokoro（scripts/tts_kokoro.py）で台詞を読む
  │    ├→ .work/tts/<声の鍵>.wav・.kana ……… 台詞の音声と読み。同じ文・同じ声なら使い回す
  │    ├→ src/generated/timeline.json ………… 場面と台詞の始まるフレーム（追跡）
- │    ├→ src/generated/credits.json・lecture-credits.json …… 声のクレジット（追跡）
  │    ├→ .work/plan/<key>.json ……………………… ミックスの設計図
  │    └→ site/data/<key>.json・.vtt ……………… サイトに出す台本・章・字幕の時刻
  │

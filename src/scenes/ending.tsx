@@ -1,12 +1,11 @@
 // 場面「ending」: 次の章の予告（最後の動画は「おつかれさまでした」）とクレジット
 import React from 'react';
 import type { EndingScene } from '../../content/types';
+import { lectureCredits } from '../../content/voices';
 import { unitOf } from '../components/chrome';
 import { Content } from '../components/content';
 import { fitSize } from '../components/fit';
 import { Glass, Icon } from '../components/ui';
-import credits from '../generated/credits.json';
-import lectureCredits from '../generated/lecture-credits.json';
 import { C, DISPLAY, GRAD, MONO, SANS, TONES } from '../theme';
 import { dropY, useAppear, useScene, useText } from '../timing';
 import { defineScene } from './define';
@@ -14,7 +13,6 @@ import { defineScene } from './define';
 const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
   const { lecture, course, lang } = useScene();
   const text = useText();
-  const key = lang === 'ja' ? lecture.id : `${lecture.id}.${lang}`;
   const { label: unit, total } = unitOf(course);
   const p = useAppear(0);
   const q = useAppear(0, 14);
@@ -116,7 +114,7 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
         }}
       >
         {course.disclaimer ? <div>{course.disclaimer}</div> : null}
-        <div>{text.credits((lectureCredits as Record<string, string[]>)[key] ?? (credits as string[]))}</div>
+        <div>{text.credits(lectureCredits(lecture, lang))}</div>
       </div>
     </Content>
   );

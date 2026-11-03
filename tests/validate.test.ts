@@ -6,11 +6,11 @@ import type { Lang } from '../content/i18n';
 import { NUDGE_PRODUCT } from '../content/nudge-product/course';
 import { CHALKFILE, THEMES } from '../content/themes';
 import type { Course, Lecture } from '../content/types';
+import { VOICES } from '../content/voices';
 import { captionLines, formatIssue, SFX_IDS, validateCourse, validateLecture, validateTheme, validateTimeline, VOICE_IDS, type Issue, type TimelineShape } from '../engine/core/validate';
 import { mediaFilename, type MediaEntry, type MediaManifest } from '../site/media-shared';
 import { PAGE_VERSION_MARK } from '../scripts/site-version';
 import { materialProblems, mediaProblems, posterProblems, publishIssues, readSiteConfig, siteProblems, validateAll, type PublishIssue } from '../scripts/validate';
-import { VOICES } from '../scripts/voices';
 import { course, lecture, say, type Expected } from './fixtures/content/invalid/_base';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -86,7 +86,7 @@ describe('名前の一覧が、音の側の一覧と合う', () => {
     const block = py.slice(start, py.indexOf('}', start));
     expect([...block.matchAll(/"(\w+)":/g)].map((m) => m[1]).sort()).toEqual([...SFX_IDS].sort());
   });
-  test('声は scripts/voices.ts の VOICES と同じ', () => expect(Object.keys(VOICES).sort()).toEqual([...VOICE_IDS].sort()));
+  test('声は content/voices.ts の VOICES と同じ', () => expect(Object.keys(VOICES).sort()).toEqual([...VOICE_IDS].sort()));
 });
 
 describe('見込みと表示', () => {

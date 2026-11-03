@@ -1,7 +1,7 @@
 import type { CourseL10n } from '../../i18n';
 import { P01 } from './P01';
 
-/** 「笑ってわかる pstack」の中国語（簡体字）版。声は Kokoro（scripts/voices.ts の KOKORO.zh） */
+/** 「笑ってわかる pstack」の中国語（簡体字）版。声は Kokoro（content/voices.ts の KOKORO.zh） */
 export const PSTACK_COMEDY_ZH: CourseL10n = {
   title: '笑着搞懂 pstack',
   subtitle: 'Cursor 的技能合集 pstack：思路与用法',
