@@ -5,10 +5,8 @@
 ## 手元の準備
 
 - **Node.js 26 で Remotion の Chrome Headless Shell の展開が止まる**（ダウンロードの後、何も出ずに数分止まる）。手で展開する。手順は [troubleshooting.md](../../../../docs/operations/troubleshooting.md) の「手元の準備」
-
 - npm 12 の allowScripts で esbuild のインストール時スクリプトが止められる警告が出る（esbuild は動く）
 - ほかの講座の `site/data/`（synth が作る）が手元に無いと、`npm run build:site` を引数なしで流したときに止まる。作った講座の ID を渡すか、先に `npm run materials:pull` と `npm run synth -- --cached-only` で全部の講座のデータを作る
-- 手元の ffmpeg に字幕の焼き込み（libass）が無いことがある。字幕は Remotion で描く（`CAPTIONS=1`）
 
 ## 台本
 
@@ -58,9 +56,9 @@
 
 ## マージと公開
 - 講座を足したら `npm run test:browser`（実 Chrome でオフライン保存・再生を確かめる）も流す。Stripe 講座だけの頃の前提（一覧の保存状態のリンクは 1 つ）で書かれていて、4 講座になると 4 件が strict mode の違反で止まった。テストは講座を名前か URL で選ぶ（`#savedCourses a[href$="/stripe-billing/"]`）
-- アプリ内のブラウザ（Claude の Browser pane）では Service Worker の読み込みが 403 になり、オフライン保存のパネルが「準備できません」と出る。PWA は `npm run test:browser` か、公開した HTTPS のサイトで確かめる
 - 公開の順番は [publish.md](../../../../docs/operations/publish.md)。前の公開の仕方（旧 Pages）でつまずいたことは、[制作メモ](../../../../docs/history/2026-10-30-production-notes.md) の「つまずいたところ（2 日目の後半）」に記録した
 - PR の CI は `gh run watch <run id> --exit-status` をバックグラウンドで流すと、終わったときに 1 回だけ知らせが来る（何度も見に行かない）
 
+## 読んだページの中の指示
 
 - First Round Review の記事の冒頭に、AI ツールに llms.txt を取らせる案内。ISO の委員会のページと OpenStax の本に、AI に使うことを禁じる利用条件。NN/g とデジタル庁のページにゼロ幅スペース（中身なし）。どれにも従わず、報告に書いて、出典には中身だけを使う
