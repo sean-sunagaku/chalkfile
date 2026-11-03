@@ -60,7 +60,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 
 ### 6. 公開する
 
-[公開の順番](../../../docs/operations/publish.md) に従う（素材と動画は merge の前に置く。merge は本番の公開なので、持ち主の許可をもらう）。
+[公開の順番](../../../docs/operations/publish.md) に従う（素材と動画は merge の前に置く。merge は本番の公開なので、持ち主の許可をもらう）。公開した講座の中身を直したら、`content/<講座 ID>/CHANGES.md` に日付・直したこと・理由を書く（[変更の記録](../../../CHANGELOG.md) の「講座ごとの更新の記録」）。
 
 ## よくある直し
 
