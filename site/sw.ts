@@ -119,15 +119,32 @@ async function readRecord(id: string): Promise<RecordData> {
   } catch { return { versions: [], unreadable: { caches: recordCaches(value, id, prefix) } }; }
 }
 
-async function complete(v: SavedVersion): Promise<boolean> {
+/** 保存した 1 ファイルが、教材情報の大きさと SHA-256 の印を持った 200 か（中身の SHA-256 は、保存するときに確かめてある） */
+const storedAs = (response: Response | undefined, f: Asset): response is Response =>
+  !!response && response.status === 200 && response.headers.get('X-Chalkfile-SHA256') === f.sha256 &&
+  Number(response.headers.get('Content-Length')) === f.bytes;
+
+async function verify(v: SavedVersion): Promise<boolean> {
   if (!(await caches.has(v.cache))) return false;
   const cache = await caches.open(v.cache);
-  for (const f of v.manifest.files) {
-    const response = await cache.match(assetUrl(f));
-    if (!response || response.status !== 200 || response.headers.get('X-Chalkfile-SHA256') !== f.sha256 ||
-        Number(response.headers.get('Content-Length')) !== f.bytes) return false;
-  }
+  for (const f of v.manifest.files) if (!storedAs(await cache.match(assetUrl(f)), f)) return false;
   return true;
+}
+
+/**
+ * 保存版がそろっているかの結果（Cache の名前と revision の組ごと）。動画の Range の要求のたびに、全部のファイルを確かめ直さない。
+ * 状態の確認（STATUS）と保存は、覚えた結果を使わずに確かめ直す（fresh）。保存・削除が終わったら（broadcast）全部を捨てる
+ */
+const checked = new Map<string, Promise<boolean>>();
+function complete(v: SavedVersion, fresh = false): Promise<boolean> {
+  const key = `${v.cache}\n${v.manifest.revision}`;
+  const known = fresh ? undefined : checked.get(key);
+  if (known) return known;
+  const result = verify(v);
+  checked.set(key, result);
+  // 確かめられなかった（Cache を開けないなど）ときは覚えない。次の要求で確かめ直す
+  result.catch(() => { if (checked.get(key) === result) checked.delete(key); });
+  return result;
 }
 
 async function ids(): Promise<string[]> {
@@ -139,7 +156,7 @@ async function ids(): Promise<string[]> {
 async function statuses(): Promise<CourseStatus[]> {
   return Promise.all((await ids()).map(async (id) => {
     const r = await readRecord(id);
-    const valid = await Promise.all(r.versions.map(complete));
+    const valid = await Promise.all(r.versions.map((v) => complete(v, true)));
     // 読めない記録も「不完全」として、保存し直しを案内する（画面の文字は今の不完全の案内を使う）
     return { id, saved: r.versions.find((_, i) => valid[i]) ?? null,
       incomplete: !!r.unreadable || r.versions.some((_, i) => !valid[i]), progress: jobs.get(id)?.progress ?? null };
@@ -216,13 +233,35 @@ async function download(f: Asset, signal: AbortSignal, onBytes: (bytes: number) 
     }
   } catch (e) { await reader.cancel().catch(() => {}); throw failed(e); }
   if (length !== f.bytes || await sha256(data.buffer) !== f.sha256) throw new OfflineError('corrupt');
-  return new Response(data, { headers: {
-    'Content-Type': f.type, 'Content-Length': String(f.bytes), 'X-Chalkfile-SHA256': f.sha256,
-    'Accept-Ranges': 'bytes', ETag: `"${f.sha256}"`,
-  } });
+  return stored(f, data);
+}
+
+/** Cache に入れる応答（大きさと SHA-256 を確かめたバイト列だけ。X-Chalkfile-SHA256 は、そろっているかの確かめに使う印） */
+const stored = (f: Asset, data: Uint8Array<ArrayBuffer>) => new Response(data, { headers: {
+  'Content-Type': f.type, 'Content-Length': String(f.bytes), 'X-Chalkfile-SHA256': f.sha256,
+  'Accept-Ranges': 'bytes', ETag: `"${f.sha256}"`,
+} });
+
+/**
+ * 前の版の Cache（sources。新しい版から）に、同じ URL・SHA-256・大きさのファイルがあれば、取り直さずに写す応答を作る。
+ * 動画の URL には SHA-256 が入るので、変わっていない動画だけが当たる。写す前に中身の SHA-256 を計算し直し、合わなければ null（取り直す）
+ */
+async function copyOf(sources: string[], f: Asset): Promise<Response | null> {
+  for (const name of sources) {
+    try {
+      if (!(await caches.has(name))) continue;
+      const old = await (await caches.open(name)).match(assetUrl(f));
+      if (!storedAs(old, f)) continue;
+      const data = new Uint8Array(await old.arrayBuffer());
+      if (data.byteLength === f.bytes && await sha256(data.buffer) === f.sha256) return stored(f, data);
+    } catch { /* 読めなければ、ほかの版か取り直す */ }
+  }
+  return null;
 }
 
 async function broadcast(): Promise<void> {
+  // 保存版が変わった（保存・削除）。そろっているかの結果を捨ててから、全部のタブに知らせる
+  checked.clear();
   for (const c of await sw.clients.matchAll()) c.postMessage({ protocol: 1, type: 'CHANGED' } satisfies OfflineBroadcast);
 }
 
@@ -238,7 +277,7 @@ async function save(id: string, report: (p: DownloadProgress) => void): Promise<
       const manifest = await fetchManifest(id);
       controller.signal.throwIfAborted();
       const before = await readRecord(id);
-      if (before.versions[0]?.manifest.revision === manifest.revision && await complete(before.versions[0])) return;
+      if (before.versions[0]?.manifest.revision === manifest.revision && await complete(before.versions[0], true)) return;
       const estimate = await sw.navigator.storage?.estimate?.().catch(() => null);
       if (estimate?.quota && estimate.quota - (estimate.usage ?? 0) < manifest.bytes * 1.1) {
         throw new DOMException('quota', 'QuotaExceededError');
@@ -248,10 +287,19 @@ async function save(id: string, report: (p: DownloadProgress) => void): Promise<
       job.progress.total = manifest.bytes;
       job.progress.count = manifest.files.length;
       let lastReport = 0;
+      // 前の版（読める記録が指す版）から写せるファイルは、取り直さない。写すものも、Cache に入れる前に SHA-256 を確かめる
+      const sources = before.versions.map((v) => v.cache);
       for (const [i, f] of manifest.files.entries()) {
         controller.signal.throwIfAborted();
         job.progress.file = i + 1;
         report({ ...job.progress });
+        const copied = await copyOf(sources, f);
+        controller.signal.throwIfAborted();
+        if (copied) {
+          await cache.put(assetUrl(f), copied);
+          job.progress.loaded += f.bytes;
+          continue;
+        }
         // 1 ファイル最大 32 MiB。MP4 全体を検証し、206 や途中のデータは Cache に入れない。
         const timeout = setTimeout(() => controller.abort(new OfflineError('timeout')), 120000);
         try {
@@ -265,10 +313,10 @@ async function save(id: string, report: (p: DownloadProgress) => void): Promise<
       }
       controller.signal.throwIfAborted();
       const version: SavedVersion = { cache: staging, manifest, savedAt: new Date().toISOString() };
-      if (!await complete(version)) throw new OfflineError('verify');
+      if (!await complete(version, true)) throw new OfflineError('verify');
       controller.signal.throwIfAborted();
       const previous: SavedVersion[] = [];
-      for (const v of before.versions) if (await complete(v)) { previous.push(v); break; }
+      for (const v of before.versions) if (await complete(v, true)) { previous.push(v); break; }
       controller.signal.throwIfAborted();
       // この 1 件の書込みが完了するまで、前の保存版だけが再生対象。途中の保存は公開しない。
       await (await caches.open(registryName)).put(recordUrl(id), Response.json({ versions: [version, ...previous] }));

@@ -7,6 +7,7 @@ import type { Theme } from '../content/types';
 import { isLang } from '../content/i18n';
 import { SITE_TEXT } from '../site/i18n';
 import { fill } from '../site/lib/text';
+import { mimeOf } from '../site/mime';
 import type { Asset } from '../site/offline-shared';
 import { fillTemplate } from './site/html';
 
@@ -55,7 +56,7 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
     const bytes = icon(size, brand);
     const url = `icons/icon-${size}.png`;
     writeFileSync(path.join(dist, url), bytes);
-    shell.push(asset(url, bytes, 'image/png'));
+    shell.push(asset(url, bytes, mimeOf(url)));
   }
   const manifest = JSON.stringify({
     id: './', name: 'Chalkfile', short_name: 'Chalkfile', lang: 'ja', start_url: './', scope: './', display: 'standalone',
@@ -64,7 +65,7 @@ export async function buildPwa(site: string, dist: string, brand: Theme, courses
     icons: [192, 512].map((s) => ({ src: `icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any maskable' })),
   }, null, 2);
   writeFileSync(path.join(dist, 'manifest.webmanifest'), manifest);
-  shell.push(asset('manifest.webmanifest', Buffer.from(manifest), 'application/manifest+json'));
+  shell.push(asset('manifest.webmanifest', Buffer.from(manifest), mimeOf('manifest.webmanifest')));
   // 未保存のページは 1 つで全部の言語を並べる（{{ja.key}} を site/i18n.ts の文字にする。エスケープは fillTemplate）。
   // __ROOT__ は、SW が配るときにアプリの場所にする（sw.ts の fallback）
   const text = (k: string) => {

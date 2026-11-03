@@ -10,6 +10,7 @@ import type { Course } from '../../content/types';
 import { posterFile } from '../../engine/core/generated';
 import { SITE_TEXT, THEME_SUMMARY } from '../../site/i18n';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
+import { mimeOf } from '../../site/mime';
 import type { Asset, CourseManifest } from '../../site/offline-shared';
 import { asset, buildPwa, bundle } from '../pwa';
 import { assertSiteInvariants } from '../site-invariants';
@@ -49,6 +50,8 @@ export type BuildSiteOptions = {
   config?: SiteConfig;
   /** ポスターの置き場所（既定は本物の講座の置き場所。config.ts の realPosterOf） */
   posterOf?: (courseId: string, key: string) => string;
+  /** 一覧のページの画像のフォルダ（既定は site/assets。写したものは全部、SW の起動用ファイルになる） */
+  assetsDir?: string;
   /** 進み具合の出力（既定は console.log）と注意（既定は console.warn） */
   log?: (line: string) => void;
   warn?: (line: string) => void;
@@ -100,6 +103,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   };
   const videos = new Map(o.mediaManifest.entries.map((e) => [mediaKey(e), e]));
   const posterOf = o.posterOf ?? realPosterOf;
+  const assetsDir = o.assetsDir ?? path.join(SITE_DIR, 'assets');
   const missing: string[] = [];
   const manifests: CourseManifest[] = [];
   const shell: Asset[] = [];
@@ -122,7 +126,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       for (const lec of lectures) {
         const from = posterOf(course.id, lec.key);
         if (existsSync(from))
-          posters.push({ file: `${lec.key}.jpg`, from, data: readFileSync(from), type: 'image/jpeg' });
+          posters.push({ file: `${lec.key}.jpg`, from, data: readFileSync(from), type: mimeOf(`${lec.key}.jpg`) });
         else missing.push(posterFile(course.id, lec.key));
       }
       // 版は出力から決める（scripts/site-version.ts）。ページとポスターの ?v= には版の印を入れて描き、版が決まってから差し込む
@@ -185,7 +189,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       brand,
       themes: Object.values(THEMES),
       themeOf,
-      hasThemeImage: (id) => existsSync(path.join(SITE_DIR, `assets/themes/${id}.jpg`)),
+      hasThemeImage: (id) => existsSync(path.join(assetsDir, `themes/${id}.jpg`)),
       themeSummary: (t) => (lang === 'ja' ? t.summary : (THEME_SUMMARY[lang][t.id] ?? t.summary)),
       minutesOf: (c) => minutesOf(c, (c.lang ?? 'ja') as Lang, readData),
       credits: homeCredits(coursesIn(lang), lang),
@@ -203,7 +207,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
 
   /* ───────────── 画像・PWA・ヘッダー ───────────── */
   // 一覧のページの画像と、講座のサムネイル（日本語の講座の最初の動画のポスター）は、SW の起動用ファイルにする
-  shell.push(...copyAssets(path.join(SITE_DIR, 'assets'), path.join(dist, 'assets'), dist));
+  shell.push(...copyAssets(assetsDir, path.join(dist, 'assets'), dist));
   shell.push(
     ...thumbnailAssets(
       dist,

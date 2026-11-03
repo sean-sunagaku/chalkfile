@@ -7,8 +7,13 @@ export type SiteMode = 'ci' | 'real';
 
 /** 障害の差し込みの状態（POST /__test/control に渡す。書かなかった項目は既定に戻す） */
 export type Control = {
-  /** 保存の動画の取得（Range の無い GET）に差し込む失敗（差し込むのは faultLecture の通常版の動画だけ）。external は保存の manifest に外の動画を入れる */
+  /** 保存の取得（Range の無い GET）に差し込む失敗（差し込むのは faultLecture の faultTarget だけ）。external は保存の manifest に外の動画を入れる */
   mode: 'normal' | 'fail' | 'redirect' | 'partial' | 'corrupt' | 'truncated' | 'delay' | 'external';
+  /**
+   * mode の失敗を差し込むもの。video は通常版の動画、poster はポスター（教材のページだけの更新では、変わっていない動画は前の保存版から
+   * 写すので取りに来ない。更新の保存の失敗は、版の変わるポスターに差し込む）
+   */
+  faultTarget: 'video' | 'poster';
   /** 講座のページと保存の manifest を、新しい版に見せる */
   update: boolean;
   /** sw.js の中身を変えて、SW の更新を起こす */
@@ -44,6 +49,8 @@ export type SiteSession = {
   };
   /** 旧 Pages の pstack-comedy の P01 の動画の手元のファイル（ci は合成の動画） */
   legacyVideo: string;
+  /** SW の起動用ファイルの PNG（サイトの最上位からの場所。ci は一覧のページの画像に足したもの、real はアイコン） */
+  shellPng: string;
   /** 動画の長さ（秒）。合成の講座だけ。本物の講座は長いので null（テストの時刻をそのまま使う） */
   videoSeconds: number | null;
 };

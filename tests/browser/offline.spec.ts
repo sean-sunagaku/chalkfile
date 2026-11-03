@@ -1,8 +1,9 @@
 import { chromium, type Page, type APIRequestContext } from '@playwright/test';
-import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
+import type { Stats } from '../e2e/session';
 import type { Control, SiteSession } from '../e2e/site';
 import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
 
@@ -18,6 +19,10 @@ const evidence = () => {
 
 async function control(request: APIRequestContext, state: Partial<Control> = {}) {
   expect((await request.post('/__test/control', { data: state })).ok()).toBeTruthy();
+}
+/** テストのサーバーが数えた取得（保存の動画の全体の取得の回数とバイト数など。control で 0 に戻る） */
+async function stats(request: APIRequestContext): Promise<Stats> {
+  return (await (await request.get('/__test/stats')).json()) as Stats;
 }
 async function ready(page: Page, site: SiteSession) {
   await page.goto(site.course.route);
@@ -266,7 +271,8 @@ test('キャンセル・別タブからの重複保存を処理し、再試行�
 test('教材更新：旧版の教材と動画を維持し、失敗後に再試行して完全な新版へ切り替える', async ({ page, context, request, site }) => {
   await ready(page, site); await save(page);
   const original = (await status(page, site)).saved!;
-  await control(request, { mode: 'fail', update: true });
+  // 変わっていない動画は前の保存版から写して取りに来ないので、更新の失敗は、版の変わるポスターに差し込む
+  await control(request, { mode: 'fail', update: true, faultTarget: 'poster' });
   await page.reload();
   expect(await page.title()).not.toContain('更新テスト');
   await page.locator('#offlineCheck').click();
@@ -291,6 +297,97 @@ test('教材更新：旧版の教材と動画を維持し、失敗後に再試�
   await expect(page).toHaveTitle(/更新テスト/);
   await playAndPause(page, seek(site, 60));
   expect(await page.evaluate(async (id) => (await caches.keys()).filter((n) => n.includes(`:course:${id}:`)).length, site.course.id)).toBe(2);
+});
+
+test('教材のページだけの更新では、変わっていない動画を前の保存版から写して取り直さない。写す元の中身が違えば取り直す（転送の量を測る）', async ({ page, context, request, site }) => {
+  await ready(page, site);
+  const videos = manifestOf(site).files.filter((f) => f.type === 'video/mp4');
+  const videoBytes = videos.reduce((n, f) => n + f.bytes, 0);
+  const transfer: Record<string, Stats> = {};
+  /** 保存版の revision が want になり、進み具合が消えるまで待つ（保存が終わるまで） */
+  const savedAs = async (want: (revision: string | undefined) => boolean) => {
+    await expect.poll(async () => want((await status(page, site)).saved?.manifest.revision)).toBe(true);
+    await expect(page.locator('#offlineProgress')).toBeHidden();
+  };
+  const savedNow = async () => {
+    const saved = (await status(page, site)).saved;
+    if (!saved) throw new Error('保存版がありません');
+    return saved;
+  };
+  await control(request);
+  await save(page);
+  transfer.firstSave = await stats(request);
+  const original = await savedNow();
+  // 教材のページとポスターの版だけを新しくする（動画の URL は SHA-256 入りで、変わらない）
+  await control(request, { update: true });
+  await page.locator('#offlineCheck').click();
+  await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
+  await page.locator('#offlineSave').click();
+  await savedAs((r) => r !== undefined && r !== original.manifest.revision);
+  transfer.pageOnlyUpdate = await stats(request);
+  const updated = await savedNow();
+  // 前の版に戻して保存し直す。写す元（新旧の両方の保存版）の 1 本の動画の中身だけを壊す（印の大きさと SHA-256 はそのまま）
+  const broken = videos[0];
+  await page.evaluate(async ({ caches: names, url }) => {
+    const key = new URL(url, `${location.origin}/`).href;
+    for (const name of names) {
+      const cache = await caches.open(name);
+      const r = await cache.match(key);
+      if (!r) throw new Error(`保存版に動画がありません: ${name}`);
+      const data = new Uint8Array(await r.arrayBuffer());
+      data[100] ^= 255;
+      await cache.put(key, new Response(data, { headers: r.headers }));
+    }
+  }, { caches: [updated.cache, original.cache], url: broken.url });
+  await control(request);
+  await page.locator('#offlineCheck').click();
+  await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
+  await page.locator('#offlineSave').click();
+  await savedAs((r) => r === original.manifest.revision);
+  transfer.brokenSource = await stats(request);
+  writeFileSync(path.join(evidence(), 'transfer.json'), `${JSON.stringify({ videos: videos.length, videoBytes, ...transfer }, null, 2)}\n`);
+  expect(transfer.firstSave).toMatchObject({ fullVideoDownloads: videos.length, fullVideoBytes: videoBytes });
+  expect(updated.manifest.revision).not.toBe(original.manifest.revision);
+  expect(transfer.pageOnlyUpdate).toMatchObject({ fullVideoDownloads: 0, fullVideoBytes: 0 });
+  expect(transfer.brokenSource).toMatchObject({ fullVideoDownloads: 1, fullVideoBytes: broken.bytes });
+  // 写した動画も取り直した動画も、オフラインで再生でき、Range の中身が元の動画と同じ
+  const saved = await savedNow();
+  expect(saved.manifest.revision).toBe(original.manifest.revision);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
+  for (const [i, lecture] of site.course.lectures.entries()) {
+    const file = saved.manifest.files.find((f) => f.type === 'video/mp4' && f.url.includes(`/${lecture.id}.`));
+    if (!file) throw new Error(`保存版に ${lecture.id} の動画がありません`);
+    const head = await page.evaluate(async (url) => {
+      const r = await fetch(new URL(url, `${location.origin}/`), { headers: { Range: 'bytes=0-127' } });
+      return { status: r.status, bytes: [...new Uint8Array(await r.arrayBuffer())] };
+    }, file.url);
+    expect(head, `${i + 1} 本目`).toEqual({ status: 206, bytes: [...readFileSync(lecture.video).subarray(0, 128)] });
+  }
+  await playAndPause(page, seek(site, 30));
+  await context.setOffline(false);
+});
+
+test('起動用ファイルに JPEG でない画像（PNG）があっても、SW の install が通り、オフラインでも同じ型で返す', async ({ page, context, site }) => {
+  // 合成の講座は、一覧のページの画像（assets）に PNG を 1 枚足してある。本物の講座はアイコン（PNG）で見る（tests/e2e/sites.ts）
+  const png = site.shellPng;
+  await page.goto('/');
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+  const shell = await page.evaluate(async (url) => {
+    const name = (await caches.keys()).find((n) => n.includes(':shell:'));
+    const r = name ? await (await caches.open(name)).match(new URL(url, `${location.origin}/`).href) : undefined;
+    return { type: r?.headers.get('Content-Type') ?? null, bytes: r ? (await r.arrayBuffer()).byteLength : 0 };
+  }, png);
+  expect(shell.type).toBe('image/png');
+  expect(shell.bytes).toBeGreaterThan(0);
+  await context.setOffline(true);
+  const offline = await page.evaluate(async (url) => {
+    const r = await fetch(new URL(url, `${location.origin}/`));
+    return { status: r.status, type: r.headers.get('Content-Type'), bytes: (await r.arrayBuffer()).byteLength };
+  }, png);
+  expect(offline).toEqual({ status: 200, type: 'image/png', bytes: shell.bytes });
+  await context.setOffline(false);
 });
 
 test('保存ファイルの欠損を検出し、保存済み表示と再生を止めて再保存できる', async ({ page, context, site }) => {

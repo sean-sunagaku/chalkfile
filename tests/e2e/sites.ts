@@ -3,7 +3,7 @@
 //       旧 Pages の P01 の動画も合成の動画にし、旧 Pages の保存の manifest の大きさと sha256 を、その動画に合わせて配る
 //   real: 本物の講座（npm run build:site で作った site/dist と、手元の site/media の動画）
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../../content';
 import type { HeroSnippet } from '../../content/course-module';
@@ -28,6 +28,7 @@ export type PreparedSite = {
   /** 旧 Pages の P01 の動画（通常版と字幕版）。manifest は、ci で大きさと sha256 を合成の動画に合わせたもの（real は fixture のまま） */
   legacy: { video: string; captioned: string; manifest: string | null };
   videoSeconds: number | null;
+  shellPng: string;
 };
 
 const sha256 = (data: Uint8Array | string) => createHash('sha256').update(data).digest('hex');
@@ -59,11 +60,22 @@ export function prepareRealSite(): PreparedSite {
       manifest: null,
     },
     videoSeconds: null,
+    shellPng: 'icons/icon-192.png',
   };
 }
 
 /** 合成の動画の長さ（秒） */
 const VIDEO_SECONDS = 4;
+
+/**
+ * 合成の講座の一覧のページの画像に足す PNG（1×1）。起動用ファイルに JPEG 以外があっても、SW の install が通ること（型を拡張子の
+ * 対応表から付けること）を、全部のテストで確かめる（どのテストも SW が動いてから始まる。中身は tests/browser/offline.spec.ts が見る）
+ */
+const EXTRA_PNG = 'e2e/mark.png';
+const PNG_1X1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+  'base64',
+);
 
 /** ffmpeg の testsrc の模様で、短い MP4（H.264）を作る */
 const makeVideo = (file: string, source: string) => {
@@ -124,6 +136,11 @@ export async function prepareFixtureSite(work: string): Promise<PreparedSite> {
     return entry;
   });
   const dist = path.join(work, 'dist');
+  // 一覧のページの画像は、本物（site/assets）に PNG を 1 枚足したもの
+  const assetsDir = path.join(work, 'assets');
+  cpSync(path.join(ROOT, 'site/assets'), assetsDir, { recursive: true });
+  mkdirSync(path.dirname(path.join(assetsDir, EXTRA_PNG)), { recursive: true });
+  writeFileSync(path.join(assetsDir, EXTRA_PNG), PNG_1X1);
   await buildSite({
     courses: { ja: [course], en: [], zh: [] },
     dataDir: path.join(fixture, 'data'),
@@ -133,6 +150,7 @@ export async function prepareFixtureSite(work: string): Promise<PreparedSite> {
     hero: SAMPLE.heroSnippet as HeroSnippet,
     strict: true,
     posterOf: (_, key) => path.join(fixture, 'posters', `${key}.jpg`),
+    assetsDir,
     log: () => {},
   });
   // 旧 Pages の P01 の動画（通常版と字幕版）も合成の動画にし、保存の manifest を合わせる（revision と合計も数え直す）
@@ -170,5 +188,6 @@ export async function prepareFixtureSite(work: string): Promise<PreparedSite> {
     },
     legacy: { ...legacy, manifest: JSON.stringify(manifest) },
     videoSeconds: VIDEO_SECONDS,
+    shellPng: `assets/${EXTRA_PNG}`,
   };
 }

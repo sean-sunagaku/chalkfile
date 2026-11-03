@@ -1,7 +1,8 @@
 // 拡張子と MIME の対応表。正本はここだけ。値は、Workers の静的 assets が返す Content-Type の本体（; の前）と同じにする。
 // SW は、起動用ファイルと保存するファイルを取るとき、応答の Content-Type を manifest の型と照らし合わせ、違えば取らない
-// （起動用ファイルが 1 つでも取れないと、新しい SW の install が全員で止まる。W-30）。
-//   組み立て（scripts/build_site.ts）: site/assets のファイルの型を、ここから付ける。知らない拡張子なら止める（mimeOf）
+// （起動用ファイルが 1 つでも取れないと、新しい SW の install が全員で止まる）。
+//   組み立て（scripts/site/assets.ts・scripts/pwa.ts）: 起動用ファイル（site/assets・アイコン・manifest・講座のサムネイル）の型を、ここから付ける。
+//     知らない拡張子なら止める（mimeOf）
 //   組み立ての最後（scripts/site-invariants.ts）: 起動用ファイルと保存するファイルの型が、ここと合うか
 //   手元の配信（scripts/serve.ts）・テストのサーバー（tests/browser-server.ts）: 応答の Content-Type（contentTypeOf・mimeTypeOf）
 // 足すときは、Workers が返す型を確かめてから足す。ほかのファイルを import しない（SW にも入れられるように）
