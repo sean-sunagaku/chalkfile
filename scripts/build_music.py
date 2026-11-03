@@ -23,7 +23,7 @@
 
 import sys
 
-# scripts/audio/music/ に __pycache__ を作らない（.gitignore に無いので、git status に出てしまう）
+# scripts/audio/music/ に __pycache__ を作らない（.gitignore でも外しているが、作業フォルダを散らかさない）
 sys.dont_write_bytecode = True
 
 # python scripts/build_music.py で流すと、sys.path の頭が scripts/ になる
