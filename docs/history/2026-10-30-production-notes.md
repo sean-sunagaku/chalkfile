@@ -1,5 +1,7 @@
 # 制作メモ: ナッジ・UI/UX・マーケティングの 3 講座（2026-10-30〜31）
 
+これは記録。書いた日のことで、今の手順ではない（コマンド・置き場所・公開の仕方には、そのあと変わったものがある）。今の手順は、講座の作り方がスキルの [study-video-course](../../.claude/skills/study-video-course/SKILL.md) と [course-from-prompt](../../.claude/skills/course-from-prompt/SKILL.md)、公開が [公開の順番](../operations/publish.md)、つまずきの索引が [ハマりどころ](../operations/troubleshooting.md)。
+
 共通プロンプト（講師兼動画制作者として、Web エンジニア・個人開発者向けの実務講座を作る）に、テーマ別の指示を 1 つずつ付けて、Chalkfile で 3 講座を作ったときの記録。何を作ったか、Chalkfile をどう拡張したか、どこでつまずいたかを残す。
 
 1 日目（10-30）に 3 講座の設計と第 1 章を作り、2 日目（10-31）に残りの 20 章（第 2 章以降）を「ざっくり版」として、章ごとのサブエージェントで並行して作った。

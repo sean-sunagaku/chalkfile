@@ -68,25 +68,11 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 ## ハマりどころ
 
-- **Remotion が public/ を一時フォルダへ複製してディスクを埋める**: 書き出しのたびに `public/`（声で約 1GB）を複製する。映像は無音で書き出すので、`render.sh` と `stills.ts` は空の `.work/render-public` を渡している
-- **書き出し中のフレームでディスクが埋まる**: 5 分の動画で 1〜2GB の JPEG を一時フォルダに置く。空きが少ないときは `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出して最後につなぐ）
-- **一時フォルダの `remotion-webpack-bundle-*` をまとめて消さない**: ほかのプロジェクトのものかもしれない。消すなら中身（bundle.js にこの講座の文字があるか）を確かめて 1 つずつ
-- **Node.js 26 で Chrome Headless Shell の展開が止まる**: 手で展開して版を書く
-
-  ```bash
-  cd node_modules/.remotion/chrome-headless-shell
-  rm -rf mac-arm64 && mkdir mac-arm64 && unzip -q chrome-headless-shell-mac-arm64.zip -d mac-arm64
-  printf '144.0.7559.20' > VERSION
-  ```
-
-- **`python3 -m http.server` では動画の途中に飛べない**: Range（部分取得）に答えないため。手元で見るときは `bun scripts/serve.ts`
-- **ブラウザが古い動画を覚えている**: サーバーを替えたり動画を作り直したりした後は、別のポートで開くか、キャッシュを消して確かめる
-- **GitHub Pages は同じ持ち主のほかのサイトと localStorage を共有する**: 講座サイトは保存のキーに `chalkfile:<講座 ID>:` を付けている
-- **合成し直しの単位**: 声のキャッシュは「読み上げる文と声」で決まる。台詞の表示（`t`）だけ変えても、読み（`s` か `reading.ts` で開いた文）が同じなら作り直さない
+正本は [troubleshooting.md](../../../../docs/operations/troubleshooting.md)（書き出しでディスクが埋まる・Chrome Headless Shell の展開が止まる・動画の途中に飛べない・合成し直しの単位など）。
 
 ## 公開（Workers / Releases）
 
-運用の正本は [../../../../docs/workers-delivery.md](../../../../docs/workers-delivery.md)。動画はMacで `media.ts push/check` を先に行い、mainへ入れる。Actionsは `npm ci --ignore-scripts`、型/単体/安全点検、素材pull、`synth --cached-only`、動画check、strict build、生成物点検、Wrangler、公開後の全動画Range確認の順。Cloudflare secretはDeploy stepだけ。音声・動画が不足したら停止する。
+公開の順番の正本は [publish.md](../../../../docs/operations/publish.md)。動画はMacで `media.ts push/check` を先に行い、mainへ入れる。Actionsは `npm ci --ignore-scripts`、型/単体/安全点検、素材pull、`synth --cached-only`、動画check、strict build、生成物点検、Wrangler、公開後の全動画Range確認の順。Cloudflare secretはDeploy stepだけ。音声・動画が不足したら停止する。
 
 JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4はReleasesにだけ置き、`media.ts pull [講座ID…]` で戻す。従来の `materials.ts pull --videos` もReleasesから取得し、変更済みローカル動画は上書きしない。
 

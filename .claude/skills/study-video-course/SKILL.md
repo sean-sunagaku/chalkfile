@@ -19,7 +19,7 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 正本は台本のデータ（`content/<講座>/Lxx.ts`）。声も動画もサイトも、台本からコマンドで作り直す。動画を手で編集しない。
 
-講座サイトの事前保存・オフライン再生・PWAを直すときは [references/offline.md](references/offline.md) に従う。利用者が選んだ講座の公開教材・MP4だけを保存し、不完全な保存を成功扱いしない。オンライン再生・単体ファイル保存・アプリ内保存・インストールを区別する。READMEの利用手順も一緒に更新する。
+講座サイトの事前保存・オフライン再生・PWAを直すときは [references/offline.md](references/offline.md) に従う。利用者が選んだ講座の公開教材・MP4だけを保存し、不完全な保存を成功扱いしない。オンライン再生・単体ファイル保存・アプリ内保存・インストールを区別する。学ぶ人向けの説明（[learner-offline.md](../../../docs/guide/learner-offline.md)）も一緒に直す。
 
 保存状態の案内を直すときは、`tests/browser/offline-status.spec.ts` を対象実行し、完全再起動後のオフライン表示と、進捗・通信エラーを遅い応答や状態確認で消さないことを確かめる。公開後の単体MP4ダウンロード操作は、保存検証の一時profileのキャッシュを使って1本だけ確認し、公開での結果を別に記録する。
 
@@ -61,7 +61,7 @@ uv run --locked --group audio python scripts/mix.py L01 L02     # 音
 CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字幕なし・サイト用の字幕焼き込み・配る用の字幕焼き込み）
 ```
 
-前提のツール、VOICEVOX の起動、ハマりどころは [references/pipeline.md](references/pipeline.md)。
+前提のツールと VOICEVOX の起動は [references/pipeline.md](references/pipeline.md)、ハマりどころは [troubleshooting.md](../../../docs/operations/troubleshooting.md)。
 
 ### 5. 確かめる
 
@@ -79,7 +79,7 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 ### 6. 公開する
 
-動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。具体的な初回設定・公開・復旧は [../../../docs/workers-delivery.md](../../../docs/workers-delivery.md)。
+動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。公開の順番の正本は [publish.md](../../../docs/operations/publish.md)、初回の設定は [setup.md](../../../docs/operations/setup.md)、復旧は [recovery.md](../../../docs/operations/recovery.md)。
 
 新しい講座をReleasesへ置いたときは、全レクチャーの `site/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
 
@@ -106,7 +106,7 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | 図や画面の文字だけ直す | 台本を直す → stills → render（声は変わらないので synth と mix は要らない） |
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.ts --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
-| 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → READMEとこのSkillの案内を合わせる |
+| 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → learner-offline.md とこのスキルの案内を合わせる |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `bun scripts/materials.ts pull` → synth（声は素材から）→ mix → render → build_site。サイトだけなら `pull --videos` → synth → build_site |
 | 講座を英語・中国語にする | i18n.md → 訳のファイル（`content/<講座>/<言語>/`）→ `bun scripts/i18n.ts try`・`stamp` → `TRANSLATIONS` に並べる → synth `<ID>.<言語>` → `check_speech.py` → mix → stills → `CAPTIONS=1` render → build_site → 動画のサイトと講座サイトを deploy → `materials.ts push` |

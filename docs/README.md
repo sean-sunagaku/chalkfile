@@ -11,7 +11,10 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 |---|---|---|
 | 全体の仕組み（データの流れと置き場所） | [architecture/overview.md](architecture/overview.md) | |
 | 言葉の意味 | [architecture/glossary.md](architecture/glossary.md) | |
+| 配信の設計（Workers・Releases・旧 Pages の移行） | [architecture/delivery.md](architecture/delivery.md) | 手順は書かない。手順は下の「公開の順番」ほか |
+| 始め方（3 通りの作り直し・前提の道具） | [guide/quickstart.md](guide/quickstart.md) | |
 | 講座の作り方 | スキル [study-video-course](../.claude/skills/study-video-course/SKILL.md) | 共通プロンプトから講座を丸ごと作るときは [course-from-prompt](../.claude/skills/course-from-prompt/SKILL.md) |
+| 講座を足す（チェックリスト・頭文字の表・PR に書くこと） | [guide/new-course.md](guide/new-course.md) | 中身の作り方はスキル |
 | 画面と話し方 | [style.md](../.claude/skills/study-video-course/references/style.md) | |
 | テーマ（色・書体・背景） | 値は `content/themes.ts`、仕様は [theme.md](../.claude/skills/study-video-course/references/theme.md) | |
 | お笑い版の作り方 | [comedy.md](../.claude/skills/study-video-course/references/comedy.md) | |
@@ -19,28 +22,30 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 読む教材・章の計画 | [materials.md](../.claude/skills/study-video-course/references/materials.md) | 名前は materials だが「教材」の話（「素材」とは別。[用語集](architecture/glossary.md)） |
 | 調べ方・事実の確かめ方 | [research.md](../.claude/skills/study-video-course/references/research.md) | |
 | 名前と公式ドキュメントの使い方 | [rights.md](../.claude/skills/study-video-course/references/rights.md) | |
-| コマンド | `package.json` の `scripts` と `docs/guide/commands.md`（予定） | 今は [README](../README.md) の「作り直す」「素材から作り直す（VOICEVOX なし）」「サイト変更の検証」と、スキルの [pipeline.md](../.claude/skills/study-video-course/references/pipeline.md) |
-| 公開の順番 | `docs/operations/publish.md`（予定） | 今は [workers-delivery.md](workers-delivery.md) の「公開する順番」 |
-| 初回の設定（Cloudflare・GitHub） | `docs/operations/setup.md`（予定） | 今は [workers-delivery.md](workers-delivery.md) の「Cloudflare と GitHub の初回設定」 |
-| 戻し方・ハマりどころ | `docs/operations/recovery.md`・`troubleshooting.md`（予定） | 今は [workers-delivery.md](workers-delivery.md) の「機密情報と復旧」と、[pipeline.md](../.claude/skills/study-video-course/references/pipeline.md) の「ハマりどころ」 |
-| 安全（AI 向けのきまり・公開物・点検） | [CLAUDE.md](../CLAUDE.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts`。AI 共通のきまりは `AGENTS.md`（予定）に移す |
+| コマンド・道具の役割・ポート | `package.json` の `scripts` と [guide/commands.md](guide/commands.md) | 入力と出力の表は、スキルの [pipeline.md](../.claude/skills/study-video-course/references/pipeline.md) |
+| 公開の順番 | [operations/publish.md](operations/publish.md) | 公開の順番を書くのはここだけ |
+| 初回の設定（Cloudflare・GitHub） | [operations/setup.md](operations/setup.md) | 持ち主だけ |
+| 戻し方・作り直し（rollback・出し直し・素材・retained・token・無料枠・ドメイン） | [operations/recovery.md](operations/recovery.md) | 持ち主だけ |
+| ハマりどころ | [operations/troubleshooting.md](operations/troubleshooting.md) | 症状からひく索引 |
+| AI 共通のきまり（方針・安全・公開・並行作業・文体・コマンド） | [AGENTS.md](../AGENTS.md) | Claude Code は [CLAUDE.md](../CLAUDE.md) から読み込む |
+| 安全（AI 向けのきまり・公開物・点検） | [AGENTS.md](../AGENTS.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts` |
 | 保存の設計（オフライン・PWA） | `docs/architecture/offline.md`（予定） | 今はスキルの [offline.md](../.claude/skills/study-video-course/references/offline.md) |
-| 学ぶ人向けの保存の説明 | `docs/guide/learner-offline.md`（予定） | 今は [README](../README.md) の「講座を保存してオフラインで学ぶ（PWA）」 |
+| 学ぶ人向けの保存の説明 | [guide/learner-offline.md](guide/learner-offline.md) | |
 | 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
-| 日付つきの記録 | `docs/history/`（予定） | 今は [workers-verification.md](workers-verification.md) と [courses/production-notes.md](courses/production-notes.md) |
-| 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない（production-notes.md だけは手書きの記録） |
+| 日付つきの記録 | [history/](history/) | [2026-10-30 の制作メモ](history/2026-10-30-production-notes.md)・[2026-11-03 の公開確認](history/2026-11-03-workers-verification.md)。記録で、今の手順ではない |
+| 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない |
 | 参加・脆弱性の報告・ライセンス | [CONTRIBUTING.md](../CONTRIBUTING.md)・[SECURITY.md](../SECURITY.md)・[LICENSE](../LICENSE)・[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)・[DISCLAIMER.md](../DISCLAIMER.md) | |
 
 ## docs/ の置き方
 
 | 場所 | 中身 |
 |---|---|
-| `architecture/` | 仕組みの説明（全体図・用語集。保存の設計も、ここに移す予定） |
+| `architecture/` | 仕組みの説明（全体図・用語集・配信の設計。保存の設計も、ここに移す予定） |
 | `adr/` | 決めたことの記録 |
 | `courses/` | 生成物（読む教材） |
-| `guide/`（予定） | 始め方・講座の足し方・コマンド・学ぶ人の保存 |
-| `operations/`（予定） | 公開・初回の設定・戻し方・ハマりどころ。今の `workers-delivery.md` を分けて移す |
-| `history/`（予定） | 日付つきの記録。今の `workers-verification.md` と `courses/production-notes.md` を移す |
+| `guide/` | 始め方・講座の足し方・コマンド・学ぶ人の保存 |
+| `operations/` | 公開・初回の設定・戻し方・ハマりどころ |
+| `history/` | 日付つきの記録。名前の頭に日付を付ける。今の手順はここに書かない |
 
 ## 文書の決まり
 
@@ -51,4 +56,4 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 5. 日付つきの記録（確かめた結果・つまずき）は、今の手順と分けて置く
 6. 生成物は手で直さない。元の台本かスクリプトを直して作り直す
 7. リンクは相対パスで書く。（予定）の文書にはリンクせず、できてから張る
-8. 文体は平易な日本語の常体（「〜する」）。漢語・外来語・英字を減らし、コードの名前とコマンドはそのまま書く。見本はスキルの [style.md](../.claude/skills/study-video-course/references/style.md) と [theme.md](../.claude/skills/study-video-course/references/theme.md) の書き方。AI に向けた文体のきまりの正本は `AGENTS.md`（予定）に置く
+8. 文体は平易な日本語の常体（「〜する」）。漢語・外来語・英字を減らし、コードの名前とコマンドはそのまま書く。見本はスキルの [style.md](../.claude/skills/study-video-course/references/style.md) と [theme.md](../.claude/skills/study-video-course/references/theme.md) の書き方。AI に向けた文体のきまりの正本は [AGENTS.md](../AGENTS.md) の「文体」

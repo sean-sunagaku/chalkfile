@@ -1,4 +1,4 @@
-// 部品（src/scenes・src/components）に色を直接書かない（CLAUDE.md の決まり）
+// 部品（src/scenes・src/components）に色を直接書かない（AGENTS.md の決まり）
 // 色は講座のテーマから取る（src/theme.ts の C・TONES・SYNTAX など。テーマの仕様は .claude/skills/study-video-course/references/theme.md）。
 // 見るもの: 文字列・JSX の属性・テンプレート文字列の中の 16 進の色（#fff・#FFFFFF など）と rgb()・rgba()・hsl()・hsla()。
 // 今は警告だけにする（今ある直書きは、色をトークンにするタスク T3A-05 で片付けてから、error にする）。
