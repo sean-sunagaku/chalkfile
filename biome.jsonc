@@ -12,6 +12,7 @@
     // HTML（site/template.html・site/home.html）と CSS は当面は見ない（画面の JS を TS に出したあとで見直す）
     "includes": [
       "src/**",
+      "engine/**",
       "content/**",
       "scripts/**",
       "site/*.ts",

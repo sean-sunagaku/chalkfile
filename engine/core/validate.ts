@@ -135,7 +135,7 @@ const courseWhere = (course: Course) => (course.lang && course.lang !== 'ja' ? `
 type Leaf = (key: string, value: unknown, path: string) => void;
 /** 値を末端までたどる。配列の中の値は、配列の項目の名前で呼ぶ（cells[1] の key は cells） */
 const walk = (v: unknown, path: string, key: string, leaf: Leaf): void => {
-  if (Array.isArray(v)) return v.forEach((x, i) => walk(x, `${path}[${i}]`, key, leaf));
+  if (Array.isArray(v)) { v.forEach((x, i) => { walk(x, `${path}[${i}]`, key, leaf); }); return; }
   if (v && typeof v === 'object') {
     for (const [k, x] of Object.entries(v)) walk(x, path ? `${path}.${k}` : k, k, leaf);
     return;
@@ -148,7 +148,7 @@ const keysOf = (items: { key?: unknown }[], where: string, out: Issue[]): Set<st
   const seen = new Set<string>();
   items.forEach((it, i) => {
     const k = it?.key;
-    if (typeof k !== 'string' || !k) return push(out, 'error', 'key', `${where}[${i}].key`, 'key が無い');
+    if (typeof k !== 'string' || !k) { push(out, 'error', 'key', `${where}[${i}].key`, 'key が無い'); return; }
     if (seen.has(k)) push(out, 'error', 'key', `${where}[${i}].key`, `key「${k}」が重なっている（矢印と focus が、どれを指すか決まらない）`);
     seen.add(k);
   });
@@ -222,7 +222,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
     case 'concepts': {
       notEmpty(s.cards, 'カード（cards）', w('cards'), out);
       const keys = keysOf(list(s.cards), w('cards'), out);
-      list(s.focus).forEach((f, i) => f?.key !== null && refTo(keys, f?.key, 'focus のカード', 'focus が何も光らせない', w(`focus[${i}].key`), out));
+      list(s.focus).forEach((f, i) => { f?.key !== null && refTo(keys, f?.key, 'focus のカード', 'focus が何も光らせない', w(`focus[${i}].key`), out); });
       return;
     }
     case 'sequence': {
@@ -243,7 +243,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
         refTo(keys, e?.from, '矢印の出どころ', '描くと TypeError で止まる', w(`edges[${i}].from`), out);
         refTo(keys, e?.to, '矢印の行き先', '描くと TypeError で止まる', w(`edges[${i}].to`), out);
       });
-      list<{ keys?: unknown[] }>(s.focus).forEach((f, i) => list(f?.keys).forEach((k, j) => refTo(keys, k, 'focus の箱', 'focus が光らせない', w(`focus[${i}].keys[${j}]`), out)));
+      list<{ keys?: unknown[] }>(s.focus).forEach((f, i) => { list(f?.keys).forEach((k, j) => { refTo(keys, k, 'focus の箱', 'focus が光らせない', w(`focus[${i}].keys[${j}]`), out); }); });
       return;
     }
     case 'code': {
@@ -291,7 +291,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
     case 'timeline': {
       notEmpty(s.items, '項目（items）', w('items'), out);
       const keys = keysOf(list(s.items), w('items'), out);
-      list(s.focus).forEach((f, i) => f?.key !== null && refTo(keys, f?.key, 'focus の項目', 'focus が何も光らせず、進み具合の線も伸びない', w(`focus[${i}].key`), out));
+      list(s.focus).forEach((f, i) => { f?.key !== null && refTo(keys, f?.key, 'focus の項目', 'focus が何も光らせず、進み具合の線も伸びない', w(`focus[${i}].key`), out); });
       list(s.items).forEach((it, i) => {
         if (typeof it?.title === 'string' && count(it.title, '　') > 1) push(out, 'warning', 'style', w(`items[${i}].title`), '題に全角の空白が 2 つ以上ある（1 つ目で札と題に分け、3 つ目より後は出ない）');
       });
@@ -334,14 +334,14 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
 /** 場面に共通のこと: 台詞・at の範囲・色の名前・根拠の札・** */
 const checkScene = (s: Scene, i: number, where: string, course: Course, lang: Lang, out: Issue[]) => {
   const sw = `${where} 場面 ${i + 1}`;
-  if (!s || typeof s !== 'object') return push(out, 'error', 'kind', sw, '場面が空');
+  if (!s || typeof s !== 'object') { push(out, 'error', 'kind', sw, '場面が空'); return; }
   if (!has(SCENE_KIND_SET, s.kind)) {
     push(out, 'error', 'kind', sw, `場面の種類「${String((s as { kind?: unknown }).kind)}」が無い（あるのは ${SCENE_KINDS.join('・')}）`);
     return;
   }
   const lines = list(s.lines);
   if (!lines.length) push(out, 'error', 'lines', `${sw} lines`, '台詞が無い（場面は台詞で進むので、1 つは書く）');
-  lines.forEach((ln, k) => checkLine(ln, k, sw, course, out));
+  lines.forEach((ln, k) => { checkLine(ln, k, sw, course, out); });
   if (s.hold !== undefined && !(typeof s.hold === 'number' && s.hold >= 0)) push(out, 'error', 'hold', `${sw} hold`, `hold は 0 以上の秒（書いたのは ${String(s.hold)}）`);
   if (s.evidence !== undefined && !has(EVIDENCE_SET, s.evidence)) push(out, 'error', 'evidence', `${sw} evidence`, `根拠の種類「${String(s.evidence)}」が無い（あるのは ${names(EVIDENCE_SET)}）`);
   for (const [key, value] of Object.entries(s)) {
@@ -399,7 +399,7 @@ const checkDerived = (lec: Lecture, course: Course, where: string, out: Issue[])
       if (nextLec && !course.standalone) push(out, 'warning', 'ending-next', w, `次の動画（${nextLec.id}）があるのに、エンディングに next が無い`);
       return;
     }
-    if (s.next.no !== nextNo) return push(out, 'error', 'ending-next', `${w}.no`, `次の番号 ${s.next.no} が、この動画の次（${nextNo}）と合わない`);
+    if (s.next.no !== nextNo) { push(out, 'error', 'ending-next', `${w}.no`, `次の番号 ${s.next.no} が、この動画の次（${nextNo}）と合わない`); return; }
     const title = nextLec?.title ?? nextCh?.title;
     if (title === undefined) push(out, 'warning', 'ending-next', w, `次の ${nextNo} 本目が講座にまだ無い（予告として書いたなら、このままでよい）`);
     else if (s.next.title !== title) push(out, 'warning', 'ending-next', `${w}.title`, `次の題「${s.next.title}」が、${nextLec ? `次の動画（${nextLec.id}）` : 'syllabus の章'}の題「${title}」と違う`);
@@ -430,7 +430,7 @@ export const validateLecture = (lecture: Lecture, course: Course): Issue[] => {
   const lang: Lang = course.lang ?? 'ja';
   const scenes = list(lecture.scenes);
   if (!scenes.length) push(out, 'error', 'scenes', `${where} scenes`, '場面が無い');
-  scenes.forEach((s, i) => checkScene(s, i, where, course, lang, out));
+  scenes.forEach((s, i) => { checkScene(s, i, where, course, lang, out); });
   list(lecture.quiz).forEach((qz, i) => {
     const n = list(qz?.choices).length;
     if (n < 2) push(out, 'error', 'quiz', `${where} quiz[${i}].choices`, `選択肢が ${n} つ（2 つ以上書く）`);
@@ -447,7 +447,7 @@ export const validateCourse = (course: Course): Issue[] => {
   if (course.theme !== undefined && !Object.hasOwn(THEMES, course.theme)) {
     push(out, 'error', 'theme', `${where} theme`, `テーマ「${course.theme}」が無い（content/themes.ts の THEMES にあるのは ${Object.keys(THEMES).join('・')}）`);
   }
-  const dup = <T>(xs: T[], rule: Rule, what: string, w: string) => xs.forEach((x, i) => xs.indexOf(x) !== i && push(out, 'error', rule, w, `${what} ${String(x)} が重なっている`));
+  const dup = <T>(xs: T[], rule: Rule, what: string, w: string) => xs.forEach((x, i) => { xs.indexOf(x) !== i && push(out, 'error', rule, w, `${what} ${String(x)} が重なっている`); });
   dup(list(course.sections).map((s) => s.no), 'section', 'セクションの番号', `${where} sections`);
   dup(list(course.lectures).map((l) => l.id), 'lecture-no', '動画の ID', `${where} lectures`);
   dup(list(course.lectures).map((l) => l.no), 'lecture-no', '動画の番号', `${where} lectures`);
@@ -507,7 +507,7 @@ export const validateTheme = (theme: Theme, where = `テーマ ${theme?.id}`): I
   for (const [k, v] of Object.entries(theme.color ?? {})) color(v, `color.${k}`);
   for (const t of Object.keys(TONE_SET)) color(theme.tones?.[t as Tone], `tones.${t}`);
   for (const [k, v] of Object.entries(theme.syntax ?? {})) color(v, `syntax.${k}`);
-  for (const key of ['gradient', 'display', 'mesh'] as const) list(theme[key]).forEach((v, i) => color(v, `${key}[${i}]`));
+  for (const key of ['gradient', 'display', 'mesh'] as const) list(theme[key]).forEach((v, i) => { color(v, `${key}[${i}]`); });
   if (list(theme.gradient).length < 2) push(out, 'error', 'theme', `${where} gradient`, 'gradient は 2 色以上');
   if (list(theme.display).length < 2) push(out, 'error', 'theme', `${where} display`, 'display は 2 色以上');
   // 背景の飾り（src/components/chrome.tsx）: chalk と stars は mesh の 4 色目まで使う
