@@ -10,7 +10,8 @@ import path from 'node:path';
 import { COURSES } from '../content';
 import { mediaListFile, posterFile } from '../engine/core/generated';
 import { redact } from '../scripts/lib/proc';
-import { mediaLimitProblems, pushMedia, readMediaManifest, retainEntries, verifyReleaseAssets, warnExpiredRetained, type Gh } from '../scripts/media';
+import { ghTimeoutMs, ghWith, mediaLimitProblems, pushMedia, readMediaManifest, readOnlyGh, retainEntries, verifyReleaseAssets, warnExpiredRetained, type Gh } from '../scripts/media';
+import type { RunOptions, RunResult } from '../scripts/lib/proc';
 import { mediaListFiles, readMediaLists } from '../scripts/media-lists';
 import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, RELEASE_MAX_ASSETS } from '../site/limits';
 const entry: MediaEntry = { lang: 'ja', course: 'sample', lecture: 'L01', kind: 'standard', sha256: 'a'.repeat(64), bytes: 100,
@@ -256,5 +257,42 @@ describe('media push --course（その講座だけを手元から作り、ほか
     expect(out).not.toContain('abc.def');
     expect(out).not.toContain('X-Amz-Signature');
     expect(out).toContain('https://objects.githubusercontent.com/x?［伏せた］');
+  });
+  test('gh の呼び出しには時間切れを付け、読むだけの API は一時の失敗なら待って 3 回まで試す（書き換える呼び出しは流し直さない）', () => {
+    const calls: { args: string[]; timeoutMs?: number }[] = [];
+    const waits: number[] = [];
+    const warned: string[] = [];
+    /** 決まった順に結果を返す偽の gh */
+    const exec = (results: Partial<RunResult>[]) => (_cmd: string, args: string[], opts: RunOptions): RunResult => {
+      calls.push({ args, timeoutMs: opts.timeoutMs });
+      return { code: 0, stdout: '', stderr: '', timedOut: false, ...results[calls.length - 1] };
+    };
+    const reset = () => { calls.length = 0; waits.length = 0; warned.length = 0; };
+    const make = (results: Partial<RunResult>[]) => ghWith(exec(results), (ms) => void waits.push(ms), (l) => void warned.push(l));
+    // 読むだけの API は、通信が途中で切れても、流し直して通れば中身を返す
+    expect(make([{ code: 1, stderr: 'unexpected end of JSON input' }, { stdout: '{"id":1}' }])(['api', 'repos/x/releases/tags/t'])).toBe('{"id":1}');
+    expect(waits).toEqual([1000]);
+    expect(warned[0]).toContain('gh api repos/x/releases/tags/t が失敗した（unexpected end of JSON input）');
+    // 3 回続けて失敗したら止める（時間切れも失敗として数える）
+    reset();
+    expect(() => make([{ code: 1, stderr: 'x' }, { timedOut: true, code: 1 }, { code: 1, stderr: 'HTTP 502 ghp_' + 'B'.repeat(36) }])(['api', 'repos/x'])).toThrow(
+      'GitHub の操作に失敗しました: api repos/x（認証・権限・通信を確認してください）: HTTP 502 ［伏せた token］',
+    );
+    expect(waits).toEqual([1000, 2000]);
+    // 書き換える呼び出し（upload・create・method を付けた API）は流し直さない
+    for (const args of [['release', 'upload', 't', 'a.mp4'], ['release', 'create', 't'], ['api', '-X', 'DELETE', 'repos/x']]) {
+      reset();
+      expect(() => make([{ code: 1, stderr: 'boom' }, { stdout: 'ok' }])(args)).toThrow('boom');
+      expect(calls).toHaveLength(1);
+    }
+    // 時間切れ: 動画の upload・download は長く、ほかは短く
+    expect(ghTimeoutMs(['release', 'upload', 't'])).toBe(60 * 60_000);
+    expect(ghTimeoutMs(['release', 'download', 't'])).toBe(60 * 60_000);
+    expect(ghTimeoutMs(['api', 'repos/x'])).toBe(2 * 60_000);
+    reset();
+    make([{ stdout: 'ok' }])(['release', 'download', 't']);
+    expect(calls[0].timeoutMs).toBe(60 * 60_000);
+    expect(readOnlyGh(['api', '--paginate', '--slurp', 'repos/x/releases?per_page=100'])).toBe(true);
+    expect(readOnlyGh(['api', 'repos/x', '-f', 'a=b'])).toBe(false);
   });
 });

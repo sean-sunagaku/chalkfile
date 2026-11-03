@@ -15,11 +15,12 @@ check ─┬─ build ── smoke ─┬─ deploy（main だけ）
 | ジョブ | すること | 流れるとき |
 |---|---|---|
 | `check` | lint・足したファイルの整形・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検・教材のずれ（`npm run check` と同じもの） | PR と main |
-| `build` | 公開と同じ手順でサイトを組み立てて点検する（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）。Worker を `wrangler deploy --dry-run` でまとめ、公開物を artifact `site-dist` に残す | PR と main |
+| `build` | 公開と同じ手順でサイトを組み立てて点検する（素材の長さの一覧と読みだけで `synth --cached-only --durations-only`。一覧が無い・古いときは音声の取り出しにもどる → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）。Worker を `wrangler deploy --dry-run` でまとめ、公開物を artifact `site-dist` に残す | PR と main |
 | `e2e` | 合成の講座で、ブラウザ（Playwright の Chromium）のテストを流す（`npm run test:e2e:ci` を `--if-present` で流す）。失敗したら trace を artifact `e2e-trace` に残す | PR と main |
 | `smoke` | `site-dist` を取り、手元の Worker（`wrangler dev` の手元のモード。Cloudflare の認証を使わない）で配って、`scripts/smoke_worker.ts` で配信の約束を確かめる | PR と main |
 | `deploy` | 上の 4 つが通ったときだけ、`site-dist` をそのまま出す（下の「公開の流れ」） | main への push と、main を選んだ手動の実行 |
 
+- `check` の台本と公開の検証（`npm run validate`）は、公開した動画が今の台本で書き出したものかも見る（動画の一覧の `inputs`。台本が変わった → 止める・描き方のコードだけ → 注意・記録が無い → 知らせ。知らせは Actions の注釈）。決まりは [全体図](../architecture/overview.md) の「段と記録」
 - main を守るルールセットは、ジョブの名前で必須のチェックを待つ。ジョブの名前を変えない
 - 点検を足すときは、`check` のジョブに手順を 1 つ足す（必須のチェック `check` に入る）
 - secret を使うのは、`deploy` の Deploy の手順だけ。ほかのジョブの `GITHUB_TOKEN` は読み取りだけで、fork からの PR でも同じに流れる
@@ -53,7 +54,7 @@ secret も、PR に書く権限も使わずに、組み立てたものと確か�
 |---|---|---|---|
 | npm（`~/.npm`） | `package-lock.json` | どれも（setup-node） | 中身は `npm ci` が lock の integrity で確かめる |
 | bun の実行ファイル | bun の版 | どれも（setup-bun） | |
-| 素材の WAV と読み（`.work/tts`・`public/audio`） | 素材のブランチ（`materials`）の commit の SHA | main の実行だけ | 台詞の音声の全部なので大きい。PR は main が残したものを戻す。別の版の残りは使わない（素材のブランチに無い声で、CI が通ってしまわないように）。戻した WAV も、`materials.ts pull` が SHA256SUMS で 1 本ずつ確かめる |
+| 素材の WAV と読み（声の共有のキャッシュ `CHALKFILE_CACHE_DIR`＝`.work/cache/tts`・`public/audio`。長さの一覧で作れる間は使わない） | 素材のブランチ（`materials`）の commit の SHA | main の実行だけ | 台詞の音声の全部なので大きい。PR は main が残したものを戻す。別の版の残りは使わない（素材のブランチに無い声で、CI が通ってしまわないように）。戻した WAV も、`materials.ts pull` が SHA256SUMS で 1 本ずつ確かめる |
 | Playwright のブラウザ（`~/.cache/ms-playwright`） | Playwright の版 | どれも | OS の部品（apt）は、毎回 `playwright install-deps` で入れる |
 | ffmpeg | 取り出した `ffmpeg` の sha256 | どれも | キャッシュから戻したものも、sha256 を確かめてから使う |
 

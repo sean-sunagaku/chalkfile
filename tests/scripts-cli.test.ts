@@ -24,6 +24,7 @@ const TS = [
   'gen_video_config',
   'materials',
   'media',
+  'pipeline',
   'setup_cloudflare_ci',
   'snapshots',
   'stills-compare',
@@ -39,6 +40,10 @@ const MODULES = [
   'timelines',
   'voices',
   ...readdirSync(path.join(ROOT, 'scripts/lib')).map((f) => `lib/${f.replace(/\.ts$/, '')}`),
+  // 段の部品（scripts/stages/<段>/<部品>.ts）
+  ...readdirSync(path.join(ROOT, 'scripts/stages')).flatMap((stage) =>
+    readdirSync(path.join(ROOT, 'scripts/stages', stage)).map((f) => `stages/${stage}/${f.replace(/\.ts$/, '')}`),
+  ),
 ];
 const NODE = ['node', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON'];
 type Case = { name: string; argv: string[]; file: string };
@@ -145,7 +150,15 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
     ['export_deliverables.ts', [process.execPath, 'scripts/export_deliverables.ts']],
     ['check_overlap.ts', [process.execPath, 'scripts/check_overlap.ts']],
     ['stills.ts', [...NODE, 'scripts/stills.ts']],
+    ['stills.ts（形の違う動画の名前）', [...NODE, 'scripts/stills.ts', 'L01@abc']],
+    ['stills.ts（無い場面）', [...NODE, 'scripts/stills.ts', 'L01:99']],
+    ['stills.ts（形の違うテーマ）', [...NODE, 'scripts/stills.ts', 'L01', '--theme=../x']],
     ['render.sh', ['bash', 'scripts/render.sh', '--nope']],
+    ['pipeline.ts（コマンドなし）', [process.execPath, 'scripts/pipeline.ts']],
+    ['pipeline.ts（知らない引数）', [process.execPath, 'scripts/pipeline.ts', 'status', '--nope']],
+    ['pipeline.ts（--to が無い）', [process.execPath, 'scripts/pipeline.ts', 'build']],
+    ['pipeline.ts（無い段）', [process.execPath, 'scripts/pipeline.ts', 'build', '--to', 'nope', '--dry-run']],
+    ['pipeline.ts（無い単位の記録）', [process.execPath, 'scripts/pipeline.ts', 'record', 'render', 'ZZ99']],
     ['worktree.ts', [process.execPath, 'scripts/worktree.ts', 'bad-name']],
     ['clean.ts', [process.execPath, 'scripts/clean.ts', '--nope']],
   ];
@@ -156,6 +169,33 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
       // 何がおかしいかを 1 行以上で出す（使い方の誤りの文）
       expect(r.stderr.trim()).not.toBe('');
     }, 60_000);
+  test('stills.ts は、timeline の無い動画を、バンドルを作る前に「前提が足りない」（3）で止める', () => {
+    const r = runChild([...NODE, 'scripts/stills.ts', 'ZZ99']);
+    expect({ code: r.code, changed: r.changed, cache: r.cache, tmp: r.tmp }).toEqual({
+      code: 3,
+      changed: [],
+      cache: [],
+      tmp: [],
+    });
+    expect(r.stderr).toContain('ZZ99 の timeline が無い');
+  }, 60_000);
+  // Python の道具は、依存（numpy など）を読む前に引数を確かめる（依存の無い python3 でも 2 で止まる）
+  const pyUnknown: [string, string[]][] = [
+    ['mix.py', ['scripts/mix.py', '--nope']],
+    ['mix.py（動画を渡していない）', ['scripts/mix.py']],
+    ['mix.py（形の違う動画の名前）', ['scripts/mix.py', '../L01']],
+    ['check_speech.py', ['scripts/check_speech.py', 'P01.en', '--nope']],
+  ];
+  for (const [name, args] of pyUnknown)
+    test.skipIf(!python)(
+      `${name}（依存を入れる前でも止める）`,
+      () => {
+        const r = runChild([python ?? 'python3', ...args]);
+        expect({ code: r.code, changed: r.changed, cache: r.cache }).toEqual({ code: 2, changed: [], cache: [] });
+        expect(r.stderr.trim()).not.toBe('');
+      },
+      60_000,
+    );
 });
 
 test('頭書きの読み方（// の行・/** */ のかたまり・# の行・Python の docstring）', () => {

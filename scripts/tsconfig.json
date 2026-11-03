@@ -5,5 +5,5 @@
     // Node で動かす道具（scripts/stills.ts）は、scripts/lib/ を拡張子まで書いて読む（Node は拡張子を補わない）
     "allowImportingTsExtensions": true
   },
-  "include": ["*.ts", "lib/*.ts", "site/*.ts"]
+  "include": ["*.ts", "lib/*.ts", "site/*.ts", "stages/**/*.ts"]
 }

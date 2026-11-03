@@ -35,10 +35,19 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 |---|---|---|
 | 声 | 台詞を読む役（講師の `narrator`・天の声の `tennokoe` など）。日本語は VOICEVOX、英語と中国語は Kokoro-82M の話者に当てる | `content/types.ts` の `VoiceId`。話者と話し方は `content/voices.ts`（音声の鍵の計算は `scripts/voices.ts`） |
 | 配役 | 掛け合いの講座で、声ごとに付ける名前と色。焼き込んだ字幕の名前の札と、サイトの台本の「ずんだもん：…」に出る | `Course.cast` |
-| 声の鍵 | 台詞の音声ファイルの名前。文と声の設定から作るので、同じ文・同じ声なら、前に作った音声を使い回す | `scripts/voices.ts` の `ttsKey`・`ttsKeyIn` |
+| 声の鍵 | 台詞の音声ファイルの名前。読み上げる文と合成のレシピ（話者・話し方・音量・前後の無音・出力の形。表示用のクレジットは入れない）から作るので、同じ文・同じレシピなら、前に作った音声を使い回す。v2 → v1（凍結した前の作り方）の順に探し、新しく作る声には v2 の鍵を付ける | `scripts/voices.ts` の `ttsKeysIn`・`recipeIn` |
 | 読み | 声に読ませる文。英字をカナに開く辞書は、共通の `content/reading.ts` と講座の `content/<講座>/reading.ts`（その講座の台詞にだけ効き、共通より優先）。合成したときの読みは `.work/kana/<key>.txt` で確かめる | `content/reading.ts`・`content/<講座>/reading.ts` |
 | timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む。時刻に効く入力の指紋を持ち、台本を直したのに合成し直していない動画を Studio と validate が止める | `content/<講座>/generated/timeline/<key>.json`（動画ごと）。形と指紋は `engine/core/timeline.ts` |
 | ミックス | 台詞・BGM・ジングル・効果音を 1 本にまとめた音 | `scripts/mix.py` が `public/audio/mix/<key>.wav` に書く |
+
+## 制作の段
+
+| 言葉 | 意味 | どこにあるか |
+|---|---|---|
+| 段 | 台本から公開物までの、道具 1 つぶんの作業。`voice`（声と時刻）・`mix`（ミックス）・`render`（動画とポスター）・`docs`（読む教材）・`site`（講座サイト）。動画ごと（教材とサイトは全部で 1 つ）の単位で、古いかを見る | `scripts/stages/pipeline/stages.ts`。一覧と流し方は [全体図](overview.md) の「段と記録」 |
+| 指紋（段の） | 段の入力（台本・声・時刻・ミックスの音・道具のコードなど）から作る短いハッシュ。部分ごとに作り、どの部分が変わったかを見せる。timeline の指紋（時刻に効く入力）とは別のもの | `scripts/stages/pipeline/digest.ts`・`scripts/stages/video/inputs.ts` |
+| 段の記録 | 流したときの指紋と出力の sha256 と道具の版。`npm run chalk -- status` と `build --to` が、今の指紋と比べる | `.work/state/<段>/<単位>.json`（手元だけ） |
+| inputs | 公開した動画を書き出したときの、台本の側（`script`）と描き方の側（`src`）の指紋。動画の一覧の項目に書く（一覧の版 2）。PR の CI が今の台本と比べ、台本が変わったのに動画が古ければ止める | 講座ごとの `content/<講座>/generated/media.<言語>.json`。読み書きは `scripts/media-lists.ts` |
 
 ## 素材と教材（名前が似ているので注意）
 

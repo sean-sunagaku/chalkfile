@@ -11,7 +11,7 @@
 `npm run chalk -- <コマンド> [引数]`（`bun scripts/cli.ts` でも同じ）。そのコマンドの使い方は `npm run chalk -- <コマンド> --help`（何も流さない）。中では、前の呼び方と同じ道具を流す。
 
 - 対象: `--course <講座 ID>`・`--video <動画>`（`*` と `?` を使える。`'S03.*'` は S03 の全部の言語）・`--lang <言語>`（`all` で全部）。選ばなければ、公開する言語（`site/config.json` の `publishLangs`）の全部の動画
-- 共通: `--dry-run`（流すコマンドを出すだけ）・`--json`（AI・ほかの道具が読む）・`-v`（流すコマンドも出す）。受け取るのは、意味のあるコマンドだけ
+- 共通: `--dry-run`（流すコマンドを出すだけ）・`--json`（AI・ほかの道具が読む）・`-v`（流すコマンドも出す。`voice synth`・`materials`・`media` は、中の道具にも `--verbose` を渡し、VOICEVOX・git・ffmpeg・gh への問い合わせと、失敗したときの stderr の全部を伏せてから出す）。受け取るのは、意味のあるコマンドだけ
 - 書き出し（`render`）は、掛け合いの講座（`cast` のある講座）で、字幕を焼き込んだ版も作る（前の `CAPTIONS=1` も、そのまま使える）
 - 終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（道具・素材・認証。`npm run chalk -- doctor` で確かめる）
 
@@ -22,16 +22,18 @@
 |---|---|---|
 | `doctor [--json]` | 道具の版・VOICEVOX・gh の認証の有無・空き容量・ポート・声のキャッシュを確かめる | （新しい） |
 | `validate [--warnings] [--json]` | 台本の検証と、台本・Git に入れるファイルの点検（訳し残しも）。--json は台本の検証だけを JSON で | `bun scripts/validate.ts`・`bun scripts/check_content.ts` |
-| `voice synth [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only] [--prune]` | 台詞の声と時刻（timeline・ミックスの設計図・サイトの台本と字幕）。--cached-only は素材の声だけを使う | `bun scripts/synth.ts`・`npm run synth` |
+| `status [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--json]` | 段（voice・mix・render・docs・site）ごとに、記録（.work/state/）と今の入力の指紋を比べ、古くなった単位と次に流す段を出す（何も作らない）。公開した動画が今の台本と合うかも出す | （新しい） |
+| `build --to <voice\|mix\|render\|docs\|site> [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--force] [--src] [--cached-only] [--jobs <数>]` | その段まで、前の段から順に、古くなった単位だけを流して記録する（何も変えていなければ、何も流さない）。--force は全部、--src は描き方のコードだけが変わった動画も書き出す。--dry-run は流すものを出すだけ | （新しい） |
+| `voice synth [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only [--durations-only]] [--prune]` | 台詞の声と時刻（timeline・ミックスの設計図・サイトの台本）。--cached-only は素材の声だけを使う。--durations-only は素材の長さと読みだけで作る（音声を取り出さない。CI 用） | `bun scripts/synth.ts`・`npm run synth` |
 | `voice speech-check [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 訳の声を Whisper で聞き取り直し、読み上げの間違いを探す（選ばなければ、合成した訳の全部） | `uv run --locked --script scripts/check_speech.py` |
 | `i18n status` | 訳の表（訳あり・日本語の台本が訳のあとで変わった・未訳）と訳し残し | `bun scripts/i18n.ts status` |
 | `i18n stamp <動画…>（例: P01.en・'*.zh'）` | 訳を台本に合わせ直したあと、今の日本語の台本の指紋を訳のファイルに書く | `bun scripts/i18n.ts stamp` |
 | `i18n try <講座 ID> <言語> <レクチャー ID>` | 講座に並べる前の訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ） | `bun scripts/i18n.ts try` |
 | `music build [--only <名前>…] [--skip-verify] [--check]` | BGM・ジングル・効果音（public/audio/）。--check は素材と同じ音ができるかだけを見る | `npm run build:music`・`npm run music:verify` |
-| `mix [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 音のミックス（public/audio/mix/）。先に voice synth | `npm run mix` |
+| `mix [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 音のミックス（public/audio/mix/）。先に voice synth。ミックスの前後に、段の記録（.work/state/mix/）も書く | `npm run mix` |
 | `render [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>]` | 動画とポスター。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画） | `npm run render`・`CAPTIONS=1 bash scripts/render.sh` |
-| `stills [動画[:場面][@フレーム]…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]` | 確かめるための静止画（out/stills/） | `npm run stills` |
-| `export [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 章ごとの完成動画・字幕・音・教材を out/deliverables/ にまとめる | `bun scripts/export_deliverables.ts` |
+| `stills [動画[:場面,…]・動画@フレーム…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]` | 確かめるための静止画（out/stills/） | `npm run stills` |
+| `export [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 章ごとの完成動画・字幕・音・教材と声のクレジットを out/deliverables/ にまとめる（要るファイルが欠けていたら、何も書かずに止める） | `bun scripts/export_deliverables.ts` |
 | `docs build [--course <ID>] [--check]` | 読む教材（docs/courses/）を台本と timeline から作る。--check は書かずに、ずれだけを見る | `npm run build:materials`・`npm run check:materials` |
 | `materials pull [--course <ID>] [--videos]` | 素材（台詞の声は共有のキャッシュへ。BGM・効果音）を取り出す。--videos は Releases の動画も | `npm run materials:pull` |
 | `materials check [--course <ID>]` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか | `npm run materials:check` |
@@ -97,15 +99,15 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
-| `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
-| `npm run mix` | 音のミックス（`public/audio/mix/`） |
+| `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --cached-only --durations-only` で素材ブランチの長さの一覧と読みだけを使う（音声を取り出さない。mix と render の前には `materials:pull` が要る）。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す、`-- -v` で声の見つけ方と VOICEVOX への問い合わせも出す |
+| `npm run mix` | 音のミックス（`public/audio/mix/`）。中は `npm run chalk -- mix` と同じで、選ばなければ公開する言語の全部の動画（`-- L01 S01.en`・`-- --course <講座 ID>` で選ぶ）。始める前に、設計図の形と、要る声・BGM・効果音がそろっているかを見る |
 | `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
-| `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
+| `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`-- L04@120`・`--theme=<id>`・`--captions`。動画・場面・フレームの形と範囲は、バンドルを作る前に確かめる（timeline の無い動画は止める） |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
 | `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`）。時刻は Git に入れている timeline から読む。消した章の古いファイルも消す |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
-| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
+| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表・Python の道具が読む JSON（効果音の一覧 `scripts/audio/sfx.json` は `content/sfx.ts` から、動画の値 `scripts/audio/video_config.json` は `src/video.config.ts` から。どちらも Git に入れる）。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 
 ### 見る
 
@@ -120,7 +122,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 |---|---|
 | `npm run materials:pull` | 素材を取り出す。台詞の声は作業フォルダの間で共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`）に置き、同じ中身があれば取り出さない（`-- --videos` で Releases の動画も） |
 | `npm run materials:check` | 台本の全部の台詞の声（共有のキャッシュか `.work/tts`）と、BGM・効果音が手元にあるか |
-| `npm run materials:push` | 素材を素材ブランチに足す（消さない。`-- --dry-run` で本数だけを見る） |
+| `npm run materials:push` | 素材を素材ブランチに足す（消さない。台詞の長さの一覧 `DURATIONS.json` も書く。`-- --dry-run` で本数だけを見る） |
 | `npm run media:push -- --course <講座 ID>` | その講座の動画を Releases に置き、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを書き換える。訳の動画は `--lang en` も付ける |
 | `npm run media:check` | 動画の一覧・Releases・手元の動画を照らし合わせる |
 
@@ -129,7 +131,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run worktree:new -- <type>/<slug>` | 新しい作業フォルダ（git worktree）を作る。origin/main から branch と隣の `../chalkfile-<slug>` を作り、node_modules を複製して（APFS。ほかは `npm ci --ignore-scripts`）、素材を取り出す（1 分ほど）。`-- --dry-run` で何をするかだけを出す |
-| `npm run clean` | 作り直せる生成物（`out/`・`public/audio/mix/`・`site/dist/`・`.work/state/`）を消す。`-- --cache` で共有のキャッシュの台詞の声も消す（ほかの作業フォルダも使う）。`-- --dry-run` で消すものと大きさだけを出す |
+| `npm run clean` | 作り直せる生成物（`out/`・`public/audio/mix/`・`site/dist/`・段の記録 `.work/state/`）を消す。`-- --cache` で共有のキャッシュの台詞の声も消す（ほかの作業フォルダも使う）。`-- --dry-run` で消すものと大きさだけを出す |
 
 ## npm run に無いもの
 
@@ -140,7 +142,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `uv run --locked --script scripts/check_speech.py <key…>` | 訳の声を Whisper で聞き取り直す |
 | `bun scripts/check_overlap.ts <講座 ID>` | 台本と出典の公式ページで、言い回しが続けて同じところを探す（ネットにつなぐ。`--query=locale=ja-JP`・`--lang=en`） |
 | `bun scripts/snapshots.ts`（`--update`） | 音声の鍵と読みのスナップショットと比べる（作り直す） |
-| `bun scripts/export_deliverables.ts <ID…>` | 章ごとの完成動画・字幕・音・教材を `out/deliverables/` にまとめる |
+| `bun scripts/export_deliverables.ts <ID…>` | 章ごとの完成動画・字幕・音・教材と、その動画で使った全部の声のクレジット（README）を `out/deliverables/` にまとめる。要るファイルが欠けていたら、何も書かずに、欠けたものと作り方を出して止める（終了コード 3） |
 | `bun scripts/check_delivery.ts site/dist` | 公開物の点検（秘密情報・MP4・大きさ） |
 | `bun scripts/smoke_worker.ts [URL]` | 手元の Worker の smoke（[公開の順番](../operations/publish.md) の「手元の Worker で確かめる」） |
 | `bun scripts/verify_public.ts` | 公開したサイトのトップと、全部の動画の Range |
@@ -150,6 +152,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 ## 部分だけ作り直す・確かめる
 
 - 一部だけ: `npm run synth -- L03 L05`（mix・render も同じ）。訳の動画は `S03.en` のように、まとめて `'S03.*'`・`'*.en'` も渡せる
+- 古くなったものだけ: `npm run chalk -- status` で段ごとの古い単位を見て、`npm run chalk -- build --to <段>` で前の段から順に流す（段と記録は [全体図](../architecture/overview.md) の「段と記録」、流し方は [公開の順番](../operations/publish.md) の「段の状態を見て、古い段だけを流す」）
 - 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。timeline（`content/<講座>/generated/timeline/`）は Git に入っている）
 - 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は講座の辞書 `content/<講座>/reading.ts` に足す（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）
 - 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・読みの辞書・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）

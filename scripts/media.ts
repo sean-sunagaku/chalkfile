@@ -1,16 +1,22 @@
 // 手元で書き出した動画（MP4）を、Releases へ先に置く。CI は check だけを行う（動画を置く権限を渡さない）。
 //   bun scripts/media.ts push --course <講座 ID> [--course <講座 ID>…] [--lang ja]
 //       選んだ講座の動画だけを、手元のファイル（site/media/）から Releases に置き、その講座の一覧（content/<講座>/generated/media.<言語>.json）
-//       だけを書き直す。ほかの講座の一覧には触らない（手元の動画が一覧と違えば、知らせるだけ）。前のハッシュの動画は消さず retained に回す
+//       だけを書き直す。ほかの講座の一覧には触らない（手元の動画が一覧と違えば、知らせるだけ）。前のハッシュの動画は消さず retained に回す。
+//       書き出しの記録（.work/state/render/<key>.json。render.sh が書く）のある動画は、項目に inputs（書き出したときの台本と描き方の指紋）を
+//       書く（一覧の版 2。scripts/media-lists.ts）。同じ動画をもう一度置くときは、前の一覧の inputs を引き継ぐ。書き出したあとで台本が
+//       変わった動画（記録の台本の指紋が今と違う）があれば、Releases に置く前に止める。描き方のコードだけが違うときは、知らせるだけ
 //   bun scripts/media.ts check            # 全講座の一覧の動画が Releases にあり、大きさと SHA-256 が合うか（手元にあれば手元の動画も）
 //   bun scripts/media.ts pull [講座 ID…]  # 一覧の日本語の動画を、Releases から site/media/ に取り出す（手元の変更は上書きしない）
+//   --verbose（-v）                       # どれにも付けられる。流す gh のコマンドと、失敗したときの gh のエラーの出力の全部（伏せてから）も出す
 //   npm run chalk -- media push|check|pull …   # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 全講座の一覧（Worker の許可リスト）は、npm run gen が講座ごとの一覧をつないで worker/src/generated/media-manifest.json に作る（Git に入れない）
-// gh の認証が要る（push と pull。check も Releases を読む）。終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（gh が無い）
+// gh の認証が要る（push と pull。check も Releases を読む）。gh の呼び出しには時間切れを付ける（API は 2 分、動画の upload・download は 60 分）。
+// 読むだけの API は、一時の失敗（通信が途中で切れたなど）なら、少し待って 3 回まで試す。
+// 終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（gh が無い）
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { COURSES, coursesIn } from '../content';
+import { COURSES, coursesIn, VIDEOS } from '../content';
 import { isLang, LANGS, videoKey, type Lang } from '../content/i18n';
 import { mediaListFile, posterFile } from '../engine/core/generated';
 import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, RELEASE_MAX_ASSETS } from '../site/limits';
@@ -22,8 +28,11 @@ import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { writeAtomic } from './lib/fsx';
 import { sha256File } from './lib/hash';
 import { ROOT } from './lib/paths';
-import { run, tailOf } from './lib/proc';
-import { mediaManifestJson, readCourseMedia, readMediaLists } from './media-lists';
+import { type RunOptions, type RunResult, run, setVerbose, sleepSync, tailOf } from './lib/proc';
+import { courseMediaJson, type MediaInputs, readCourseMediaFile, readMediaLists } from './media-lists';
+import { fileHasher } from './stages/pipeline/digest';
+import { readState } from './stages/pipeline/state';
+import { compareInputs, currentInputs, srcDigest } from './stages/video/inputs';
 
 export const localMediaPath = (e: Pick<MediaEntry, 'lang' | 'lecture' | 'kind'>, root = ROOT) =>
   path.join(root, 'site/media', `${e.lecture}${e.lang === 'ja' ? '' : `.${e.lang}`}${e.kind === 'captioned' ? '.cc' : ''}.mp4`);
@@ -36,14 +45,40 @@ export const readMediaManifest = (root = ROOT): MediaManifest => readMediaLists(
 
 /** gh を流して標準出力を返す（テストでは偽物に差し替える） */
 export type Gh = (args: string[]) => string;
-/** gh は既存の認証を内部で使う。エラーの出力は、token などを伏せてから出す（scripts/lib/proc.ts の redact） */
-const realGh: Gh = (args) => {
-  const r = run('gh', args, { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 });
-  if (r.code === 0) return r.stdout;
-  // 理由が分かるように gh のエラーの出力も出す（伏せてから、最後の 5 行・500 字まで）
-  const detail = tailOf(r.stderr);
-  throw new Error(`GitHub の操作に失敗しました: ${args[0]} ${args[1]}（認証・権限・通信を確認してください）${detail ? `: ${detail}` : ''}`);
-};
+/** gh の 1 回の呼び出しの時間切れ（ミリ秒）。動画の upload・download は長く、ほかの API の問い合わせは短く */
+export const ghTimeoutMs = (args: string[]): number =>
+  args[0] === 'release' && (args[1] === 'upload' || args[1] === 'download') ? 60 * 60_000 : 2 * 60_000;
+/** 読むだけの API（GET。書き換えるための method・field を持たない）。流し直しても、何も変わらない */
+export const readOnlyGh = (args: string[]): boolean =>
+  args[0] === 'api' && !args.some((a) => /^(-X|--method(=.*)?|-f|-F|--field|--raw-field|--input)$/.test(a));
+/**
+ * gh の流し方（テストでは exec と sleep を差し替える）。gh は既存の認証を内部で使う。エラーの出力は、token などを伏せてから出す
+ * （scripts/lib/proc.ts の redact）。時間切れ（ghTimeoutMs）を付け、読むだけの API は一時の失敗なら 3 回まで試す
+ */
+export const ghWith =
+  (
+    exec: (cmd: string, args: string[], opts: RunOptions) => RunResult = run,
+    sleep: (ms: number) => void = sleepSync,
+    warn: (line: string) => void = (line) => console.warn(line),
+  ): Gh =>
+  (args) => {
+    const attempts = readOnlyGh(args) ? 3 : 1;
+    const timeoutMs = ghTimeoutMs(args);
+    for (let attempt = 1; ; attempt++) {
+      const r = exec('gh', args, { cwd: ROOT, maxBuffer: 16 * 1024 * 1024, timeoutMs });
+      if (r.code === 0 && !r.timedOut) return r.stdout;
+      // 理由が分かるように gh のエラーの出力も出す（伏せてから、最後の 5 行・500 字まで）
+      const detail = r.timedOut ? `${Math.round(timeoutMs / 1000)} 秒で終わらなかった` : tailOf(r.stderr);
+      if (attempt < attempts) {
+        const wait = 1000 * 2 ** (attempt - 1);
+        warn(`gh ${args[0]} ${args[1]} が失敗した（${detail || `終了コード ${r.code}`}）。${wait / 1000} 秒待って流し直す（${attempt + 1}/${attempts} 回目）`);
+        sleep(wait);
+        continue;
+      }
+      throw new Error(`GitHub の操作に失敗しました: ${args[0]} ${args[1]}（認証・権限・通信を確認してください）${detail ? `: ${detail}` : ''}`);
+    }
+  };
+const realGh: Gh = ghWith();
 type ReleaseAsset = { name: string; size: number; state: string; digest?: string | null };
 function assetsOf(tag: string, gh: Gh): ReleaseAsset[] {
   const release = JSON.parse(gh(['api', `repos/${MEDIA_REPOSITORY}/releases/tags/${tag}`])) as { id: number; draft: boolean };
@@ -161,9 +196,51 @@ export async function pullMedia(courses: string[] = []) {
 /* ───────────── push（講座ごと） ───────────── */
 
 export type PushOptions = { courses: string[]; lang: Lang; root?: string; gh?: Gh; today?: Date; log?: (line: string) => void };
+
+/** 手元の動画（site/media/ の名前）の、書き出しの記録の inputs。記録の出力の sha256 が、置く動画と同じときだけ */
+export const recordedInputs = (root: string, key: string, file: string, sha256: string): MediaInputs | null => {
+  const s = readState(root, 'render', key);
+  return s && s.outputs[`site/media/${file}`]?.sha256 === sha256 && s.parts.script && s.parts.src
+    ? { script: s.parts.script, src: s.parts.src }
+    : null;
+};
+
+/**
+ * 置く動画の inputs（書き出しの記録か、前の一覧の同じ動画の inputs）を集め、今の台本・描き方と比べる。
+ * 書き出したあとで台本の側が変わった動画は stale に、描き方の側だけが変わった動画は src に、記録の無い動画は none に入れる
+ */
+export const inputsForPush = (
+  root: string,
+  entries: MediaEntry[],
+  previous: ReadonlyMap<string, MediaInputs>,
+): { inputs: Map<string, MediaInputs>; stale: string[]; src: string[]; none: string[]; unknown: string[] } => {
+  const out = { inputs: new Map<string, MediaInputs>(), stale: [] as string[], src: [] as string[], none: [] as string[], unknown: [] as string[] };
+  const hasher = fileHasher(root, null);
+  let src: string | undefined;
+  for (const e of entries) {
+    const key = videoKey(e.lecture, e.lang as Lang);
+    const local = path.basename(localMediaPath(e, root));
+    const rec = recordedInputs(root, key, local, e.sha256) ?? previous.get(e.filename) ?? null;
+    if (!rec) {
+      out.none.push(mediaKey(e));
+      continue;
+    }
+    out.inputs.set(e.filename, rec);
+    const video = VIDEOS.find((v) => v.key === key && v.course.id === e.course);
+    if (!video) continue;
+    src ??= srcDigest(root, hasher);
+    const result = compareInputs(rec, currentInputs(root, video, src));
+    if (result === 'script') out.stale.push(mediaKey(e));
+    else if (result === 'src') out.src.push(mediaKey(e));
+    else if (result === 'unknown') out.unknown.push(mediaKey(e));
+  }
+  return out;
+};
+
 /**
  * 選んだ講座の動画だけを、手元のファイルから Releases に置き、その講座の一覧だけを書き直す。
- * ほかの講座の一覧は読むだけ（つないだ一覧で、動画の重なりと上限を確かめる）。ほかの講座の手元の動画が一覧と違えば、知らせるだけ
+ * ほかの講座の一覧は読むだけ（つないだ一覧で、動画の重なりと上限を確かめる）。ほかの講座の手元の動画が一覧と違えば、知らせるだけ。
+ * 書き出しの記録のある動画には inputs を書き、書き出したあとで台本が変わった動画があれば、Releases に置く前に止める
  */
 export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today = new Date(), log = console.log }: PushOptions) {
   if (!courses.length) throw new Error('push する講座を選んでください: bun scripts/media.ts push --course <講座 ID> [--lang ja]');
@@ -171,7 +248,8 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
   for (const id of courses) if (!list.some((c) => c.id === id)) throw new Error(`講座がありません（${lang}）: ${id}`);
   const before = readMediaManifest(root);
   const chosen = new Set(courses);
-  const updates: { file: string; manifest: MediaManifest }[] = [];
+  const updates: { file: string; manifest: MediaManifest; inputs: Map<string, MediaInputs> }[] = [];
+  const stale: string[] = [];
   for (const course of list.filter((c) => chosen.has(c.id))) {
     // ポスターは render.sh が講座のフォルダに書く。前の手順で site/media/<key>.jpg にだけあるものは写す
     for (const l of course.lectures) {
@@ -189,9 +267,23 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
       entries.push({ ...partial, bytes: statSync(file).size, sha256, filename: mediaFilename({ ...partial, sha256 }), tag: `media-${lang}-${course.id}` });
     }
     // 一覧から外れた前のハッシュは消さず retained に回す（Release の asset も消さない）
-    const retained = retainEntries(readCourseMedia(course.id, lang, root), entries, today);
-    updates.push({ file: mediaListFile(course.id, lang), manifest: validateMediaManifest({ schema: 1, entries, ...(retained.length ? { retained } : {}) }) });
+    const previous = readCourseMediaFile(course.id, lang, root);
+    const retained = retainEntries(previous?.manifest ?? null, entries, today);
+    // 書き出したときの入力の指紋（inputs）。retained に回した動画は、前の一覧の inputs のまま
+    const found = inputsForPush(root, entries, previous?.inputs ?? new Map());
+    const inputs = new Map([...(previous?.inputs ?? []), ...found.inputs]);
+    stale.push(...found.stale);
+    if (found.src.length)
+      console.warn(`注意: 書き出したあとで、描き方のコード（src など）が変わった動画: ${found.src.join(' ')}（見た目が変わる直しなら、書き出し直す）`);
+    if (found.unknown.length) console.warn(`注意: timeline が無いので、台本と比べられない動画: ${found.unknown.join(' ')}`);
+    if (found.none.length)
+      console.warn(`注意: 書き出しの記録が無いので、inputs を書かない動画: ${found.none.join(' ')}（npm run chalk -- render か bash scripts/render.sh で書き出すと記録する）`);
+    updates.push({ file: mediaListFile(course.id, lang), manifest: validateMediaManifest({ schema: 1, entries, ...(retained.length ? { retained } : {}) }), inputs });
   }
+  if (stale.length)
+    throw new Error(
+      `書き出したあとで台本が変わった動画がある（置くと、CI が動画を古いと止める）: ${stale.join(' ')}。書き出し直してから push する（npm run chalk -- build --to render）`,
+    );
   // 選んだ講座の一覧を差し替えた全体の一覧で、重なりと保存・Releases の上限を、Releases に置く前に確かめる
   const others = (es: MediaEntry[]) => es.filter((e) => !(e.lang === lang && chosen.has(e.course)));
   const retainedAll = [...others(before.retained ?? []), ...updates.flatMap((u) => u.manifest.retained ?? [])] as RetainedMediaEntry[];
@@ -221,7 +313,7 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
     // 選んだ講座の公開 asset を全部確かめてから、その講座の一覧だけを書き直す（ほかの講座の一覧のファイルには触らない）。
     // 一覧は、同じフォルダの一時の名前に書いてから置き換える（途中で止まっても、前の一覧か新しい一覧のどちらかになる）
     for (const u of updates) {
-      writeAtomic(path.join(root, u.file), mediaManifestJson(u.manifest));
+      writeAtomic(path.join(root, u.file), courseMediaJson(u.manifest, u.inputs));
       checkMedia(u.manifest, gh, root, log);
       log(`${u.file} を書き直した（動画 ${u.manifest.entries.length} 本・retained ${u.manifest.retained?.length ?? 0} 本）`);
     }
@@ -237,25 +329,30 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
 
 /* ───────────── コマンド ───────────── */
 
+const VERBOSE = { verbose: { type: 'boolean', short: 'v' } } as const;
+
 const main = async (argv: string[]) => {
   const [command, ...rest] = argv;
   if (command === '-h' || command === '--help') return showHelp(import.meta.filename);
   if (command === undefined) throw new UsageError('コマンドを選ぶ: push・check・pull（使い方は --help）');
   if (command === 'push') {
-    const { values } = readArgs(rest, { course: { type: 'string', multiple: true }, lang: { type: 'string', default: 'ja' } });
+    const { values } = readArgs(rest, { course: { type: 'string', multiple: true }, lang: { type: 'string', default: 'ja' }, ...VERBOSE });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     if (!isLang(values.lang)) throw new UsageError(`--lang は ${LANGS.join('・')} のどれか: ${values.lang}`);
     if (!values.course?.length) throw new UsageError('push する講座を選んでください: bun scripts/media.ts push --course <講座 ID> [--lang ja]');
     return pushMedia({ courses: values.course, lang: values.lang });
   }
   if (command === 'check') {
-    const { values } = readArgs(rest, {});
+    const { values } = readArgs(rest, { ...VERBOSE });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     return checkMedia();
   }
   if (command === 'pull') {
-    const { values, positionals } = readArgs(rest, {}, { positionals: true });
+    const { values, positionals } = readArgs(rest, { ...VERBOSE }, { positionals: true });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     return pullMedia(positionals);
   }
   throw new UsageError(`知らないコマンド: ${command}（push・check・pull。使い方は --help）`);

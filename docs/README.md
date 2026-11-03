@@ -19,6 +19,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 講座を足す（チェックリスト・頭文字の表・PR に書くこと） | [guide/new-course.md](guide/new-course.md) | 中身の作り方はスキル |
 | 画面と話し方 | [style.md](../.claude/skills/study-video-course/references/style.md) | |
 | テーマ（色・書体・背景） | 値は `content/themes.ts`、仕様は [theme.md](../.claude/skills/study-video-course/references/theme.md) | |
+| 効果音（名前・ミックスの音量） | 一覧は `content/sfx.ts`（Python の道具には `npm run gen` が `scripts/audio/sfx.json` にして渡す） | 使い方は [comedy.md](../.claude/skills/study-video-course/references/comedy.md) の「間・効果音・BGM」と [style.md](../.claude/skills/study-video-course/references/style.md) |
 | お笑い版の作り方 | [comedy.md](../.claude/skills/study-video-course/references/comedy.md) | |
 | 多言語 | [i18n.md](../.claude/skills/study-video-course/references/i18n.md) | |
 | 読む教材・章の計画 | [materials.md](../.claude/skills/study-video-course/references/materials.md) | 名前は materials だが「教材」の話（「素材」とは別。[用語集](architecture/glossary.md)） |
