@@ -9,7 +9,7 @@ import { readSiteConfig } from '../scripts/lib/config';
 import { withLock, writeAtomic } from '../scripts/lib/fsx';
 import { sha256File } from '../scripts/lib/hash';
 import { pool } from '../scripts/lib/pool';
-import { redact, run, runOrThrow, tailOf } from '../scripts/lib/proc';
+import { redact, run, runAsync, runInherit, runOrThrow, setVerbose, tailOf, trace } from '../scripts/lib/proc';
 import { wavSeconds } from '../scripts/lib/wav';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -210,6 +210,45 @@ describe('proc（外の道具の流し方と、伏せ字）', () => {
     expect(() =>
       runOrThrow('sh', ['-c', `echo "bad ghp_${'d'.repeat(36)}" >&2; exit 3`], { what: '試しの道具' }),
     ).toThrow('試しの道具 が失敗した（終了コード 3）: bad ［伏せた token］');
+  });
+  test('runAsync は、非同期に流して終了コードと出力を返し、時間切れで止め、道具が無ければ前提が足りない（3）にする', async () => {
+    expect(await runAsync('sh', ['-c', 'echo out; echo err >&2; exit 4'])).toEqual({
+      code: 4,
+      stdout: 'out\n',
+      stderr: 'err\n',
+      timedOut: false,
+    });
+    const t0 = performance.now();
+    const slow = await runAsync('sh', ['-c', 'sleep 5'], { timeoutMs: 100 });
+    expect(slow.timedOut).toBe(true);
+    expect(performance.now() - t0).toBeLessThan(3000);
+    await expect(runAsync('chalkfile-no-such-tool', [])).rejects.toBeInstanceOf(MissingError);
+    // 出力が上限を超えたら、終わりの分だけを残す
+    expect((await runAsync('sh', ['-c', 'printf 0123456789 >&2'], { maxBuffer: 4 })).stderr).toBe('6789');
+  });
+  test('runInherit は、時間を過ぎたら止めて、何が終わらなかったかを出す', () => {
+    expect(runInherit('sh', ['-c', 'exit 5'])).toBe(5);
+    expect(() => runInherit('sh', ['-c', 'sleep 5'], { timeoutMs: 100, what: '試しの読み上げ' })).toThrow(
+      '試しの読み上げ が 0 秒で終わらなかったので止めた',
+    );
+  });
+  test('--verbose（setVerbose）のときだけ、流すコマンドと失敗の stderr の全部を、伏せてから標準エラーに出す', () => {
+    const lines: string[] = [];
+    const error = console.error;
+    console.error = (line: string) => void lines.push(line);
+    try {
+      trace('出さない');
+      run('sh', ['-c', 'exit 0']);
+      setVerbose(true);
+      run('sh', ['-c', `echo "1 ghp_${'e'.repeat(36)}" >&2; echo 2 >&2; exit 7`]);
+    } finally {
+      setVerbose(false);
+      console.error = error;
+    }
+    expect(lines).toEqual([
+      `> sh -c 'echo "1 ghp_${'e'.repeat(36)}" >&2; echo 2 >&2; exit 7'`.replace(`ghp_${'e'.repeat(36)}`, '［伏せた token］'),
+      'sh: 終了コード 7。stderr:\n1 ［伏せた token］\n2',
+    ]);
   });
 });
 

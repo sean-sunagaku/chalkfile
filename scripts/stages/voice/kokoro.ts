@@ -14,6 +14,12 @@ import { findVoice, type VoiceStore } from './store';
 /** Kokoro に渡す 1 本（scripts/tts_kokoro.py の jobs.json の 1 つ） */
 export type KokoroJob = { key: string; text: string } & (typeof KOKORO)['en'][VoiceId];
 
+/**
+ * Kokoro の読み上げを止めるまでの時間（ミリ秒）。初回のモデルのダウンロード（数百 MB）の分の 15 分と、台詞 1 本につき 30 秒
+ * （CPU で 1 本は数秒）。止まったままの読み上げを、待ち続けない
+ */
+export const kokoroTimeoutMs = (jobs: number): number => (15 * 60 + 30 * jobs) * 1000;
+
 /** 訳の動画で、まだ声の無い台詞（同じ鍵は 1 本にまとめる） */
 export const kokoroJobs = (store: VoiceStore, videos: Video[]): KokoroJob[] => {
   const jobs = new Map<string, KokoroJob>();
@@ -48,11 +54,12 @@ export const runKokoro = async (store: VoiceStore, videos: Video[]): Promise<voi
         const file = path.join(tmp, 'jobs.json');
         writeFileSync(file, JSON.stringify(jobs));
         console.log(`Kokoro で ${jobs.length} 本の台詞を読み上げる（初回はモデルのダウンロードがある）`);
-        // 依存の版は scripts/tts_kokoro.py.lock で固定する（--locked: ロックと頭書きがずれていたら止まる）
+        // 依存の版は scripts/tts_kokoro.py.lock で固定する（--locked: ロックと頭書きがずれていたら止まる）。
+        // 止まったままにならないよう、台詞の数から決めた時間で止める
         const code = runInherit(
           'uv',
           ['run', '--quiet', '--locked', '--script', path.join(ROOT, 'scripts/tts_kokoro.py'), file, store.cache],
-          { cwd: ROOT },
+          { cwd: ROOT, timeoutMs: kokoroTimeoutMs(jobs.length), what: `Kokoro の読み上げ（${jobs.length} 本）` },
         );
         if (code !== 0) {
           throw new Error(

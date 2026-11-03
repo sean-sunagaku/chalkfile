@@ -195,6 +195,7 @@ export const COMMANDS: Command[] = [
         'scripts/synth.ts',
         ...flag(values, 'cached-only'),
         ...flag(values, 'prune'),
+        ...flag(values, 'verbose'),
         ...pickVideos(values, positionals),
       ),
     ],
