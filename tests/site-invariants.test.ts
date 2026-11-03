@@ -78,7 +78,7 @@ const makeSite = () => {
   const icon = Buffer.from([137, 80, 78, 71]);
   write('icons/icon-180.png', icon);
   write('404.html', page('<h1>見つかりません</h1>', []));
-  write('_headers', '/*\n  X-Content-Type-Options: nosniff\n');
+  write('_headers', '/*\n  X-Content-Type-Options: nosniff\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n');
   write('.assetsignore', '**/*.mp4\n.*\n');
   const input: SiteInvariantInput = {
     dist: dir,
@@ -261,6 +261,19 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
     expect(siteInvariantProblems({ ...site.input, courses: ['sample', 'en/sample'] })).toEqual([
       'sw.js に入れた講座 en/sample の offline-manifest.json がありません',
     ]);
+  });
+  test('_headers で、同じヘッダーを付ける規則が 2 つ当たって値がつながるか、no-transform が無ければ止まる', () => {
+    const site = makeSite();
+    site.write(
+      '_headers',
+      '/*\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n/icons/*\n  Cache-Control: public, max-age=60\n/404.html\n  ! Cache-Control\n',
+    );
+    expect(siteInvariantProblems(site.input)).toEqual([
+      '_headers: /404.html の Cache-Control に no-transform がありません（Cloudflare が書き換えると、CSP と保存の SHA-256 が合わない）',
+      '_headers: /icons/icon-180.png に Cache-Control を付ける規則が 2 つ当たり、値がつながります（上書きする規則で、先に「! 名前」で外す）',
+    ]);
+    site.write('_headers', '/*\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n/icons/*\n  ! Cache-Control\n  Cache-Control: public, max-age=60, no-transform\n');
+    expect(siteInvariantProblems(site.input)).toEqual([]);
   });
   test('保存の manifest があるのに、sw.js に入っていない講座があれば止まる（講座を指定して組み立てたときに外れた講座など）', () => {
     const site = makeSite();
