@@ -40,5 +40,5 @@ export const SUPERAGENT_COMEDY: Course = {
   docsNote:
     '動画の内容は、DeepSeek Harness のチームが 2026 年 11 月 1 日に X で公開した記事「Exploring Super-agent Design: Towards a More Autonomous Agent System」の英語版（原文は中国語で、英語版は機械翻訳と記事に書かれている）を、2026 年 11 月 2 日に読んでまとめたものです。記事は設計の考え方の提案で、DeepSeek Harness の今の機能の紹介ではありません。実験の数字は、記事の著者が作った負荷と簡単にした環境で測った参考の値です。ずんだもん（ボケ）の台詞は、わざと間違えています。',
   sourceNote:
-    'ボケの声は VOICEVOX:ずんだもん、天の声は VOICEVOX:玄野武宏。台本と図は、DeepSeek Harness のチームの記事（2026 年 11 月 1 日公開、11 月 2 日確認）と、試作のリポジトリ・Anthropic の記事をもとに、自分の言葉と自分の図で作成。DeepSeek とは関係のない、個人の勉強用の非公式の動画です',
+    '台本と図は、DeepSeek Harness のチームの記事（2026 年 11 月 1 日公開、11 月 2 日確認）と、試作のリポジトリ・Anthropic の記事をもとに、自分の言葉と自分の図で作成。DeepSeek とは関係のない、個人の勉強用の非公式の動画です',
 };

@@ -25,5 +25,5 @@ export const PSTACK_COMEDY: Course = {
   docsNote:
     '動画の内容は、2026 年 11 月 1 日に読んだ pstack の README と、各スキル・/poteto-mode の手順書の説明（GitHub の cursor/plugins、版 0.15.36）がもとです。スキルの数・名前・既定のモデルは変わるので、使う前に README で確かめてください。ずんだもん（ボケ）の台詞は、わざと間違えています。',
   sourceNote:
-    'ボケの声は VOICEVOX:ずんだもん、天の声は VOICEVOX:玄野武宏。台本は pstack の README と各スキル・手順書の説明（2026 年 11 月確認、版 0.15.36）をもとに作成。Cursor 社・pstack の作者とは関係のない、個人の勉強用の非公式の動画です',
+    '台本は pstack の README と各スキル・手順書の説明（2026 年 11 月確認、版 0.15.36）をもとに作成。Cursor 社・pstack の作者とは関係のない、個人の勉強用の非公式の動画です',
 };

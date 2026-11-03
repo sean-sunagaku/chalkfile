@@ -3,7 +3,7 @@
 // 形の正本は画面の側の site/page/data.ts の CourseData（courseJson が satisfies で確かめる）
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { ChapterMaterial, Course, Source, VoiceId } from '../../content/types';
-import { creditsIn, SITE_CREDITS } from '../../content/voices';
+import { creditsIn } from '../../content/voices';
 import type { CourseText } from '../../site/i18n';
 import { type MediaEntry, mediaPath } from '../../site/media-shared';
 import type { CourseData } from '../../site/page/data';
@@ -97,13 +97,14 @@ const voicesOf = (courses: readonly Course[]): VoiceId[] =>
     c.lectures.flatMap((l) => l.scenes.flatMap((s) => s.lines.map((ln) => (ln.v ?? 'narrator') as VoiceId))),
   );
 
-/** 講座の動画で使った声のクレジット。日本語は全講座で共通（講師と呼び込み。ほかの声は講座の sourceNote） */
-export const courseCredits = (course: Course, lang: Lang): string[] =>
-  lang === 'ja' ? SITE_CREDITS : creditsIn(lang, voicesOf([course]));
+/**
+ * 講座のページのクレジット（講座の動画で使った全部の声。content/voices.ts の creditsIn。VOICEVOX は「VOICEVOX:キャラ名」）。
+ * 声の一覧の順で、重ねない。動画のエンディングと同じく、台詞の声から作る（キャラクターの利用規約。講座の sourceNote に声を書かなくてよい）
+ */
+export const courseCredits = (course: Course, lang: Lang): string[] => creditsIn(lang, voicesOf([course]));
 
-/** 一覧のページのクレジット。日本語は全講座で共通、訳の言語はその言語の全講座で使った声 */
-export const homeCredits = (courses: readonly Course[], lang: Lang): string[] =>
-  lang === 'ja' ? SITE_CREDITS : creditsIn(lang, voicesOf(courses));
+/** 一覧のページのクレジット（その言語の全部の講座の動画で使った声） */
+export const homeCredits = (courses: readonly Course[], lang: Lang): string[] => creditsIn(lang, voicesOf(courses));
 
 /** 講座の情報（ページの JSON の course）。計画だけある章（まだ動画が無い）は、カリキュラムに「準備中」で出す */
 export const courseMeta = (course: Course, T: CourseText, config: SiteConfig) => {

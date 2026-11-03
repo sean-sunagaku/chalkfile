@@ -10,7 +10,7 @@
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
 //     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
 //     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める。
-//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems。今は注意）
+//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems）
 // 誤り: 描くと止まるか黙って崩れるもの（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声など）と、
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
@@ -126,25 +126,17 @@ export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Cou
 };
 
 /**
- * 講座のページに出す声のクレジットの文（ページの {voices} は scripts/site/model.ts の courseCredits、{note} は講座の sourceNote）。
- * 今の courseCredits は、日本語は全講座で共通の講師と呼び込み、訳は使った声から作る（creditsIn）
+ * 講座のページのクレジット（ページの {voices}。scripts/site/model.ts の courseCredits）が、講座の動画で使った全部の声のクレジットを含むか
+ * （キャラクターの利用規約。VOICEVOX は「VOICEVOX:キャラ名」）。ページのクレジットは台詞の声から作るので、ふだんは当たらない。
+ * 作り方を直して声が抜けたら、公開の前に止める（誤り）。credits は確かめるクレジットの作り方（既定はページのもの。テストが差し替える）
  */
-const pageCreditText = (course: Course, lang: Lang): string =>
-  [...courseCredits(course, lang), course.sourceNote ?? ''].join('\n');
-
-/**
- * 講座のページのクレジットが、講座の動画で使った全部の声のクレジットを含むか（キャラクターの利用規約。VOICEVOX は「VOICEVOX:キャラ名」）。
- * 日本語のページは講師と呼び込みしか出さないので、ほかの声（ずんだもん・玄野武宏など）は講座の sourceNote に書く（comedy.md）。
- * 今は注意（warning）にする。ページのクレジットを使った声から作るように直したら（サイトの版が変わるので、ほかのサイトの直しとまとめて出す）、
- * level を誤り（error）にする
- */
-export const creditProblems = (coursesIn: (lang: Lang) => Course[], level: Issue['level'] = 'warning'): PublishIssue[] =>
+export const creditProblems = (coursesIn: (lang: Lang) => Course[], credits: (course: Course, lang: Lang) => readonly string[] = courseCredits): PublishIssue[] =>
   LANGS.flatMap((lang) =>
     coursesIn(lang).flatMap((course) => {
-      const shown = pageCreditText(course, lang);
-      const lacking = creditsIn(lang, course.lectures.flatMap(voicesOf)).filter((c) => !shown.includes(c));
+      const shown = new Set(credits(course, lang));
+      const lacking = creditsIn(lang, course.lectures.flatMap(voicesOf)).filter((c) => !shown.has(c));
       return lacking.length
-        ? [{ level, rule: 'credit' as const, where: lang === 'ja' ? course.id : `${course.id}（${lang}）`, message: `講座のページのクレジットに ${lacking.join('・')} が無い（講座の sourceNote に「ボケの声は VOICEVOX:ずんだもん」のように書く）` }]
+        ? [{ level: 'error' as const, rule: 'credit' as const, where: lang === 'ja' ? course.id : `${course.id}（${lang}）`, message: `講座のページのクレジットに ${lacking.join('・')} が無い（scripts/site/model.ts の courseCredits は、台詞の声から content/voices.ts の creditsIn で作る）` }]
         : [];
     }),
   );
