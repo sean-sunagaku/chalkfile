@@ -1,6 +1,6 @@
 # Chalkfile
 
-[![check](https://github.com/sean-sunagaku/chalkfile/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/sean-sunagaku/chalkfile/actions/workflows/check.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](docs/guide/licenses.md)
+[![ci](https://github.com/sean-sunagaku/chalkfile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sean-sunagaku/chalkfile/actions/workflows/ci.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](docs/guide/licenses.md)
 
 Narrated course videos and an offline course site, built from course scripts written in TypeScript. [English summary](#english) · [物ごとのライセンス](docs/guide/licenses.md)
 
