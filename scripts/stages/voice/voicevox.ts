@@ -3,7 +3,7 @@
 // エンジンが止まったままでも、決まった時間（時間切れ × attempts と、間の待ち）で失敗する（待ち続けない）。
 // エンジンの版（GET /version）は、最初に読み上げる前に 1 回だけ問い合わせる
 import { MissingError, UsageError } from '../../lib/args';
-import { trace } from '../../lib/proc';
+import { tailOf, trace } from '../../lib/proc';
 import type { VoicevoxRecipe } from '../../voices';
 
 export type VoicevoxOptions = {
@@ -84,8 +84,13 @@ export const voicevox = (o: VoicevoxOptions): Voicevox => {
       );
     }
     trace(`  VOICEVOX ${what}: ${r.status}（${sec(Date.now() - t0)}）`);
-    if (r.status >= 500) throw new ServerError(`${r.status} を返した`);
-    if (!r.ok) throw new Error(`${what} ${r.status}`);
+    if (!r.ok) {
+      // 失敗の応答の本文（エラーの中身）の終わりを、伏せてから文に入れる
+      const body = tailOf(await r.text().catch(() => ''), 2, 200);
+      const detail = body ? `（${body}）` : '';
+      if (r.status >= 500) throw new ServerError(`${r.status} を返した${detail}`);
+      throw new Error(`${what} ${r.status}${detail}`);
+    }
     try {
       return await read(r);
     } catch (e) {

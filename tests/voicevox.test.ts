@@ -128,8 +128,8 @@ describe('VOICEVOX の呼び出し', () => {
     expect(await engine.version()).toBe('0.99.0');
     expect(e.calls).toEqual({ version: 1, audio_query: 3, synthesis: 3 });
     expect(warned).toHaveLength(2);
-    expect(warned[0]).toContain('VOICEVOX の audio_query が 503 を返した。');
-    expect(warned[1]).toContain('VOICEVOX の synthesis が 502 を返した。');
+    expect(warned[0]).toContain('VOICEVOX の audio_query が 503 を返した（{"detail":"だめ"}）。');
+    expect(warned[1]).toContain('VOICEVOX の synthesis が 502 を返した（{"detail":"だめ"}）。');
     expect(warned[1]).toContain('待って流し直す（2/3 回目）');
   });
   test('声の設定と出力の形（音量・前後の無音・48kHz・モノラル）を入れて synthesis に渡す', async () => {
@@ -166,7 +166,8 @@ describe('VOICEVOX の呼び出し', () => {
       .synthesize('こんにちは', VOICE)
       .catch((x: unknown) => x);
     expect(err).not.toBeInstanceOf(MissingError);
-    expect((err as Error).message).toBe('audio_query 422: こんにちは');
+    // エンジンが返したエラーの中身も出す
+    expect((err as Error).message).toBe('audio_query 422（{"detail":"だめ"}）: こんにちは');
     expect(e.calls.audio_query).toBe(1);
   });
   test('読み（アクセント句のモーラをつなぎ、句の切れ目に「、」）と、時間切れの環境変数（秒）', () => {
