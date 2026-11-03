@@ -74,7 +74,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
             fontSize: 20,
             fontWeight: 700,
             color: A.lead[sc.kind],
-            fontFamily: sc.lead?.startsWith('?') ? MONO : SANS,
+            fontFamily: sc.leadMono ? MONO : SANS,
             textAlign: done ? 'center' : 'left',
             wordBreak: 'break-all',
           }}

@@ -32,8 +32,8 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
       o: interpolate(f, [0, 8, 50], [0, 0.55, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
     };
   };
-  // 全角の空白（日本語）か改行で、タイトルを 2 行に分ける
-  const titleLines = s.title.split(/　|\n/);
+  // タイトルの行（titleLines。書かなければ 1 行）。古い書き方（全角の空白・改行で分ける）は、描く前に engine/core/legacy.ts が読み替える
+  const titleLines = s.titleLines ?? [s.title];
   const sub2 = spring({ frame: frame - HIT_FRAME - 12, fps, config: { damping: 200 }, durationInFrames: 24 });
   const no = String(lecture.no).padStart(2, '0');
   const { label: unit, total } = unitOf(course);

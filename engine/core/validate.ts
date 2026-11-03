@@ -6,7 +6,7 @@
 // 呼ぶ場所: bun scripts/validate.ts（全講座・全言語）・scripts/synth.ts の最初（対象の動画だけ）・src/Root.tsx（Studio はその動画だけを止める）
 // 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
 //   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い
-//   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い
+//   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い・古い書き方（engine/core/legacy.ts）
 // いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から、字幕と見出しの大きさを src/video.config.ts から読む
 import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
@@ -14,6 +14,7 @@ import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, Sfx
 import { VIDEO_TEXT } from '../../src/i18n';
 import { assertNever } from './assert';
 import { isHex } from './color';
+import { legacyUses } from './legacy';
 import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
 
@@ -48,6 +49,7 @@ export const RULES = {
   'heading-width': '見出しの幅（見込み）',
   style: 'style.md の目安（表・コードの大きさ）',
   emphasis: '強調の **',
+  legacy: '古い書き方（明示の項目に書き換えるとよい）',
 } as const;
 export type Rule = keyof typeof RULES;
 
@@ -348,6 +350,7 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
   }
   checkBody(s, sw, out);
   checkHeading(s, sw, course, lang, out);
+  for (const u of legacyUses(s)) push(out, 'warning', 'legacy', `${sw} ${u.path}`, u.message);
 };
 
 /* ───────────── 手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus） ───────────── */

@@ -119,6 +119,11 @@ export type OpeningScene = Base & {
   /** タイトルの上の札。省略すると出さない */
   section?: string;
   title: string;
+  /**
+   * タイトルを行に分けて出す（2 行以上なら 1 行目をグラデーションの文字にする）。書かなければ title を 1 行で出す。
+   * 古い書き方（title の全角の空白か改行で分ける）も描けるが、台本の検証が注意を出す（engine/core/legacy.ts）
+   */
+  titleLines?: string[];
   /** タイトルの下の一文。省略すると出さない */
   subtitle?: string;
 };
@@ -154,7 +159,15 @@ export type ConceptsScene = Base & {
 
 export type SequenceScene = Base & {
   kind: 'sequence';
-  actors: { key: string; label: string; sub?: string; tone: Tone; icon: IconName }[];
+  actors: {
+    key: string;
+    label: string;
+    sub?: string;
+    /** sub を等幅の書体で出す（URL やパスのとき）。古い書き方（sub に / があれば等幅）も描けるが、台本の検証が注意を出す */
+    subMono?: boolean;
+    tone: Tone;
+    icon: IconName;
+  }[];
   steps: {
     from: string;
     to: string;
@@ -203,7 +216,21 @@ export type FlowScene = Base & {
 
 export type StatesScene = Base & {
   kind: 'states';
-  nodes: { key: string; code: string; ja: string; x: number; y: number; tone: Tone; at: number; badge?: string }[];
+  nodes: {
+    key: string;
+    code: string;
+    ja: string;
+    x: number;
+    y: number;
+    tone: Tone;
+    at: number;
+    badge?: string;
+    /**
+     * 箱の見た目。start は始まりの見た目（点線の枠・ごく薄い面・太い本文の書体）、state（既定）は状態の見た目（等幅の書体）。
+     * 古い書き方（key が 'start' の箱を始まりの見た目にする）も描けるが、台本の検証が注意を出す
+     */
+    variant?: 'start' | 'state';
+  }[];
   edges: {
     from: string;
     to: string;
@@ -275,7 +302,16 @@ export type NumbersScene = Base & {
 
 export type TimelineScene = Base & {
   kind: 'timeline';
-  items: { key: string; title: string; sub: string; detail?: string; at: number; tone: Tone }[];
+  items: {
+    key: string;
+    /** 題の上の小さな札（例: STEP 1）。古い書き方（title を全角の空白で札と題に分ける）も描けるが、台本の検証が注意を出す */
+    kicker?: string;
+    title: string;
+    sub: string;
+    detail?: string;
+    at: number;
+    tone: Tone;
+  }[];
   focus?: { key: string | null; at: number }[];
 };
 
@@ -308,6 +344,8 @@ export type PhoneScreen = {
   /** 名前の下の小さな文字（例: 架空のアプリ）。書かなければ出さない */
   brandSub?: string;
   lead?: string;
+  /** lead を等幅の書体で出す（URL の一部など）。古い書き方（lead が ? で始まれば等幅）も描けるが、台本の検証が注意を出す */
+  leadMono?: boolean;
   body: string[];
   primary?: string;
   secondary?: string;

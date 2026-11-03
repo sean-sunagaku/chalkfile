@@ -11,7 +11,7 @@ const States: React.FC<{ s: StatesScene }> = ({ s }) => {
   const f = useFocus(s.focus);
   const boxes = new Map(
     s.nodes.map((n) => {
-      const w = Math.max(250, Math.max(n.code.length * (n.key === 'start' ? 30 : 17.5), n.ja.length * 21) + 64);
+      const w = Math.max(250, Math.max(n.code.length * (n.variant === 'start' ? 30 : 17.5), n.ja.length * 21) + 64);
       return [n.key, { x: n.x, y: n.y, w, h: 104 } as Box];
     }),
   );
@@ -35,7 +35,7 @@ const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: nu
   const { C, MONO, SANS, TONES } = usePalette();
   const p = useAppear(n.at);
   const tt = TONES[n.tone];
-  const start = n.key === 'start';
+  const start = n.variant === 'start';
   return (
     <div
       style={{

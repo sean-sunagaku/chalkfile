@@ -158,7 +158,7 @@ const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number
           {a.sub ? (
             <div
               style={{
-                fontFamily: a.sub.includes('/') ? MONO : SANS,
+                fontFamily: a.subMono ? MONO : SANS,
                 fontWeight: 500,
                 fontSize: 20,
                 color: C.sub,

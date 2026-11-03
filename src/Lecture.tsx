@@ -3,6 +3,7 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remo
 import { videoOf } from '../content';
 import { LANG_INFO, type Lang } from '../content/i18n';
 import { themeOf } from '../content/themes';
+import { upgradeLecture } from '../engine/core/legacy';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
@@ -123,7 +124,10 @@ const WRAP: Record<Lang, React.CSSProperties> = {
  * captions を true にすると、台詞の字幕を焼き込む（音を出せない場所でも要点が分かる動画）。
  */
 export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string; captions?: boolean }> = ({ id, audio = false, theme, captions = false }) => {
-  const { lecture, course, lang } = videoOf(id);
+  const video = videoOf(id);
+  const { course, lang } = video;
+  // 台本の古い書き方（中身の文字を見て描き分けていた決まり）を、明示の項目に読み替えてから描く（engine/core/legacy.ts）
+  const lecture = upgradeLecture(video.lecture);
   const tl = TIMELINE[id];
   // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
   const th = themeOf(theme || course.theme);
