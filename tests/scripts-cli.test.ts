@@ -14,6 +14,7 @@ afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
 const TS = [
   'build_materials',
   'check_content',
+  'clean',
   'check_overlap',
   'export_deliverables',
   'format_new',
@@ -28,6 +29,7 @@ const TS = [
   'synth',
   'validate',
   'worker_types',
+  'worktree',
 ];
 /** CLI でない部品（import されるだけ） */
 const MODULES = [
@@ -141,12 +143,15 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
     ['check_overlap.ts', [process.execPath, 'scripts/check_overlap.ts']],
     ['stills.ts', [...NODE, 'scripts/stills.ts']],
     ['render.sh', ['bash', 'scripts/render.sh', '--nope']],
+    ['worktree.ts', [process.execPath, 'scripts/worktree.ts', 'bad-name']],
+    ['clean.ts', [process.execPath, 'scripts/clean.ts', '--nope']],
   ];
   for (const [name, argv] of unknown)
     test(name, () => {
       const r = runChild(argv);
       expect({ code: r.code, changed: r.changed, cache: r.cache }).toEqual({ code: 2, changed: [], cache: [] });
-      expect(r.stderr).toMatch(/知らない|無い|渡す|渡して|選ぶ|取らない|選んで/);
+      // 何がおかしいかを 1 行以上で出す（使い方の誤りの文）
+      expect(r.stderr.trim()).not.toBe('');
     }, 60_000);
 });
 

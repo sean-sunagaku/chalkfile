@@ -44,7 +44,9 @@
     "materials:check": "bun scripts/materials.ts check",
     "materials:push": "bun scripts/materials.ts push",
     "media:check": "bun scripts/media.ts check",
-    "media:push": "bun scripts/media.ts push"
+    "media:push": "bun scripts/media.ts push",
+    "worktree:new": "bun scripts/worktree.ts",
+    "clean": "bun scripts/clean.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",
