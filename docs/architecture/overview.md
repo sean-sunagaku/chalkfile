@@ -12,12 +12,12 @@ Chalkfile は、TypeScript で書いた台本から、声・動画・講座サ�
 content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  │
  ├─ scripts/synth.ts ── 日本語は VOICEVOX、英語と中国語は Kokoro（scripts/tts_kokoro.py）で台詞を読む
- │    ├→ ~/.cache/chalkfile/tts/<声の鍵>.wav・.kana … 台詞の音声と読み。同じ文・同じ声なら使い回す（作業フォルダの間で共有。前の置き場所 .work/tts も読む）
+ │    ├→ ~/.cache/chalkfile/tts/<声の鍵>.wav・.kana・.meta.json … 台詞の音声と読みと声の記録（合成のレシピとエンジンの版）。同じ文・同じ合成のレシピなら使い回す（作業フォルダの間で共有。前の置き場所 .work/tts も読む）
  │    ├→ content/<講座>/generated/timeline/<key>.json … 場面と台詞の始まるフレーム（動画ごと・指紋つき。追跡）
  │    ├→ .work/plan/<key>.json ……………………… ミックスの設計図
- │    └→ site/data/<key>.json・.vtt ……………… サイトに出す台本・章・字幕の時刻
+ │    └→ site/data/<key>.json ………………………… サイトに出す台本・章・字幕の時刻（字幕の WebVTT はブラウザが作る）
  │
- ├─ scripts/materials.ts push ⇄ pull ── materials ブランチ（台詞の音声と読み・BGM・効果音）
+ ├─ scripts/materials.ts push ⇄ pull ── materials ブランチ（台詞の音声と読み・BGM・効果音・台詞の長さの一覧 DURATIONS.json）
  ├─ scripts/build_music.py（中身は scripts/audio/music/）──→ public/audio/music/・sfx/（BGM・ジングル・効果音）
  ├─ scripts/mix.py ─────────→ public/audio/mix/<key>.wav（台詞・BGM・効果音を 1 本に）
  ├─ scripts/render.sh（Remotion。映像は音なしで書き出し、ミックスの音と合わせる）
@@ -69,11 +69,11 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | 置き場所 | 中身 | 正本か | 作り直し方 |
 |---|---|---|---|
 | main ブランチ | 台本（`content/`）・動画を描くコード（`src/`）・作る道具（`scripts/`）・サイトのひな形（`site/`）・Worker（`worker/`・`wrangler.jsonc`）・テスト・文書。生成物のうち、講座のフォルダの `content/<講座>/generated/`（時刻の `timeline/`・ポスターの `posters/`・動画の一覧の `media.<言語>.json`）と読む教材（`docs/courses/`）も入れている | 台本とコードの正本。入れている生成物は写し。ただし動画の一覧は、Releases に置いた動画の記録 | 生成物は、時刻 → synth、ポスター → render、読む教材 → build_materials、動画の一覧 → media push --course |
-| `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材を足す（消すのは `materials.ts gc` だけ）。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
+| `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）と声の記録（`.meta.json`。v2 の鍵で作った声だけ）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・台詞の長さの一覧 `DURATIONS.json`（push が WAV から測る。CI が音声を取り出さずに時刻を作れる）・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材を足す（消すのは `materials.ts gc` だけ）。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-<言語>-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の講座ごとの動画の一覧が決める | render のあと、`media.ts push --course <講座 ID>` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、ci.yml の deploy のジョブが、build のジョブが組み立てたものを出す |
 | `gh-pages` ブランチ（旧 Pages。前の公開先） | 新しいサイトへの案内のページと、前の保存版を守る移行用の Service Worker | 写し。正本は main の `scripts/build_migration.ts` と `site/legacy-sw.ts` | `scripts/legacy/deploy_pages.sh`（移行の案内だけを出す専用の手順。持ち主の許可のもとで流す） |
-| 手元だけ（`.gitignore`） | `.work/`（ミックスの設計図・読み。前の置き場所の声のキャッシュ `.work/tts` も読む）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
+| 手元だけ（`.gitignore`） | `.work/`（ミックスの設計図・読み。前の置き場所の声のキャッシュ `.work/tts` も読む）・`public/audio/`（BGM・効果音・ミックス）・`out/`（高画質の書き出し・字幕版・納品物・静止画）・`site/media/`（サイト用の動画とポスターの写し）・`site/data/`（サイトの台本と字幕の時刻）・`site/dist/` と `site/migration-dist/`（組み立てたサイト）・`worker/src/generated/media-manifest.json`（Worker の許可リスト）・`node_modules/` | 写し | 声 → `materials.ts pull`（台詞を変えたら synth）、BGM と効果音 → `materials.ts pull` か `build_music.py`、ミックス → `mix.py`、動画 → `render.sh` か `media.ts pull`、サイト → `build_site.ts`、Worker の許可リスト → `npm run gen` |
 | リポジトリの外 | 台詞の声と読みの共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`。作業フォルダの間で使い回す）・Kokoro のモデルの重み（`~/.cache/huggingface`）・uv が用意する Python の環境・Remotion が初回の書き出しで取ってくる Chrome Headless Shell | 写し | 声 → `materials.ts pull`（同じ中身があれば取り出さない。台詞を変えたら synth）。ほかは初回に自動で取ってくる |
 
 ## リポジトリのフォルダ
@@ -83,11 +83,11 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `content/courses.ts` | 講座の登録表（1 講座 1 行。`.gitattributes` で `merge=union`）。並びは各講座の `order` で決まる |
 | `content/index.ts` | 登録表から作る講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
 | `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・読みの辞書（`reading.ts`。その講座の台詞にだけ効く）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
-| `content/types.ts`・`lines.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・at に書いた台詞の id を番号に直す読み込み・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット |
+| `content/types.ts`・`lines.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts`・`sfx.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・at に書いた台詞の id を番号に直す読み込み・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット・効果音の一覧（名前とミックスの音量） |
 | `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む）。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
 | `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・timeline の形と指紋 `timeline.ts`・生成物の置き場所 `generated.ts`・テーマのパレット `theme.ts` と色の計算 `color.ts`・色のコントラスト） |
-| `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
-| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）と、Python が読む動画の値（`video_config.json`） |
+| `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/lib/` は道具の共有の部品（TS の道具が書き、Python の道具が読む JSON の形と版は `lib/handoff.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
+| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）、Python の道具の共有の部品（`common.py`）、TS の道具が書く JSON を読んで形を確かめる部品（`handoff.py`。形の正本は `scripts/lib/handoff.ts`）、`npm run gen` が書き出す効果音の一覧（`sfx.json`。正本は `content/sfx.ts`）と動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・講座のページの画面（`course-page.ts` と `page/`。組み立てが 1 本にまとめてページに入れる）・決まった文字（`i18n.ts`）・何が変わったかの文（`news.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | Worker の入口（`worker/src/app.ts`。パスの頭で受け口を選ぶ）・`/media/` の中継（`media.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）・AI チャットの受け口（`api.ts`。M4 で入れる）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`。テストのサーバーは `browser-server.ts` と `e2e/`）・テストの入力（`fixtures/`。合成の講座は `fixtures/content/site-sample`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
@@ -103,4 +103,4 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | レクチャー ID と動画の key | 動画・ポスター・音・字幕・timeline のファイル名。レクチャー ID の頭文字は講座の `prefix` |
 | 動画のパス（`/media/<言語>/<講座 ID>/<レクチャー ID>[.cc].<SHA-256>.mp4`） | 公開したページと、学ぶ人が保存した講座 |
 | 章 ID・節 ID | 読む教材と `chunks.jsonl`。AI チャットが答えの根拠を指すのに使う |
-| 声の鍵の決め方 | 素材ブランチと声のキャッシュ（`~/.cache/chalkfile/tts`・`.work/tts`）のファイル名。決め方を変えると全部の音声が見つからなくなり、main の CI の `synth.ts --cached-only` が止まる |
+| 声の鍵の決め方 | 素材ブランチと声のキャッシュ（`~/.cache/chalkfile/tts`・`.work/tts`）のファイル名。v2（合成のレシピから）→ v1（凍結した前の作り方）の順に探す（`scripts/voices.ts`）。決め方を変えると音声が見つからなくなり、main の CI の `synth.ts --cached-only` が止まる |

@@ -17,7 +17,8 @@ synth.ts が足りない台詞だけを JSON にまとめて渡す。直接は�
 
 依存の版は頭書きと scripts/tts_kokoro.py.lock で固定する。頭書きを変えたら uv lock --script scripts/tts_kokoro.py でロックも作り直す。
 
-jobs.json: [{"key": "...", "text": "...", "repo": "hexgrad/Kokoro-82M", "voice": "af_heart", "g2p": "a", "speed": 1.0}, ...]
+jobs.json: {"schema": 1, "jobs": [{"key": "...", "text": "...", "repo": "hexgrad/Kokoro-82M", "voice": "af_heart", "g2p": "a", "speed": 1.0}, ...]}
+（形と版は scripts/lib/handoff.ts の KokoroJobs。scripts/audio/handoff.py の read_kokoro_jobs が確かめる。配列だけの前の形も読む）
 出力: <key>.wav（48kHz・モノラル・16bit。VOICEVOX の出力と同じ形）と <key>.kana（読み。Kokoro に渡した音素）
 
 - モデルの重み（Apache-2.0）は、初めて使うときに Hugging Face からダウンロードされる（~/.cache/huggingface）
@@ -30,14 +31,14 @@ jobs.json: [{"key": "...", "text": "...", "repo": "hexgrad/Kokoro-82M", "voice":
 
 from __future__ import annotations
 
-import json
 import sys
 from collections import defaultdict
 from pathlib import Path
 
 sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
 
-from audio.common import USAGE, atomic_path, db_to_linear, linear_to_db, stop, wants_help, write_atomic
+from audio.common import FAILED, USAGE, atomic_path, db_to_linear, linear_to_db, stop, wants_help, write_atomic
+from audio.handoff import HandoffError, read_kokoro_jobs
 
 if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy など）を読む前に、使い方だけを出す
     print(__doc__)
@@ -87,7 +88,10 @@ def level(x: np.ndarray, sr: int) -> np.ndarray:
 def main() -> None:
     if len(sys.argv) != 3 or any(a.startswith("-") for a in sys.argv[1:]):
         stop(USAGE, "使い方: uv run --locked --script scripts/tts_kokoro.py <jobs.json> <出力フォルダ>（synth.ts が流す。--help で説明）")
-    jobs = json.loads(Path(sys.argv[1]).read_text())
+    try:
+        jobs = read_kokoro_jobs(Path(sys.argv[1]))
+    except HandoffError as e:
+        stop(FAILED, f"Kokoro の仕事のファイルの形が違う: {e}")
     out_dir = Path(sys.argv[2])
     out_dir.mkdir(parents=True, exist_ok=True)
 

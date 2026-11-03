@@ -9,7 +9,8 @@
 //   公開で止まること（このファイル）: 講座サイトの設定・ID・リンク（siteProblems。scripts/build_site.ts も組み立ての前に呼ぶ）、
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
 //     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
-//     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める
+//     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める。
+//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems。今は注意）
 // 誤り: 描くと止まるか黙って崩れるもの（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声など）と、
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
@@ -20,6 +21,7 @@ import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Course, Theme } from '../content/types';
+import { creditsIn, voicesOf } from '../content/voices';
 import { formatIssues, RULES, validateCourse, validateCourses, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
 import { mediaListFile, posterFile } from '../engine/core/generated';
 import { mediaKey, type MediaManifest } from '../site/media-shared';
@@ -28,10 +30,11 @@ import { readSiteConfig, type SiteConfig } from './lib/config';
 import { ROOT } from './lib/paths';
 import { readMediaLists } from './media-lists';
 import { PAGE_VERSION_MARK } from './site-version';
+import { courseCredits } from './site/model';
 import { readTimelinesByKey } from './timelines';
 
 /** 公開で止まることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見るので、こちらに置く） */
-export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧' } as const;
+export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧', credit: '声のクレジット' } as const;
 /** 公開で止まることの 1 件（形は台本の Issue と同じで、rule だけが PUBLISH_RULES の名前） */
 export type PublishIssue = Omit<Issue, 'rule'> & { rule: keyof typeof PUBLISH_RULES };
 
@@ -145,9 +148,33 @@ export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Cou
   return out;
 };
 
+/**
+ * 講座のページに出す声のクレジットの文（ページの {voices} は scripts/site/model.ts の courseCredits、{note} は講座の sourceNote）。
+ * 今の courseCredits は、日本語は全講座で共通の講師と呼び込み、訳は使った声から作る（creditsIn）
+ */
+const pageCreditText = (course: Course, lang: Lang): string =>
+  [...courseCredits(course, lang), course.sourceNote ?? ''].join('\n');
+
+/**
+ * 講座のページのクレジットが、講座の動画で使った全部の声のクレジットを含むか（キャラクターの利用規約。VOICEVOX は「VOICEVOX:キャラ名」）。
+ * 日本語のページは講師と呼び込みしか出さないので、ほかの声（ずんだもん・玄野武宏など）は講座の sourceNote に書く（comedy.md）。
+ * 今は注意（warning）にする。ページのクレジットを使った声から作るように直したら（サイトの版が変わるので、ほかのサイトの直しとまとめて出す）、
+ * level を誤り（error）にする
+ */
+export const creditProblems = (coursesIn: (lang: Lang) => Course[], level: Issue['level'] = 'warning'): PublishIssue[] =>
+  LANGS.flatMap((lang) =>
+    coursesIn(lang).flatMap((course) => {
+      const shown = pageCreditText(course, lang);
+      const lacking = creditsIn(lang, course.lectures.flatMap(voicesOf)).filter((c) => !shown.includes(c));
+      return lacking.length
+        ? [{ level, rule: 'credit' as const, where: lang === 'ja' ? course.id : `${course.id}（${lang}）`, message: `講座のページのクレジットに ${lacking.join('・')} が無い（講座の sourceNote に「ボケの声は VOICEVOX:ずんだもん」のように書く）` }]
+        : [];
+    }),
+  );
+
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-/** 公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語のポスターと動画の一覧）。courses は日本語の講座 */
+/** 公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語のポスターと動画の一覧、講座のページの声のクレジット）。courses は日本語の講座 */
 export const publishIssues = (courses: Course[], coursesIn: (lang: Lang) => Course[]): PublishIssue[] => {
   const out: PublishIssue[] = [];
   const fail = (rule: PublishIssue['rule'], where: string, message: string) => out.push({ level: 'error', rule, where, message });
@@ -160,7 +187,7 @@ export const publishIssues = (courses: Course[], coursesIn: (lang: Lang) => Cour
   }
   for (const message of siteProblems(config, coursesIn)) fail('site', '講座サイト', message);
   for (const c of courses.filter((x) => x.syllabus)) for (const message of materialProblems(c)) fail('material', c.id, message);
-  out.push(...posterProblems(config, coursesIn));
+  out.push(...posterProblems(config, coursesIn), ...creditProblems(coursesIn));
   try {
     out.push(...mediaProblems(config, coursesIn, readMediaLists(courses.map((c) => c.id))));
   } catch (e) {

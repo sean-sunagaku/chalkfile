@@ -81,6 +81,9 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # 声の共有のキャッシュを作業フォルダの中に置き、actions/cache で残す
+      CHALKFILE_CACHE_DIR: ${{ github.workspace }}/.work/cache
     outputs:
       # 公開物の一覧（.work/ci/site-dist.sha256）の sha256。smoke と deploy は、取った artifact をこの値で照らす
       digest: ${{ steps.digest.outputs.sha256 }}
@@ -107,23 +110,22 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            .work/tts
+            .work/cache/tts
             public/audio
-          key: materials-wav-v1-${{ steps.materials.outputs.sha }}
-      # 素材のブランチ（公開のリポジトリ）から台詞の音声を取り出し、合成せずに時刻とサイトのデータを作る
+          key: materials-wav-v2-${{ steps.materials.outputs.sha }}
+      # 素材のブランチ（公開のリポジトリ）の台詞の長さの一覧（DURATIONS.json）と読みだけで、合成せずに時刻とサイトのデータを作る。
+      # 一覧が無い・古い素材のブランチでは、中で音声の取り出し（materials pull。声は CHALKFILE_CACHE_DIR に置く）にもどる
       - name: 素材と講義データ
-        run: |
-          bun scripts/materials.ts pull
-          bun scripts/synth.ts --cached-only
+        run: bun scripts/synth.ts --cached-only --durations-only
       # 残すのは main の実行だけ（約 2GB。PR ごとに残すと、リポジトリのキャッシュの枠を埋める。PR は main のものを戻せる）
       - name: 素材のキャッシュを残す（main だけ）
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.materials-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            .work/tts
+            .work/cache/tts
             public/audio
-          key: materials-wav-v1-${{ steps.materials.outputs.sha }}
+          key: materials-wav-v2-${{ steps.materials.outputs.sha }}
       # 動画の一覧の項目が Releases にあり、大きさと SHA-256 が合うか（公開の Releases を読むだけ）
       - name: 動画を先に照合
         env:
