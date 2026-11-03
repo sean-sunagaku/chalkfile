@@ -3,10 +3,11 @@ import { loadFont as loadJetBrains } from '@remotion/google-fonts/JetBrainsMono'
 import { loadFont as loadNoto } from '@remotion/google-fonts/NotoSansJP';
 import { loadFont as loadNotoSC } from '@remotion/google-fonts/NotoSansSC';
 import { loadFont as loadZenMaru } from '@remotion/google-fonts/ZenMaruGothic';
+import React, { createContext, useContext } from 'react';
 import type { Lang } from '../content/i18n';
-import { fontsFor, themeOf } from '../content/themes';
+import { themeOf } from '../content/themes';
 import type { FontKey, Theme, Tone } from '../content/types';
-import { derivePalette, type PaletteColors, type ToneSet } from '../engine/core/theme';
+import { derivePalette, type Palette, type PaletteColors, type ToneSet } from '../engine/core/theme';
 import { CONTENT, VIDEO } from './video.config';
 
 // 画面の大きさと内容の枠の値は src/video.config.ts。部品はここから短い名前で読む
@@ -39,9 +40,44 @@ const family = (k: FontKey | 'mono'): string => {
   return families[k]!;
 };
 
-/* ───────────── 今のテーマ ─────────────
- * 1 本の動画は 1 つのテーマで描く。LectureVideo が描き始めに applyTheme を呼び、
- * ここの値（ES Modules の live binding）を差し替える。色は engine/core/theme.ts の derivePalette が作る（テーマごとに 1 回）
+/* ───────────── テーマ（ThemeProvider と usePalette） ─────────────
+ * 1 本の動画は 1 つのテーマで描く。LectureVideo（src/Lecture.tsx）が ThemeProvider で動画全体を包み、
+ * 部品は usePalette() でパレットを読む（const { C, tone, SANS } = usePalette()）。色は engine/core/theme.ts の derivePalette が作る
+ */
+
+/** 動画の部品が使うパレット。engine/core/theme.ts の色に、読み込んだ書体の名前（本文の SANS・等幅の MONO）を足す */
+export type VideoPalette = Palette & { SANS: string; MONO: string };
+
+const withFonts = new WeakMap<Palette, VideoPalette>();
+
+/** テーマと言語のパレット。書体は、ここで初めて読み込む（テーマと言語ごとに 1 回だけ作る） */
+export const videoPalette = (theme: Theme, lang: Lang = 'ja'): VideoPalette => {
+  const p = derivePalette(theme, lang);
+  let v = withFonts.get(p);
+  if (!v) {
+    const SANS = [...p.fonts.map(family), 'sans-serif'].join(', ');
+    v = { ...p, SANS, MONO: `${family('mono')}, ${SANS}` };
+    withFonts.set(p, v);
+  }
+  return v;
+};
+
+const PaletteContext = createContext<VideoPalette | null>(null);
+
+/** 子の部品に、このテーマと言語のパレットを渡す */
+export const ThemeProvider: React.FC<{ theme: Theme; lang: Lang; children: React.ReactNode }> = ({ theme, lang, children }) =>
+  React.createElement(PaletteContext.Provider, { value: videoPalette(theme, lang) }, children);
+
+/** 今描いているテーマのパレット */
+export const usePalette = (): VideoPalette => {
+  const p = useContext(PaletteContext);
+  if (!p) throw new Error('ThemeProvider の外で usePalette が使われた（src/Lecture.tsx の LectureVideo が ThemeProvider で包む）');
+  return p;
+};
+
+/* ───────────── 今のテーマ（移すあいだの変数） ─────────────
+ * まだ usePalette に移していない場面（src/scenes）が読む。LectureVideo が描き始めに applyTheme を呼び、
+ * ここの値（ES Modules の live binding）を差し替える。場面を移し終えたら消す
  */
 
 export let THEME: Theme;
@@ -55,14 +91,12 @@ export let MONO = '';
 export let SYNTAX: Theme['syntax'];
 export let MESH: string[] = [];
 
-let fontsOf = '';
-
 /** fonts=false は色だけ差し替える（読み込みの前の仮の値。書体は描くテーマと言語の分だけ読む） */
 export const applyTheme = (theme: Theme, fonts = true, lang: Lang = 'ja') => {
-  if (fonts && fontsOf !== `${theme.id}:${lang}`) {
-    fontsOf = `${theme.id}:${lang}`;
-    SANS = [...fontsFor(theme, lang).map(family), 'sans-serif'].join(', ');
-    MONO = `${family('mono')}, ${SANS}`;
+  if (fonts) {
+    const v = videoPalette(theme, lang);
+    SANS = v.SANS;
+    MONO = v.MONO;
   }
   if (THEME === theme) return;
   const p = derivePalette(theme);

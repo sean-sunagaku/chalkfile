@@ -2,7 +2,7 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { Tone } from '../../content/types';
-import { C, H, SANS, tone, W } from '../theme';
+import { H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { Smart } from './ui';
@@ -48,6 +48,7 @@ export const Edge: React.FC<{
   dim: number;
   stagger?: number;
 }> = ({ a, b, at, label, t, dashed, bend = 0, fromSide, toSide, labelDx = 0, labelDy = 0, dim, stagger = 0 }) => {
+  const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const start = lineStart(lines, at) - LEAD.draw + stagger;

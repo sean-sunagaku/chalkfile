@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
-import { alpha, C, GRAD, H, MESH, MONO, PAD, SANS, THEME, tone, W } from '../theme';
+import { alpha, H, PAD, usePalette, W } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../content/types';
 import { dropY, useScene, useText } from '../timing';
 import { HEADING } from '../video.config';
@@ -8,6 +8,7 @@ import { Icon } from './ui';
 
 /** ゆっくり漂う小さな粒（暗い地では光、明るい地ではチョークの粉） */
 const Specks: React.FC<{ count: number; glow: boolean; base: number }> = ({ count, glow, base }) => {
+  const { MESH } = usePalette();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -33,6 +34,7 @@ const Specks: React.FC<{ count: number; glow: boolean; base: number }> = ({ coun
 
 /** 動かない背景（圧縮しやすいように大きな面は動かさない）。飾りはテーマの decor で変わる */
 export const Background: React.FC = () => {
+  const { C, MESH, THEME } = usePalette();
   const base = `linear-gradient(180deg, ${C.bg0}, ${C.bg1})`;
   if (THEME.decor === 'band') {
     // 斜めのグラデーションの帯と、細い縦の補助線（帳票のような静かな地）
@@ -117,6 +119,7 @@ export const Background: React.FC = () => {
 
 /** 右上の講座名（どの講座のレクチャーかで変わる）。帯の上に乗るテーマでは白い札にする */
 export const CourseMark: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+  const { C, GRAD, SANS, THEME } = usePalette();
   const { course } = useScene();
   const chip = THEME.decor === 'band';
   return (
@@ -143,6 +146,7 @@ export const EVIDENCE: Record<Evidence, { tone: Tone; icon: IconName }> = {
 };
 
 const EvidenceChip: React.FC<{ kind: Evidence; p: number }> = ({ kind, p }) => {
+  const { SANS, tone } = usePalette();
   const e = EVIDENCE[kind];
   const label = useText().evidence[kind];
   const t = tone(e.tone);
@@ -175,6 +179,7 @@ export const unitOf = (course: Course) => ({ label: course.unitLabel ?? 'LECTURE
 
 /** 場面の見出し（ヘッダー） */
 export const Header: React.FC<{ heading: string }> = ({ heading }) => {
+  const { C, GRAD, MONO, SANS } = usePalette();
   const frame = useCurrentFrame();
   const { lecture, scene, course } = useScene();
   const p = interpolate(frame, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -219,6 +224,7 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
 
 /** 左下に出す出典（研究や公式の数字を見せる場面） */
 export const Cite: React.FC<{ text: string }> = ({ text }) => {
+  const { C, SANS } = usePalette();
   const head = useText().cite;
   return (
     <div style={{ position: 'absolute', left: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>
@@ -230,6 +236,7 @@ export const Cite: React.FC<{ text: string }> = ({ text }) => {
 
 /** レクチャー全体の進み具合（下端の細い線） */
 export const Progress: React.FC<{ total: number; marks: number[] }> = ({ total, marks }) => {
+  const { C, GRAD } = usePalette();
   const frame = useCurrentFrame();
   const p = Math.min(1, frame / total);
   return (
@@ -243,6 +250,7 @@ export const Progress: React.FC<{ total: number; marks: number[] }> = ({ total, 
 };
 
 /** 右下に出し続ける注意書き（法律・税・規約の話のレクチャー） */
-export const Caution: React.FC<{ text: string }> = ({ text }) => (
-  <div style={{ position: 'absolute', right: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>{text}</div>
-);
+export const Caution: React.FC<{ text: string }> = ({ text }) => {
+  const { C, SANS } = usePalette();
+  return <div style={{ position: 'absolute', right: PAD, bottom: 24, fontFamily: SANS, fontWeight: 500, fontSize: 20, color: C.muted, letterSpacing: 0.5 }}>{text}</div>;
+};

@@ -75,7 +75,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import type { IconName, Tone } from '../../content/types';
-import { alpha, C, GRAD, MONO, SANS, THEME, tone } from '../theme';
+import { alpha, usePalette, type VideoPalette } from '../theme';
 
 const ICONS: Record<IconName, LucideIcon> = {
   user: User,
@@ -152,13 +152,16 @@ const ICONS: Record<IconName, LucideIcon> = {
   input: TextCursorInput,
 };
 
-export const Icon: React.FC<{ name: IconName; size?: number; color?: string; stroke?: number }> = ({ name, size = 36, color = C.ink, stroke = 2.2 }) => {
+/** アイコン。色を省くと見出しの文字の色（C.ink） */
+export const Icon: React.FC<{ name: IconName; size?: number; color?: string; stroke?: number }> = ({ name, size = 36, color, stroke = 2.2 }) => {
+  const { C } = usePalette();
   const Cmp = ICONS[name];
-  return <Cmp size={size} color={color} strokeWidth={stroke} />;
+  return <Cmp size={size} color={color ?? C.ink} strokeWidth={stroke} />;
 };
 
 /** 色つきの丸いアイコン台 */
 export const IconBadge: React.FC<{ name: IconName; t?: Tone; size?: number; glow?: number }> = ({ name, t, size = 64, glow = 0 }) => {
+  const { THEME, tone } = usePalette();
   const tt = tone(t);
   return (
     <div
@@ -191,6 +194,7 @@ export const Glass: React.FC<{
   t?: Tone;
   active?: number;
 }> = ({ children, style, t, active = 0 }) => {
+  const { C, THEME, tone } = usePalette();
   const tt = tone(t);
   const dark = THEME.scheme === 'dark';
   return (
@@ -212,6 +216,7 @@ export const Glass: React.FC<{
 };
 
 export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolean; size?: number; style?: React.CSSProperties }> = ({ children, t, mono, size = 22, style }) => {
+  const { MONO, SANS, tone } = usePalette();
   const tt = tone(t);
   return (
     <span
@@ -238,7 +243,7 @@ export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolea
 };
 
 /** **強調** の見た目。暗い地はグラデーションの文字、チョークのテーマは蛍光ペンの線、ほかは主役の色の文字 */
-const emphasis = (t?: Tone): React.CSSProperties => {
+const emphasis = ({ C, GRAD, THEME, tone }: VideoPalette, t?: Tone): React.CSSProperties => {
   const tt = tone(t);
   if (THEME.scheme === 'dark') {
     return { background: t ? `linear-gradient(110deg, ${tt.main}, ${tt.text})` : GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
@@ -251,12 +256,13 @@ const emphasis = (t?: Tone): React.CSSProperties => {
 
 /** **強調** を色つきで出す */
 export const Rich: React.FC<{ text: string; t?: Tone; style?: React.CSSProperties }> = ({ text, t, style }) => {
+  const palette = usePalette();
   const parts = text.split(/\*\*(.+?)\*\*/g);
   return (
     <span style={style}>
       {parts.map((p, i) =>
         i % 2 === 1 ? (
-          <span key={i} style={emphasis(t)}>
+          <span key={i} style={emphasis(palette, t)}>
             {p}
           </span>
         ) : (
@@ -268,9 +274,10 @@ export const Rich: React.FC<{ text: string; t?: Tone; style?: React.CSSPropertie
 };
 
 /** 英字の識別子（snake_case など）は等幅で出す */
-export const Code: React.FC<{ children: React.ReactNode; t?: Tone; size?: number }> = ({ children, t, size }) => (
-  <span style={{ fontFamily: MONO, fontWeight: 500, color: t ? tone(t).text : C.ink, fontSize: size }}>{children}</span>
-);
+export const Code: React.FC<{ children: React.ReactNode; t?: Tone; size?: number }> = ({ children, t, size }) => {
+  const { C, MONO, tone } = usePalette();
+  return <span style={{ fontFamily: MONO, fontWeight: 500, color: t ? tone(t).text : C.ink, fontSize: size }}>{children}</span>;
+};
 
 /** 文中の `…` と識別子らしい英字を等幅にする */
 export const Smart: React.FC<{ text: string; t?: Tone }> = ({ text, t }) => {

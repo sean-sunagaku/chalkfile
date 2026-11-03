@@ -7,7 +7,7 @@ import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
 import { SCENES } from './scenes';
-import { alpha, applyTheme, C, H, SANS, tone } from './theme';
+import { alpha, applyTheme, H, ThemeProvider, usePalette, videoPalette } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
 import { CAPTION, frames, LEAD } from './video.config';
 
@@ -47,6 +47,7 @@ const CAPTION_BAND = H - Math.round(H * CAPTION_SCALE);
 type Cue = { start: number; end: number; text: string; who?: { name: string; tone: Tone } };
 
 const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
+  const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   let i = -1;
   for (let k = 0; k < cues.length; k++) if (frame >= cues[k].start - LEAD.caption) i = k;
@@ -123,8 +124,11 @@ const WRAP: Record<Lang, React.CSSProperties> = {
 export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string; captions?: boolean }> = ({ id, audio = false, theme, captions = false }) => {
   const { lecture, course, lang } = videoOf(id);
   const tl = TIMELINE[id];
-  // 子の部品より先に、この動画のテーマの色と書体（言語に合わせる）に差し替える
-  applyTheme(themeOf(theme || course.theme), true, lang);
+  // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
+  const th = themeOf(theme || course.theme);
+  const { SANS } = videoPalette(th, lang);
+  // まだ usePalette に移していない場面のために、移すあいだだけ変数も差し替える
+  applyTheme(th, true, lang);
   const scenes = lecture.scenes.map((s, i) => {
     const st = tl.scenes[i];
     return (
@@ -142,18 +146,20 @@ export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: strin
       )
     : [];
   return (
-    <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>
-      <Background />
-      {captions ? (
-        <>
-          <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
-          <Captions cues={cues} />
-        </>
-      ) : (
-        scenes
-      )}
-      <Progress total={tl.durationInFrames} marks={tl.scenes.slice(1).map((s) => s.start)} />
-      {audio ? <Audio src={staticFile(`audio/mix/${id}.wav`)} /> : null}
-    </AbsoluteFill>
+    <ThemeProvider theme={th} lang={lang}>
+      <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>
+        <Background />
+        {captions ? (
+          <>
+            <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
+            <Captions cues={cues} />
+          </>
+        ) : (
+          scenes
+        )}
+        <Progress total={tl.durationInFrames} marks={tl.scenes.slice(1).map((s) => s.start)} />
+        {audio ? <Audio src={staticFile(`audio/mix/${id}.wav`)} /> : null}
+      </AbsoluteFill>
+    </ThemeProvider>
   );
 };
