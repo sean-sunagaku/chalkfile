@@ -167,3 +167,4 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 4. `npm run media:push` → `npm run media:check` → commit
 
 - `content/index.ts` の講座の並びと、README の講座の表は生成物ではない。両方の行を残す
+- 並行作業のきまり（共有のファイル・凍結中）は [AGENTS.md](../../AGENTS.md) の「並行作業のきまり」

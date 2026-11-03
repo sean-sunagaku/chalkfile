@@ -27,7 +27,8 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 初回の設定（Cloudflare・GitHub） | [operations/setup.md](operations/setup.md) | 持ち主だけ |
 | 戻し方・作り直し（rollback・出し直し・素材・retained・token・無料枠・ドメイン） | [operations/recovery.md](operations/recovery.md) | 持ち主だけ |
 | ハマりどころ | [operations/troubleshooting.md](operations/troubleshooting.md) | 症状からひく索引 |
-| 安全（AI 向けのきまり・公開物・点検） | [CLAUDE.md](../CLAUDE.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts`。AI 共通のきまりは `AGENTS.md`（予定）に移す |
+| AI 共通のきまり（方針・安全・公開・並行作業・文体・コマンド） | [AGENTS.md](../AGENTS.md) | Claude Code は [CLAUDE.md](../CLAUDE.md) から読み込む |
+| 安全（AI 向けのきまり・公開物・点検） | [AGENTS.md](../AGENTS.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts` |
 | 保存の設計（オフライン・PWA） | `docs/architecture/offline.md`（予定） | 今はスキルの [offline.md](../.claude/skills/study-video-course/references/offline.md) |
 | 学ぶ人向けの保存の説明 | [guide/learner-offline.md](guide/learner-offline.md) | |
 | 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
@@ -55,4 +56,4 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 5. 日付つきの記録（確かめた結果・つまずき）は、今の手順と分けて置く
 6. 生成物は手で直さない。元の台本かスクリプトを直して作り直す
 7. リンクは相対パスで書く。（予定）の文書にはリンクせず、できてから張る
-8. 文体は平易な日本語の常体（「〜する」）。漢語・外来語・英字を減らし、コードの名前とコマンドはそのまま書く。見本はスキルの [style.md](../.claude/skills/study-video-course/references/style.md) と [theme.md](../.claude/skills/study-video-course/references/theme.md) の書き方。AI に向けた文体のきまりの正本は `AGENTS.md`（予定）に置く
+8. 文体は平易な日本語の常体（「〜する」）。漢語・外来語・英字を減らし、コードの名前とコマンドはそのまま書く。見本はスキルの [style.md](../.claude/skills/study-video-course/references/style.md) と [theme.md](../.claude/skills/study-video-course/references/theme.md) の書き方。AI に向けた文体のきまりの正本は [AGENTS.md](../AGENTS.md) の「文体」

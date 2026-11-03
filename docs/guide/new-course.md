@@ -48,6 +48,7 @@
 - [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`content/index.ts` の `TRANSLATIONS`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）
 - [ ] README の「Chalkfile で作った講座」の表に 1 行（あとでコードから作る予定）
 - [ ] 実在の会社や製品を扱うなら、`disclaimer` に「非公式」と書く。お笑い版は「ボケの台詞は、わざと間違えています」も書く
+- 並行で作るとき（共有のファイル・生成物・素材と動画の push）のきまりは、[AGENTS.md](../../AGENTS.md) の「並行作業のきまり」
 
 ## 3. 作る
 
