@@ -1,7 +1,7 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import manifest from '../site/media-manifest.json';
 import { mediaPath, releaseUrl, type MediaEntry } from '../site/media-shared';
-import { createMediaHandler } from '../worker/src/media';
+import { createMediaHandler, type MediaLog } from '../worker/src/media';
 
 const entry = manifest.entries[0] as MediaEntry;
 const request = (suffix = '', init?: RequestInit) => new Request(`https://chalkfile.com${mediaPath(entry)}${suffix}`, init);
@@ -63,27 +63,68 @@ describe('/media/ の中継', () => {
     const response = await handle(request('', { method: 'POST' }));
     expect(response.status).toBe(405); expect(response.headers.get('Allow')).toBe('GET, HEAD'); expect(count).toBe(0);
   });
-  test('上流の404は404、他の状態と通信失敗は502。署名URL・例外本文をログへ出さない', async () => {
+  const logOf = (code: MediaLog['code'], status: number | null, host: string | null): MediaLog =>
+    ({ code, status, host, course: entry.course, lecture: entry.lecture });
+  test('上流の404は404で upstream_missing、他の状態は502で status、通信失敗は502で network を記録する', async () => {
     for (const status of [404, 403, 429, 500, 503]) {
-      const logs: unknown[] = []; const handle = createMediaHandler([entry], async () => new Response('private upstream body', { status }), (log) => logs.push(log));
+      const logs: MediaLog[] = []; const handle = createMediaHandler([entry], async () => new Response('private upstream body', { status }), (log) => logs.push(log));
       const response = await handle(request());
       expect(response.status).toBe(status === 404 ? 404 : 502);
       expect(await response.text()).not.toContain('private');
       expect(response.headers.get('Cache-Control')).toBe('no-store');
-      expect(JSON.stringify(logs)).not.toContain('private');
+      expect(logs).toEqual([logOf(status === 404 ? 'upstream_missing' : 'status', status, 'github.com')]);
     }
-    const logs: unknown[] = [];
+    const logs: MediaLog[] = [];
     const response = await createMediaHandler([entry], async () => { throw new Error('https://example.com/?private=value'); }, (log) => logs.push(log))(request());
-    expect(response.status).toBe(502); expect(JSON.stringify(logs)).not.toContain('private');
+    expect(response.status).toBe(502); expect(logs).toEqual([logOf('network', null, 'github.com')]);
   });
-  test('外部redirect・ループ・Locationなしを拒否する', async () => {
-    for (const location of ['https://example.com/video.mp4', 'http://release-assets.githubusercontent.com/asset', 'https://user:pass@release-assets.githubusercontent.com/asset', '']) {
-      const handle = createMediaHandler([entry], async () => new Response(null, { status: 302, headers: { Location: location } }), () => {});
-      expect((await handle(request())).status).toBe(502);
+  test('redirect の先で失敗したら、その先のホスト名だけを残す', async () => {
+    const signed = 'https://release-assets.githubusercontent.com/asset?signed=private';
+    const answers: [() => Response, MediaLog][] = [
+      [() => new Response('private', { status: 404 }), logOf('upstream_missing', 404, 'release-assets.githubusercontent.com')],
+      [() => new Response('private', { status: 500 }), logOf('status', 500, 'release-assets.githubusercontent.com')],
+      [() => { throw new Error(signed); }, logOf('network', null, 'release-assets.githubusercontent.com')],
+    ];
+    for (const [answer, expected] of answers) {
+      const logs: MediaLog[] = [];
+      const handle = createMediaHandler([entry], async (url) => url === releaseUrl(entry) ? new Response(null, { status: 302, headers: { Location: signed } }) : answer(), (log) => logs.push(log));
+      await handle(request());
+      expect(logs).toEqual([expected]);
     }
-    let calls = 0;
-    const handle = createMediaHandler([entry], async () => { calls++; return new Response(null, { status: 302, headers: { Location: 'https://release-assets.githubusercontent.com/loop' } }); }, () => {});
+  });
+  test('外部redirect・http・認証情報つき・Locationなし・読めないLocation・ループを拒み、行き先のホスト名だけを残す', async () => {
+    const cases: [string, string | null][] = [
+      ['https://example.com/video.mp4?signed=private', 'example.com'], ['http://release-assets.githubusercontent.com/asset', 'release-assets.githubusercontent.com'],
+      ['https://user:pass@release-assets.githubusercontent.com/asset', 'release-assets.githubusercontent.com'], ['', null], ['https://[private', null],
+    ];
+    for (const [location, host] of cases) {
+      const logs: MediaLog[] = []; const handle = createMediaHandler([entry], async () => new Response(null, { status: 302, headers: { Location: location } }), (log) => logs.push(log));
+      expect((await handle(request())).status).toBe(502);
+      expect(logs).toEqual([logOf('redirect_host', 302, host)]);
+    }
+    let calls = 0; const logs: MediaLog[] = [];
+    const handle = createMediaHandler([entry], async () => { calls++; return new Response(null, { status: 307, headers: { Location: 'https://release-assets.githubusercontent.com/loop' } }); }, (log) => logs.push(log));
     expect((await handle(request())).status).toBe(502); expect(calls).toBe(4);
+    expect(logs).toEqual([logOf('redirect_host', 307, 'release-assets.githubusercontent.com')]);
+  });
+  test('既定のログは console.error へ 1 件のオブジェクトで出し、URL・path・query・署名を含めない', async () => {
+    const signed = 'https://release-assets.githubusercontent.com/private-path/asset.mp4?X-Amz-Signature=SIGNATURE&X-Amz-Credential=CREDENTIAL';
+    const later = (answer: () => Response) => async (url: string) => url === releaseUrl(entry) ? new Response(null, { status: 302, headers: { Location: signed } }) : answer();
+    const scenarios = [
+      async () => new Response(null, { status: 302, headers: { Location: 'https://evil.example/private-path?X-Amz-Signature=SIGNATURE' } }),
+      later(() => new Response(null, { status: 404 })), later(() => new Response(null, { status: 500 })), later(() => { throw new Error(signed); }),
+    ];
+    const spy = spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      for (const scenario of scenarios) await createMediaHandler([entry], scenario)(request('?download=1'));
+      expect(spy.mock.calls.map((args) => args[0]?.code)).toEqual(['redirect_host', 'upstream_missing', 'status', 'network']);
+      for (const args of spy.mock.calls) {
+        expect(args).toHaveLength(1);
+        expect(Object.keys(args[0])).toEqual(['message', 'code', 'status', 'host', 'course', 'lecture']);
+        expect(args[0].message).toBe('media_upstream_failed');
+        expect(JSON.stringify(args)).not.toMatch(/[/?=&]|SIGNATURE|CREDENTIAL|private|Amz/);
+      }
+    } finally { spy.mockRestore(); }
   });
   test('動画全体をメモリへ取り込まず応答を返す', async () => {
     let reads = 0;

@@ -8,6 +8,8 @@ export function validateWorkerConfig(value: any) {
       JSON.stringify(value.assets?.run_worker_first) !== JSON.stringify(['/media/*']) || value.assets?.not_found_handling !== '404-page') {
     throw new Error('静的サイトをWorkerへ通さない配信設定が不正です。');
   }
+  // /media/* の失敗を Workers Logs で見えるようにしておく（W-13）。logs.enabled があれば、そちらが優先する。
+  if ((value.observability?.logs?.enabled ?? value.observability?.enabled) !== true) throw new Error('Workers Logs（observability）が有効ではありません。');
 }
 export function validateWorkflow(value: any) {
   const fail = () => { throw new Error('Actions の公開条件・権限・secret の範囲・順序が不正です。'); };
