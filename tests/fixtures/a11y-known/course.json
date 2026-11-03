@@ -1,0 +1,137 @@
+[
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#courseMeta"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#credits"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#curSum"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#networkState"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#nowEyebrow"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#playbackStatus"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#tab-docs"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#tab-notes"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#tab-quiz"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#tab-transcript"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": ".brand-sub"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": ".cnt"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": ".foot > div:nth-child(1)"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": ".foot > div:nth-child(3)"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": ".no"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "button[data-i=\"0\"] > .dur"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "button[data-i=\"1\"] > .dur"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "button[data-t=\"0\"] > .t"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "li:nth-child(2) > button[data-t=\"2\"][data-k=\"1\"] > .t"
+  },
+  {
+    "rule": "landmark-one-main",
+    "impact": "moderate",
+    "target": "html"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": "#courseMeta"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": "#cpLabel"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": "#links"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": ".brand-sub"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": ".brand-title"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": ".foot"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": "h1"
+  }
+]

@@ -3,10 +3,7 @@
   "compilerOptions": {
     "types": ["bun"],
     // Node で動かす道具（scripts/stills.ts）は、scripts/lib/ を拡張子まで書いて読む（Node は拡張子を補わない）
-    "allowImportingTsExtensions": true,
-    // root の noUnusedParameters は、scripts/build_site.ts の posterOf の使っていない引数 lang（1 件）が直るまで、ここだけ外す。
-    // build_site.ts は別の PR が組み直している最中なので、ここでは直さない。直ったら、この行を消す
-    "noUnusedParameters": false
+    "allowImportingTsExtensions": true
   },
-  "include": ["*.ts", "lib/*.ts", "stages/**/*.ts"]
+  "include": ["*.ts", "lib/*.ts", "site/*.ts", "stages/**/*.ts"]
 }

@@ -1,12 +1,16 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { CourseManifest, CourseStatus } from '../../site/offline-shared';
+import { evidenceDir, expect, test } from './fixtures';
 
-// 多言語: 言語の切り替え、訳の講座（動画は同じ origin の別のサイト /chalkfile-media-<言語>/）の保存・オフライン再生・Range、
-// 字幕を焼き込んだ版がある講座（お笑い版）の保存。site/dist と site/dist-media を build_site.ts --strict で作ってから流す
-const evidence = process.env.CHALKFILE_EVIDENCE_DIR ?? '/tmp/chalkfile-pwa-evidence';
-mkdirSync(evidence, { recursive: true });
+// 多言語（本物の講座だけ。project real）: 言語の切り替え、訳の講座（動画は /media/<言語>/ から）の保存・オフライン再生・Range、
+// 字幕を焼き込んだ版がある講座（お笑い版）の保存。先に npm run build:site -- --strict で site/dist を作り、手元に動画を置いてから流す
+const evidence = () => {
+  const dir = evidenceDir();
+  mkdirSync(dir, { recursive: true });
+  return dir;
+};
 const translatedPublished = existsSync('site/dist/en/pstack-comedy/offline-manifest.json');
 const enManifest = translatedPublished ? JSON.parse(readFileSync('site/dist/en/pstack-comedy/offline-manifest.json', 'utf8')) as CourseManifest : null;
 
@@ -67,7 +71,7 @@ test('言語の切り替え: 一覧と講座のページ・日本語だけの講
   await page.setViewportSize({ width: 375, height: 812 });
   await page.evaluate(() => scrollTo(0, 0));
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
-  await page.screenshot({ path: path.join(evidence, 'i18n-zh-mobile-375.png'), fullPage: false });
+  await page.screenshot({ path: path.join(evidence(), 'i18n-zh-mobile-375.png'), fullPage: false });
   await page.locator('nav.langs').getByRole('link', { name: '日本語', exact: true }).click();
   await expect(page).toHaveURL(/\/pstack-comedy\/#P01$/);
   await expect(page.locator('#tab-transcript')).toHaveText('台本');
@@ -105,7 +109,7 @@ test('英語の講座を保存し、通信なしで動画のサイトの動画�
   await page.locator('#ccToggle').click();
   await expect.poll(() => page.locator('video').evaluate((v: HTMLVideoElement) => v.currentSrc)).toMatch(/P01\.[a-f0-9]{64}\.mp4$/);
   await playAt(page, 60);
-  await page.screenshot({ path: path.join(evidence, 'i18n-en-offline-playback.png'), fullPage: false });
+  await page.screenshot({ path: path.join(evidence(), 'i18n-en-offline-playback.png'), fullPage: false });
   await page.locator('#offlineDelete').click();
   await expect(page.locator('#savedState')).toContainText('Not saved');
   await context.setOffline(false);

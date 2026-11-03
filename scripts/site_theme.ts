@@ -1,6 +1,6 @@
 // 講座のテーマ（content/themes.ts）から、講座サイトの書体の読み込みと色の決まり（CSS）を作る。
 // 動画と同じパレット（engine/core/theme.ts の derivePalette）と色の計算（engine/core/color.ts）から作るので、動画とサイトのトンマナがそろう。
-// 図の文字色（--pink など）は、パレットの site.toneText（動画の文字色と、混ぜる割合が違う。そろえるのは計画の T3A-14）
+// 図の文字色（--pink など）は、パレットの site.toneText（動画の文字色と、混ぜる割合が違う。そろえるのは、動画とサイトの見た目をまとめて更新する回）
 import type { Lang } from '../content/i18n';
 import type { FontKey, Theme } from '../content/types';
 import { alpha } from '../engine/core/color';

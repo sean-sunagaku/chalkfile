@@ -26,6 +26,8 @@
     "test": "bun test tests/*.test.ts",
     "test:e2e": "playwright test",
     "test:browser": "playwright test",
+    "test:e2e:ci": "playwright test --project=ci",
+    "test:e2e:real": "playwright test --project=real",
     "check:content": "bun scripts/check_content.ts --self-test && bun scripts/check_content.ts",
     "check:docs": "bun scripts/check_docs.ts",
     "check:materials": "bun scripts/build_materials.ts --check",
@@ -61,6 +63,7 @@
     "remotion": "4.0.539"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@biomejs/biome": "2.6.4",
     "@playwright/test": "1.64.1",
     "@remotion/bundler": "4.0.539",
