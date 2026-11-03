@@ -295,11 +295,12 @@ describe('動画・音声と大きすぎるファイルを止める', () => {
     expect(pathRules('scripts/big.json', MAX_TRACKED_BYTES + 1)).toEqual(['size']);
     expect(pathRules('site/assets/a.jpg', 6 * MiB)).toEqual(['size']);
   });
-  test('ポスターと tests/fixtures は 5MiB の上限から外すが、50MiB を超えたら止める', () => {
-    expect(pathRules('site/posters/D01.jpg', 6 * MiB)).toEqual([]);
+  test('ポスター（講座のフォルダの generated/posters）と tests/fixtures は 5MiB の上限から外すが、50MiB を超えたら止める', () => {
+    expect(pathRules('content/uiux-engineers/generated/posters/D01.jpg', 6 * MiB)).toEqual([]);
+    expect(pathRules('site/posters/D01.jpg', 6 * MiB)).toEqual(['size']);
     expect(pathRules('tests/fixtures/saved-records/a.json', 6 * MiB)).toEqual([]);
     expect(pathRules('tests/fixtures/a.json', 50 * MiB + 1)).toEqual(['size']);
-    expect(pathRules('site/posters/sub/D01.jpg', 6 * MiB)).toEqual(['size']);
+    expect(pathRules('content/uiux-engineers/generated/posters/sub/D01.jpg', 6 * MiB)).toEqual(['size']);
   });
 });
 

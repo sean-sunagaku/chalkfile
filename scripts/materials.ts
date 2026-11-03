@@ -20,8 +20,9 @@ import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { COURSES, coursesIn } from '../content';
 import { LANGS, type Lang } from '../content/i18n';
 import type { Course, Line, SfxId, VoiceId } from '../content/types';
+import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { pullMedia } from './media';
-import { KOKORO, speechIn, ttsKeyIn, VOICES } from './voices';
+import { ttsKeyIn } from './voices';
 
 const TTS = '.work/tts';
 const README = 'README.md';
@@ -153,12 +154,18 @@ const courseKeys = (s: Scripts, only?: string[]): CourseKeys[] =>
     return { id: course.id, langs, keys: [...keys].sort(), about: `${course.title}（${course.lectures.length} ${unit}・${langs.join('・')}）` };
   });
 
-/** 取り出した台本のフォルダから、鍵を作るもの（台本と声の設定）を読む */
+/**
+ * 取り出した台本のフォルダから、鍵を作るもの（台本と声の設定）を読む。読み上げる文（speechIn）は content/voices.ts にあり、
+ * それより前の版（2026-11-03 まで）は scripts/voices.ts にある
+ */
 const scriptsIn = async (dir: string): Promise<Scripts> => {
   const index = (await import(path.join(dir, 'content/index.ts'))) as typeof import('../content');
   const i18n = (await import(path.join(dir, 'content/i18n.ts'))) as typeof import('../content/i18n');
-  const voices = (await import(path.join(dir, 'scripts/voices.ts'))) as typeof import('./voices');
-  return { COURSES: index.COURSES, coursesIn: index.coursesIn, LANGS: i18n.LANGS, speechIn: voices.speechIn, ttsKeyIn: voices.ttsKeyIn };
+  const voices = (await import(path.join(dir, 'scripts/voices.ts'))) as typeof import('./voices') & Partial<Pick<Scripts, 'speechIn'>>;
+  const speech = existsSync(path.join(dir, 'content/voices.ts')) ? ((await import(path.join(dir, 'content/voices.ts'))) as Partial<Pick<Scripts, 'speechIn'>>) : {};
+  const speechInRef = speech.speechIn ?? voices.speechIn;
+  if (!speechInRef) throw new Error('読み上げる文の作り方（speechIn）が content/voices.ts にも scripts/voices.ts にも無い');
+  return { COURSES: index.COURSES, coursesIn: index.coursesIn, LANGS: i18n.LANGS, speechIn: speechInRef, ttsKeyIn: voices.ttsKeyIn };
 };
 
 /** gc で残すもの（--keep の ref と、その台本の講座ごとの鍵） */
@@ -313,7 +320,7 @@ ${rows.join('\n')}
 \`\`\`bash
 bun scripts/materials.ts pull                    # 全部の講座の素材を .work/tts/ と public/audio/ に取り出す
 bun scripts/materials.ts pull nudge-product      # 1 つの講座だけ
-bun scripts/materials.ts pull --videos           # Releases の動画も site/media/ に取り出す（ポスターは site/posters/）
+bun scripts/materials.ts pull --videos           # Releases の動画も site/media/ に取り出す（ポスターは講座のフォルダの generated/posters/）
 bun scripts/materials.ts push --dry-run          # 足す・変える・同じ・残すの本数だけを見る（何も書かない）
 \`\`\`
 

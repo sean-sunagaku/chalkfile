@@ -113,7 +113,7 @@ try {
       const download = p.waitForEvent('download'); await p.locator('#fileDownload').click(); const file = await download;
       expect(await file.failure()).toBeNull();
       const digest = createHash('sha256').update(readFileSync((await file.path())!)).digest('hex');
-      const manifest = JSON.parse(readFileSync(path.join(root, 'site/media-manifest.json'), 'utf8'));
+      const manifest = JSON.parse(readFileSync(path.join(root, 'content/rive-comedy/generated/media.ja.json'), 'utf8'));
       expect(digest).toBe(manifest.entries.find((m: any) => m.lecture === 'R01' && m.kind === 'standard').sha256);
       output.offlineRestartPlayback = checks; output.captionToggleAndSeek = true; output.downloadSha256 = digest;
       await p.screenshot({ path: path.join(evidence, 'production-offline-restarted.png') });

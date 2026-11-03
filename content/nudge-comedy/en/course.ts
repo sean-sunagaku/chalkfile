@@ -2,7 +2,7 @@ import type { CourseL10n } from '../../i18n';
 import { SOURCES_EN } from './sources';
 import { W01 } from './W01';
 
-/** 「笑って覚えるナッジ理論」の英語版。声は Kokoro（scripts/voices.ts の KOKORO.en）。真面目版（nudge-product）は日本語だけなので、リンクにそう書く */
+/** 「笑って覚えるナッジ理論」の英語版。声は Kokoro（content/voices.ts の KOKORO.en）。真面目版（nudge-product）は日本語だけなので、リンクにそう書く */
 export const NUDGE_COMEDY_EN: CourseL10n = {
   title: 'Laugh & Learn: Nudge Theory',
   subtitle: 'The comedy version of the nudge course, learned through a comic double act',

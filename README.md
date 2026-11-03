@@ -7,17 +7,22 @@
 
 ## Chalkfile で作った講座
 
-| 講座 | 中身 | 長さ |
-|---|---|---|
-| [Stripe サブスク課金 基礎講座](https://chalkfile.com/stripe-billing/) | Stripe のサブスク課金の概念とデータの形、架空の「サンプルアプリ」で作る流れ（Checkout・Webhook・DB との同期・判定・Customer Portal・テスト）、お金・法律・iOS | 13 本・約 56 分 |
-| [ナッジ理論をプロダクト改善に活かす](https://chalkfile.com/nudge-product/)（`nudge-product`） | 選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間、ダークパターンとの境界、行動 → 障壁 → 施策 → 検証 | 7 章・約 51 分 |
-| [エンジニアのための UI・UX デザイン](https://chalkfile.com/uiux-engineers/)（`uiux-engineers`） | 目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ、問題発見 → 改善案 → プロトタイプ → 利用者テスト | 8 章・約 59 分 |
-| [個人開発者のためのマーケティング](https://chalkfile.com/indie-marketing/)（`indie-marketing`） | 顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定、売上と利益、少ないデータの読み方 | 8 章・約 60 分 |
-| [笑って覚えるナッジ理論](https://chalkfile.com/nudge-comedy/)（`nudge-comedy`。英語・中国語の訳あり（未公開） | ナッジ講座のお笑い版。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、ナッジと強制・お金・ダークパターンの違い、良いナッジの 3 つの条件を覚える（中身と出典は真面目版と同じ） | 1 章（試作）・約 8 分 |
-| [笑ってわかる Rive アニメーション](https://chalkfile.com/rive-comedy/)（`rive-comedy`。英語・中国語の訳あり（未公開） | Rive をざっくり知るお笑い版（ずんだもん・先生・天の声）。エディタとランタイム、.riv、ステートマシン、対応する環境と注意点 | 1 本・約 4 分 |
-| [笑ってわかる pstack](https://chalkfile.com/pstack-comedy/)（`pstack-comedy`。英語・中国語の訳あり（未公開） | Cursor 向けのスキル集 pstack をざっくり知るお笑い版（ずんだもん・先生・天の声）。考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と使う前の注意 | 1 本・約 5 分 |
-| [笑ってわかる Super-agent](https://chalkfile.com/superagent-comedy/)（`superagent-comedy`。英語・中国語の訳あり（未公開） | DeepSeek Harness チームの設計記事「Exploring Super-agent Design」を読み解くお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加するふるいゲームも）。会話（セッション）に縛られないエージェントの 4 つの性質と 5 つの部品（二層構造・イベント駆動・全二重とチャンネル・計算と状態と環境の分離・Watchdog）、記事の予備の実験、残る課題 | 6 章・約 47 分 |
-| [笑ってわかる GA4](https://chalkfile.com/ga4-comedy/)（`ga4-comedy`） | GA4（Google アナリティクス 4）を短く知るお笑い版（ずんだもん・先生・天の声。先生のボケ、見ている人が参加する問題も）。イベントとパラメータ、ディメンションと指標、サイトが送る項目名（email_entry）と値（signature）、それを「メールの入口」として見るカスタム ディメンションの設定と、保存の後の注意 | 3 章・約 10 分 |
+<!-- courses:start -->
+<!-- npm run gen が、講座の登録（content/courses.ts）と timeline から作る。手で直さない -->
+
+| 講座 | 中身 | ID | 本数 | 長さ | 訳 |
+|---|---|---|---|---|---|
+| [Stripe サブスク課金 基礎講座](https://chalkfile.com/stripe-billing/) | 概念とデータ、サンプルで作る流れ | `stripe-billing` | 13 本 | 約 56 分 | — |
+| [ナッジ理論をプロダクト改善に活かす](https://chalkfile.com/nudge-product/) | 選ぶ自由を守りながら、続けやすいプロダクトにする | `nudge-product` | 7 章 | 約 51 分 | — |
+| [エンジニアのための UI・UX デザイン](https://chalkfile.com/uiux-engineers/) | 見た目の前に、目的と流れから画面を直す | `uiux-engineers` | 8 章 | 約 59 分 | — |
+| [個人開発者のためのマーケティング](https://chalkfile.com/indie-marketing/) | 誰の・何の課題を・なぜ自分のサービスで解決するのか | `indie-marketing` | 8 章 | 約 60 分 | — |
+| [笑って覚えるナッジ理論](https://chalkfile.com/nudge-comedy/) | ナッジ講座のお笑い版。ボケとツッコミの掛け合いで覚える | `nudge-comedy` | 1 章 | 約 9 分 | 英語・中国語（未公開） |
+| [笑ってわかる Rive アニメーション](https://chalkfile.com/rive-comedy/) | Rive を、ずんだもんとざっくり知るお笑い版 | `rive-comedy` | 1 本 | 約 4 分 | 英語・中国語（未公開） |
+| [笑ってわかる pstack](https://chalkfile.com/pstack-comedy/) | Cursor 向けのスキル集 pstack の考え方と使い方 | `pstack-comedy` | 1 本 | 約 5 分 | 英語・中国語（未公開） |
+| [笑ってわかる Super-agent](https://chalkfile.com/superagent-comedy/) | セッションに縛られないエージェントの設計を、ずんだもんと読み解くお笑い版 | `superagent-comedy` | 6 章 | 約 47 分 | 英語・中国語（未公開） |
+| [笑ってわかる GA4](https://chalkfile.com/ga4-comedy/) | イベント・パラメータ・カスタム ディメンションを、サンプルのサイトの「メールの入口」で | `ga4-comedy` | 3 章 | 約 10 分 | — |
+
+<!-- courses:end -->
 
 - ナッジ・UI/UX・マーケティングの 3 講座は、章ごとの読む教材・絵コンテ・実践課題（回答例・評価基準）・AI チャットの質問例も持つ（[docs/courses/](docs/courses/README.md)）
 - 講座サイトでは、動画のほかに台本（検索できる）・チャプター・字幕・確認クイズ・自分用のメモが使える。講座をアプリ内に保存すれば、通信なしでも学べる（[使い方](docs/guide/learner-offline.md)）

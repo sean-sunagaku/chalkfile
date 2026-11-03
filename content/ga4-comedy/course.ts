@@ -10,6 +10,8 @@ import { GA4_SOURCES } from './sources';
  */
 export const GA4_COMEDY: Course = {
   id: 'ga4-comedy',
+  prefix: 'G',
+  order: 90,
   unitLabel: 'CHAPTER',
   theme: 'stage',
   disclaimer: 'Google とは関係のない、個人が作った非公式の動画です。ボケの台詞は、わざと間違えています',

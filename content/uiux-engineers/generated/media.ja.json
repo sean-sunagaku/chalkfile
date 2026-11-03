@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D01",
+      "kind": "standard",
+      "bytes": 14036566,
+      "sha256": "46252189e24f68935ca741f1a57749847230c8b12f5388c2d0c82ade88f061d9",
+      "filename": "D01.46252189e24f68935ca741f1a57749847230c8b12f5388c2d0c82ade88f061d9.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D02",
+      "kind": "standard",
+      "bytes": 15384431,
+      "sha256": "0e9616f1502cd33abbb0cf8c20df22e8425c82049e17b4e35aeabdc91ac93b46",
+      "filename": "D02.0e9616f1502cd33abbb0cf8c20df22e8425c82049e17b4e35aeabdc91ac93b46.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D03",
+      "kind": "standard",
+      "bytes": 13856440,
+      "sha256": "ea0b2ba7e0a671da9d653331a25200eec0de93a3dced6d249bdc94041b98aa67",
+      "filename": "D03.ea0b2ba7e0a671da9d653331a25200eec0de93a3dced6d249bdc94041b98aa67.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D04",
+      "kind": "standard",
+      "bytes": 14258455,
+      "sha256": "3256244433a45f4a347b527d3dd4baf8c1fd8ac06e2614b6d997405b0c8a8ea6",
+      "filename": "D04.3256244433a45f4a347b527d3dd4baf8c1fd8ac06e2614b6d997405b0c8a8ea6.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D05",
+      "kind": "standard",
+      "bytes": 16627700,
+      "sha256": "010bfce1b42bef37d0e75311fc7700fcc89fed2fc3cee678a8939b1ca13ffeea",
+      "filename": "D05.010bfce1b42bef37d0e75311fc7700fcc89fed2fc3cee678a8939b1ca13ffeea.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D06",
+      "kind": "standard",
+      "bytes": 17989170,
+      "sha256": "1438d2c2729f198b0152b86185b4ef4e1f220fa63b1c8406398027f12aef9329",
+      "filename": "D06.1438d2c2729f198b0152b86185b4ef4e1f220fa63b1c8406398027f12aef9329.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D07",
+      "kind": "standard",
+      "bytes": 18869961,
+      "sha256": "4ff63732942c24b8456aa21be1d78172ede9ea2b10fe110e3040d4eb0d19773b",
+      "filename": "D07.4ff63732942c24b8456aa21be1d78172ede9ea2b10fe110e3040d4eb0d19773b.mp4",
+      "tag": "media-ja-uiux-engineers"
+    },
+    {
+      "lang": "ja",
+      "course": "uiux-engineers",
+      "lecture": "D08",
+      "kind": "standard",
+      "bytes": 17997060,
+      "sha256": "956d4b396abde8f655247fcb23cb7cfd6672fd71c958a5ee306aec3e214bdeed",
+      "filename": "D08.956d4b396abde8f655247fcb23cb7cfd6672fd71c958a5ee306aec3e214bdeed.mp4",
+      "tag": "media-ja-uiux-engineers"
+    }
+  ]
+}

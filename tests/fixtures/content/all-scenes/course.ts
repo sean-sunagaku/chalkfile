@@ -9,6 +9,8 @@ import { X01 } from './X01';
  */
 export const ALL_SCENES: Course = {
   id: 'all-scenes',
+  prefix: 'X',
+  order: 1,
   title: '全部の場面の見本',
   subtitle: 'エンジンの単体テストと静止画の比較のための講座',
   headline: '20 種類の場面を 1 つずつ',
@@ -23,5 +25,5 @@ export const ALL_SCENES: Course = {
 };
 
 export type FixtureTimeline = { fps: number; durationInFrames: number; scenes: { start: number; duration: number; lines: { start: number; end: number }[] }[] };
-/** 動画の名前（X01）ごとの timeline（src/generated/timeline.json と同じ形） */
+/** 動画の名前（X01）ごとの timeline（content/<講座>/generated/timeline/<key>.json の時刻の部分と同じ形） */
 export const ALL_SCENES_TIMELINE = timelineJson as Record<string, FixtureTimeline>;

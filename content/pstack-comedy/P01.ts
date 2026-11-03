@@ -1,6 +1,6 @@
 import type { Lecture } from '../types';
 
-// 配役（声は scripts/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
+// 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
 const Z = 'zundamon' as const; // ボケ: ずんだもん
 const ZC = 'zundamon-cry' as const; // ボケの涙声
 const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
