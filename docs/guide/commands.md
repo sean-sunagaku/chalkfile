@@ -69,11 +69,18 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `npm run materials:pull` | 素材を取り出す（`-- --videos` で Releases の動画も） |
-| `npm run materials:check` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか |
+| `npm run materials:pull` | 素材を取り出す。台詞の声は作業フォルダの間で共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`）に置き、同じ中身があれば取り出さない（`-- --videos` で Releases の動画も） |
+| `npm run materials:check` | 台本の全部の台詞の声（共有のキャッシュか `.work/tts`）と、BGM・効果音が手元にあるか |
 | `npm run materials:push` | 素材を素材ブランチに足す（消さない。`-- --dry-run` で本数だけを見る） |
 | `npm run media:push -- --course <講座 ID>` | その講座の動画を Releases に置き、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを書き換える。訳の動画は `--lang en` も付ける |
 | `npm run media:check` | 動画の一覧・Releases・手元の動画を照らし合わせる |
+
+### 作業フォルダ
+
+| コマンド | すること |
+|---|---|
+| `npm run worktree:new -- <type>/<slug>` | 新しい作業フォルダ（git worktree）を作る。origin/main から branch と隣の `../chalkfile-<slug>` を作り、node_modules を複製して（APFS。ほかは `npm ci --ignore-scripts`）、素材を取り出す（1 分ほど）。`-- --dry-run` で何をするかだけを出す |
+| `npm run clean` | 作り直せる生成物（`out/`・`public/audio/mix/`・`site/dist/`・`.work/state/`）を消す。`-- --cache` で共有のキャッシュの台詞の声も消す（ほかの作業フォルダも使う）。`-- --dry-run` で消すものと大きさだけを出す |
 
 ## npm run に無いもの
 
@@ -127,5 +134,5 @@ bun scripts/i18n.ts status                         # 訳の表（訳あり・日
 | Worker（`npm run dev:worker`） | 8787 | `npm run dev:worker -- --port 8788` |
 | ブラウザのテスト（`npm run test:e2e`） | 8877 | `playwright.config.ts` と `tests/browser-server.ts` で決めている。作業フォルダが違っても、同時に 2 つ流さない |
 
-- Claude Code のプレビュー（`.claude/launch.json`）は、`site`（8765）・`studio`（3000）・`worker`（8787）を起動できる。`worker` は `site/dist` を配るので、先に `npm run build:site` を流す。起動してよいコマンドは `scripts/check_content.ts` の一覧で決めている（[safety.md](../../.claude/skills/study-video-course/references/safety.md) の 6）
+- Claude Code のプレビュー（`.claude/launch.json`）は、`site`（8765）・`studio`（3000）・`worker`（8787）を、`npm run serve`・`npm run studio -- --port <番号>`・`npm run dev:worker -- --port <番号>` で起動する（npx は手元に無い依存を取ってくるので使わない）。`worker` は `site/dist` を配るので、先に `npm run build:site` を流す。起動してよいコマンドと、その scripts の中身は `scripts/check_content.ts` の一覧で決めている（[safety.md](../../.claude/skills/study-video-course/references/safety.md) の 6）
 - 証跡: ブラウザのテストは `/tmp/chalkfile-pwa-evidence/` に書く（`CHALKFILE_EVIDENCE_DIR` で変える）。本番の確かめは `.work/evidence/` に書く。どちらも Git に入れない

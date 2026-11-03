@@ -53,7 +53,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 複数の AI のセッションと人が、同時に別々の branch で作業する。ぶつからないためのきまり。
 
 - 本流は main だけ。branch は main の最新から切る（`git fetch origin` → `git switch -c <type>/<slug> origin/main`）。1 つの branch に入れるのは、1 つの講座か 1 つの機能
-- 作業フォルダを分けるときは worktree を使う（`git worktree add -b <type>/<slug> ../chalkfile-<slug> origin/main` → その中で `npm ci --ignore-scripts`）。声のキャッシュ（`.work/tts`）は作業フォルダごとにあるので、`npm run materials:pull` で取り出す
+- 作業フォルダを分けるときは `npm run worktree:new -- <type>/<slug>` で作る（origin/main から branch と隣の `../chalkfile-<slug>` を作り、依存と素材まで用意する。1 分ほど）。台詞の声は、作業フォルダの間で共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`）に置くので、作業フォルダごとに作り直さない。作り直せる生成物は `npm run clean` で消せる
 - 作業が長くなったら、PR を更新する前に main を取り込む（`git fetch origin && git merge origin/main`）
 - 講座のことは講座のフォルダ（`content/<講座 ID>/`）に閉じる。講座を足す PR が触るのは、自分の講座のフォルダと、登録表 `content/courses.ts` の 1 行だけ（`.gitattributes` の `merge=union` で、並行で足した行は両方残る）。講座の台本・登録（`index.ts`）・生成物（`generated/` の timeline・ポスター・動画の一覧）は、その講座のフォルダにある
 - レクチャー ID の頭文字（`prefix`）と一覧の並び（`order`）は、[new-course.md](docs/guide/new-course.md) の表で使っていないものを選ぶ。重なると `npm run validate` が止め、空いている文字を出す
