@@ -25,6 +25,10 @@ import tempfile
 import wave
 from pathlib import Path
 
+sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
+
+from audio.common import atomic_path
+
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -286,7 +290,9 @@ def build(lec_id: str) -> None:
     with tempfile.TemporaryDirectory() as d:
         raw = Path(d) / "raw.wav"
         write_wav(raw, mix)
-        meas = loudnorm(raw, OUT_DIR / f"{lec_id}.wav")
+        # 仕上げは一時の名前（ffmpeg が形を拡張子で決めるので .wav で終える）に書いてから置き換える。書き出し（render.sh）が書きかけの音を読まない
+        with atomic_path(OUT_DIR / f"{lec_id}.wav", ".tmp.wav") as out:
+            meas = loudnorm(raw, out)
     final = lufs(read_wav(OUT_DIR / f"{lec_id}.wav"))
     print(
         f"{lec_id}: {dur / 60:.2f} 分  ナレーション元 {v_lufs:.1f} LUFS → 仕上がり {final:.1f} LUFS"

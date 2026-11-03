@@ -12,7 +12,8 @@
 //   .work/plan/<key>.json                mix.py が読むミックスの設計図（音声はこのフォルダからの相対パス）
 //   site/data/<key>.json, <key>.vtt      講座サイトの台本と字幕
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { VIDEOS, type Video } from '../content';
 import type { Lang } from '../content/i18n';
@@ -22,6 +23,7 @@ import { timelineFile } from '../engine/core/generated';
 import { TIMELINE_SCHEMA, TIMING, timelineFingerprint, timelineJson } from '../engine/core/timeline';
 import { formatIssues, validateLecture } from '../engine/core/validate';
 import { VIDEO } from '../src/video.config';
+import { withLock, writeAtomic } from './lib/fsx';
 import { timelineFiles } from './timelines';
 import { ttsKeyIn } from './voices';
 
@@ -99,8 +101,9 @@ const synth = async (text: string, voice: VoiceId): Promise<{ file: string; sec:
   });
   if (!s.ok) throw new Error(`synthesis ${s.status}: ${text}`);
   const buf = Buffer.from(await s.arrayBuffer());
-  writeFileSync(file, buf);
-  writeFileSync(kanaFile, kana);
+  // 音声を先に、読みを後に置き換える（読みがあれば、音声も書き終えている。同じ台詞をほかの synth が同時に作っても壊れない）
+  writeAtomic(file, buf);
+  writeAtomic(kanaFile, kana);
   return { file, sec: wavSeconds(buf), kana };
 };
 
@@ -113,8 +116,8 @@ const cached = (text: string, voice: VoiceId, lang: Lang): { file: string; sec: 
   return { file, sec: wavSeconds(readFileSync(file)), kana: readFileSync(kanaFile, 'utf8') };
 };
 
-/** 訳の動画で、まだ音声の無い台詞を Kokoro でまとめて作る（モデルの読み込みを 1 回にする） */
-const kokoroAll = (videos: Video[]) => {
+/** 訳の動画で、まだ音声の無い台詞（Kokoro に渡す仕事） */
+const kokoroJobs = (videos: Video[]) => {
   const jobs = new Map<string, { key: string; text: string } & (typeof KOKORO)['en'][VoiceId]>();
   for (const vid of videos) {
     if (vid.lang === 'ja') continue;
@@ -126,16 +129,37 @@ const kokoroAll = (videos: Video[]) => {
         if (!existsSync(path.join(TTS_DIR, `${key}.wav`)) || !existsSync(path.join(TTS_DIR, `${key}.kana`))) jobs.set(key, { key, text, ...KOKORO[vid.lang][voice] });
       }
   }
-  if (!jobs.size) return;
-  const file = path.join(ROOT, '.work', 'kokoro-jobs.json');
-  writeFileSync(file, JSON.stringify([...jobs.values()]));
-  console.log(`Kokoro で ${jobs.size} 本の台詞を読み上げる（初回はモデルのダウンロードがある）`);
-  // 依存の版は scripts/tts_kokoro.py.lock で固定する（--locked: ロックと頭書きがずれていたら止まる）
-  const r = spawnSync('uv', ['run', '--quiet', '--locked', '--script', path.join(ROOT, 'scripts/tts_kokoro.py'), file, TTS_DIR], { cwd: ROOT, stdio: 'inherit' });
-  rmSync(file, { force: true });
-  if (r.error || r.status !== 0) {
-    throw new Error('Kokoro の読み上げに失敗した。uv が要る（docs/guide/quickstart.md の「前提の道具」）。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）', { cause: r.error });
-  }
+  return [...jobs.values()];
+};
+
+/**
+ * 訳の動画で、まだ音声の無い台詞を Kokoro でまとめて作る（モデルの読み込みを 1 回にする）。
+ * ほかの synth が Kokoro を流している間は待ち（ロック）、終わってから足りない台詞を数え直す（同じ台詞を 2 回作らない）
+ */
+const kokoroAll = async (videos: Video[]) => {
+  if (!kokoroJobs(videos).length) return;
+  await withLock(
+    path.join(TTS_DIR, '.kokoro.lock'),
+    () => {
+      const jobs = kokoroJobs(videos);
+      if (!jobs.length) return;
+      // ジョブのファイルは、流すたびに別の一時フォルダに置く（同時に流した synth のジョブと混ざらない）
+      const tmp = mkdtempSync(path.join(tmpdir(), 'chalkfile-kokoro-'));
+      try {
+        const file = path.join(tmp, 'jobs.json');
+        writeFileSync(file, JSON.stringify(jobs));
+        console.log(`Kokoro で ${jobs.length} 本の台詞を読み上げる（初回はモデルのダウンロードがある）`);
+        // 依存の版は scripts/tts_kokoro.py.lock で固定する（--locked: ロックと頭書きがずれていたら止まる）
+        const r = spawnSync('uv', ['run', '--quiet', '--locked', '--script', path.join(ROOT, 'scripts/tts_kokoro.py'), file, TTS_DIR], { cwd: ROOT, stdio: 'inherit' });
+        if (r.error || r.status !== 0) {
+          throw new Error('Kokoro の読み上げに失敗した。uv が要る（docs/guide/quickstart.md の「前提の道具」）。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）', { cause: r.error });
+        }
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+    { what: 'Kokoro の読み上げ', timeoutMs: 60 * 60_000, log: console.log },
+  );
 };
 
 type TimedLine = { start: number; end: number; file: string; text: string; voice: VoiceId; sfx?: string; sfxAfter?: string; bgm?: string; pauseAfter: number };
@@ -171,8 +195,8 @@ const buildLecture = async (lec: Lecture, lang: Lang, key: string) => {
     scenes.push({ kind: scene.kind, heading: scene.heading ?? '', start, end, lines });
     t = end;
   }
-  writeFileSync(path.join(KANA_DIR, `${key}.txt`), kanaLog.join('\n'));
-  if (lang !== 'ja') writeFileSync(path.join(SPEECH_DIR, `${key}.json`), JSON.stringify({ key, lang, lines: speech }, null, 1));
+  writeAtomic(path.join(KANA_DIR, `${key}.txt`), kanaLog.join('\n'));
+  if (lang !== 'ja') writeAtomic(path.join(SPEECH_DIR, `${key}.json`), JSON.stringify({ key, lang, lines: speech }, null, 1));
   return { scenes, duration: t };
 };
 
@@ -207,21 +231,14 @@ if (invalid.length) {
   console.error(formatIssues(invalid));
   throw new Error(`台本に誤りが ${invalid.length} 件ある。直してから合成する（全部の講座の一覧は bun scripts/validate.ts）`);
 }
-if (!CACHE_ONLY) kokoroAll(targets);
-
-/** 一時の名前に書いてから置き換える（途中で止まっても、前の中身か新しい中身のどちらかになる。同時に流しても壊れない） */
-const writeAtomic = (file: string, text: string) => {
-  mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
-  writeFileSync(tmp, text);
-  renameSync(tmp, file);
-};
+if (!CACHE_ONLY) await kokoroAll(targets);
 
 for (const { key, lang, lecture: lec, course } of targets) {
   const t0 = Date.now();
   const { scenes, duration } = await buildLecture(lec, lang, key);
 
-  // 自分の動画のファイルだけを書く（講座のフォルダの generated/timeline/<key>.json。ほかの動画のファイルには触らない）
+  // 自分の動画のファイルだけを書く（講座のフォルダの generated/timeline/<key>.json。ほかの動画のファイルには触らない）。
+  // どのファイルも一時の名前に書いてから置き換える（別々の動画の synth を同時に流しても、書きかけのファイルが見えない）
   writeAtomic(
     path.join(ROOT, timelineFile(course.id, key)),
     timelineJson({
@@ -238,7 +255,7 @@ for (const { key, lang, lecture: lec, course } of targets) {
     }),
   );
 
-  writeFileSync(
+  writeAtomic(
     path.join(PLAN_DIR, `${key}.json`),
     JSON.stringify(
       {
@@ -261,7 +278,7 @@ for (const { key, lang, lecture: lec, course } of targets) {
   const cast = course.cast ?? {};
   const said = (l: TimedLine) => (cast[l.voice] ? `${cast[l.voice]!.name}：${l.text}` : l.text);
   const cues = scenes.flatMap((s, si) => s.lines.map((l) => ({ start: +l.start.toFixed(2), end: +l.end.toFixed(2), text: said(l), scene: si, heading: s.heading })));
-  writeFileSync(
+  writeAtomic(
     path.join(SITE_DATA, `${key}.json`),
     JSON.stringify({ id: key, duration: +duration.toFixed(2), chapters: scenes.map((s, si) => ({ scene: si, start: +s.start.toFixed(2), heading: s.heading || lec.title, kind: s.kind })), cues }),
   );
@@ -271,7 +288,7 @@ for (const { key, lang, lecture: lec, course } of targets) {
     const s = x % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s.toFixed(3).padStart(6, '0')}`;
   };
-  writeFileSync(path.join(SITE_DATA, `${key}.vtt`), `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${ts(c.start)} --> ${ts(c.end)}\n${c.text}\n`).join('\n')}`);
+  writeAtomic(path.join(SITE_DATA, `${key}.vtt`), `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${ts(c.start)} --> ${ts(c.end)}\n${c.text}\n`).join('\n')}`);
 
   console.log(`${key} ${(duration / 60).toFixed(2)} 分  ${scenes.length} 場面  ${cues.length} 台詞  (${((Date.now() - t0) / 1000).toFixed(0)} 秒)`);
 }

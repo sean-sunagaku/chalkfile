@@ -8,12 +8,13 @@
 //   README.md の講座の表                        <!-- courses:start --> と <!-- courses:end --> の間。講座の登録（COURSES）と timeline から
 //   docs/guide/new-course.md の頭文字の表        <!-- prefixes:start --> と <!-- prefixes:end --> の間。各講座の prefix と order から
 // 表のずれは npm run check:docs（scripts/check_docs.ts）も止める
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
 import { type Lang, TRANSLATED_LANGS, videoKey } from '../content/i18n';
 import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
+import { writeAtomic } from './lib/fsx';
 import { readMediaManifest } from './media';
 import { mediaManifestJson } from './media-lists';
 import { readTimelinesByKey } from './timelines';
@@ -148,12 +149,7 @@ if (import.meta.main) {
     process.exit(stale.length ? 1 : 0);
   }
   for (const [file, text] of outputs) {
-    if (!stale.includes(file)) continue;
-    const to = path.join(ROOT, file);
-    mkdirSync(path.dirname(to), { recursive: true });
-    const pending = path.join(path.dirname(to), `.${path.basename(to)}.${process.pid}.tmp`);
-    writeFileSync(pending, text);
-    renameSync(pending, to);
+    if (stale.includes(file)) writeAtomic(path.join(ROOT, file), text);
   }
   console.log(
     `生成物 ${outputs.size} 個（作り直した ${stale.length} 個${stale.length ? `: ${stale.join(' ')}` : ''}）`,

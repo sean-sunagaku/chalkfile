@@ -36,6 +36,10 @@ import unicodedata
 import wave
 from pathlib import Path
 
+sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
+
+from audio.common import write_atomic
+
 import numpy as np
 from scipy.signal import resample_poly
 
@@ -109,7 +113,8 @@ def main() -> None:
             if ln["file"] not in heard:
                 segs, _ = asr.transcribe(read16k(ROOT / ln["file"]), language=lang, beam_size=1, condition_on_previous_text=False)
                 heard[ln["file"]] = "".join(s.text for s in segs).strip()
-                cache_file.write_text(json.dumps(heard, ensure_ascii=False))
+                # 一時の名前に書いてから置き換える（途中で止めても、聞き取りの記録が壊れない）
+                write_atomic(cache_file, json.dumps(heard, ensure_ascii=False))
             hyp = heard[ln["file"]]
             if lang == "zh":
                 # 中国語の中の英語の語（pstack・poteto mode など）は、中国語の聞き取りでは崩れるので比べない（読みは .work/kana/ の音素で見る）。
@@ -149,7 +154,7 @@ def main() -> None:
             out.extend(f"  {ctx}  {r}" for ctx, r in seen.items())
         text = "\n".join(out)
         print(text, flush=True)
-        (SPEECH / f"{key}.report.txt").write_text(text + "\n")
+        write_atomic(SPEECH / f"{key}.report.txt", text + "\n")
     print(f"要確認 {worst_all} 台詞" if worst_all else "全部の台詞が聞き取れた（誤り率 0.25 以下）")
 
 

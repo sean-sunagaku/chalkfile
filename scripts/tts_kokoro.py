@@ -32,6 +32,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
+
+from audio.common import atomic_path, write_atomic
+
 import numpy as np
 import soundfile as sf
 from scipy.signal import resample_poly
@@ -113,8 +117,10 @@ def main() -> None:
             audio = trim(np.concatenate(parts).astype(np.float64), SR_IN)
             audio = np.concatenate([np.zeros(int(PRE * SR_IN)), audio, np.zeros(int(POST * SR_IN))])
             audio = level(resample_poly(audio, SR_OUT // SR_IN, 1), SR_OUT)
-            sf.write(out_dir / f"{j['key']}.wav", np.clip(audio, -1, 1), SR_OUT, subtype="PCM_16")
-            (out_dir / f"{j['key']}.kana").write_text(" ".join(r.phonemes for r in results))
+            # 音声を先に、読みを後に、一時の名前から置き換える（読みがあれば、音声も書き終えている。synth.ts は両方そろったものだけを使う）
+            with atomic_path(out_dir / f"{j['key']}.wav") as tmp:
+                sf.write(tmp, np.clip(audio, -1, 1), SR_OUT, subtype="PCM_16", format="WAV")
+            write_atomic(out_dir / f"{j['key']}.kana", " ".join(r.phonemes for r in results))
             done += 1
             if done % 20 == 0 or done == len(jobs):
                 print(f"Kokoro: {done}/{len(jobs)}", flush=True)

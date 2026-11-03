@@ -7,7 +7,7 @@
 // 全講座の一覧（Worker の許可リスト）は、npm run gen が講座ごとの一覧をつないで worker/src/generated/media-manifest.json に作る（Git に入れない）
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -19,6 +19,7 @@ import {
   MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, retainDeadline, retainedWarnings, validateMediaManifest,
   type MediaEntry, type MediaManifest, type RetainedMediaEntry,
 } from '../site/media-shared';
+import { writeAtomic } from './lib/fsx';
 import { mediaManifestJson, readCourseMedia, readMediaLists } from './media-lists';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -30,13 +31,6 @@ const digest = (file: string) => createHash('sha256').update(readFileSync(file))
 
 /** 全講座の動画の一覧（Worker の許可リスト・サイトの組み立て・check・serve が読む）。講座の登録（COURSES）の順につなぐ（scripts/media-lists.ts） */
 export const readMediaManifest = (root = ROOT): MediaManifest => readMediaLists(COURSES.map((c) => c.id), root);
-/** 一時の名前に書いてから置き換える（途中で止まっても、前の中身か新しい中身のどちらかになる） */
-function writeAtomic(file: string, text: string) {
-  mkdirSync(path.dirname(file), { recursive: true });
-  const pending = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
-  writeFileSync(pending, text);
-  renameSync(pending, file);
-}
 
 /* ───────────── GitHub ───────────── */
 
@@ -233,7 +227,8 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
       verifyReleaseAssets(fresh.filter((e) => e.tag === tag), assetsOf(tag, gh));
       log(`${tag}: 新規 ${missing.length} 本（既存のハッシュは保持）`);
     }
-    // 選んだ講座の公開 asset を全部確かめてから、その講座の一覧だけを書き直す（ほかの講座の一覧のファイルには触らない）
+    // 選んだ講座の公開 asset を全部確かめてから、その講座の一覧だけを書き直す（ほかの講座の一覧のファイルには触らない）。
+    // 一覧は、同じフォルダの一時の名前に書いてから置き換える（途中で止まっても、前の一覧か新しい一覧のどちらかになる）
     for (const u of updates) {
       writeAtomic(path.join(root, u.file), mediaManifestJson(u.manifest));
       checkMedia(u.manifest, gh, root, log);
