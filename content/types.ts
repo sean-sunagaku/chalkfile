@@ -1,5 +1,6 @@
 // 講座の台本と画面構成のデータ型。
 // 画面の要素は `at`（その場面の何番目の台詞の頭で出すか、0 始まり）でナレーションに同期させる。
+import type { IconName } from '../src/components/icons';
 import type { Lang } from './i18n';
 
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
@@ -13,79 +14,8 @@ export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | '
 /** 効果音。harisen 以降はお笑い版の掛け合い用（ツッコミ・スベり・溜め・衝撃・ずっこけ） */
 export type SfxId = 'pop' | 'whoosh' | 'chime' | 'tick' | 'reveal' | 'correct' | 'type' | 'harisen' | 'chin' | 'drumroll' | 'deden' | 'zuko';
 
-export type IconName =
-  | 'user'
-  | 'browser'
-  | 'server'
-  | 'database'
-  | 'card'
-  | 'bell'
-  | 'receipt'
-  | 'tag'
-  | 'box'
-  | 'file'
-  | 'portal'
-  | 'shield'
-  | 'clock'
-  | 'flask'
-  | 'key'
-  | 'check'
-  | 'x'
-  | 'repeat'
-  | 'zap'
-  | 'lock'
-  | 'heart'
-  | 'phone'
-  | 'code'
-  | 'book'
-  | 'scale'
-  | 'yen'
-  | 'flag'
-  | 'list'
-  | 'alert'
-  | 'link'
-  | 'gift'
-  | 'calendar'
-  | 'route'
-  | 'search'
-  | 'layers'
-  | 'eye'
-  | 'target'
-  | 'megaphone'
-  | 'users'
-  | 'chart'
-  | 'palette'
-  | 'type'
-  | 'pointer'
-  | 'message'
-  | 'idea'
-  | 'sliders'
-  | 'hand'
-  | 'compass'
-  | 'pen'
-  | 'clipboard'
-  | 'thumbsup'
-  | 'ban'
-  | 'coins'
-  | 'store'
-  | 'sparkles'
-  | 'help'
-  | 'mail'
-  | 'funnel'
-  | 'layout'
-  | 'puzzle'
-  | 'footprints'
-  | 'brain'
-  | 'gauge'
-  | 'smile'
-  | 'frown'
-  | 'wallet'
-  | 'rocket'
-  | 'handshake'
-  | 'hourglass'
-  | 'contrast'
-  | 'ruler'
-  | 'input';
+/** 台本の icon に書ける名前。一覧は src/components/icons.ts の ICONS（名前は lucide-react の名前ではなく、短い独自の名前） */
+export type { IconName };
 
 export type Line = {
   /** 画面の台本・字幕に出す文 */
@@ -119,6 +49,11 @@ export type OpeningScene = Base & {
   /** タイトルの上の札。省略すると出さない */
   section?: string;
   title: string;
+  /**
+   * タイトルを行に分けて出す（2 行以上なら 1 行目をグラデーションの文字にする）。書かなければ title を 1 行で出す。
+   * 古い書き方（title の全角の空白か改行で分ける）も描けるが、台本の検証が注意を出す（engine/core/legacy.ts）
+   */
+  titleLines?: string[];
   /** タイトルの下の一文。省略すると出さない */
   subtitle?: string;
 };
@@ -154,7 +89,15 @@ export type ConceptsScene = Base & {
 
 export type SequenceScene = Base & {
   kind: 'sequence';
-  actors: { key: string; label: string; sub?: string; tone: Tone; icon: IconName }[];
+  actors: {
+    key: string;
+    label: string;
+    sub?: string;
+    /** sub を等幅の書体で出す（URL やパスのとき）。古い書き方（sub に / があれば等幅）も描けるが、台本の検証が注意を出す */
+    subMono?: boolean;
+    tone: Tone;
+    icon: IconName;
+  }[];
   steps: {
     from: string;
     to: string;
@@ -203,7 +146,21 @@ export type FlowScene = Base & {
 
 export type StatesScene = Base & {
   kind: 'states';
-  nodes: { key: string; code: string; ja: string; x: number; y: number; tone: Tone; at: number; badge?: string }[];
+  nodes: {
+    key: string;
+    code: string;
+    ja: string;
+    x: number;
+    y: number;
+    tone: Tone;
+    at: number;
+    badge?: string;
+    /**
+     * 箱の見た目。start は始まりの見た目（点線の枠・ごく薄い面・太い本文の書体）、state（既定）は状態の見た目（等幅の書体）。
+     * 古い書き方（key が 'start' の箱を始まりの見た目にする）も描けるが、台本の検証が注意を出す
+     */
+    variant?: 'start' | 'state';
+  }[];
   edges: {
     from: string;
     to: string;
@@ -275,7 +232,16 @@ export type NumbersScene = Base & {
 
 export type TimelineScene = Base & {
   kind: 'timeline';
-  items: { key: string; title: string; sub: string; detail?: string; at: number; tone: Tone }[];
+  items: {
+    key: string;
+    /** 題の上の小さな札（例: STEP 1）。古い書き方（title を全角の空白で札と題に分ける）も描けるが、台本の検証が注意を出す */
+    kicker?: string;
+    title: string;
+    sub: string;
+    detail?: string;
+    at: number;
+    tone: Tone;
+  }[];
   focus?: { key: string | null; at: number }[];
 };
 
@@ -308,6 +274,8 @@ export type PhoneScreen = {
   /** 名前の下の小さな文字（例: 架空のアプリ）。書かなければ出さない */
   brandSub?: string;
   lead?: string;
+  /** lead を等幅の書体で出す（URL の一部など）。古い書き方（lead が ? で始まれば等幅）も描けるが、台本の検証が注意を出す */
+  leadMono?: boolean;
   body: string[];
   primary?: string;
   secondary?: string;
@@ -661,4 +629,30 @@ export type Theme = {
   decor: 'chalk' | 'band' | 'stars';
   /** カードの角の丸み（px） */
   radius: number;
+  /**
+   * 暗い地（scheme が dark）の面と線の色。暗い地のテーマには必ず書く。明るい地は color から作るので書かない。
+   * 地の暗さと色みで合う値が違うので、テーマごとに決める（NIGHT は最初の版の値）。CSS の色（#RRGGBB か rgba()）で書く
+   */
+  dark?: DarkSurfaces;
+};
+
+/** 暗い地の面と線（Theme の dark） */
+export type DarkSurfaces = {
+  /** カードの面（上と下）。地に白を薄く重ねる */
+  glass: string;
+  glass2: string;
+  /** 図の上に重ねる札の面（矢印の文字・クイズの判定・比べるの結論） */
+  overlay: string;
+  /** 色の付かない矢印・線 */
+  edge: string;
+  /** 縦の補助線（やりとりの図） */
+  lane: string;
+  /** 進み具合の溝 */
+  track: string;
+  /** タイトルの後ろを横切る薄い光 */
+  sheen: string;
+  /** ごく薄い面（始まりの状態・選ばれていない丸） */
+  faint: string;
+  /** 図の色（tone の main）の上に乗せる文字 */
+  onTone: string;
 };

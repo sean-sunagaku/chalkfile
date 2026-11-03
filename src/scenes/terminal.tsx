@@ -1,21 +1,23 @@
 // 場面「terminal」: 端末（コマンドと出力、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { TerminalOut, TerminalScene } from '../../content/types';
+import type { TerminalOut, TerminalScene, Theme } from '../../content/types';
 import { terminalText } from '../../engine/core/scenes';
-import { Glass, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, mix, MONO, PAD, SANS, SYNTAX } from '../theme';
-import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import { WINDOW_LIGHTS } from '../components/app-colors';
+import { NoteCard } from '../components/ui';
+import { CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
+import { dropY, lineStart, ramp, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 /** 出力の行の色（書かなければ薄い色。ok は成功、info は目を向けてほしい行） */
-const outColor = (o: TerminalOut) => {
+const outColor = (o: TerminalOut, SYNTAX: Theme['syntax']) => {
   const t = typeof o === 'string' ? undefined : o.tone;
   return t === 'ok' ? SYNTAX.string : t === 'info' ? SYNTAX.fn : SYNTAX.comment;
 };
 
 const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
+  const { C, MONO, SYNTAX } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const box = useAppear(0);
@@ -48,7 +50,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
             position: 'absolute',
             inset: 0,
             borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`,
+            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
             border: `1.5px solid ${C.line2}`,
             boxShadow: C.shadow,
             overflow: 'hidden',
@@ -65,7 +67,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
               background: C.codeBar,
             }}
           >
-            {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
+            {WINDOW_LIGHTS.editor.map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
             <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.codeMuted }}>{s.title}</div>
@@ -81,10 +83,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
                   }),
                 )
               : 0;
-            const outO = interpolate(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), [0, 8], [0, 1], {
-              extrapolateLeft: 'clamp',
-              extrapolateRight: 'clamp',
-            });
+            const outO = ramp(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), 0, 8);
             if (frame < st) return null;
             return (
               <div
@@ -113,7 +112,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
                     key={k}
                     style={{
                       whiteSpace: 'pre',
-                      color: outColor(o),
+                      color: outColor(o, SYNTAX),
                       opacity: outO,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -155,11 +154,7 @@ const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> 
         transform: `translateX(${(1 - p) * -16}px)`,
       }}
     >
-      <Glass t="mint" active={on ? 1 : 0} style={{ padding: '18px 22px' }}>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 25, color: C.ink, lineHeight: 1.4 }}>
-          <Smart text={text} t="mint" />
-        </div>
-      </Glass>
+      <NoteCard text={text} t="mint" active={on ? 1 : 0} size={25} lineHeight={1.4} style={{ padding: '18px 22px' }} />
     </div>
   );
 };

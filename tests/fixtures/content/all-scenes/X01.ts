@@ -101,7 +101,7 @@ export const X01: Lecture = {
       kind: 'states',
       heading: '状態',
       nodes: [
-        { key: 'start', code: 'はじめ', ja: '作る前', x: 380, y: 600, tone: 'slate', at: 0 },
+        { key: 'start', code: 'はじめ', ja: '作る前', x: 380, y: 600, tone: 'slate', at: 0, variant: 'start' },
         { key: 'active', code: 'active', ja: '使える', x: 960, y: 600, tone: 'mint', at: 1, badge: 'OK' },
         { key: 'canceled', code: 'canceled', ja: '終わり', x: 1540, y: 600, tone: 'coral', at: 2 },
       ],
@@ -173,9 +173,9 @@ export const X01: Lecture = {
       kind: 'timeline',
       heading: '時系列',
       items: [
-        { key: 'write', title: 'STEP 1　書く', sub: '1 日目', detail: '台本を書く', at: 0, tone: 'cyan' },
-        { key: 'voice', title: 'STEP 2　声', sub: '2 日目', detail: '声を作る', at: 1, tone: 'amber' },
-        { key: 'video', title: 'STEP 3　動画', sub: '3 日目', at: 2, tone: 'mint' },
+        { key: 'write', kicker: 'STEP 1', title: '書く', sub: '1 日目', detail: '台本を書く', at: 0, tone: 'cyan' },
+        { key: 'voice', kicker: 'STEP 2', title: '声', sub: '2 日目', detail: '声を作る', at: 1, tone: 'amber' },
+        { key: 'video', kicker: 'STEP 3', title: '動画', sub: '3 日目', at: 2, tone: 'mint' },
       ],
       focus: [
         { key: 'write', at: 0 },

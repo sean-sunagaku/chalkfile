@@ -1,35 +1,40 @@
 // 場面「phone」: スマホの画面の流れ
 import React from 'react';
-import { interpolate, useCurrentFrame } from 'remotion';
+import { useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../content/types';
+import { DEVICE, PHONE_APP } from '../components/app-colors';
 import { Icon, Smart } from '../components/ui';
-import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES } from '../theme';
-import { dropY, lineStart, useAppear, useScene } from '../timing';
+import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
+import { dropY, lineStart, ramp, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
+/** 架空のアプリの色（講座のテーマではなく、そのアプリの色。src/components/app-colors.ts） */
+const A = PHONE_APP;
+
 const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
+  const { MONO, SANS } = usePalette();
   const done = sc.kind === 'done';
   return (
     <div
       style={{
         position: 'absolute',
         inset: 0,
-        background: done ? '#F1FFF8' : '#FFF4F8',
+        background: A.bg[sc.kind],
         padding: '64px 22px 22px',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: SANS,
       }}
     >
-      <div style={{ fontWeight: 900, fontSize: 25, color: '#E2477F', letterSpacing: 1 }}>{sc.brand}</div>
-      {sc.brandSub ? <div style={{ fontSize: 17, color: '#9A6B7E', marginTop: 2 }}>{sc.brandSub}</div> : null}
+      <div style={{ fontWeight: 900, fontSize: 25, color: A.brand, letterSpacing: 1 }}>{sc.brand}</div>
+      {sc.brandSub ? <div style={{ fontSize: 17, color: A.brandSub, marginTop: 2 }}>{sc.brandSub}</div> : null}
       <div
         style={{
           marginTop: 22,
           borderRadius: 22,
-          background: '#FFFFFF',
-          boxShadow: '0 12px 30px rgba(226,71,127,0.14)',
+          background: A.card,
+          boxShadow: A.cardShadow,
           padding: '24px 20px',
           display: 'flex',
           flexDirection: 'column',
@@ -44,20 +49,20 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
               width: 76,
               height: 76,
               borderRadius: 99,
-              background: '#D9FBEC',
+              background: A.check.bg,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Icon name="check" size={44} color="#1F9D6E" stroke={3} />
+            <Icon name="check" size={44} color={A.check.fg} stroke={3} />
           </div>
         ) : null}
         <div
           style={{
             fontSize: 29,
             fontWeight: 900,
-            color: '#2A2238',
+            color: A.ink,
             lineHeight: 1.3,
             textAlign: done ? 'center' : 'left',
           }}
@@ -68,8 +73,8 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
           style={{
             fontSize: 20,
             fontWeight: 700,
-            color: done ? '#1F9D6E' : '#E2477F',
-            fontFamily: sc.lead?.startsWith('?') ? MONO : SANS,
+            color: A.lead[sc.kind],
+            fontFamily: sc.leadMono ? MONO : SANS,
             textAlign: done ? 'center' : 'left',
             wordBreak: 'break-all',
           }}
@@ -85,7 +90,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
                 gap: 8,
                 alignItems: 'flex-start',
                 fontSize: 20,
-                color: '#4A4058',
+                color: A.body,
                 lineHeight: 1.45,
               }}
             >
@@ -94,7 +99,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
                   width: 7,
                   height: 7,
                   borderRadius: 9,
-                  background: done ? '#1F9D6E' : '#E2477F',
+                  background: A.lead[sc.kind],
                   marginTop: 10,
                   flexShrink: 0,
                 }}
@@ -109,10 +114,8 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
               style={{
                 height: 62,
                 borderRadius: 999,
-                background: done
-                  ? 'linear-gradient(90deg, #22B07D, #3FD3A0)'
-                  : 'linear-gradient(90deg, #E2477F, #FF7BA8)',
-                color: 'white',
+                background: A.primary[sc.kind],
+                color: A.onPrimary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -124,7 +127,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
             </div>
           ) : null}
           {sc.secondary ? (
-            <div style={{ textAlign: 'center', fontSize: 20, color: '#8E8299', fontWeight: 700 }}>{sc.secondary}</div>
+            <div style={{ textAlign: 'center', fontSize: 20, color: A.secondary, fontWeight: 700 }}>{sc.secondary}</div>
           ) : null}
         </div>
       </div>
@@ -133,6 +136,7 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
 };
 
 const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
+  const { C, MONO, SANS, TONES } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const appear = useAppear(0);
@@ -141,10 +145,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
   starts.forEach((st, i) => {
     if (frame >= st) cur = i;
   });
-  const enter =
-    cur >= 0
-      ? interpolate(frame - starts[cur], [0, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-      : 0;
+  const enter = cur >= 0 ? ramp(frame - starts[cur], 0, 14) : 0;
   const pw = 450;
   const ph = 772;
   const px = PAD + 120;
@@ -168,9 +169,9 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
             position: 'absolute',
             inset: 0,
             borderRadius: 56,
-            background: '#05070F',
-            border: '2px solid rgba(255,255,255,0.22)',
-            boxShadow: `${C.shadow}, 0 0 60px rgba(255,111,163,0.18)`,
+            background: DEVICE.phone.body,
+            border: `2px solid ${DEVICE.phone.rim}`,
+            boxShadow: `${C.shadow}, 0 0 60px ${DEVICE.phone.glow}`,
           }}
         />
         <div
@@ -182,7 +183,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
             bottom: 14,
             borderRadius: 44,
             overflow: 'hidden',
-            background: '#1A1F38',
+            background: DEVICE.phone.screen,
           }}
         >
           {sc ? (
@@ -201,7 +202,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
               width: 110,
               height: 30,
               borderRadius: 99,
-              background: '#05070F',
+              background: DEVICE.phone.notch,
             }}
           />
         </div>

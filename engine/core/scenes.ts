@@ -81,7 +81,7 @@ export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
   },
   timeline: {
     label: '時間の流れ',
-    describe: (s) => s.items.map((x) => `${x.title}（${x.sub}）`).join(' → '),
+    describe: (s) => s.items.map((x) => `${x.kicker ? `${x.kicker}　` : ''}${x.title}（${x.sub}）`).join(' → '),
   },
   quiz: {
     label: '○×クイズ',

@@ -69,7 +69,7 @@
   "plugins": [
     // 描画と台本で、乱数・今の時刻を使わない（error）
     { "path": "./biome/plugins/no-nondeterminism.grit", "includes": ["src/**", "content/**"] },
-    // 部品に色を直接書かない（今は warn。T3A-05 で直書きを片付けてから error にする）
+    // 部品に色を直接書かない（error。そのものの色は src/components/app-colors.ts に、理由を書いた抑止で書く）
     { "path": "./biome/plugins/no-hardcoded-color.grit", "includes": ["src/scenes/**", "src/components/**"] }
   ],
   "overrides": [

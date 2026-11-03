@@ -1,19 +1,10 @@
 // 講座のテーマ（content/themes.ts）から、講座サイトの書体の読み込みと色の決まり（CSS）を作る。
-// 動画（src/theme.ts）と同じテーマの値から作るので、動画とサイトのトンマナがそろう。
+// 動画と同じパレット（engine/core/theme.ts の derivePalette）と色の計算（engine/core/color.ts）から作るので、動画とサイトのトンマナがそろう。
+// 図の文字色（--pink など）は、パレットの site.toneText（動画の文字色と、混ぜる割合が違う。そろえるのは計画の T3A-14）
 import type { Lang } from '../content/i18n';
-import { fontsFor } from '../content/themes';
 import type { FontKey, Theme } from '../content/types';
-
-const rgb = (hex: string) => {
-  const h = hex.replace('#', '');
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-};
-const alpha = (hex: string, a: number) => `rgba(${rgb(hex).join(',')},${a})`;
-const mix = (a: string, b: string, t: number) => {
-  const x = rgb(a);
-  const y = rgb(b);
-  return `#${x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('')}`;
-};
+import { alpha } from '../engine/core/color';
+import { derivePalette } from '../engine/core/theme';
 
 const FONT: Record<FontKey, { family: string; query: string }> = {
   'zen-maru': { family: '"Zen Maru Gothic"', query: 'Zen+Maru+Gothic:wght@500;700;900' },
@@ -23,7 +14,7 @@ const FONT: Record<FontKey, { family: string; query: string }> = {
 };
 
 export const fontLink = (t: Theme, lang: Lang = 'ja') =>
-  `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${[...fontsFor(t, lang).map((f) => FONT[f].query), 'JetBrains+Mono:wght@500;700']
+  `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${[...derivePalette(t, lang).fonts.map((f) => FONT[f].query), 'JetBrains+Mono:wght@500;700']
     .map((q) => `family=${q}`)
     .join('&')}&display=swap">`;
 
@@ -33,7 +24,7 @@ const SYSTEM: Record<Lang, string[]> = {
   en: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"'],
   zh: ['"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"'],
 };
-const fontBody = (t: Theme, lang: Lang) => [...fontsFor(t, lang).map((f) => FONT[f].family), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
+const fontBody = (t: Theme, lang: Lang) => [...derivePalette(t, lang).fonts.map((f) => FONT[f].family), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
 
 /** 背景の飾り（動画の decor と同じ考え方） */
 const decorCss = (t: Theme) => {
@@ -66,8 +57,8 @@ const decorCss = (t: Theme) => {
 export const themeCss = (t: Theme, lang: Lang = 'ja') => {
   const c = t.color;
   const light = t.scheme === 'light';
-  // 明るい地では、図の色を文字に使うと薄いので、見出しの色を少し混ぜて読める濃さにする
-  const ink = (hex: string) => (light ? mix(hex, c.ink, 0.22) : hex);
+  // 図の色を文字に使うときの色（明るい地では、図の色だと薄いので、見出しの色を少し混ぜて読める濃さにする）
+  const ink = derivePalette(t, lang).site.toneText;
   const vars: Record<string, string> = {
     '--ink': c.bg,
     '--panel': c.surface,
@@ -78,12 +69,12 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
     '--muted': c.muted,
     '--accent': c.accent,
     '--on-accent': c.onAccent,
-    '--pink': ink(t.tones.pink),
-    '--violet': ink(t.tones.violet),
-    '--cyan': ink(t.tones.cyan),
-    '--mint': ink(t.tones.mint),
-    '--amber': ink(t.tones.amber),
-    '--coral': ink(t.tones.coral),
+    '--pink': ink.pink,
+    '--violet': ink.violet,
+    '--cyan': ink.cyan,
+    '--mint': ink.mint,
+    '--amber': ink.amber,
+    '--coral': ink.coral,
     '--pink-soft': alpha(t.tones.pink, light ? 0.1 : 0.14),
     '--violet-soft': alpha(t.tones.violet, light ? 0.1 : 0.16),
     '--cyan-soft': alpha(t.tones.cyan, light ? 0.1 : 0.13),

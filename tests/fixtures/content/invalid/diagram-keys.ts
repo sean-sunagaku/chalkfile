@@ -7,7 +7,7 @@ export const COURSE = course([
       kind: 'states',
       heading: '状態',
       nodes: [
-        { key: 'start', code: 'はじめ', ja: '作る前', x: 500, y: 600, tone: 'slate', at: 0 },
+        { key: 'start', code: 'はじめ', ja: '作る前', x: 500, y: 600, tone: 'slate', at: 0, variant: 'start' },
         { key: 'active', code: 'active', ja: '使える', x: 1200, y: 600, tone: 'mint', at: 1 },
       ],
       edges: [{ from: 'activ', to: 'start', label: '戻る', at: 1 }],

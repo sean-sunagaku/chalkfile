@@ -1,4 +1,4 @@
-// 注意だけ（誤りは 0）: ** が閉じていない・強調にならない項目の **・焼き込み字幕が 3 行になる見込み・見出しが 1 行に入らない見込み・時系列の題の空白
+// 注意だけ（誤りは 0）: ** が閉じていない・強調にならない項目の **・焼き込み字幕が 3 行になる見込み・見出しが 1 行に入らない見込み・時系列の題の空白（と、その古い書き方）
 import { course, lecture, say, W, type Expected } from './_base';
 
 export const COURSE = course([
@@ -25,4 +25,5 @@ export const EXPECTED: Expected[] = [
   ['warning', 'caption-lines', `${W} 場面 2 lines[0].t`],
   ['warning', 'heading-width', `${W} 場面 2 heading`],
   ['warning', 'style', `${W} 場面 3 timeline.items[0].title`],
+  ['warning', 'legacy', `${W} 場面 3 timeline.items[0].title`],
 ];
