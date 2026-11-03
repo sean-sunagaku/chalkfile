@@ -180,5 +180,6 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 4. `npm run media:push -- --course <講座 ID>` → `npm run media:check` → commit
 
 - Worker の許可リスト（`worker/src/generated/media-manifest.json`）は Git に入れないので、ぶつからない。main を取り込んだら `npm run gen` で作り直す
-- 講座の登録表（`content/courses.ts`）は 1 講座 1 行で、`.gitattributes` の `merge=union` が、並行で足した行を両方残す。README の講座の表は生成物ではない。両方の行を残す
+- 講座の登録表（`content/courses.ts`）は 1 講座 1 行で、`.gitattributes` の `merge=union` が、並行で足した行を両方残す
+- README の講座の表と [new-course.md](../guide/new-course.md) の頭文字の表は、`npm run gen` が印（`<!-- courses:start -->` など）の間を作る。ぶつかったら、そのまま `npm run gen` を流す（印の間を作り直すので、ぶつかった行の印も消える）
 - 並行作業のきまり（共有のファイル・凍結中）は [AGENTS.md](../../AGENTS.md) の「並行作業のきまり」

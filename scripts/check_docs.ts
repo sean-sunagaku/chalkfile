@@ -6,15 +6,16 @@
 //   1. Markdown の相対リンクとアンカー（リンク先のファイルと見出しがあるか）                    止める
 //   2. スキルの description の長さ（1,024 字以下。.claude/skills/*/SKILL.md）                    止める
 //   3. 古い言葉（GitHub Pages の頃の公開の仕方など）。許す場所（ALLOW_OLD）では見ない            注意
-//   4. テーマの表（theme.md）と content/themes.ts の THEMES、README の講座の表と content/index.ts の COURSES  注意
-//   5. 生成物の印（docs/courses の教材の頭に「生成物」のコメントがあるか）                       注意
-//   6. 直接流す道具（scripts/）の頭書きに、流し方（使い方）の行があるか                           注意
-// 3〜6 は、今は食い違いが多いので注意にしている。片付けたら --strict で止める
+//   4. テーマの表（theme.md）と content/themes.ts の THEMES                                     注意
+//   5. 生成した表（README の講座の表・new-course.md の頭文字の表。npm run gen が作る）が、作り直したものと同じか  止める
+//   6. 生成物の印（docs/courses の教材の頭に「生成物」のコメントがあるか）                       注意
+//   7. 直接流す道具（scripts/）の頭書きに、流し方（使い方）の行があるか                           注意
+// 3・4・6・7 は、今は食い違いが多いので注意にしている。片付けたら --strict で止める
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { COURSES } from '../content';
 import { THEMES } from '../content/themes';
+import { docOutputs } from './gen';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -217,8 +218,6 @@ export const compareSets = (where: string, what: string, inDoc: string[], inCode
 
 /** テーマの表（1 列目が `id`）。どこに表があるかはここで決める（テーマの表は theme.md の 1 か所だけに置く） */
 const THEME_TABLES = [{ file: '.claude/skills/study-video-course/references/theme.md', heading: '今あるテーマ' }];
-/** README の講座の表（1 列目のリンクが https://chalkfile.com/<講座 ID>/）。T2-05 で生成に変えたら、生成の --check にする */
-const COURSE_TABLE = { file: 'README.md', heading: 'Chalkfile で作った講座' };
 
 const checkTables = (read: (file: string) => string | null, out: Finding[]) => {
   const themes = Object.keys(THEMES);
@@ -236,24 +235,23 @@ const checkTables = (read: (file: string) => string | null, out: Finding[]) => {
     const ids = rows.map((r) => r[0].match(/`([^`]+)`/)?.[1] ?? r[0]);
     compareSets(t.file, `テーマの表（content/themes.ts の THEMES は ${themes.length} 個）`, ids, themes, out);
   }
-  const rows = tableUnder(read(COURSE_TABLE.file) ?? '', COURSE_TABLE.heading);
-  if (!rows) {
-    out.push({
-      level: 'warn',
-      check: '一覧',
-      where: COURSE_TABLE.file,
-      what: `講座の表が見つからない（見出し「${COURSE_TABLE.heading}」）`,
-    });
+};
+
+/**
+ * 生成した表（README の講座の表・docs/guide/new-course.md の頭文字の表）が、npm run gen が今作るものと同じか。
+ * 手で書いた表と実装の突き合わせ（上の一覧）の代わりに、作り直して比べる（ずれたら npm run gen で作り直す）
+ */
+export const checkGenerated = (read: (file: string) => string | null, out: Finding[], outputs: () => Map<string, string> = docOutputs) => {
+  let expected: Map<string, string>;
+  try {
+    expected = outputs();
+  } catch (e) {
+    out.push({ level: 'error', check: '生成の表', where: 'README.md', what: `表を作れない: ${e instanceof Error ? e.message : String(e)}` });
     return;
   }
-  const ids = rows.map((r) => r[0].match(/chalkfile\.com\/([\w-]+)\//)?.[1] ?? r[0]);
-  compareSets(
-    COURSE_TABLE.file,
-    '講座の表（content/index.ts の COURSES）',
-    ids,
-    COURSES.map((c) => c.id),
-    out,
-  );
+  for (const [file, text] of expected) {
+    if (read(file) !== text) out.push({ level: 'error', check: '生成の表', where: file, what: '生成した表が、作り直したものと違う（npm run gen で作り直す。手で直さない）' });
+  }
 };
 
 /* ───────────── スキル・生成物・道具 ───────────── */
@@ -403,6 +401,7 @@ export const checkDocs = (out: Finding[]) => {
     }
   }
   checkTables(read, out);
+  checkGenerated(read, out);
 };
 
 if (import.meta.main) {

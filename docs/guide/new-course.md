@@ -12,21 +12,28 @@
 - [ ] お笑いを必ず入れる。型と守ることは [comedy.md](../../.claude/skills/study-video-course/references/comedy.md)、理由は [ADR](../adr/2026-11-01-comedy-in-every-course.md)。お笑い版は表示を少なくする（副題・前置きを出さない。1 本だけの動画は、番号と根拠の札も出さない）
 - [ ] テーマ（下の「テーマ」）
 
-### 頭文字の表（今の 9 講座）
+### 頭文字と並びの表
 
-この表は、あとでコードから作る予定。それまでは、講座を足す PR でこの表にも 1 行足す。
+この表は `npm run gen` が、各講座の `course.ts` の `prefix`（頭文字）と `order`（一覧の並び）から作る。手で直さない。講座を足したら `npm run gen` を流す。頭文字や並びが重なると `npm run validate` が止め、空いている文字を出す。
 
-| 頭文字 | 講座 ID |
-|---|---|
-| `L` | `stripe-billing` |
-| `N` | `nudge-product` |
-| `D` | `uiux-engineers` |
-| `M` | `indie-marketing` |
-| `W` | `nudge-comedy` |
-| `R` | `rive-comedy` |
-| `P` | `pstack-comedy` |
-| `S` | `superagent-comedy` |
-| `G` | `ga4-comedy` |
+<!-- prefixes:start -->
+<!-- npm run gen が、各講座の course.ts の prefix と order から作る。手で直さない -->
+
+| 頭文字 | 講座 ID | 並び（order） |
+|---|---|---|
+| `L` | `stripe-billing` | 10 |
+| `N` | `nudge-product` | 20 |
+| `D` | `uiux-engineers` | 30 |
+| `M` | `indie-marketing` | 40 |
+| `W` | `nudge-comedy` | 50 |
+| `R` | `rive-comedy` | 60 |
+| `P` | `pstack-comedy` | 70 |
+| `S` | `superagent-comedy` | 80 |
+| `G` | `ga4-comedy` | 90 |
+
+- 空いている文字: A B C E F H I J K O Q T U V Y Z（X はテストの見本が使う）
+
+<!-- prefixes:end -->
 
 - 同じレクチャー ID は、講座をまたいで使えない（`content/index.ts` を読み込むときに止まる）
 
@@ -46,7 +53,7 @@
 - [ ] `content/<講座 ID>/syllabus.ts`: 全体の目次・到達目標・章の計画（教材つきの講座。[materials.md](../../.claude/skills/study-video-course/references/materials.md)）
 - [ ] `content/index.ts`: import と、`COURSES` に 1 行。並べた順が、一覧のページの順になる
 - [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`content/index.ts` の `TRANSLATIONS`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）
-- [ ] README の「Chalkfile で作った講座」の表に 1 行（あとでコードから作る予定）
+- [ ] README の講座の表と、上の頭文字と並びの表は `npm run gen` で作る（手で書かない。`npm run check:docs` がずれを止める）
 - [ ] 実在の会社や製品を扱うなら、`disclaimer` に「非公式」と書く。お笑い版は「ボケの台詞は、わざと間違えています」も書く
 - 並行で作るとき（共有のファイル・生成物・素材と動画の push）のきまりは、[AGENTS.md](../../AGENTS.md) の「並行作業のきまり」
 

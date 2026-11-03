@@ -32,7 +32,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run test:e2e`（`test:browser` も同じ） | Playwright のブラウザのテスト（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
 | `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声など）。注意も見るなら `-- --warnings` |
 | `npm run check:content` | 台本と Git に入れるファイルの点検（点検の点検も）。点検する中身は [safety.md](../../.claude/skills/study-video-course/references/safety.md) |
-| `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い |
+| `npm run check:docs` | 文書の相対リンクとアンカー・スキルの説明の長さ・古い言葉・一覧の食い違い・生成した表（README の講座の表・頭文字の表）のずれ |
 
 ### 整える
 
@@ -54,13 +54,14 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
 | `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`） |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
+| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 
 ### 見る
 
 | コマンド | すること |
 |---|---|
 | `npm run serve` | 手元で講座サイトを見る（`http://127.0.0.1:8765/`。Range にも答える） |
-| `npm run dev:worker` | Worker を手元で動かす（`wrangler dev`。Cloudflare の認証は要らない） |
+| `npm run dev:worker` | Worker を手元で動かす（先に Worker の許可リストを作ってから `wrangler dev`。Cloudflare の認証は要らない） |
 
 ### 素材と動画
 
