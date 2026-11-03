@@ -21,9 +21,9 @@ export const toast = (message: string) => {
   }, 2200);
 };
 
-/** ノートを用意する。seek は、メモの時刻を押したとき（その時刻へ移って再生する） */
-export const createNotes = (page: Page, seek: (t: number) => void) => {
-  const { T, tt, video, lectures } = page;
+/** ノートを用意する。seek は、メモの時刻を押したとき（その時刻へ移って再生する）。now は今の時刻（動画を読む前は、続きの時刻） */
+export const createNotes = (page: Page, seek: (t: number) => void, now: () => number) => {
+  const { T, tt, lectures } = page;
   const notes = page.learning.notes;
   const list = byId('notes');
   const input = byId<HTMLTextAreaElement>('noteText');
@@ -54,7 +54,7 @@ export const createNotes = (page: Page, seek: (t: number) => void) => {
     }
     const id = lectureOf(page).id;
     notes[id] ??= [];
-    notes[id].push({ t: Math.floor(video.currentTime), text, at: Date.now() });
+    notes[id].push({ t: Math.floor(now()), text, at: Date.now() });
     notes[id].sort((a, b) => a.t - b.t);
     page.store.saveNotes(notes);
     input.value = '';

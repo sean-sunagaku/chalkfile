@@ -28,10 +28,10 @@ async function ready(url: string) {
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
   await expect(page.locator('#offlineSave')).toBeEnabled({ timeout: 30000 });
 }
+/** 再生してから時刻へ移る（動画は preload="none" で、再生を押すまで読まない） */
 async function playAt(at: number) {
   const v = page.locator('video');
-  await expect.poll(() => v.evaluate((v: HTMLVideoElement) => v.readyState), { timeout: 30000 }).toBeGreaterThanOrEqual(1);
-  await v.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; v.currentTime = time; await v.play(); }, at);
+  await v.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; await v.play(); v.currentTime = time; }, at);
   await expect.poll(() => v.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 30000 }).toBeGreaterThan(at + 0.4);
   expect(await v.evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
   await v.evaluate((v: HTMLVideoElement) => v.pause());
@@ -97,8 +97,7 @@ try {
       for (const course of COURSES) {
         await p.goto(`https://chalkfile.com/${course.id}/`);
         await expect(p.locator('#savedState')).toContainText('保存済み・教材と全動画');
-        await expect.poll(() => p.locator('video').evaluate((v: HTMLVideoElement) => v.readyState), { timeout: 30000 }).toBeGreaterThanOrEqual(1);
-        await p.locator('video').evaluate(async (v: HTMLVideoElement) => { v.muted = true; v.currentTime = 30; await v.play(); });
+        await p.locator('video').evaluate(async (v: HTMLVideoElement) => { v.muted = true; await v.play(); v.currentTime = 30; });
         await expect.poll(() => p.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(30.4);
         await p.locator('video').evaluate((v: HTMLVideoElement) => v.pause()); checks.push(course.id);
         output.offlineRestartPlayback = checks; record(); console.log(`本番で再起動後のオフライン再生・シーク: ${course.id}`);

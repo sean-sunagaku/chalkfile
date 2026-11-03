@@ -40,8 +40,9 @@ export const DEFAULT_CONTROL: Control = {
 };
 
 /** テストが読む数（保存の動画の全体の取得の回数とバイト数・保存の manifest の取得と、その失敗の回数） */
-export type Stats = { fullVideoDownloads: number; fullVideoBytes: number; manifestRequests: number; manifestFailures: number };
-const NO_STATS: Stats = { fullVideoDownloads: 0, fullVideoBytes: 0, manifestRequests: 0, manifestFailures: 0 };
+/** 数えたもの。mediaRequests は /media/ への要求の全部（Range の要求も。本番では Worker の回数の枠を使う） */
+export type Stats = { fullVideoDownloads: number; fullVideoBytes: number; manifestRequests: number; manifestFailures: number; mediaRequests: number };
+const NO_STATS: Stats = { fullVideoDownloads: 0, fullVideoBytes: 0, manifestRequests: 0, manifestFailures: 0, mediaRequests: 0 };
 
 /** 応答はキャッシュさせない（障害の差し込みを変えたら、すぐ効くように） */
 const NO_STORE: ServeHeaders = { 'Cache-Control': 'no-store' };
@@ -104,6 +105,7 @@ export class Session {
 
   /** 動画（/media/）。faultLecture の通常版の全体の取得（Range の無い GET）に、Control の mode の失敗を差し込む */
   private async media(req: Request): Promise<Response> {
+    this.stats.mediaRequests++;
     const found = this.site.media.get(new URL(req.url).pathname);
     if (!found || !existsSync(found.file) || this.control.mediaDown) return new Response('not found', { status: 404 });
     if (!['GET', 'HEAD'].includes(req.method))

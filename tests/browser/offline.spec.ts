@@ -43,10 +43,10 @@ async function status(page: Page, site: SiteSession): Promise<CourseStatus> {
     return reply.courses.find((s) => s.id === id)!;
   }, site.course.id);
 }
+/** 再生してから時刻へ移る（動画は preload="none" で、再生を押すまで読まない） */
 async function playAndPause(page: Page, at = 0) {
   const video = page.locator('video');
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThanOrEqual(1);
-  await video.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; v.currentTime = time; await v.play(); }, at);
+  await video.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; await v.play(); v.currentTime = time; }, at);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(at + 0.2);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
   await video.evaluate((v: HTMLVideoElement) => v.pause());
@@ -75,6 +75,22 @@ test('一覧ページの375px表示から保存状態とインストール案内
   await savedLink(page, site).click();
   await expect(page.locator('#offlineSave')).toBeEnabled();
   expect(errors).toEqual([]);
+});
+
+test('講座を開いただけでは、動画（/media/）を取りに行かない。長さは台本のデータから出し、再生を押すと開いたレクチャーの動画だけを取る', async ({ page, request, site }) => {
+  await ready(page, site);
+  await expect(page.locator('#playbackStatus')).toContainText('オンライン再生');
+  // 保存の状態の確かめ・ポスター・字幕のデータの間に、動画を取りに行っていない（preload="none"）
+  await page.waitForTimeout(1500);
+  expect((await stats(request)).mediaRequests).toBe(0);
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => [v.preload, v.readyState])).toEqual(['none', 0]);
+  await expect(page.locator('#sections .dur').first()).not.toHaveText('00:00');
+  await expect(page.locator('#curSum')).not.toBeEmpty();
+  await playAndPause(page, seek(site, 5));
+  expect((await stats(request)).mediaRequests).toBeGreaterThan(0);
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => new URL(v.currentSrc).pathname)).toMatch(
+    new RegExp(`/${site.course.lectures[0].id}(\\.cc)?\\.[a-f0-9]{64}\\.mp4$`),
+  );
 });
 
 test('オンライン再生、単体ファイル保存、学習UI、PWA情報と375pxの導線', async ({ page, context, request, site }) => {

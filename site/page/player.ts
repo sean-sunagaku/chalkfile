@@ -25,6 +25,25 @@ export const createPlayer = (page: Page, onNext: () => void) => {
   let offline: OfflineState = { saved: false, online: navigator.onLine };
   let nextTimer: ReturnType<typeof setInterval> | null = null;
   const vtt = new Map<string, string>();
+  /**
+   * まだ読んでいない動画の、読んだら移る時刻（続きの時刻か、選んだ時刻）。動画は preload="none" で、開いただけでは読まない
+   * （講座を開くだけで /media/ を呼ばない）。再生を押すか時刻を選ぶと読み始め、長さと形（metadata）が来たら、ここへ移る
+   */
+  let startAt: number | null = null;
+  const unread = () => video.readyState === HTMLMediaElement.HAVE_NOTHING;
+  /** 今の時刻（まだ読んでいなければ、読んだら移る時刻） */
+  const position = () => (unread() ? (startAt ?? 0) : video.currentTime);
+  /** 時刻へ移る（まだ読んでいなければ、読んだら移る） */
+  const seekTo = (t: number) => {
+    if (unread()) startAt = t;
+    else video.currentTime = t;
+  };
+  video.addEventListener('loadedmetadata', () => {
+    if (startAt !== null) video.currentTime = startAt;
+    startAt = null;
+    video.playbackRate = prefs.rate;
+    hideNativeTrack();
+  });
 
   const play = () => {
     video.play().catch(() => {});
@@ -91,18 +110,15 @@ export const createPlayer = (page: Page, onNext: () => void) => {
     download.download = `${lec.id}${want === lec.video ? '' : '.captioned'}.mp4`;
   };
   const swapSource = () => {
-    const source = video.querySelector('source');
+    // まだレクチャーを開いていない（はじめに字幕の好みを入れるとき）は、開くときに選ぶ
+    const now = video.getAttribute('src');
     const want = srcFor(lectureOf(page));
-    if (!source || source.getAttribute('src') === want) return;
-    const t = video.currentTime;
+    if (now === null || now === want) return;
+    // 差し替えた動画も、同じ時刻から（読み直したら移る）
+    const t = position();
     const paused = video.paused;
-    source.setAttribute('src', want);
-    video.onloadedmetadata = () => {
-      video.currentTime = t;
-      video.playbackRate = prefs.rate;
-      hideNativeTrack();
-    };
-    video.load();
+    video.src = want;
+    startAt = t > 0 ? t : null;
     if (!paused) play();
   };
   const setCc = (on: boolean) => {
@@ -179,30 +195,25 @@ export const createPlayer = (page: Page, onNext: () => void) => {
     }
   });
 
-  /** レクチャーの動画を開く（resume は続きの時刻。3 秒より前と、終わりの 5 秒は頭から） */
+  /**
+   * レクチャーの動画を開く（resume は続きの時刻。3 秒より前と、終わりの 5 秒は頭から）。動画は、再生するか時刻を選ぶまで読まない。
+   * 動画は src で渡し、load() を呼ばない（Chrome は load() を呼ぶと、preload="none" でも読み始める。src を変えれば読み直しになる）
+   */
   const open = (lec: LectureData, resume: number, autoplay: boolean) => {
     clearNext();
     video.pause();
     put(video);
-    video.removeAttribute('src');
     video.poster = lec.poster;
-    const source = document.createElement('source');
-    source.src = srcFor(lec);
-    source.type = 'video/mp4';
     const track = document.createElement('track');
     track.kind = 'subtitles';
     track.srclang = page.data.lang.html;
     track.label = page.data.lang.label;
     track.src = vttUrl(lec);
-    video.append(source, track);
-    video.load();
+    video.append(track);
+    video.src = srcFor(lec);
+    startAt = resume > 3 && resume < lec.duration - 5 ? resume : null;
     applyCc();
     playbackStatus();
-    video.onloadedmetadata = () => {
-      if (resume > 3 && resume < lec.duration - 5) video.currentTime = resume;
-      video.playbackRate = prefs.rate;
-      hideNativeTrack();
-    };
     if (autoplay) play();
     cc.textContent = '';
   };
@@ -217,11 +228,11 @@ export const createPlayer = (page: Page, onNext: () => void) => {
     else video.pause();
   };
   const seekBy = (seconds: number) => {
-    video.currentTime = Math.max(0, video.currentTime + seconds);
+    seekTo(Math.max(0, position() + seconds));
   };
-  /** 時刻へ移って再生する */
+  /** 時刻へ移って再生する（まだ読んでいなければ、読み始めて、読んだらその時刻へ） */
   const seekAndPlay = (t: number) => {
-    video.currentTime = t;
+    seekTo(t);
     play();
   };
 
@@ -237,5 +248,6 @@ export const createPlayer = (page: Page, onNext: () => void) => {
     togglePlay,
     seekBy,
     seekAndPlay,
+    position,
   };
 };

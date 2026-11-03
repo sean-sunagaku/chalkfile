@@ -45,9 +45,10 @@ async function click(selector: string) {
   const element = await command('POST', '/element', { using: 'css selector', value: selector });
   await command('POST', `/element/${element['element-6066-11e4-a52e-4f735466cecf']}/click`, {});
 }
+// 再生してから時刻へ移る（動画は preload="none" で、再生を押すまで読まない）
 async function playAt(time: number) {
-  await until('document.querySelector("video")?.readyState>=1', '動画のmetadataを取得できません');
-  await asyncJs('const v=document.querySelector("video");v.muted=true;v.currentTime=arguments[0];await v.play();return true;', [time]);
+  await until('!!document.querySelector("video")', '動画がありません');
+  await asyncJs('const v=document.querySelector("video");v.muted=true;await v.play();v.currentTime=arguments[0];return true;', [time]);
   await until(`document.querySelector("video").currentTime>${time + 0.4}`, '動画が進みません');
   const result = await js('const v=document.querySelector("video");v.pause();const c=document.createElement("canvas");c.width=320;c.height=180;const x=c.getContext("2d");x.drawImage(v,0,0,c.width,c.height);const rgb=[...x.getImageData(0,0,c.width,c.height).data].filter((_,i)=>i%4!==3);return {time:v.currentTime,frames:v.getVideoPlaybackQuality().totalVideoFrames,visibility:document.visibilityState,width:v.videoWidth,height:v.videoHeight,distinctChannels:new Set(rgb).size,frame:c.toDataURL("image/png"),source:new URL(v.currentSrc).pathname};');
   const frame = Buffer.from(result.frame.split(',')[1], 'base64');
@@ -110,7 +111,7 @@ try {
     await until('document.querySelector("#savedState")?.textContent.includes("保存済み・教材と全動画")', '通信断の新規タブから保存版を開けません', 10000);
     receipt.offlineNewTabPlayback = await playAt(30);
     if (await js('return document.querySelector("#ccToggle").getAttribute("aria-pressed");') === 'true') await click('#ccToggle');
-    await until('!document.querySelector("video").currentSrc.includes("/R01.cc.") && document.querySelector("video").readyState>=1', '字幕の版を切り替えられません', 10000);
+    await until('!(document.querySelector("video").getAttribute("src") ?? "/R01.cc.").includes("/R01.cc.")', '字幕の版を切り替えられません', 10000);
     receipt.offlineStandardSeek = await playAt(90);
     const entry = JSON.parse(readFileSync(path.join(root, 'content/rive-comedy/generated/media.ja.json'), 'utf8')).entries.find((e: any) => e.lecture === 'R01' && e.kind === 'standard');
     receipt.offlineRange = await asyncJs('const r=await fetch(arguments[0],{headers:{Range:"bytes=1000-1127"}});return {status:r.status,bytes:[...new Uint8Array(await r.arrayBuffer())]};', [`/media/ja/rive-comedy/${entry.filename}`]);

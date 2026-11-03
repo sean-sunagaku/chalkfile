@@ -48,7 +48,7 @@ const curriculum = createCurriculum(page, (i) => load(i, true));
 const overview = createOverview(page, player.seekAndPlay);
 const tabs = createTabs(page);
 const transcript = createTranscript(page, player.seekAndPlay, openAt);
-const notes = createNotes(page, player.seekAndPlay);
+const notes = createNotes(page, player.seekAndPlay, player.position);
 const quiz = createQuiz(page);
 const material = createMaterial(page, tabs.show);
 
@@ -68,6 +68,8 @@ function load(i: number, autoplay: boolean) {
   transcript.reset();
   const p = progress[lec.id];
   player.open(lec, p && !p.done ? p.t : 0, autoplay);
+  // メモの見出しは、続きの時刻にする（動画を読むまで、再生の時刻は進まない）
+  notes.label(player.position());
   byId('nowEyebrow').textContent = eyebrowOf(T.sep, unit, lec);
   byId('nowTitle').textContent = lec.title;
   overview.render(lec);
@@ -93,14 +95,10 @@ function load(i: number, autoplay: boolean) {
   store.saveLast(lec.id);
 }
 
-/** 別のレクチャーの時刻を開いて再生する（台本の検索の結果） */
+/** 別のレクチャーの時刻を開いて再生する（台本の検索の結果。動画を読み始め、読んだらその時刻へ移る） */
 function openAt(i: number, t: number) {
   load(i, false);
-  const go = () => {
-    video.removeEventListener('loadedmetadata', go);
-    player.seekAndPlay(t);
-  };
-  video.addEventListener('loadedmetadata', go);
+  player.seekAndPlay(t);
 }
 
 // 再生の時刻に合わせて、字幕・台本とチャプターの印・進み具合・メモの見出しを進める

@@ -31,6 +31,7 @@
 - ふつうの再生は `video/mp4`。単体で保存する `?download=1` にだけ attachment を付ける
 - 配信元の 404 は 404、通信の失敗や 5xx は 502。失敗を長くキャッシュしない
 - 応答（200・206・416・HEAD・エラー）には `Cross-Origin-Resource-Policy: same-origin` を付ける。ほかのサイトに動画を埋め込ませない（その再生で、Worker の無料の枠を使わせない）
+- 講座のページの動画は `preload="none"`。講座を開いただけでは `/media/` を呼ばず、再生を押すか時刻を選んだときに、開いたレクチャーの動画だけを読む（Worker の回数の枠を使わない。カリキュラムの長さは台本のデータから出す）。画面（`site/page/player.ts`）は動画を `src` で渡し、`load()` を呼ばない（Chrome は `load()` を呼ぶと、`preload="none"` でも読み始める）。確かめるのは `tests/browser/offline.spec.ts` の「講座を開いただけでは」
 
 ## 静的な応答と CSP
 
