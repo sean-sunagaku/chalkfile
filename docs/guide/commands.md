@@ -95,7 +95,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
-| `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
+| `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --cached-only --durations-only` で素材ブランチの長さの一覧と読みだけを使う（音声を取り出さない。mix と render の前には `materials:pull` が要る）。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す、`-- -v` で声の見つけ方と VOICEVOX への問い合わせも出す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`）。中は `npm run chalk -- mix` と同じで、選ばなければ公開する言語の全部の動画（`-- L01 S01.en`・`-- --course <講座 ID>` で選ぶ）。始める前に、設計図の形と、要る声・BGM・効果音がそろっているかを見る |
 | `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`-- L04@120`・`--theme=<id>`・`--captions`。動画・場面・フレームの形と範囲は、バンドルを作る前に確かめる（timeline の無い動画は止める） |
@@ -118,7 +118,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 |---|---|
 | `npm run materials:pull` | 素材を取り出す。台詞の声は作業フォルダの間で共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`）に置き、同じ中身があれば取り出さない（`-- --videos` で Releases の動画も） |
 | `npm run materials:check` | 台本の全部の台詞の声（共有のキャッシュか `.work/tts`）と、BGM・効果音が手元にあるか |
-| `npm run materials:push` | 素材を素材ブランチに足す（消さない。`-- --dry-run` で本数だけを見る） |
+| `npm run materials:push` | 素材を素材ブランチに足す（消さない。台詞の長さの一覧 `DURATIONS.json` も書く。`-- --dry-run` で本数だけを見る） |
 | `npm run media:push -- --course <講座 ID>` | その講座の動画を Releases に置き、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを書き換える。訳の動画は `--lang en` も付ける |
 | `npm run media:check` | 動画の一覧・Releases・手元の動画を照らし合わせる |
 
