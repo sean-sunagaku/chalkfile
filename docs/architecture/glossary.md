@@ -40,6 +40,15 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | timeline | 場面と台詞が始まるフレーム。synth が音声の長さを測って決め、Remotion が読む。時刻に効く入力の指紋を持ち、台本を直したのに合成し直していない動画を Studio と validate が止める | `content/<講座>/generated/timeline/<key>.json`（動画ごと）。形と指紋は `engine/core/timeline.ts` |
 | ミックス | 台詞・BGM・ジングル・効果音を 1 本にまとめた音 | `scripts/mix.py` が `public/audio/mix/<key>.wav` に書く |
 
+## 制作の段
+
+| 言葉 | 意味 | どこにあるか |
+|---|---|---|
+| 段 | 台本から公開物までの、道具 1 つぶんの作業。`voice`（声と時刻）・`mix`（ミックス）・`render`（動画とポスター）・`docs`（読む教材）・`site`（講座サイト）。動画ごと（教材とサイトは全部で 1 つ）の単位で、古いかを見る | `scripts/stages/pipeline/stages.ts`。一覧と流し方は [全体図](overview.md) の「段と記録」 |
+| 指紋（段の） | 段の入力（台本・声・時刻・ミックスの音・道具のコードなど）から作る短いハッシュ。部分ごとに作り、どの部分が変わったかを見せる。timeline の指紋（時刻に効く入力）とは別のもの | `scripts/stages/pipeline/digest.ts`・`scripts/stages/video/inputs.ts` |
+| 段の記録 | 流したときの指紋と出力の sha256 と道具の版。`npm run chalk -- status` と `build --to` が、今の指紋と比べる | `.work/state/<段>/<単位>.json`（手元だけ） |
+| inputs | 公開した動画を書き出したときの、台本の側（`script`）と描き方の側（`src`）の指紋。動画の一覧の項目に書く（一覧の版 2）。PR の CI が今の台本と比べ、台本が変わったのに動画が古ければ止める | 講座ごとの `content/<講座>/generated/media.<言語>.json`。読み書きは `scripts/media-lists.ts` |
+
 ## 素材と教材（名前が似ているので注意）
 
 | 言葉 | 意味 | どこにあるか |

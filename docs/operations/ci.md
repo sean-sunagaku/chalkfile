@@ -20,6 +20,7 @@ check ─┬─ build ── smoke ─┬─ deploy（main だけ）
 | `smoke` | `site-dist` を取り、手元の Worker（`wrangler dev` の手元のモード。Cloudflare の認証を使わない）で配って、`scripts/smoke_worker.ts` で配信の約束を確かめる | PR と main |
 | `deploy` | 上の 4 つが通ったときだけ、`site-dist` をそのまま出す（下の「公開の流れ」） | main への push と、main を選んだ手動の実行 |
 
+- `check` の台本と公開の検証（`npm run validate`）は、公開した動画が今の台本で書き出したものかも見る（動画の一覧の `inputs`。台本が変わった → 止める・描き方のコードだけ → 注意・記録が無い → 知らせ。知らせは Actions の注釈）。決まりは [全体図](../architecture/overview.md) の「段と記録」
 - main を守るルールセットは、ジョブの名前で必須のチェックを待つ。ジョブの名前を変えない
 - 点検を足すときは、`check` のジョブに手順を 1 つ足す（必須のチェック `check` に入る）
 - secret を使うのは、`deploy` の Deploy の手順だけ。ほかのジョブの `GITHUB_TOKEN` は読み取りだけで、fork からの PR でも同じに流れる
