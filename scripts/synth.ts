@@ -5,6 +5,10 @@
 //   bun scripts/synth.ts 'P01.*' '*.en'  # P01 の全部の言語・英語の全部
 //   bun scripts/synth.ts --course ga4-comedy   # その講座の全部の動画（全部の言語）
 //   --cached-only                        # 声を作らない（素材の声だけを使う。CI と、timeline を作り直すとき）
+//   --cached-only --durations-only       # 音声を取り出さず、素材のブランチの長さの一覧（DURATIONS.json）と読みだけで時刻を決める（CI 用。
+//                                        # ffmpeg も要らない）。timeline と site/data は、音声から作ったときと同じバイト列になる。音声は手元に
+//                                        # 来ないので、このあと mix と render はできない（materials pull が要る）。DURATIONS.json がまだ無い・
+//                                        # 足りない・古いときは、今までどおり音声を取り出してから作る
 //   --prune                              # 台本に無い動画の timeline のファイルを消す（付けなければ、残っていることを知らせるだけ）
 //   --verbose（-v）                       # 台詞ごとの声の見つけ方（キャッシュ・合成）と、VOICEVOX・uv への問い合わせも出す
 //   npm run chalk -- voice synth …        # 1 つの入口からも流せる（対象の選び方は --course・--video・--lang。docs/guide/commands.md の「chalk」）
@@ -30,13 +34,22 @@ import { formatIssues, validateLecture } from '../engine/core/validate';
 import { VIDEO } from '../src/video.config';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { readSiteConfig } from './lib/config';
-import { ROOT, ttsDirs } from './lib/paths';
+import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { setVerbose, trace } from './lib/proc';
 import { emitVideo, type OutDirs, outDirs } from './stages/timeline/emit';
 import { runKokoro } from './stages/voice/kokoro';
-import { readVoice, type Voice, type VoiceStore, versionsOf, writeVoice } from './stages/voice/store';
+import {
+  cacheSource,
+  durationSource,
+  type Voice,
+  type VoiceSource,
+  type VoiceStore,
+  versionsOf,
+  writeVoice,
+} from './stages/voice/store';
 import { timeoutFromEnv, type Voicevox, voicevox } from './stages/voice/voicevox';
 import { timelineFiles } from './timelines';
+import { defaultRepo, type Options as PullOptions, pull, pullDurations, type Repo } from './materials';
 import { recipeIn, ttsKeysIn, type VoicevoxRecipe } from './voices';
 
 /** 書く場所と、合成のしかた（main が引数を確かめてから作る。テストは一時のフォルダと偽の VOICEVOX で作る） */
@@ -45,6 +58,8 @@ export type Ctx = {
   out: OutDirs;
   /** 声を作らない（素材の声だけを使う） */
   cacheOnly: boolean;
+  /** 声の探し方（既定は声のキャッシュ。--durations-only は、素材のブランチの長さと読み） */
+  find?: VoiceSource;
   /** VOICEVOX のエンジン */
   engine: Voicevox;
   /** 動画ごとの 1 行（既定は標準出力） */
@@ -69,7 +84,7 @@ const voicesOf = async (ctx: Ctx, { lecture, lang }: Video): Promise<Voice[][]> 
       const text = speechIn(line, lang);
       const recipe = recipeIn(voice, lang);
       const keys = ttsKeysIn(text, voice, lang, recipe);
-      const found = readVoice(ctx.store, keys);
+      const found = (ctx.find ?? cacheSource(ctx.store))(keys);
       if (found) {
         trace(`  ${at(lines, out)} [${voice}] キャッシュ ${found.key}（${found.key === keys[0] ? 'v2' : 'v1'}）`);
         lines.push(found);
@@ -111,6 +126,40 @@ export const synthVideos = async (ctx: Ctx, videos: Video[]): Promise<void> => {
   for (const video of videos) await synthVideo(ctx, video);
 };
 
+/** 動画の全部の台詞の、探す鍵（v2 → v1） */
+const keysOfVideos = (videos: Video[]): string[][] =>
+  videos.flatMap(({ lecture, lang }) =>
+    lecture.scenes.flatMap((scene) => scene.lines.map((line) => ttsKeysIn(speechIn(line, lang), line.v ?? 'narrator', lang))),
+  );
+
+/**
+ * --durations-only の声の探し方。素材のブランチの長さの一覧（DURATIONS.json）と読みで探す（音声は取り出さない）。
+ * 長さの一覧がまだ無いか、素材のブランチにある声の長さが一覧に無い・古い（WAV の sha256 が違う）ときは、
+ * 今までどおり音声を取り出し（pull。ffmpeg が要る）、声のキャッシュで探す
+ */
+export const durationsFind = async (
+  videos: Video[],
+  store: VoiceStore,
+  repo: Repo = defaultRepo(),
+  { log = console.log, ...pullOpts }: PullOptions = {},
+): Promise<{ find: VoiceSource; durationsOnly: boolean }> => {
+  const ids = [...new Set(videos.map((v) => v.course.id))];
+  const index = pullDurations(repo, ids, log);
+  if (index) {
+    const find = durationSource(index);
+    // 声は素材のブランチにあるのに、長さが一覧に無い・古い台詞（素材のブランチに声が無い台詞は、--cached-only と同じに止める）
+    const stale = keysOfVideos(videos).filter(
+      (keys) => !find(keys) && keys.some((k) => index.sums.has(`${TTS_REL}/${k}.wav`)),
+    );
+    if (!stale.length) return { find, durationsOnly: true };
+    log(
+      `素材のブランチの DURATIONS.json に、長さが無いか古い台詞が ${stale.length} 本ある（例: ${stale[0].join(' か ')}）。今までどおり音声を取り出してから作る`,
+    );
+  } else log('素材のブランチに DURATIONS.json がまだ無い。今までどおり音声を取り出してから作る（ffmpeg が要る）');
+  await pull(repo, ids, { ...pullOpts, log });
+  return { find: cacheSource(store), durationsOnly: false };
+};
+
 /** 動画の名前（L01）・訳（L01.en）・'L01.*'（全部の言語）・'*.en'（その言語の全部） */
 const pick = (w: string, v: Video) => w === v.key || w === `${v.lecture.id}.*` || w === `*.${v.lang}`;
 
@@ -119,6 +168,7 @@ const main = async (argv: string[]) => {
     argv,
     {
       'cached-only': { type: 'boolean' },
+      'durations-only': { type: 'boolean' },
       prune: { type: 'boolean' },
       course: { type: 'string', multiple: true },
       verbose: { type: 'boolean', short: 'v' },
@@ -127,6 +177,8 @@ const main = async (argv: string[]) => {
   );
   if (values.help) return showHelp(import.meta.filename);
   setVerbose(values.verbose === true);
+  if (values['durations-only'] && !values['cached-only'])
+    throw new UsageError('--durations-only は --cached-only と一緒に使う（声を作らず、素材のブランチの長さと読みだけで時刻を決める）');
   const courseIds = values.course ?? [];
   for (const id of courseIds) if (!VIDEOS.some((v) => v.course.id === id)) throw new UsageError(`講座が無い: ${id}`);
   for (const w of wanted)
@@ -151,7 +203,10 @@ const main = async (argv: string[]) => {
   };
   // 共有のキャッシュのフォルダは、声を書くときに作る（--cached-only では作らない）
   for (const dir of [ctx.out.plan, ctx.out.kana, ctx.out.speech, ctx.out.siteData]) mkdirSync(dir, { recursive: true });
-  await synthVideos(ctx, targets);
+  const durations = values['durations-only'] ? await durationsFind(targets, ctx.store) : null;
+  await synthVideos({ ...ctx, ...(durations ? { find: durations.find } : {}) }, targets);
+  if (durations?.durationsOnly)
+    console.log('長さと読みだけで作った（音声は取り出していない）。mix と render の前に、bun scripts/materials.ts pull で音声を取り出す');
 
   // 台本に無い動画の timeline（消した動画・名前や講座を変えた動画）。--prune を付けたときだけ消す
   const expected = new Set(VIDEOS.map((v) => timelineFile(v.course.id, v.key)));

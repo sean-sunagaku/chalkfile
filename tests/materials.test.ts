@@ -2,10 +2,16 @@
 import { afterAll, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { AUDIO, check, ffmpegConvertWith, gc, keepAt, pull, push, type Convert, type CourseKeys, type Repo } from '../scripts/materials';
+import type { Video } from '../content';
+import { AUDIO, check, ffmpegConvertWith, gc, keepAt, parseDurations, pull, pullDurations, push, type Convert, type CourseKeys, type Measure, type Repo } from '../scripts/materials';
+import { outDirs } from '../scripts/stages/timeline/emit';
+import { durationsFind, synthVideos } from '../scripts/synth';
+import { speechIn } from '../content/voices';
+import { ttsKeysIn } from '../scripts/voices';
+import { course as courseOf, lecture } from './fixtures/content/invalid/_base';
 
 const sandbox = mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-test-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
@@ -21,10 +27,15 @@ const copy: Convert = async (jobs) => {
     copyFileSync(from, to);
   }
 };
-/** 変換を差し替え、出力を集める（テストの出力を汚さない） */
+/** 長さの測り方の代わり（中身は文字なので、大きさをサンプルの数にする。本物の WAV の長さは、DURATIONS.json のテストで見る） */
+const fakeMeasure: Measure = (file) => ({ samples: statSync(file).size, rate: 48000 });
+/** 変換と長さの測り方を差し替え、出力を集める（テストの出力を汚さない） */
 const logs = () => {
   const lines: string[] = [];
-  return { text: () => lines.join('\n'), opts: { convert: copy, log: (line: string) => void lines.push(line) } };
+  return {
+    text: () => lines.join('\n'),
+    opts: { convert: copy, measure: fakeMeasure, log: (line: string) => void lines.push(line) },
+  };
 };
 
 let count = 0;
@@ -693,3 +704,196 @@ test('ほかの作業フォルダの fetch と参照のロックを取り合っ�
   expect(Date.now() - started).toBeGreaterThanOrEqual(350);
   expect(readFileSync(path.join(b.root, '.work/tts/a1.wav'), 'utf8')).toBe('wav:a1');
 }, 30_000);
+
+/* ───────────── 台詞の音声の長さ（DURATIONS.json）と、長さと読みだけの取り出し ───────────── */
+
+/** 長さが seconds 秒の、本物の WAV（48kHz・モノラル・16bit。seed で中身を変える） */
+const wavOf = (seconds: number, seed = 1) => {
+  const n = Math.round(seconds * 48000);
+  const data = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) data.writeInt16LE(Math.round(Math.sin((i * seed) / 30) * 4000), i * 2);
+  const head = Buffer.alloc(44);
+  head.write('RIFF', 0);
+  head.writeUInt32LE(36 + data.length, 4);
+  head.write('WAVEfmt ', 8);
+  head.writeUInt32LE(16, 16);
+  head.writeUInt16LE(1, 20);
+  head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(48000, 24);
+  head.writeUInt32LE(96000, 28);
+  head.writeUInt16LE(2, 32);
+  head.writeUInt16LE(16, 34);
+  head.write('data', 36);
+  head.writeUInt32LE(data.length, 40);
+  return Buffer.concat([head, data]);
+};
+/** 本物の WAV の台詞の声（読みは文字） */
+const realVoice = (dir: string, key: string, seconds: number, seed = 1) => {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, `${key}.wav`), wavOf(seconds, seed));
+  writeFileSync(path.join(dir, `${key}.kana`), `カナ:${key}`);
+};
+/** 本物の長さの測り方で、変換だけを差し替える */
+const real = () => {
+  const lines: string[] = [];
+  return { text: () => lines.join('\n'), opts: { convert: copy, log: (line: string) => void lines.push(line) } };
+};
+
+test('push は、台詞の音声の長さ（DURATIONS.json）を WAV から測って書き、ほかの講座の長さは引き継ぐ', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  realVoice(path.join(a.root, '.work/tts'), 'a1', 1.5);
+  realVoice(path.join(a.root, '.work/tts'), 'a2', 0.25, 2);
+  const out = real();
+  await push(a, [course('alpha', ['a1', 'a2'])], out.opts);
+  expect(out.text()).toContain('DURATIONS.json: 作り直す（長さ 2 本: WAV から測った 2・前の版から引き継いだ 0）');
+  const m = branchOf(remote);
+  const sums = m.show('SHA256SUMS');
+  const shaOf = (rel: string) => sums.split('\n').find((l) => l.endsWith(`  ${rel}`))?.slice(0, 64) ?? '';
+  const text = `${m.show('DURATIONS.json')}\n`;
+  expect(parseDurations(text)).toEqual(
+    new Map([
+      ['a1', { samples: 72000, rate: 48000, sha256: shaOf('.work/tts/a1.wav') }],
+      ['a2', { samples: 12000, rate: 48000, sha256: shaOf('.work/tts/a2.wav') }],
+    ]),
+  );
+  // 鍵の順に 1 行ずつ（同じ長さなら同じバイト列）
+  expect(text.split('\n').filter((l) => l.includes('"samples"'))).toEqual([
+    `    "a1": { "samples": 72000, "rate": 48000, "sha256": "${shaOf('.work/tts/a1.wav')}" },`,
+    `    "a2": { "samples": 12000, "rate": 48000, "sha256": "${shaOf('.work/tts/a2.wav')}" }`,
+  ]);
+  expect(m.show('README.md')).toContain('| `DURATIONS.json` |');
+  // 同じ素材なら push しない
+  expect((await push(a, [course('alpha', ['a1', 'a2'])], real().opts)).pushed).toBe(false);
+  // ほかの講座だけを持つ作業フォルダの push は、alpha の長さを前の版から引き継ぐ
+  const b = cloneOf(remote, 'b');
+  audio(b);
+  realVoice(path.join(b.root, '.work/tts'), 'b1', 0.5);
+  const outB = real();
+  await push(b, [course('beta', ['b1'])], outB.opts);
+  expect(outB.text()).toContain('長さ 3 本: WAV から測った 1・前の版から引き継いだ 2');
+  expect([...parseDurations(m.show('DURATIONS.json')).keys()]).toEqual(['a1', 'a2', 'b1']);
+  // 音声を作り直したら（中身が変わったら）測り直す
+  realVoice(path.join(a.root, '.work/tts'), 'a1', 2, 3);
+  git(a.root, 'pull', '--quiet', '--ff-only', 'origin', 'main');
+  await push(a, [course('alpha', ['a1', 'a2'])], real().opts);
+  expect(parseDurations(m.show('DURATIONS.json')).get('a1')?.samples).toBe(96000);
+  // gc で消した台詞の長さは、一覧からも消す
+  await gc(a, { refs: ['テストの台本'], courses: [course('alpha', ['a1'])] }, { ...real().opts, confirm: true });
+  expect([...parseDurations(m.show('DURATIONS.json')).keys()]).toEqual(['a1']);
+}, 30_000);
+
+test('長さを測れない音声（壊れた WAV）は push しない', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  mkdirSync(path.join(a.root, '.work/tts'), { recursive: true });
+  writeFileSync(path.join(a.root, '.work/tts/a1.wav'), wavOf(1).subarray(0, 100));
+  writeFileSync(path.join(a.root, '.work/tts/a1.kana'), 'カナ');
+  await expect(push(a, [course('alpha', ['a1'])], real().opts)).rejects.toThrow('台詞の音声の長さを測れない');
+  expect(() => branchOf(remote).sha()).toThrow();
+}, 30_000);
+
+test('長さと読みだけの取り出し（音声と ffmpeg は要らない）で作った出力は、音声から作った出力と同じバイト列', async () => {
+  // 見本の講座（台詞 3 つ）の声を、本物の WAV で作って素材のブランチに足す
+  const lec = lecture([
+    { kind: 'opening', title: '見本', lines: [{ t: 'はじめます。', v: 'announcer' }] },
+    { kind: 'big', heading: '大事なこと', text: '台本が正本', lines: [{ t: '一つ目です。', pause: 0.2 }, { t: 'おわりです。' }] },
+    { kind: 'ending', closing: 'おわり', lines: [{ t: 'おわりです。' }] },
+  ]);
+  const c = courseOf([lec]);
+  const video: Video = { key: 'X01', lang: 'ja', lecture: lec, course: c };
+  // 台詞の探す鍵（同じ文と声の台詞は 1 つ。synth と同じ読み上げる文から）
+  const lines = [
+    ttsKeysIn(speechIn({ t: 'はじめます。' }, 'ja'), 'announcer', 'ja'),
+    ttsKeysIn(speechIn({ t: '一つ目です。' }, 'ja'), 'narrator', 'ja'),
+    ttsKeysIn(speechIn({ t: 'おわりです。' }, 'ja'), 'narrator', 'ja'),
+  ];
+  const remote = makeRemote();
+  const cacheA = mkdtempSync(path.join(sandbox, 'cache-'));
+  const a = withCache(cloneOf(remote, 'a'), cacheA);
+  audio(a);
+  // 前の名前（v1）の声。長さはフレームの境目をまたぐもの
+  for (const [i, keys] of lines.entries()) realVoice(cacheA, keys[1], [1.234567, 2.000021, 0.987654][i], i + 1);
+  await push(a, [{ id: c.id, langs: ['ja'], lines, about: '見本（1 レクチャー・ja）' }], real().opts);
+
+  // 音声から作る（ふつうの --cached-only）
+  const base = mkdtempSync(path.join(sandbox, 'synth-'));
+  const ctx = (root: string) => ({
+    store: { cache: cacheA, local: path.join(root, 'local') },
+    out: outDirs(root),
+    cacheOnly: true,
+    engine: { url: '', version: async () => '', synthesize: async () => Promise.reject(new Error('合成しない')) },
+    log: () => {},
+  });
+  await synthVideos(ctx(path.join(base, 'wav')), [video]);
+  // 長さと読みだけで作る（別の作業フォルダ。キャッシュは空）
+  const b = withCache(cloneOf(remote, 'b'), mkdtempSync(path.join(sandbox, 'cache-')));
+  const found = await durationsFind([video], { cache: b.cache!, local: path.join(b.root, '.work/tts') }, b, real().opts);
+  expect(found.durationsOnly).toBe(true);
+  await synthVideos({ ...ctx(path.join(base, 'dur')), find: found.find }, [video]);
+  // 音声を取り出していない（キャッシュは空のまま）
+  expect(readdirSync(b.cache!)).toEqual([]);
+  const files = (root: string) =>
+    ['.work/plan/X01.json', '.work/kana/X01.txt', 'site/data/X01.json', `content/${c.id}/generated/timeline/X01.json`].map(
+      (f) => readFileSync(path.join(root, f), 'utf8'),
+    );
+  expect(files(path.join(base, 'dur'))).toEqual(files(path.join(base, 'wav')));
+  // 読みは素材のブランチのもの
+  expect(readFileSync(path.join(base, 'dur/.work/kana/X01.txt'), 'utf8')).toContain(`カナ:${lines[0][1]}`);
+}, 30_000);
+
+test('DURATIONS.json がまだ無い・古いときは、今までどおり音声を取り出してから作る（もどったことを出す）', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  realVoice(path.join(a.root, '.work/tts'), 'a1', 1);
+  await push(a, [course('alpha', ['a1'])], real().opts);
+  // 長さと読みの取り出しは、講座の読みと一覧だけを取り出す
+  const index = pullDurations(a, ['alpha', 'nosuch'], () => {});
+  expect([...(index?.durations.keys() ?? [])]).toEqual(['a1']);
+  expect(index?.kana).toEqual(new Map([['a1', 'カナ:a1']]));
+  // 一覧の長さが古い（測った WAV の sha256 が SHA256SUMS と違う）ように、素材のブランチの DURATIONS.json を書き換える
+  const t = cloneOf(remote, 't');
+  git(t.root, 'checkout', '--quiet', 'materials');
+  writeFileSync(path.join(t.root, 'DURATIONS.json'), readFileSync(path.join(t.root, 'DURATIONS.json'), 'utf8').replace(/"sha256": "[0-9a-f]{64}"/, `"sha256": "${'0'.repeat(64)}"`));
+  git(t.root, 'commit', '--quiet', '-am', '長さを古くする');
+  git(t.root, 'push', '--quiet', 'origin', 'materials');
+  const v = (id: string): Video => {
+    const lec = lecture([{ kind: 'ending', closing: 'おわり', lines: [{ t: 'おわりです。' }] }]);
+    return { key: 'X01', lang: 'ja', lecture: lec, course: courseOf([lec], { id }) };
+  };
+  // 見本の動画の台詞の鍵は a1 ではないので、素材のブランチに声が無い → 長さだけで探す（足りない台詞は --cached-only と同じに止まる）
+  const b = cloneOf(remote, 'b');
+  const missing = await durationsFind([v('alpha')], { cache: path.join(b.root, 'c'), local: path.join(b.root, 'l') }, b, real().opts);
+  expect(missing.durationsOnly).toBe(true);
+  // 古い長さの台詞があると、音声を取り出す
+  const keys = ttsKeysIn('おわりです。', 'narrator', 'ja');
+  const c2 = cloneOf(remote, 'c2');
+  audio(c2);
+  realVoice(path.join(c2.root, '.work/tts'), keys[1], 1);
+  await push(c2, [course('alpha', [], [keys])], real().opts);
+  git(t.root, 'pull', '--quiet', 'origin', 'materials');
+  writeFileSync(path.join(t.root, 'DURATIONS.json'), readFileSync(path.join(t.root, 'DURATIONS.json'), 'utf8').replace(new RegExp(`("${keys[1]}": \\{[^}]*"sha256": ")[0-9a-f]{64}`), `$1${'0'.repeat(64)}`));
+  git(t.root, 'commit', '--quiet', '-am', 'その台詞の長さを古くする');
+  git(t.root, 'push', '--quiet', 'origin', 'materials');
+  const d = cloneOf(remote, 'd');
+  const out = real();
+  const store = { cache: path.join(d.root, 'cache'), local: path.join(d.root, '.work/tts') };
+  const stale = await durationsFind([v('alpha')], store, { ...d, cache: store.cache }, out.opts);
+  expect(stale.durationsOnly).toBe(false);
+  expect(out.text()).toContain('長さが無いか古い台詞が 1 本ある');
+  expect(readdirSync(store.cache).sort()).toContain(`${keys[1]}.wav`);
+  // DURATIONS.json が無い素材のブランチ（前の形）
+  git(t.root, 'pull', '--quiet', 'origin', 'materials');
+  git(t.root, 'rm', '--quiet', 'DURATIONS.json');
+  git(t.root, 'commit', '--quiet', '-m', '長さの一覧を消す');
+  git(t.root, 'push', '--quiet', 'origin', 'materials');
+  expect(pullDurations(d, ['alpha'], () => {})).toBeNull();
+  const old = real();
+  const none = await durationsFind([v('alpha')], store, { ...d, cache: store.cache }, old.opts);
+  expect(none.durationsOnly).toBe(false);
+  expect(old.text()).toContain('DURATIONS.json がまだ無い');
+}, 60_000);
+

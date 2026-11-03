@@ -184,17 +184,25 @@ export const COMMANDS: Command[] = [
   },
   {
     name: 'voice synth',
-    usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only] [--prune]',
-    summary: '台詞の声と時刻（timeline・ミックスの設計図・サイトの台本と字幕）。--cached-only は素材の声だけを使う',
+    usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only [--durations-only]] [--prune]',
+    summary:
+      '台詞の声と時刻（timeline・ミックスの設計図・サイトの台本）。--cached-only は素材の声だけを使う。--durations-only は素材の長さと読みだけで作る（音声を取り出さない。CI 用）',
     old: ['bun scripts/synth.ts', 'npm run synth'],
     file: 'scripts/synth.ts',
-    options: { ...TARGET, 'cached-only': { type: 'boolean' }, prune: { type: 'boolean' }, ...DRY },
+    options: {
+      ...TARGET,
+      'cached-only': { type: 'boolean' },
+      'durations-only': { type: 'boolean' },
+      prune: { type: 'boolean' },
+      ...DRY,
+    },
     positionals: true,
     dry: 'plan',
     steps: ({ values, positionals }) => [
       bun(
         'scripts/synth.ts',
         ...flag(values, 'cached-only'),
+        ...flag(values, 'durations-only'),
         ...flag(values, 'prune'),
         ...flag(values, 'verbose'),
         ...pickVideos(values, positionals),

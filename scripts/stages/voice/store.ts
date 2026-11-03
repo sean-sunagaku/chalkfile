@@ -83,6 +83,40 @@ export const writeVoice = (store: VoiceStore, key: string, wav: Buffer, kana: st
   return { key, file: `${TTS_REL}/${key}.wav`, sec, kana, ...(meta ? { meta } : {}) };
 };
 
+/* ───────────── 声の探し方 ───────────── */
+
+/** 声の探し方（台詞の探す鍵の並び → 見つけた声。無ければ null） */
+export type VoiceSource = (keys: string[]) => Voice | null;
+
+/** 声のキャッシュ（共有のキャッシュ → .work/tts）の音声と読みで探す。ふつうの探し方 */
+export const cacheSource =
+  (store: VoiceStore): VoiceSource =>
+  (keys) =>
+    readVoice(store, keys);
+
+/** 長さの一覧と読み（素材のブランチの DURATIONS.json・.kana・SHA256SUMS。scripts/materials.ts の pullDurations） */
+export type DurationIndex = {
+  durations: ReadonlyMap<string, { samples: number; rate: number; sha256: string }>;
+  kana: ReadonlyMap<string, string>;
+  sums: ReadonlyMap<string, string>;
+};
+
+/**
+ * 長さの一覧と読みだけで探す（音声は読まない。synth.ts --durations-only）。長さを測った WAV（sha256）が、SHA256SUMS の WAV と
+ * 同じ鍵だけを使う（違えば、その長さは古い）。長さは samples / rate（WAV から測る長さと同じ値）
+ */
+export const durationSource =
+  (index: DurationIndex): VoiceSource =>
+  (keys) => {
+    for (const key of keys) {
+      const d = index.durations.get(key);
+      const kana = index.kana.get(key);
+      if (d && kana !== undefined && index.sums.get(`${TTS_REL}/${key}.wav`) === d.sha256)
+        return { key, file: `${TTS_REL}/${key}.wav`, sec: d.samples / d.rate, kana };
+    }
+    return null;
+  };
+
 /** 動画の声の、エンジンの版ごとの台詞の数（記録の無い v1 の声は数えない） */
 export const versionsOf = (voices: Voice[][]): Map<string, number> => {
   const out = new Map<string, number>();

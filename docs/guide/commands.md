@@ -22,7 +22,7 @@
 |---|---|---|
 | `doctor [--json]` | 道具の版・VOICEVOX・gh の認証の有無・空き容量・ポート・声のキャッシュを確かめる | （新しい） |
 | `validate [--warnings] [--json]` | 台本の検証と、台本・Git に入れるファイルの点検（訳し残しも）。--json は台本の検証だけを JSON で | `bun scripts/validate.ts`・`bun scripts/check_content.ts` |
-| `voice synth [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only] [--prune]` | 台詞の声と時刻（timeline・ミックスの設計図・サイトの台本と字幕）。--cached-only は素材の声だけを使う | `bun scripts/synth.ts`・`npm run synth` |
+| `voice synth [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only [--durations-only]] [--prune]` | 台詞の声と時刻（timeline・ミックスの設計図・サイトの台本）。--cached-only は素材の声だけを使う。--durations-only は素材の長さと読みだけで作る（音声を取り出さない。CI 用） | `bun scripts/synth.ts`・`npm run synth` |
 | `voice speech-check [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 訳の声を Whisper で聞き取り直し、読み上げの間違いを探す（選ばなければ、合成した訳の全部） | `uv run --locked --script scripts/check_speech.py` |
 | `i18n status` | 訳の表（訳あり・日本語の台本が訳のあとで変わった・未訳）と訳し残し | `bun scripts/i18n.ts status` |
 | `i18n stamp <動画…>（例: P01.en・'*.zh'）` | 訳を台本に合わせ直したあと、今の日本語の台本の指紋を訳のファイルに書く | `bun scripts/i18n.ts stamp` |

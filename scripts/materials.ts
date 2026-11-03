@@ -13,6 +13,8 @@
 // push のコミットは前の版を親にする（送るのは新しい素材だけで済み、前の版にも戻せる。親の無いコミットだと、全部の素材を送り直す）。
 // 消すのは gc だけで、--confirm を付けたときだけ消す。gc は親の無い 1 コミットで置き換え、それまでの履歴を切る（消した素材を履歴にも残さない）。
 // 音声は FLAC（可逆圧縮）で置き、取り出すときに WAV に戻す。SHA256SUMS で、戻した WAV と読みが元と同じかを確かめる。
+// push は、台詞の音声の長さの一覧 DURATIONS.json も書く（WAV から測る。測った WAV の sha256 も書く）。CI は
+// synth.ts --cached-only --durations-only で、長さと読みだけを取り出して時刻を作れる（pullDurations。音声と ffmpeg が要らない）。
 // 台詞の音声と読みは、作業フォルダの間で共有のキャッシュ（CHALKFILE_CACHE_DIR。既定 ~/.cache/chalkfile/tts/）に取り出す。
 // 同じ中身（SHA256SUMS と同じ）がキャッシュにあれば取り出さないので、新しい作業フォルダでも 1GB を作り直さない。
 // 書くときは一時の名前から置き換え、SHA256SUMS と合ったものだけを置く（壊れたものをキャッシュに入れない）。
@@ -30,6 +32,7 @@ import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { tempPath, writeAtomic } from './lib/fsx';
 import { sha256File } from './lib/hash';
+import { wavFileSamples } from './lib/wav';
 import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { pool } from './lib/pool';
 import { gitFetch, run as runTool, runAsync, setVerbose, tailOf, trace } from './lib/proc';
@@ -39,6 +42,10 @@ import { ttsKeysIn } from './voices';
 const TTS = TTS_REL;
 const README = 'README.md';
 const SUMS = 'SHA256SUMS';
+/** 台詞の音声の長さの一覧（push が WAV から測って書く。synth.ts --durations-only が、音声を取り出さずに時刻を決めるのに読む） */
+const DURATIONS = 'DURATIONS.json';
+/** 素材の木に置く、素材でないファイル（説明・sha256 の一覧・長さの一覧） */
+const INDEX_FILES = new Set([README, SUMS, DURATIONS]);
 /** 効果音の名前（台本の SfxId と同じ。scripts/build_music.py が作り、scripts/mix.py が読む） */
 const SFX_NAMES = Object.keys({
   pop: 0, whoosh: 0, chime: 0, tick: 0, reveal: 0, correct: 0, type: 0, harisen: 0, chin: 0, drumroll: 0, deden: 0, zuko: 0,
@@ -105,6 +112,8 @@ export type Convert = (jobs: [from: string, to: string][], to: 'flac' | 'wav') =
 export type Options = {
   log?: (line: string) => void;
   convert?: Convert;
+  /** push で台詞の音声の長さを測る（既定は WAV のヘッダーを読む。テストでは、WAV でない中身に差し替える） */
+  measure?: Measure;
   /** push の直前に呼ぶ（テストで、ほかの push を先に入れて lease の拒否を起こす） */
   beforePush?: (attempt: number) => Promise<void> | void;
 };
@@ -290,6 +299,8 @@ type Remote = {
   sums: Map<string, string>;
   /** README の表の、講座ごとの説明（並びも前の README のまま） */
   about: Map<string, string>;
+  /** DURATIONS.json の長さ（無ければ空） */
+  durations: Durations;
 };
 
 /** remote のブランチを取ってきて、そのコミットを返す（remote に無ければ null） */
@@ -323,7 +334,7 @@ const parseAbout = (readme: string) => new Map([...readme.matchAll(/^\| `tts\/([
 const readRemote = (repo: Repo): Remote => {
   const sha = fetchBranch(repo, repo.branch);
   const entries = new Map<string, Entry>();
-  if (!sha) return { sha, entries, sums: new Map(), about: new Map() };
+  if (!sha) return { sha, entries, sums: new Map(), about: new Map(), durations: new Map() };
   for (const row of git(repo.root, ['ls-tree', '-r', '-l', '-z', sha]).split('\0')) {
     const tab = row.indexOf('\t');
     if (tab < 0) continue;
@@ -334,7 +345,78 @@ const readRemote = (repo: Repo): Remote => {
     const e = entries.get(p);
     return e ? git(repo.root, ['cat-file', 'blob', e.blob]) : '';
   };
-  return { sha, entries, sums: parseSums(text(SUMS)), about: parseAbout(text(README)) };
+  const durations = entries.has(DURATIONS) ? parseDurations(text(DURATIONS)) : new Map();
+  return { sha, entries, sums: parseSums(text(SUMS)), about: parseAbout(text(README)), durations };
+};
+
+/* ───────────── 台詞の音声の長さ（DURATIONS.json） ───────────── */
+
+/**
+ * 台詞の音声 1 本の長さ。samples は 1 チャンネルあたりのサンプルの数、rate は 1 秒のサンプルの数（samples / rate が秒で、
+ * synth.ts が WAV から測る長さと同じ値になる）。sha256 は測った WAV の sha256（SHA256SUMS の値と違えば、その長さは使わない）
+ */
+export type Duration = { samples: number; rate: number; sha256: string };
+/** 鍵 → 長さ */
+export type Durations = Map<string, Duration>;
+/** 長さを測る（WAV のファイル → サンプルの数と 1 秒のサンプルの数） */
+export type Measure = (file: string) => { samples: number; rate: number };
+
+/** DURATIONS.json の中身（鍵の順に 1 行ずつ。同じ長さなら同じバイト列になる） */
+export const durationsJson = (d: Durations): string => {
+  const rows = [...d]
+    .sort(([a], [b]) => byPath(a, b))
+    .map(([k, x]) => `    ${JSON.stringify(k)}: { "samples": ${x.samples}, "rate": ${x.rate}, "sha256": ${JSON.stringify(x.sha256)} }`);
+  const about = '台詞の音声（.work/tts/<鍵>.wav）の長さ。materials.ts push が WAV から測る。sha256 は測った WAV（SHA256SUMS と同じ値）';
+  return `{\n  "schema": 1,\n  "about": ${JSON.stringify(about)},\n  "durations": {\n${rows.join(',\n')}\n  }\n}\n`;
+};
+
+/** DURATIONS.json を読む。形が違えば止める */
+export const parseDurations = (text: string): Durations => {
+  const v = JSON.parse(text) as { schema?: unknown; durations?: Record<string, Partial<Duration>> };
+  if (v.schema !== 1 || !v.durations || typeof v.durations !== 'object') throw new Error('DURATIONS.json の形が違う（schema が 1 でない）');
+  const out: Durations = new Map();
+  for (const [k, x] of Object.entries(v.durations)) {
+    const { samples, rate, sha256 } = x;
+    const ok = Number.isInteger(samples) && Number.isInteger(rate) && (rate ?? 0) > 0 && typeof sha256 === 'string' && /^[0-9a-f]{64}$/.test(sha256);
+    if (!ok) throw new Error(`DURATIONS.json の ${k} の形が違う`);
+    out.set(k, { samples: samples as number, rate: rate as number, sha256: sha256 as string });
+  }
+  return out;
+};
+
+/**
+ * 素材の木（paths）の台詞の音声の長さ。今の SHA256SUMS（sums）と同じ中身の WAV が手元にあれば、WAV から測る
+ * （sha256 は手元の素材を読んだときに 1 回だけ求めたもの）。手元に無いもの（手元の台本に無い講座など）は、前の DURATIONS.json の
+ * 長さが同じ中身の WAV のものなら引き継ぐ。どちらでもないものは入れない（synth --durations-only は、今までの取り出しにもどる）
+ */
+const durationsFor = (paths: Iterable<string>, sums: Map<string, string>, local: Local, previous: Durations, measure: Measure) => {
+  const durations: Durations = new Map();
+  const seen = new Set<string>();
+  let measured = 0;
+  let kept = 0;
+  let unknown = 0;
+  for (const p of paths) {
+    const m = TTS_PATH.exec(p);
+    if (!m || m[3] !== 'flac' || seen.has(m[2])) continue;
+    const key = m[2];
+    seen.add(key);
+    const rel = `${TTS}/${key}.wav`;
+    const sha = sums.get(rel);
+    const before = previous.get(key);
+    if (sha && local.sha256.get(rel) === sha) {
+      const file = fileOf(local, rel);
+      try {
+        durations.set(key, { ...measure(file), sha256: sha });
+      } catch (e) {
+        throw new Error(`台詞の音声の長さを測れない: ${file}（${e instanceof Error ? e.message : e}）。壊れた音声は push しない。消してから synth か materials.ts pull をやり直す`);
+      }
+      measured++;
+    } else if (sha && before?.sha256 === sha) {
+      durations.set(key, before);
+      kept++;
+    } else unknown++;
+  }
+  return { durations, measured, kept, unknown };
 };
 
 /** 講座の説明から、README の表の「中身」の欄を作る */
@@ -347,7 +429,7 @@ const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, prev
   const audio = { count: 0, bytes: 0 };
   let total = 0;
   for (const [p, e] of entries) {
-    if (p === README || p === SUMS) continue;
+    if (INDEX_FILES.has(p)) continue;
     total += e.size;
     const m = TTS_PATH.exec(p);
     if (m) {
@@ -381,6 +463,7 @@ const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, prev
 ${rows.join('\n')}
 | \`audio/music/\`・\`audio/sfx/\` | BGM・ジングル・効果音（\`scripts/build_music.py\` の合成） | ${audio.count} 個 | ${mb(audio.bytes)} |
 | \`SHA256SUMS\` | 取り出した後のファイル（WAV・読み・声の記録）の sha256（パスはリポジトリの最上位から） | | |
+| \`DURATIONS.json\` | 台詞の音声（WAV）の長さ（サンプルの数）と、測った WAV の sha256。CI が音声を取り出さずに時刻を作るのに使う（\`synth.ts --cached-only --durations-only\`） | | |
 
 ## 使い方
 
@@ -593,6 +676,7 @@ const tally = (remote: Remote, plan: Plan): Map<string, Counts> => {
 export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { dryRun?: boolean; message?: string } = {}): Promise<Result> => {
   const log = opts.log ?? console.log;
   const convert = opts.convert ?? ffmpegConvert;
+  const measure = opts.measure ?? wavFileSamples;
   const dry = opts.dryRun === true;
   const stops = guard(repo);
   if (!check(repo, courses, () => {})) stops.push('素材が足りない。bun scripts/materials.ts check で足りないものを見て、bun scripts/synth.ts と scripts/build_music.py を流してから push する');
@@ -618,6 +702,10 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       const sumsSame = hashText(repo.root, sums, false) === remote.entries.get(SUMS)?.blob;
       const known = overlay(remote.entries, plan.changes);
       const readmeSame = known !== null && hashText(repo.root, readmeOf(known, abouts, remote.about), false) === remote.entries.get(README)?.blob;
+      // 台詞の音声の長さ（push のあとの木の、全部の台詞の音声。手元の WAV から測るか、前の版から引き継ぐ）
+      const dur = durationsFor(new Set([...remote.entries.keys(), ...plan.changes.keys()]), plan.sums, local, remote.durations, measure);
+      const durText = durationsJson(dur.durations);
+      const durSame = hashText(repo.root, durText, false) === remote.entries.get(DURATIONS)?.blob;
 
       // 一覧: 講座ごとの本数。手元に無い講座のフォルダは「残す」
       const groups = tally(remote, plan);
@@ -629,11 +717,13 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       const changedLines = [...plan.sums].filter(([rel, h]) => remote.sums.has(rel) && remote.sums.get(rel) !== h).length;
       const sumsNote = sumsSame ? '同じ' : `作り直す（行を足す ${addedLines}・変える ${changedLines}）`;
       log(`  README.md: ${readmeSame ? '同じ' : '作り直す'}・SHA256SUMS: ${sumsNote}`);
+      const durNote = `長さ ${dur.durations.size} 本: WAV から測った ${dur.measured}・前の版から引き継いだ ${dur.kept}${dur.unknown ? `・手元に同じ中身の WAV が無くて測れない ${dur.unknown}` : ''}`;
+      log(`  DURATIONS.json: ${durSame ? '同じ' : '作り直す'}（${durNote}）`);
       const all: Counts = { add: 0, change: 0, same: 0, keep: 0, missing: 0 };
       for (const n of groups.values()) for (const [k] of LABELS) all[k] += n[k];
       log(`合計: ${fmt(all)}（台詞は .flac・.kana・.meta.json を 1 本に数える。消すものは無い）`);
 
-      if (!plan.changes.size && readmeSame && sumsSame) {
+      if (!plan.changes.size && readmeSame && sumsSame && durSame) {
         log('素材のブランチと同じなので、push しない');
         return { pushed: false, sha: remote.sha, attempts: attempt };
       }
@@ -665,6 +755,7 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       const updates = new Map<string, string | null>([...plan.changes].map(([p, c]) => [p, c.blob!]));
       updates.set(README, hashText(repo.root, readmeOf(entries, abouts, remote.about), true));
       updates.set(SUMS, hashText(repo.root, sums, true));
+      updates.set(DURATIONS, hashText(repo.root, durText, true));
       const tree = buildTree(repo, remote.sha, updates, tmpDir());
       if (remote.sha && tree === git(repo.root, ['rev-parse', `${remote.sha}^{tree}`])) {
         log('素材のブランチと同じなので、push しない');
@@ -675,7 +766,7 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       const touched = courses.map((c) => [c.id, groups.get(c.id)] as const).filter(([, n]) => n && (n.add || n.change));
       const what = all.add || all.change
         ? `の素材を足した（足す ${all.add}・変える ${all.change}${touched.length ? `。${touched.map(([id, n]) => `${id} ${fmt({ ...n!, same: 0, keep: 0, missing: 0 })}`).join('、')}` : ''}）`
-        : 'の素材は前の版と同じ。README.md と SHA256SUMS だけを作り直した';
+        : 'の素材は前の版と同じ。README.md・SHA256SUMS・DURATIONS.json だけを作り直した';
       const message = [
         '素材: 台詞の音声・BGM・効果音を足す',
         `台本 ${source} ${what}。手元の台本に無い講座と台詞の素材は、消さずに残した（全部で台詞の音声 ${clips} 本・${folders} 講座と、BGM・ジングル・効果音）。`,
@@ -683,9 +774,9 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       ].join('\n\n');
       const commit = await commitAndPush(repo, remote.sha, tree, message, { ...opts, parent: true }, attempt);
       if (commit) {
-        const materials = [...entries].filter(([p]) => p !== README && p !== SUMS);
+        const materials = [...entries].filter(([p]) => !INDEX_FILES.has(p));
         const total = materials.reduce((s, [, e]) => s + e.size, 0);
-        log(`${repo.branch} を ${commit.slice(0, 8)} にした（足す ${all.add}・変える ${all.change}。全部で ${materials.length + 2} ファイル・${mb(total)}）`);
+        log(`${repo.branch} を ${commit.slice(0, 8)} にした（足す ${all.add}・変える ${all.change}。全部で ${materials.length + INDEX_FILES.size} ファイル・${mb(total)}）`);
         return { pushed: true, sha: commit, attempts: attempt };
       }
       log(`ほかの push が先に入っていた（${attempt} 回目）。取り直して、まとめ直す`);
@@ -779,12 +870,16 @@ export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boo
         log(`--confirm を付けると、消した木を親の無いコミットにして push する（残す素材も全部送り直す: 約 ${mb(bytes)}。いまは何も書いていない）`);
         return { pushed: false, sha: remote.sha, attempts: attempt };
       }
-      // SHA256SUMS は、木に残るファイルの行だけにする
+      // SHA256SUMS は、木に残るファイルの行だけにする。DURATIONS.json も、木に残る台詞の音声の長さだけにする
       const left = new Set([...entries.keys()].map(localOf));
       const sums = sumsText(new Map([...remote.sums].filter(([rel]) => left.has(rel))));
       const updates = new Map<string, string | null>(drop.map((p) => [p, null]));
       updates.set(README, hashText(repo.root, readmeOf(entries, abouts, remote.about), true));
       updates.set(SUMS, hashText(repo.root, sums, true));
+      if (remote.entries.has(DURATIONS)) {
+        const kept = new Map([...remote.durations].filter(([k]) => left.has(`${TTS}/${k}.wav`)));
+        updates.set(DURATIONS, hashText(repo.root, durationsJson(kept), true));
+      }
       tmp ??= mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-'));
       const tree = buildTree(repo, remote.sha, updates, tmp);
       const perCourse = [...clips].filter(([, c]) => c.drop.size).map(([id, c]) => `${id} ${c.drop.size}`);
@@ -887,6 +982,45 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
     const kanaNote = checkedKana === kana.length ? '' : `。読みは SHA256SUMS に行がある ${checkedKana}/${kana.length} 本だけを確かめた（前の形の素材）`;
     const metaNote = metas ? `・声の記録 ${metas} 本` : '';
     log(`素材を取り出した（${repo.branch} @ ${sha.slice(0, 7)}・音声 ${targets.size} 本・読み ${kana.length} 本${metaNote}。SHA256SUMS と一致${kanaNote}）`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+};
+
+/* ───────────── 長さと読みだけを取り出す（synth.ts --durations-only） ───────────── */
+
+/** 長さと読みだけの取り出しの結果（kana は鍵 → 読み、sums は SHA256SUMS） */
+export type DurationsOnly = { sha: string; durations: Durations; kana: Map<string, string>; sums: Map<string, string> };
+
+/**
+ * 素材のブランチから、長さの一覧（DURATIONS.json）・SHA256SUMS・講座の読み（.kana）だけを取り出す（git archive。音声は取り出さず、
+ * ffmpeg も要らない）。読みは、SHA256SUMS に行があれば照らす。素材のブランチに DURATIONS.json がまだ無ければ null
+ * （呼ぶ側が、今までどおり pull で音声を取り出す）。長さだけでは mix と render はできない（音声が要る）
+ */
+export const pullDurations = (repo: Repo, ids: string[], log: (line: string) => void = console.log): DurationsOnly | null => {
+  const sha = fetchBranch(repo, repo.branch);
+  if (!sha) throw new MissingError(`素材のブランチ ${repo.remote}/${repo.branch} が無い`);
+  if (run(repo.root, ['cat-file', '-e', `${sha}:${DURATIONS}`]).code !== 0) return null;
+  const inBranch = new Set(listIn(repo, sha, 'tts'));
+  const present = ids.filter((id) => inBranch.has(id));
+  const tmp = mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-durations-'));
+  try {
+    extract(repo.root, sha, [DURATIONS, SUMS, ...present.map((id) => `:(glob)tts/${id}/*.kana`)], tmp);
+    const sums = parseSums(readFileSync(path.join(tmp, SUMS), 'utf8'));
+    const durations = parseDurations(readFileSync(path.join(tmp, DURATIONS), 'utf8'));
+    const kana = new Map<string, string>();
+    const bad: string[] = [];
+    for (const id of present) {
+      const dir = path.join(tmp, 'tts', id);
+      for (const name of existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.kana')) : []) {
+        const rel = `${TTS}/${name}`;
+        if (sums.has(rel) && sha256Of(path.join(dir, name)) !== sums.get(rel)) bad.push(rel);
+        kana.set(name.slice(0, -'.kana'.length), readFileSync(path.join(dir, name), 'utf8'));
+      }
+    }
+    if (bad.length) throw new Error(`読みが SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`);
+    log(`素材のブランチ ${repo.branch} @ ${sha.slice(0, 7)} から、長さ ${durations.size} 本と読み ${kana.size} 本を取り出した（音声は取り出さない）`);
+    return { sha, durations, kana, sums };
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
