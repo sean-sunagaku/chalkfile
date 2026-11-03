@@ -2,7 +2,7 @@
 // 本物の Chrome で今の site/dist/sw.js に全講座を保存させ、Cache API に書いた registry の記録をそのまま取り出す。
 // 旧 Pages（scope /chalkfile/）の記録は、tests/fixtures/legacy-pages の本物の旧 SW で取る。動画は fixture に入れない。
 // 使い方: bun scripts/build_site.ts --strict のあとに bun tests/capture-saved-records.ts <日付>
-// tests/browser-server.ts（127.0.0.1:8877）を起動するので、npm run test:browser と同時に流さない
+// tests/browser-server.ts を 127.0.0.1:8877 で起動する（PW_PORT で変える。使っていれば止まる）
 import { chromium, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -16,7 +16,8 @@ const date = process.argv[2];
 if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) throw new Error('fixture の日付（例: 2026-11-02）を指定してください');
 const out = path.join(root, 'tests/fixtures/saved-records', date);
 if (existsSync(out)) throw new Error(`${path.relative(root, out)} はもうあります。fixture は足すだけで、書き換えない`);
-const base = 'http://127.0.0.1:8877';
+const port = process.env.PW_PORT ?? '8877';
+const base = `http://127.0.0.1:${port}`;
 const dist = path.join(root, 'site/dist');
 const ids = readdirSync(dist).filter((d) => existsSync(path.join(dist, d, 'offline-manifest.json')));
 // 訳の講座（en/… など）は、公開したら同じ形で足す
@@ -53,7 +54,8 @@ async function registry(page: Page, name: string, scope: string) {
 }
 const recordFile = (era: string, id: string, name = 'record.json') => path.join(out, era, encodeURIComponent(id), name);
 
-const server = Bun.spawn(['bun', 'tests/browser-server.ts'], { cwd: root, stdout: 'ignore', stderr: 'inherit' });
+// テストのサーバーそのものが、本物の講座のセッションとして答える（障害の差し込みの状態も、このサーバーのもの）
+const server = Bun.spawn(['bun', 'tests/browser-server.ts'], { cwd: root, stdout: 'ignore', stderr: 'inherit', env: { ...process.env, PW_PORT: port } });
 const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-saved-records-'));
 try {
   for (let i = 0; ; i++) {

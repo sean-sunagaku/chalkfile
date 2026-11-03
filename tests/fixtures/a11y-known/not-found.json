@@ -1,0 +1,17 @@
+[
+  {
+    "rule": "landmark-one-main",
+    "impact": "moderate",
+    "target": "html"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": "h1"
+  },
+  {
+    "rule": "region",
+    "impact": "moderate",
+    "target": "p"
+  }
+]
