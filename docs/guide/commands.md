@@ -100,6 +100,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`）。中は `npm run chalk -- mix` と同じで、選ばなければ公開する言語の全部の動画（`-- L01 S01.en`・`-- --course <講座 ID>` で選ぶ）。始める前に、設計図の形と、要る声・BGM・効果音がそろっているかを見る |
 | `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
+| `npm run fonts` | 書体のサブセット（`engine/fonts/`）を、台本の全部の文字で作り直す。台本に新しい文字を足したら流して commit する。元の書体は google/fonts の固定した commit から取り、共有のキャッシュ `~/.cache/chalkfile/fonts/` に置く（uv と、初回だけネットが要る）。`-- --check` で確かめるだけ（`npm run validate` も同じものを見る） |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`-- L04@120`・`--theme=<id>`・`--captions`。動画・場面・フレームの形と範囲は、バンドルを作る前に確かめる（timeline の無い動画は止める） |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |

@@ -25,7 +25,7 @@
 |---|---|
 | `id` / `label` / `summary` | 講座の `theme` に書く名前、表示名、一覧ページの紹介文 |
 | `scheme` | `light` か `dark`。図の薄い面（10% か 15%）と、図の文字色の作り方（見出しの色に混ぜるか、白に混ぜるか）が変わる |
-| `fonts` | 本文の書体を並べる（`zen-maru`・`noto`・`inter`）。英字用を先に置くと英字だけその書体になる。コードは JetBrains Mono で固定 |
+| `fonts` | 本文の書体を並べる（`zen-maru`・`noto`・`inter`）。英字用を先に置くと英字だけその書体になる。コードは JetBrains Mono で固定。書体のファイルは下の「書体」 |
 | `color.bg` / `bg2` | 動画とサイトの地（上から下へ bg → bg2） |
 | `color.surface` / `surface2` | カードの面と、一段沈んだ面（表の見出し・サイトの帯） |
 | `color.ink` / `sub` / `muted` | 見出し・本文・補足の文字 |
@@ -57,6 +57,16 @@
 - 透明度は `alpha(色, 0x55 / 255)`、2 色を混ぜるのは `mix(a, b, t)`（`engine/core/color.ts`）。`${色}55` のように 16 進の透明度をつながない
 - テーマで変えない「そのものの色」（架空のアプリの画面・スマホの枠・窓の信号）は、`src/components/app-colors.ts` にだけ書く
 - 講座サイト（`scripts/site_theme.ts`）も同じパレットから CSS を作る。図の文字色の作り方だけ、動画とサイトで違う（`TONE_TEXT_MIX`。そろえるのは見た目の更新のとき）
+
+## 書体
+
+- 書体のファイルは `engine/fonts/`（woff2）。台本の全部の文字（全講座・全言語の、動画が描く文字と読む教材の文字）だけを入れたサブセットなので、書き出しにネットは要らない
+- 書体の名前・ファイル・太さ・文字を集める言語は `engine/core/fonts.ts` の `FONTS`。動画は `src/fonts.ts` の `useFonts` が読み込み、読み込み終わってから場面を描く（文字の幅を測る部品が、読み込む前の書体で測らないように）
+- 元の書体は、Google Fonts の配布元（google/fonts）の固定した commit の TTF。出どころ（URL・sha256・版）と、作ったファイルの sha256 は `engine/fonts/fonts.json`、ライセンスの文（SIL Open Font License 1.1。著作権の表示を含む）は隣の `OFL-<書体>.txt`
+- 台本に新しい文字を足したら `npm run fonts` で作り直し、`engine/fonts/` を commit する（元の書体を取ってサブセットにする。uv と、初回だけネットが要る）
+- `npm run validate` は、動画が描く文字が、その動画の書体（テーマと言語の書体と JetBrains Mono）に無いと止める。書体に無い文字は手元の書体で描かれ、書き出す機械で字形が変わるため。元の書体にも無い文字は、台本の文字を別の文字にする
+- 英字の書体（Inter・JetBrains Mono）には、Google Fonts の latin の範囲の文字だけを入れる。範囲の外の文字（矢印・丸の数字など）は、本文の書体で描く
+- 書体を足すときは、`FONTS` と、`scripts/fonts.ts` の `SOURCES`（元の書体の場所・sha256・版）と `LICENSES` に 1 つずつ足し、`npm run fonts` を流す
 
 ## 新しいテーマを作る
 

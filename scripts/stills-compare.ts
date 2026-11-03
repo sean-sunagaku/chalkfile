@@ -18,7 +18,8 @@
 //   node_modules は、既定では今の作業フォルダのものを cp -c（APFS の複製）で写す。--base-install の基準と --head の側は、その版で npm ci する
 // 書き出しは側ごとに別のプロセス（stills-compare-side.ts）で、その側の @remotion/bundler・@remotion/renderer・Chrome Headless Shell を使う。
 // 場面の選び方と種類の名前は、今の作業フォルダの台本で決める（場面の時刻は、それぞれの側の timeline から読む）。
-// 差があるか、書き出せなかった場面があれば 1 で終える（2 は使い方の誤り）。書体は Google Fonts から読むので、ネットにつながっている必要がある
+// 差があるか、書き出せなかった場面があれば 1 で終える（2 は使い方の誤り）。書体は手元の engine/fonts/ から読む（基準の版が、書体を
+// Google Fonts から読んでいた前の版なら、その側だけネットにつながっている必要がある）
 import { type ChildProcess, execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -171,7 +172,7 @@ const seedBrowser = (dir: string) => {
 };
 
 /** 絵に効く依存と Chrome の版（書き出したあとに読む）。報告に出して、どの版どうしを比べたかを確かめられるようにする */
-const PACKAGES = ['remotion', '@remotion/renderer', '@remotion/google-fonts', 'react', 'react-dom', 'lucide-react'];
+const PACKAGES = ['remotion', '@remotion/renderer', '@remotion/google-fonts', '@remotion/fonts', '@remotion/layout-utils', 'react', 'react-dom', 'lucide-react'];
 const versionsAt = (dir: string) => {
   const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
   const out: Record<string, string> = {};

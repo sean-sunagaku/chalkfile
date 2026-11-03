@@ -4,6 +4,7 @@ import { LANG_INFO, type Lang } from '../engine/core/i18n';
 import { upgradeLecture } from '../engine/core/legacy';
 import type { Scene, Tone } from '../engine/core/schema';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
+import { useFonts } from './fonts';
 import { SCENES } from './scenes';
 import { alpha, H, ThemeProvider, usePalette, videoPalette } from './theme';
 import { fadeInOut, SceneProvider } from './timing';
@@ -133,7 +134,9 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
   if (!tl) throw new Error(`${id} の timeline が無いか、読めない（bun scripts/synth.ts ${id} で作る）`);
   // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
   const th = project.themeOf(theme || course.theme);
-  const { SANS } = videoPalette(th, lang);
+  const { SANS, fonts } = videoPalette(th, lang);
+  // 書体（本文の書体と等幅の書体）を読み込み終わるまで、場面を描かない（文字の幅を測る部品が、読み込む前の書体で測らないように）
+  const ready = useFonts([...fonts, 'mono']);
   const scenes = lecture.scenes.map((s, i) => {
     const st = tl.scenes[i];
     return (
@@ -154,7 +157,7 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
     <ThemeProvider theme={th} lang={lang}>
       <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>
         <Background />
-        {captions ? (
+        {!ready ? null : captions ? (
           <>
             <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
             <Captions cues={cues} />

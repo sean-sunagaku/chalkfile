@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "upstream": {
+    "repo": "https://github.com/google/fonts",
+    "commit": "2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc"
+  },
+  "tools": {
+    "fonttools": "4.68.0",
+    "brotli": "1.2.1"
+  },
+  "fonts": {
+    "zen-maru": {
+      "family": "Zen Maru Gothic",
+      "license": "OFL-1.1",
+      "licenseFile": "OFL-zen-maru-gothic.txt",
+      "files": [
+        {
+          "file": "zen-maru-gothic-500.woff2",
+          "weights": [
+            500
+          ],
+          "sha256": "39438e26bc61655d9fb735cb37e5d08824b084b1bee74fbf2f77bf9828bdd7eb",
+          "bytes": 248892,
+          "chars": 1347,
+          "missing": "≈－",
+          "source": {
+            "path": "ofl/zenmarugothic/ZenMaruGothic-Medium.ttf",
+            "sha256": "3cfdb98a13571ede17fcc769f5093a97c38b80a7b9b2ab754a26b4d822092b3b",
+            "bytes": 3810988,
+            "version": "Version 1.001",
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/zenmarugothic/ZenMaruGothic-Medium.ttf"
+          }
+        },
+        {
+          "file": "zen-maru-gothic-700.woff2",
+          "weights": [
+            700
+          ],
+          "sha256": "a48c8aaafd03f2de99560b3d06e95728305d96ffa8fe46c69c95db4db21fa440",
+          "bytes": 252608,
+          "chars": 1347,
+          "missing": "≈－",
+          "source": {
+            "path": "ofl/zenmarugothic/ZenMaruGothic-Bold.ttf",
+            "sha256": "fe24426b9c8b5523a0146a8235c8674eccf0493af354a53ec895c3596d9eb745",
+            "bytes": 3779008,
+            "version": "Version 1.001",
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/zenmarugothic/ZenMaruGothic-Bold.ttf"
+          }
+        },
+        {
+          "file": "zen-maru-gothic-900.woff2",
+          "weights": [
+            900
+          ],
+          "sha256": "f0f896323c79c1dd6242fedfe864311efd6d30e98ad5ec90af2ff425acd033bb",
+          "bytes": 251132,
+          "chars": 1347,
+          "missing": "≈－",
+          "source": {
+            "path": "ofl/zenmarugothic/ZenMaruGothic-Black.ttf",
+            "sha256": "6bd74fe76cd39ee0ec18775c3661d845343fb3f6f8fa09a3076638417baf741f",
+            "bytes": 3710324,
+            "version": "Version 1.001",
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/zenmarugothic/ZenMaruGothic-Black.ttf"
+          }
+        }
+      ]
+    },
+    "noto": {
+      "family": "Noto Sans JP",
+      "license": "OFL-1.1",
+      "licenseFile": "OFL-noto-sans-jp.txt",
+      "files": [
+        {
+          "file": "noto-sans-jp.woff2",
+          "weights": [
+            400,
+            500,
+            700,
+            900
+          ],
+          "sha256": "e4fa8410ad2fd02194f40cdacf6691b7855148bfd1200170ff31243e65381cbc",
+          "bytes": 460516,
+          "chars": 1348,
+          "missing": "≒",
+          "source": {
+            "path": "ofl/notosansjp/NotoSansJP[wght].ttf",
+            "sha256": "c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f",
+            "bytes": 9589900,
+            "version": "Version 2.004-H2;hotconv 1.0.118;makeotfexe 2.5.65603",
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf"
+          }
+        }
+      ]
+    },
+    "noto-sc": {
+      "family": "Noto Sans SC",
+      "license": "OFL-1.1",
+      "licenseFile": "OFL-noto-sans-sc.txt",
+      "files": [
+        {
+          "file": "noto-sans-sc.woff2",
+          "weights": [
+            400,
+            500,
+            700,
+            900
+          ],
+          "sha256": "f593f415f37f645dd0d84deb039951f8c441c2492aec63c974dd8f3ce0b197d0",
+          "bytes": 370364,
+          "chars": 1294,
+          "missing": "",
+          "source": {
+            "path": "ofl/notosanssc/NotoSansSC[wght].ttf",
+            "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+            "bytes": 17772300,
+            "version": "Version 2.004-H2;hotconv 1.0.118;makeotfexe 2.5.65603",
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf"
+          }
+        }
+      ]
+    },
+    "inter": {
+      "family": "Inter",
+      "license": "OFL-1.1",
+      "licenseFile": "OFL-inter.txt",
+      "files": [
+        {
+          "file": "inter.woff2",
+          "weights": [
+            400,
+            500,
+            600,
+            700,
+            800,
+            900
+          ],
+          "sha256": "0ee7a221b10c892f57a720d52bb8707e9293dd7de83859a8557a89abf469d130",
+          "bytes": 49560,
+          "chars": 111,
+          "missing": "",
+          "source": {
+            "path": "ofl/inter/Inter[opsz,wght].ttf",
+            "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+            "bytes": 876576,
+            "version": "Version 4.001;git-66647c0bb",
+            "pin": {
+              "opsz": 14
+            },
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+          }
+        }
+      ]
+    },
+    "mono": {
+      "family": "JetBrains Mono",
+      "license": "OFL-1.1",
+      "licenseFile": "OFL-jetbrains-mono.txt",
+      "files": [
+        {
+          "file": "jetbrains-mono.woff2",
+          "weights": [
+            400,
+            500,
+            700
+          ],
+          "sha256": "63817aa3cf155c44a40c6eba36b40340242b13c113d688873851feff97050440",
+          "bytes": 34440,
+          "chars": 110,
+          "missing": "※",
+          "source": {
+            "path": "ofl/jetbrainsmono/JetBrainsMono[wght].ttf",
+            "sha256": "48715a42ec242c21e9f02692891e147d022299a52e48d5e413e1a942193ffeda",
+            "bytes": 187208,
+            "version": "Version 2.211",
+            "url": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf"
+          }
+        }
+      ]
+    }
+  }
+}

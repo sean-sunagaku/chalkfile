@@ -23,8 +23,9 @@
       "*.json",
       "*.jsonc",
       ".claude/launch.json",
-      // 生成物（講座のフォルダの generated。手で直さない。作り直す）と、テストの記録（そのままの形で残す）
+      // 生成物（講座のフォルダの generated と、書体のサブセット engine/fonts（npm run fonts が作る）。手で直さない。作り直す）と、テストの記録（そのままの形で残す）
       "!content/*/generated",
+      "!engine/fonts",
       // Worker の型は wrangler types が作る（npm run gen:worker-types）。Worker の許可リストは npm run gen が作る（Git に入れない）
       "!worker/worker-configuration.d.ts",
       "!worker/src/generated/*.json",

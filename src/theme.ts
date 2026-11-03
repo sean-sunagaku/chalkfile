@@ -1,11 +1,7 @@
-import { loadFont as loadInter } from '@remotion/google-fonts/Inter';
-import { loadFont as loadJetBrains } from '@remotion/google-fonts/JetBrainsMono';
-import { loadFont as loadNoto } from '@remotion/google-fonts/NotoSansJP';
-import { loadFont as loadNotoSC } from '@remotion/google-fonts/NotoSansSC';
-import { loadFont as loadZenMaru } from '@remotion/google-fonts/ZenMaruGothic';
 import React, { createContext, useContext } from 'react';
+import { FONTS } from '../engine/core/fonts';
 import type { Lang } from '../engine/core/i18n';
-import type { FontKey, Theme } from '../engine/core/schema';
+import type { Theme } from '../engine/core/schema';
 import { derivePalette, type Palette } from '../engine/core/theme';
 import { CONTENT, VIDEO } from './video.config';
 
@@ -20,42 +16,24 @@ export const CONTENT_BOTTOM = CONTENT.bottom;
 
 export { alpha, BLACK, WHITE } from '../engine/core/color';
 
-/* ───────────── 書体（使うテーマの分だけ読み込む） ───────────── */
-
-const families: Partial<Record<FontKey | 'mono', string>> = {};
-const family = (k: FontKey | 'mono'): string => {
-  if (!families[k]) {
-    families[k] =
-      k === 'zen-maru'
-        ? loadZenMaru('normal', { weights: ['500', '700', '900'], ignoreTooManyRequestsWarning: true }).fontFamily
-        : k === 'inter'
-          ? loadInter('normal', { weights: ['400', '500', '600', '700', '800', '900'], subsets: ['latin'] }).fontFamily
-          : k === 'noto'
-            ? loadNoto('normal', { weights: ['400', '500', '700', '900'], ignoreTooManyRequestsWarning: true }).fontFamily
-            : k === 'noto-sc'
-              ? loadNotoSC('normal', { weights: ['400', '500', '700', '900'], ignoreTooManyRequestsWarning: true }).fontFamily
-              : loadJetBrains('normal', { weights: ['400', '500', '700'], subsets: ['latin'] }).fontFamily;
-  }
-  return families[k]!;
-};
-
 /* ───────────── テーマ（ThemeProvider と usePalette） ─────────────
  * 1 本の動画は 1 つのテーマで描く。LectureVideo（src/Lecture.tsx）が ThemeProvider で動画全体を包み、
- * 部品は usePalette() でパレットを読む（const { C, tone, SANS } = usePalette()）。色は engine/core/theme.ts の derivePalette が作る
+ * 部品は usePalette() でパレットを読む（const { C, tone, SANS } = usePalette()）。色は engine/core/theme.ts の derivePalette が作る。
+ * 書体の名前は engine/core/fonts.ts の FONTS。ファイルは手元の engine/fonts/ から、src/fonts.ts の useFonts が読み込む（src/Lecture.tsx）
  */
 
-/** 動画の部品が使うパレット。engine/core/theme.ts の色に、読み込んだ書体の名前（本文の SANS・等幅の MONO）を足す */
+/** 動画の部品が使うパレット。engine/core/theme.ts の色に、書体の名前（本文の SANS・等幅の MONO。CSS の font-family）を足す */
 export type VideoPalette = Palette & { SANS: string; MONO: string };
 
 const withFonts = new WeakMap<Palette, VideoPalette>();
 
-/** テーマと言語のパレット。書体は、ここで初めて読み込む（テーマと言語ごとに 1 回だけ作る） */
+/** テーマと言語のパレット（テーマと言語ごとに 1 回だけ作る）。書体の読み込みは src/fonts.ts の useFonts */
 export const videoPalette = (theme: Theme, lang: Lang = 'ja'): VideoPalette => {
   const p = derivePalette(theme, lang);
   let v = withFonts.get(p);
   if (!v) {
-    const SANS = [...p.fonts.map(family), 'sans-serif'].join(', ');
-    v = { ...p, SANS, MONO: `${family('mono')}, ${SANS}` };
+    const SANS = [...p.fonts.map((f) => FONTS[f].family), 'sans-serif'].join(', ');
+    v = { ...p, SANS, MONO: `${FONTS.mono.family}, ${SANS}` };
     withFonts.set(p, v);
   }
   return v;

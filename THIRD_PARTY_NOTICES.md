@@ -8,7 +8,8 @@
 | React・React DOM | 動画の部品 | MIT |
 | lucide-react | アイコン | ISC |
 | TypeScript（`tsc` は OS ごとの `@typescript/typescript-<OS>-<CPU>` に入っている） | 型の確かめ（開発のときだけ） | Apache-2.0 |
-| Zen Maru Gothic・Noto Sans JP・Noto Sans SC・Inter・JetBrains Mono | 書体（Google Fonts から読み込む。Noto Sans SC は中国語の講座） | SIL Open Font License 1.1 |
+| Zen Maru Gothic・Noto Sans JP・Noto Sans SC・Inter・JetBrains Mono | 書体。台本の文字だけを入れたサブセットを `engine/fonts/` に置き、動画に焼き込む（元の書体は Google Fonts の配布元 google/fonts。ライセンスの文は隣の `OFL-<書体>.txt`）。講座サイトは Google Fonts から読み込む。Noto Sans SC は中国語の講座 | SIL Open Font License 1.1 |
+| fonttools・Brotli | 書体のサブセットを作る（`npm run fonts`。作るときだけ。`uvx` が固定した版を用意する。このリポジトリでは配らない） | MIT |
 | VOICEVOX（No.7・青山龍星・ずんだもん・玄野武宏） | 日本語のナレーションの声（作るときだけ。声は動画に入る） | VOICEVOX の利用規約と各キャラクターの利用規約。クレジットの表記が要る |
 | Kokoro-82M・Kokoro-82M-v1.1-zh（hexgrad。`kokoro`） | 英語と中国語のナレーションの声（作るときだけ。手元で動かす `scripts/tts_kokoro.py`。声は動画に入る） | Apache-2.0（モデルの重みとコード）。中国語の声のデータは LongMaoData が許諾したもの（モデルカード）。動画とサイトに「Kokoro-82M（声の名前）」と書く |
 | misaki（`misaki[en,zh]`）・spaCy・jieba・pypinyin | 英語と中国語の読み（音素）を作る（作るときだけ） | Apache-2.0・MIT ほか |
@@ -20,5 +21,5 @@
 
 - BGM と効果音は `scripts/build_music.py` が合成したオリジナルで、外の音源は使っていません
 - 英語版・中国語版のずんだもんは、VOICEVOX:ずんだもんの声ではなく Kokoro の声です（キャラクターは東北ずん子・ずんだもんプロジェクトのキャラクター利用の手引きに沿って使う）
-- Python の道具は `uv run` が、固定した版で用意します（このリポジトリには入れません）。NumPy・SciPy は `pyproject.toml` と `uv.lock`、Kokoro・faster-whisper などはスクリプトの頭と `scripts/<名前>.py.lock` に版があります
+- Python の道具は `uv run` と `uvx` が、固定した版で用意します（このリポジトリには入れません）。書体を作る fonttools の版は `scripts/fonts.ts` の `TOOLS`、元の書体の出どころと sha256 は `engine/fonts/fonts.json` にあります。NumPy・SciPy は `pyproject.toml` と `uv.lock`、Kokoro・faster-whisper などはスクリプトの頭と `scripts/<名前>.py.lock` に版があります
 - 依存しているパッケージの正確な版は `package-lock.json` にあります

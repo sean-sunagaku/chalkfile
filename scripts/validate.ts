@@ -11,6 +11,8 @@
 //     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
 //     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める。
 //     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems。今は注意）
+//   書体（scripts/fonts.ts の fontIssues）: 動画が描く文字が、その動画の書体（engine/fonts/ のサブセット）にあるか（無ければ誤り）と、
+//     台本の文字がサブセットに入っているか（入っていなければ注意。npm run fonts で作り直す）
 // 誤り: 描くと止まるか黙って崩れるもの（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声など）と、
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
@@ -19,13 +21,14 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
-import { THEMES } from '../content/themes';
+import { THEMES, themeOf } from '../content/themes';
 import type { Course, Theme } from '../content/types';
 import { creditsIn, voicesOf } from '../content/voices';
 import { formatIssues, RULES, validateCourse, validateCourses, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
 import { mediaListFile, posterFile } from '../engine/core/generated';
 import { mediaKey, type MediaManifest } from '../site/media-shared';
 import { readArgs, runMain, showHelp } from './lib/args';
+import { fontIssues } from './fonts';
 import { readSiteConfig, type SiteConfig } from './lib/config';
 import { ROOT } from './lib/paths';
 import { readMediaLists } from './media-lists';
@@ -33,8 +36,11 @@ import { PAGE_VERSION_MARK } from './site-version';
 import { courseCredits } from './site/model';
 import { readTimelinesByKey } from './timelines';
 
-/** 公開で止まることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見るので、こちらに置く） */
-export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧', credit: '声のクレジット' } as const;
+/**
+ * 公開で止まることと、書き出しで崩れることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見て、ファイルを読まないので、こちらに置く）。
+ * font は、動画の文字が書体（engine/fonts/）に無いこと（scripts/fonts.ts の fontIssues）
+ */
+export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧', credit: '声のクレジット', font: '書体に無い文字' } as const;
 /** 公開で止まることの 1 件（形は台本の Issue と同じで、rule だけが PUBLISH_RULES の名前） */
 export type PublishIssue = Omit<Issue, 'rule'> & { rule: keyof typeof PUBLISH_RULES };
 
@@ -233,7 +239,7 @@ export const validateAll = async (): Promise<Report> => {
     if (theme.id !== id) issues.push({ level: 'error', rule: 'theme', where: `content/themes.ts ${id}`, message: `THEMES のキー（${id}）とテーマの id（${theme.id}）が違う` });
   }
   try {
-    const { COURSES, coursesIn } = await import('../content');
+    const { COURSES, coursesIn, VIDEOS } = await import('../content');
     // timeline は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。指紋で、台本を直したのに合成し直していない動画も見つける
     const timelines = readTimelinesByKey();
     // 講座をまたいだもの（頭文字・並び・講座 ID の重なり）。並行の PR が講座を足すと、マージするまで気づけない
@@ -259,6 +265,8 @@ export const validateAll = async (): Promise<Report> => {
       for (const e of entries) issues.push({ level: 'warning', rule: 'timeline', where: e.file, message: '台本に無い動画の timeline（消した動画なら bun scripts/synth.ts --prune で消す）' });
     }
     issues.push(...publishIssues(COURSES, coursesIn));
+    // 動画の文字が、その動画の書体に無いか（書体のファイルは、台本の文字だけを入れたサブセット。文字が増えたら npm run fonts で作り直す）
+    issues.push(...fontIssues({ videos: VIDEOS, coursesIn, themeOf }));
   } catch (e) {
     // 台本の読み込みで止まったとき（訳の重ね方の誤りは止まらずに、その動画の誤りになる。engine/core/i18n.ts の l10nProblems）
     issues.push({ level: 'error', rule: 'scenes', where: 'content/（読み込み）', message: messageOf(e) });
