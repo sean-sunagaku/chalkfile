@@ -67,7 +67,7 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 公開の前に、全部やる。
 
-- 読み: `.work/kana/<id>.txt` を全部読む。誤読は `content/reading.ts` に足して synth し直す
+- 読み: `.work/kana/<id>.txt` を全部読む。誤読は講座の辞書 `content/<講座>/reading.ts`（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）に足して synth し直す（[style.md](references/style.md) の「読み間違いの直し方」）
 - 見た目: `node scripts/stills.ts L01 --mid` で `out/stills/` に静止画を書き、全部見る。文字のはみ出し・重なり・小さすぎを直す
 - 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本ファイルを渡して、主張ごとに公式で確かめてもらう（research.md の「事実確認」）
@@ -102,7 +102,7 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | 頼まれたこと | やること |
 |---|---|
 | 台詞を直す | 台本を直す → synth → kana を見る → mix → render → stills → build_site → コミット → deploy |
-| 読み間違いを直す | `reading.ts` の `PHRASES`（語句）か `WORDS`（英単語）に足す → synth（読みが変わった台詞だけ作り直される）→ mix → render |
+| 読み間違いを直す | 講座の `content/<講座>/reading.ts` の `phrases`（語句）か `words`（英単語）に足す → `npm test`・`npm run reading:diff` で変わった台詞を見る → synth（読みが変わった台詞だけ作り直される）→ mix → render |
 | 図や画面の文字だけ直す | 台本を直す → stills → render（声は変わらないので synth と mix は要らない） |
 | トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.ts --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |

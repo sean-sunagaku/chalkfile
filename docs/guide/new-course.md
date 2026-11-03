@@ -57,6 +57,7 @@
 - [ ] `content/courses.ts`: 1 行（`export { default as <名前> } from './<講座 ID>';`）。行の順は問わない（並びは `order` で決まる）
 - [ ] `content/<講座 ID>/sources.ts`: 出典と確かめた日（章立て・教材つきの講座）
 - [ ] `content/<講座 ID>/syllabus.ts`: 全体の目次・到達目標・章の計画（教材つきの講座。[materials.md](../../.claude/skills/study-video-course/references/materials.md)）
+- [ ] `content/<講座 ID>/reading.ts`: その講座の読みの辞書（講座の用語・固有名詞。要るときだけ。`index.ts` の `reading` に登録する。[style.md](../../.claude/skills/study-video-course/references/style.md) の「読み間違いの直し方」）
 - [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`index.ts` の `translations`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）
 - [ ] 実在の会社や製品を扱うなら、`disclaimer` に「非公式」と書く。お笑い版は「ボケの台詞は、わざと間違えています」も書く
 

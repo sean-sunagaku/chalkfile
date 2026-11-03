@@ -5,6 +5,7 @@ import type { CourseModule } from './course-module';
 import * as REGISTRY from './courses';
 import { LANGS, localizeCourse, parseVideoKey, videoKey, type CourseL10n, type Lang, type TranslatedLang } from './i18n';
 import { resolveCourse } from './lines';
+import { useReading } from './reading';
 import type { AuthoredCourse, Course, Lecture } from './types';
 
 /** 登録した講座（order の順。同じ order なら講座 ID の順。order の重なりは npm run validate が止める） */
@@ -12,6 +13,15 @@ const MODULES: CourseModule[] = (Object.values(REGISTRY) as CourseModule[]).sort
 
 /** 台本に書いたままの日本語の講座（at に台詞の id が残っている）。訳を重ねる元と、訳のひな形に使う */
 export const AUTHORED_COURSES: AuthoredCourse[] = MODULES.map((m) => m.course);
+
+/**
+ * 講座の読みの辞書（content/<講座>/reading.ts）を、その講座の日本語の台詞に付ける（content/reading.ts）。辞書の無い講座にも、空の辞書を付ける
+ * （2 つの講座で同じ台詞のオブジェクトを使っていると、どちらの辞書で読むか決まらないので、その台詞を SHARED_LINES に挙げる。テストが 0 を確かめる）
+ */
+export const SHARED_LINES: string[] = MODULES.flatMap((m) => {
+  const reading = m.reading ?? {};
+  return m.course.lectures.flatMap((l) => l.scenes.flatMap((s, i) => useReading(s.lines, reading).map(() => `${m.course.id}/${l.id} 場面 ${i + 1}`)));
+});
 
 /** 日本語の講座（一覧のページの並び。at は台詞の番号に直したもの） */
 export const COURSES: Course[] = AUTHORED_COURSES.map(resolveCourse);

@@ -7,7 +7,7 @@
 | 値 | 持つ動画 | 求め方（作るときと同じ関数） | 変わると |
 |---|---|---|---|
 | 音声の鍵 | 全部 | `scripts/voices.ts` の `ttsKeyIn`（日本語は VOICEVOX の `ttsKeyV1`、訳は Kokoro の `kokoroKeyV1`）。声は台詞の `v`（無ければ先生） | 素材の音声が当たらなくなる。合成し直しが要る（CI の `synth.ts --cached-only` で公開が止まる） |
-| 読み | 全部 | `content/voices.ts` の `speechIn`（日本語は `content/reading.ts` の `toSpeech`、中国語は `toSpeechZh`） | VOICEVOX・Kokoro に渡す文が変わる（鍵も変わる） |
+| 読み | 全部 | `content/voices.ts` の `speechIn`（日本語は `content/reading.ts` の `toSpeech` と、講座の辞書 `content/<講座>/reading.ts`。中国語は `toSpeechZh`） | VOICEVOX・Kokoro に渡す文が変わる（鍵も変わる） |
 | 訳の指紋 | 訳がある動画だけ（訳の動画と、その元の日本語の動画） | `scripts/i18n.ts` の `fingerprint`（`stamp` が訳のファイルの `source` に書く値。訳の動画も、元の日本語の台本の訳す文字から求める） | その訳が stale になる |
 | クレジット | 全部 | `content/voices.ts` の `creditsIn`（動画のエンディングが、台詞の声から作る値。`VOICES` の並びと `credit` の表記で決まる） | 動画の終わりの画面が変わる（書き出し直し） |
 

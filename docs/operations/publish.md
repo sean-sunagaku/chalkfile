@@ -37,7 +37,8 @@ git merge origin/main
 npm run synth -- <ID…>        # 例: npm run synth -- G01 G02。訳の動画は G01.en のように渡す
 ```
 
-- `.work/kana/<ID>.txt` の読みを全部読む。誤読は、台詞の `s` か `content/reading.ts` で直して、もう一度 synth する
+- `.work/kana/<ID>.txt` の読みを全部読む。誤読は、台詞の `s` か講座の辞書 `content/<講座>/reading.ts`（どの講座でも同じ読みにしたい語だけ共通の `content/reading.ts`）で直して、もう一度 synth する
+- 読みの辞書を直したら `npm run reading:diff` で、main と比べて読みが変わった台詞と動画を見る。公開中の動画で読みが変わったものは、作り直して 6 の media push まで流す（動画の一覧が変わるまで、`reading:diff` は止まる）
 - 訳の動画は、`uv run --locked --script scripts/check_speech.py <key…>` で聞き取り直す（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)）
 - 台本の検証（`npm run validate`）は synth の最初にも流れ、誤りのある動画は止まる
 
