@@ -65,8 +65,9 @@
 ## マージと公開
 - 講座を足したら `npm run test:browser`（実 Chrome でオフライン保存・再生を確かめる、main の #2・#3 で入ったテスト）も流す。Stripe 講座だけの頃の前提（一覧の保存状態のリンクは 1 つ）で書かれていて、4 講座になると 4 件が strict mode の違反で止まった。テストは講座を名前か URL で選ぶ（`#savedCourses a[href$="/stripe-billing/"]`）
 - アプリ内のブラウザ（Claude の Browser pane）では Service Worker の読み込みが 403 になり、オフライン保存のパネルが「準備できません」と出る。PWA は `npm run test:browser` か、公開した HTTPS のサイトで確かめる
-- `deploy_pages.sh`（gh-pages への強制 push）は、自動の安全判定で「本番への公開」として止められることがある。マージの許可とは別に、公開の許可をユーザーにもらう（計画の段階で聞いておく）。push 済みのコミットを直す強制 push（`commit --amend` → `push --force-with-lease`）も止められた
-- gh-pages は公開のたびに丸ごと置き換わる。別のセッションが古い main から公開すると、新しい講座が消える（今回は PR #1 のマージ前に、ほかのセッションが Stripe 講座だけの main から公開していた）。公開は最新の main から行い、`git log -1 origin/gh-pages`（「Deploy main <rev>」）の rev に全講座が入っているかを確かめる
+- **gh-pages の頃の記録（今は使わない）**。手順ではない。いまの公開は README の「[公開（Workers / Releases）](../../../../README.md#公開workers--releases)」
+  - `deploy_pages.sh`（gh-pages への強制 push）は、自動の安全判定で「本番への公開」として止められることがある。マージの許可とは別に、公開の許可をユーザーにもらう（計画の段階で聞いておく）。push 済みのコミットを直す強制 push（`commit --amend` → `push --force-with-lease`）も止められた
+  - gh-pages は公開のたびに丸ごと置き換わる。別のセッションが古い main から公開すると、新しい講座が消える（今回は PR #1 のマージ前に、ほかのセッションが Stripe 講座だけの main から公開していた）。公開は最新の main から行い、`git log -1 origin/gh-pages`（「Deploy main <rev>」）の rev に全講座が入っているかを確かめる
 - PR の CI は `gh run watch <run id> --exit-status` をバックグラウンドで流すと、終わったときに 1 回だけ知らせが来る（何度も見に行かない）
 
 

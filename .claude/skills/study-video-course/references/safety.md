@@ -19,7 +19,7 @@
 - 個人の情報: 実在の人の名前・メールアドレス・電話番号（例は `example.com` を使う）
 - 他人の著作物の丸写し: 公式ドキュメントの文章・画面写し・ロゴ。要点を自分の言葉で書く
 
-手元だけの禁止語を `.denylist.local`（Git に入れない）に 1 行 1 語で書いておくと、点検が全部のファイルから探す。
+手元だけの禁止語を 1 行 1 語で書いておくと、点検が全部のファイルから探す。置き場所は `.git/info/chalkfile-denylist`（`git rev-parse --git-common-dir` の下。同じ clone の全部の worktree が読む）か `.denylist.local`（その作業フォルダだけ）で、どちらも Git に入らない。一覧が無いと点検が警告する。手元から素材・動画・旧 Pages の案内を出す前は `--require-denylist` を付け、一覧が無ければ止める。
 
 ## 3. サイトの HTML を安全に保つ
 
@@ -45,7 +45,7 @@ bun scripts/check_content.ts               # 台本と Git に入れる全部の
 
 見るもの: AI への指示文・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・制御文字・秘密情報の形・ローカルの禁止語・https でないリンク・メールアドレスと電話番号（注意）・Claude Code の設定と hooks を Git に入れていないか・npm のインストール時スクリプト。
 
-`deploy_pages.sh` と CI は、この点検に通らないと止まる。指示文の例をわざと見せる講座など、意図して書いたものは `scripts/content-allow.json` にその文字列を足して許す（Pull Request で理由を書く）。
+`scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内を出すときだけ使う）と CI は、この点検に通らないと止まる。指示文の例をわざと見せる講座など、意図して書いたものは `scripts/content-allow.json` にその文字列を足して許す（Pull Request で理由を書く）。
 
 ## 6. clone した人の手元で勝手に動くものを置かない
 

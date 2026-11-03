@@ -32,7 +32,7 @@ JPGは小さな静的入力として `site/posters/` に入れる。MP4を取得
 
 Releasesに動画を追加しただけでは公開入力はそろわない。新しい講座には各レクチャーの `site/posters/<ID>.jpg` も必要で、欠けたままならstrict buildが公開前に停止する。旧手順で作った動画から補う場合は、SHA-256を確認して取得した通常版MP4の4.2秒地点を、`render.sh` と同じ幅1280・JPEG品質3で取り出す。作成したポスターを目視してコミットし、strict buildを通す。CIで動画をダウンロードして画像を補う方式にはしない。
 
-ブラウザ回帰用サーバーは起動時に現在のソースから移行案内とSWを組み立てる。以前の `site/migration-dist` が残っていても、旧SW移行テストに古い生成物を使わない。実際のgh-pagesへの反映は、このテスト生成とは別の `deploy_pages.sh` だけが行う。
+ブラウザ回帰用サーバーは起動時に現在のソースから移行案内とSWを組み立てる。以前の `site/migration-dist` が残っていても、旧SW移行テストに古い生成物を使わない。実際のgh-pagesへの反映は、このテスト生成とは別の `scripts/legacy/deploy_pages.sh` だけが行う。
 
 ## Cloudflare と GitHub の初回設定
 
@@ -109,7 +109,7 @@ HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` �
 
 ## 旧 GitHub Pages の切替
 
-`bash scripts/deploy_pages.sh` は移行案内だけを出す。最新main・cleanなcheckout・公開先の全動画Range・ブラウザのCSP/SW確認に通らないと止まる。見ていた旧gh-pages SHAを指定したforce-with-leaseを使い、ローカルの `refs/chalkfile-backups/gh-pages-<main SHA>` に復旧参照を残す。通常のサイトとMP4をgh-pagesへ公開し直す用途には使わない。
+`bash scripts/legacy/deploy_pages.sh` は移行案内だけを出す。最新main・cleanなcheckout・公開先の全動画Range・ブラウザのCSP/SW確認に通らないと止まる。見ていた旧gh-pages SHAを指定したforce-with-leaseを使い、ローカルの `refs/chalkfile-backups/gh-pages-<main SHA>` に復旧参照を残す。通常のサイトとMP4をgh-pagesへ公開し直す用途には使わない。
 
 案内はトップ・全講座・404にcanonical、meta refresh、押せるリンク、path/query/hashを保持するlocation.replaceを置く。旧scope `/chalkfile/` のSWを登録してから移る。
 
