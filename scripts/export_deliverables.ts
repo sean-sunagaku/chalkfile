@@ -8,11 +8,12 @@
 //   <id>.ja.vtt / .srt   字幕（台詞の時刻は合成の実測。訳の動画は <id>.vtt。例 S01.en.vtt）
 //   <id>.mix.wav         ナレーション・BGM・効果音をまとめた音
 //   <章 ID>.md           教材一式（build_materials.ts の出力。台本・絵コンテ・課題を含む）
-//   README.md            中身と、作り直し方（編集の正本は content/ の台本）
+//   README.md            中身と、作り直し方（編集の正本は content/ の台本）と、その動画で使った全部の声のクレジット（content/voices.ts の creditsIn）
 // 動画は Git に入れない（out/ は .gitignore）。終了コード: 0 できた・1 失敗・2 使い方の誤り（ID が無い・知らない ID）
 import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { VIDEOS, videoOf } from '../content';
+import { VIDEOS, type Video, videoOf } from '../content';
+import { lectureCredits } from '../content/voices';
 import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { ROOT } from './lib/paths';
 
@@ -26,13 +27,23 @@ const stamp = (x: number, sep: string) => {
   return `${p(h)}:${p(m)}:${p(s)}${sep}${p(ms === 1000 ? 999 : ms, 3)}`;
 };
 
+/** その動画で使った全部の声のクレジット（台詞の声から作る。訳の動画は Kokoro のモデルと話者） */
+export const creditLine = ({ lecture: lec, lang }: Video): string => {
+  const voices = lectureCredits(lec, lang).join('、');
+  const music = 'BGM・効果音はプログラムで合成したオリジナル';
+  return lang === 'ja'
+    ? `- ナレーション: ${voices}。${music}`
+    : `- ナレーション: ${voices}（モデルの重みは Apache-2.0。声は content/voices.ts の KOKORO）。${music}`;
+};
+
 const main = (argv: string[]) => {
   const { values, positionals: ids } = readArgs(argv, {}, { positionals: true });
   if (values.help) return showHelp(import.meta.filename);
   if (!ids.length) throw new UsageError('レクチャー ID を渡す（例: bun scripts/export_deliverables.ts N01 D01 M01）');
   for (const id of ids) if (!VIDEOS.some((v) => v.key === id)) throw new UsageError(`動画が無い: ${id}（例: N01、S01.en）`);
   for (const id of ids) {
-    const { lecture: lec, course, lang } = videoOf(id);
+    const video = videoOf(id);
+    const { lecture: lec, course, lang } = video;
     // 字幕のファイル名: 日本語は <id>.ja.vtt（今までどおり）、訳は <id>.vtt（名前に言語が入っている）
     const sub = lang === 'ja' ? `${id}.ja` : id;
     const dir = path.join(ROOT, 'out/deliverables', course.id, id);
@@ -68,6 +79,10 @@ const main = (argv: string[]) => {
         '',
         ...got.map((g) => `- ${g}`),
         '',
+        '## クレジット',
+        '',
+        creditLine(video),
+        '',
         '## 編集と作り直し',
         '',
         lang === 'ja'
@@ -76,9 +91,6 @@ const main = (argv: string[]) => {
         `- 台詞を直したら: \`bun scripts/synth.ts ${id}\` → \`uv run --locked --group audio python scripts/mix.py ${id}\` → \`CAPTIONS=1 bash scripts/render.sh ${id}\` → \`bun scripts/build_materials.ts\` → \`bun scripts/export_deliverables.ts ${id}\``,
         '- 台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出す: `bun scripts/materials.ts pull`（docs/guide/quickstart.md の「B. 素材から作る」）',
         '- 場面だけ見る: `npm run studio`（props の captions を true にすると字幕つき）',
-        lang === 'ja'
-          ? '- ナレーション: VOICEVOX:No.7（講師）、VOICEVOX:青山龍星（呼び込み）。BGM・効果音はプログラムで合成したオリジナル'
-          : '- ナレーション: Kokoro-82M（Apache-2.0。声は content/voices.ts の KOKORO）。BGM・効果音はプログラムで合成したオリジナル',
         '',
       ].join('\n'),
     );

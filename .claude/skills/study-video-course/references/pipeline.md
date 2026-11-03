@@ -48,7 +48,7 @@ VOICEVOX と Kokoro の出力（台詞の声）と BGM・効果音は、作り�
 
 ## 確かめ方
 
-- 台本: `npm run validate`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
+- 台本: `npm run validate`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる。公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語の全部の動画のポスター `content/<講座>/generated/posters/` と動画の一覧）と、講座のページに出ない声のクレジット（注意）も見る。PR の CI が流すので、ポスターと動画の一覧を入れ忘れた PR はマージの前に止まる
 - 読み: `.work/kana/<id>.txt`
 - 見た目: `npm run stills -- L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
 - 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `content/stripe-billing/generated/timeline/L04.json` の `durationInFrames / 30` と合う
