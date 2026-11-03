@@ -10,10 +10,14 @@
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
 //     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
 //     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める。
-//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems。今は注意）
+//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems。今は注意）。
+//     公開した動画が、今の台本で書き出したものか（mediaInputProblems。動画の一覧の inputs と、今の台本・描き方の指紋を比べる）
 // 誤り: 描くと止まるか黙って崩れるもの（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声など）と、
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
-// 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
+//       （書き出したあとで台本が変わった、公開した動画も）
+// 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い・
+//       書き出したあとで描き方のコードだけが変わった、公開した動画
+// 知らせ（失敗にも注意にもしない。GitHub Actions では ::notice::）: 書き出しの記録（inputs）の無い、公開した動画の数
 // synth.ts の最初（対象の動画だけ）と Studio（src/Root.tsx。その動画だけ止める）も、同じ台本の検証を使う
 // 終了コード: 0 誤りなし・1 誤りがある・2 使い方の誤り
 import { existsSync, readdirSync } from 'node:fs';
@@ -31,14 +35,17 @@ import { ROOT } from './lib/paths';
 import { readMediaLists } from './media-lists';
 import { PAGE_VERSION_MARK } from './site-version';
 import { courseCredits } from './site/model';
+import { fileHasher } from './stages/pipeline/digest';
+import { type PublishedCheck, publishedChecks, srcDigest } from './stages/video/inputs';
 import { readTimelinesByKey } from './timelines';
 
 /** 公開で止まることの種類（台本の検証の RULES に足す。engine/core/validate.ts は台本だけを見るので、こちらに置く） */
-export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧', credit: '声のクレジット' } as const;
+export const PUBLISH_RULES = { site: '講座サイトの設定・ID・リンク', material: '教材の ID と参照', poster: 'ポスター', media: '動画の一覧', credit: '声のクレジット', inputs: '動画の書き出しの記録' } as const;
 /** 公開で止まることの 1 件（形は台本の Issue と同じで、rule だけが PUBLISH_RULES の名前） */
 export type PublishIssue = Omit<Issue, 'rule'> & { rule: keyof typeof PUBLISH_RULES };
 
-export type Report = { ok: boolean; errors: number; warnings: number; courses: number; videos: number; themes: number; issues: (Issue | PublishIssue)[] };
+/** notices: 失敗にも注意にもしない知らせ（書き出しの記録の無い動画の数など） */
+export type Report = { ok: boolean; errors: number; warnings: number; courses: number; videos: number; themes: number; issues: (Issue | PublishIssue)[]; notices: string[] };
 
 /* ───────────── 講座サイトの設定と、公開で止まること ───────────── */
 
@@ -172,6 +179,46 @@ export const creditProblems = (coursesIn: (lang: Lang) => Course[], level: Issue
     }),
   );
 
+/**
+ * 公開した動画（講座ごとの動画の一覧の entries）が、今の台本で書き出したものか。項目の inputs（書き出したときの指紋）と、
+ * 今の台本・描き方の指紋（scripts/stages/video/inputs.ts）を比べる。
+ *   誤り: 書き出したあとで、台本の側（動画が描く台本の項目・テーマの値・声のクレジット・timeline）が変わった（動画が古い）
+ *   注意: 描き方の側（src・engine・依存の版など）だけが変わった（見た目が変わる直しなら、書き出し直す。一覧のファイルごとに 1 件）
+ *   知らせ: inputs の無い項目（記録より前に置いた動画。次の media push で記録する。全部で 1 行。失敗にも注意にもしない）
+ * timeline の無い動画は比べない（timeline の確かめが、別に止める）
+ */
+export const mediaInputProblems = (checks: readonly PublishedCheck[]): { issues: PublishIssue[]; notices: string[] } => {
+  const issues: PublishIssue[] = [];
+  const byVideo = new Map<string, PublishedCheck[]>();
+  for (const c of checks.filter((x) => x.result === 'script')) byVideo.set(c.video.key, [...(byVideo.get(c.video.key) ?? []), c]);
+  for (const [key, list] of byVideo) {
+    const { course, lang } = list[0].video;
+    const kinds = list.map((c) => (c.kind === 'captioned' ? '字幕版' : '通常版')).join('・');
+    issues.push({
+      level: 'error',
+      rule: 'inputs',
+      where: `${course.id}/${key}`,
+      message: `公開した動画（${kinds}）が台本より古い。書き出したあとで、動画が描く台本（画面の文・場面・テーマ・timeline など）が変わった（npm run chalk -- build --to render --video ${key} で書き出し直し、media push --course ${course.id}${lang === 'ja' ? '' : ` --lang ${lang}`}）`,
+    });
+  }
+  const byFile = new Map<string, string[]>();
+  for (const c of checks.filter((x) => x.result === 'src')) byFile.set(c.file, [...new Set([...(byFile.get(c.file) ?? []), c.video.key])]);
+  for (const [file, keys] of byFile)
+    issues.push({
+      level: 'warning',
+      rule: 'inputs',
+      where: file,
+      message: `書き出したあとで、描き方のコード（src・engine・依存の版など）だけが変わった動画が ${keys.length} 本（${keys.join(' ')}）。見た目が変わる直しなら、書き出し直して media push`,
+    });
+  const none = checks.filter((x) => x.result === 'none');
+  const notices = none.length
+    ? [
+        `動画の一覧に、書き出しの記録（inputs）の無い動画が ${none.length} 本（${new Set(none.map((c) => c.file)).size} 個の一覧）。台本と比べられないので、次の media push で記録する`,
+      ]
+    : [];
+  return { issues, notices };
+};
+
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /** 公開で止まること（講座サイトの設定・ID・リンク、教材の ID と参照、公開する言語のポスターと動画の一覧、講座のページの声のクレジット）。courses は日本語の講座 */
@@ -226,6 +273,7 @@ const courseDirs = (): string[] =>
 /** 全講座・全言語を検証する。台本の読み込み（訳の重ね方）で止まったときも、誤りとして返す */
 export const validateAll = async (): Promise<Report> => {
   const issues: (Issue | PublishIssue)[] = [];
+  const notices: string[] = [];
   let courses = 0;
   let videos = 0;
   for (const [id, theme] of Object.entries(THEMES)) {
@@ -233,7 +281,7 @@ export const validateAll = async (): Promise<Report> => {
     if (theme.id !== id) issues.push({ level: 'error', rule: 'theme', where: `content/themes.ts ${id}`, message: `THEMES のキー（${id}）とテーマの id（${theme.id}）が違う` });
   }
   try {
-    const { COURSES, coursesIn } = await import('../content');
+    const { COURSES, coursesIn, VIDEOS } = await import('../content');
     // timeline は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。指紋で、台本を直したのに合成し直していない動画も見つける
     const timelines = readTimelinesByKey();
     // 講座をまたいだもの（頭文字・並び・講座 ID の重なり）。並行の PR が講座を足すと、マージするまで気づけない
@@ -259,12 +307,21 @@ export const validateAll = async (): Promise<Report> => {
       for (const e of entries) issues.push({ level: 'warning', rule: 'timeline', where: e.file, message: '台本に無い動画の timeline（消した動画なら bun scripts/synth.ts --prune で消す）' });
     }
     issues.push(...publishIssues(COURSES, coursesIn));
+    // 公開した動画が、今の台本で書き出したものか（動画の一覧の inputs）。一覧が読めないときは、publishIssues が動画の一覧の誤りで止める
+    try {
+      const found = mediaInputProblems(publishedChecks(ROOT, VIDEOS, srcDigest(ROOT, fileHasher(ROOT, null))));
+      issues.push(...found.issues);
+      notices.push(...found.notices);
+    } catch (e) {
+      if (!issues.some((x) => x.rule === 'media' && x.level === 'error'))
+        issues.push({ level: 'error', rule: 'inputs', where: 'content/<講座>/generated/media.<言語>.json', message: messageOf(e) });
+    }
   } catch (e) {
     // 台本の読み込みで止まったとき（訳の重ね方の誤りは止まらずに、その動画の誤りになる。engine/core/i18n.ts の l10nProblems）
     issues.push({ level: 'error', rule: 'scenes', where: 'content/（読み込み）', message: messageOf(e) });
   }
   const errors = issues.filter((x) => x.level === 'error').length;
-  return { ok: errors === 0, errors, warnings: issues.length - errors, courses, videos, themes: Object.keys(THEMES).length, issues };
+  return { ok: errors === 0, errors, warnings: issues.length - errors, courses, videos, themes: Object.keys(THEMES).length, issues, notices };
 };
 
 /** 種類の名前（台本の検証と、公開で止まること） */
@@ -293,6 +350,8 @@ const main = async (argv: string[]) => {
       `台本と公開の検証: 誤り ${report.errors} 件・注意 ${report.warnings} 件（${report.courses} 講座・${report.videos} 本の動画・${report.themes} テーマ。訳の講座も数える）`,
     );
     if (warnings.length) console.log(`注意の内訳: ${breakdown(warnings)}${values.warnings ? '' : '（一覧は --warnings）'}`);
+    // 知らせ（失敗にも注意にもしない）。GitHub Actions では注釈にする
+    for (const n of report.notices) console.log(process.env.GITHUB_ACTIONS === 'true' ? `::notice::${n}` : `知らせ: ${n}`);
   }
   return report.ok ? 0 : 1;
 };
