@@ -18,7 +18,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  │    └→ site/data/<key>.json・.vtt ……………… サイトに出す台本・章・字幕の時刻
  │
  ├─ scripts/materials.ts push ⇄ pull ── materials ブランチ（台詞の音声と読み・BGM・効果音）
- ├─ scripts/build_music.py ──→ public/audio/music/・sfx/（BGM・ジングル・効果音）
+ ├─ scripts/build_music.py（中身は scripts/audio/music/）──→ public/audio/music/・sfx/（BGM・ジングル・効果音）
  ├─ scripts/mix.py ─────────→ public/audio/mix/<key>.wav（台詞・BGM・効果音を 1 本に）
  ├─ scripts/render.sh（Remotion。映像は音なしで書き出し、ミックスの音と合わせる）
  │    ├→ out/master/<key>.mp4（高画質の映像）→ site/media/<key>.mp4（サイト用に縮めた動画）
@@ -87,6 +87,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む）。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
 | `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・timeline の形と指紋 `timeline.ts`・生成物の置き場所 `generated.ts`・テーマのパレット `theme.ts` と色の計算 `color.ts`・色のコントラスト） |
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
+| `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）と、Python が読む動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
