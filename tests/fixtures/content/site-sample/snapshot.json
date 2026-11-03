@@ -1,0 +1,25 @@
+{
+  "files": {
+    ".assetsignore": "33244c690712cf2a3d4532c4274c87ffc205e236d01aaea42ac27fbb4a6ececb",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "404.html": "909ffe97339ccbe56259852c0fe729781dc4f4f20e3f0496d431488647100b75",
+    "_headers": "66edf36aff95dcd8179bb7ba9fa46494b4888e097d07393c014a1e9de3c91619",
+    "assets/hero.jpg": "6de83717c75dee7fde8f03d5b06c6b21d4bb965a26b07d879d5922f8ef240541",
+    "assets/themes/chalkfile.jpg": "1b65c3328bd467f3bc265311c86eb0385dda635b60546093e8f8c8aeb39dabb0",
+    "assets/themes/indigo.jpg": "6de83717c75dee7fde8f03d5b06c6b21d4bb965a26b07d879d5922f8ef240541",
+    "assets/themes/night.jpg": "88c8ec836f17fe4c74a5f396f5ee3ffa53efbe37164a1b56a2ceff156a351f36",
+    "assets/themes/paper.jpg": "114c7581b0c13cb7b2fc40ddc196dfd4b9d178b8180a3e45b96cf344a976cb57",
+    "assets/themes/stage.jpg": "ed59b98bbbf287d7653761f1ff4370e744be84f2be878d4dd1150920d3094c6c",
+    "icons/icon-180.png": "present",
+    "icons/icon-192.png": "present",
+    "icons/icon-512.png": "present",
+    "index.html": "d075efe51b2bb703bce881d5154e1f72617a3c815f29f1276ef055b9e13c7905",
+    "manifest.webmanifest": "bbd840f9654b92d9d0170d1974905c1569571d5544069fb12d8c79bd315b8a49",
+    "offline/index.html": "4cccdcadba2e71c9ab143a165d9e0e355d55f263b8f7e22c0a23b00641d5b874",
+    "site-sample/index.html": "e46ee7a9c6dae440a4430b50ae5e8ac8a6f3865eeffd09cd597a72bf624eac5d",
+    "site-sample/media/Y01.jpg": "4e3bf8908d5f74925f7a7d24682a9a9c55bc403434c8ad35b2e9b6fb05cc696e",
+    "site-sample/media/Y02.jpg": "29069dd3fd2b51097788b8d4e54d270000dfc30a4921c4077bf49d8855cd3f07",
+    "site-sample/offline-manifest.json": "f62f77820a362d720796e0c43f15baa790c13a240bd74ae3c54e123379a4d7dc",
+    "sw.js": "present"
+  }
+}

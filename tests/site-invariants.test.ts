@@ -209,6 +209,18 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
     ]);
   });
 
+  test('組み立てが入れる信頼できる script のほかの script は、CSP にハッシュがあっても止まる（エスケープし忘れの <script>）', () => {
+    const site = makeSite();
+    const trusted = { ...site.input, scripts: ['run("course")', 'run("home")', 'run("www")'] };
+    expect(siteInvariantProblems(trusted)).toEqual([]);
+    // 組み上がった HTML の <script> から CSP を作ると、紛れ込んだ script のハッシュも CSP に入ってしまう
+    site.write('404.html', page('<p>台本の文字</p>', ['alert(1)']));
+    expect(siteInvariantProblems(site.input)).toEqual([]);
+    expect(siteInvariantProblems(trusted)).toEqual([
+      '404.html: 1 つ目の script は、組み立てが入れる信頼できる script ではありません（エスケープし忘れて紛れ込んでいないか見る）',
+    ]);
+  });
+
   test('保存の manifest が、SW の validateManifest を通らなければ止まる（動画が保存の 1 ファイルの上限を超えるなど）', () => {
     const site = makeSite();
     const big = entry('d', OFFLINE_FILE_MAX_BYTES + 1);
