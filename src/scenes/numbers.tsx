@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { NumbersScene } from '../../content/types';
 import { Glass } from '../components/ui';
-import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, lineStart, useAppear, useScene } from '../timing';
 import { defineScene } from './define';
 
@@ -45,7 +45,7 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
           fontSize: last ? 104 : 72,
           color: last ? tt.main : C.ink,
           fontVariantNumeric: 'tabular-nums',
-          textShadow: last ? `0 0 40px ${tt.main}66` : undefined,
+          textShadow: last ? `0 0 40px ${alpha(tt.main, 0x66 / 255)}` : undefined,
         }}
       >
         {it.prefix ?? ''}

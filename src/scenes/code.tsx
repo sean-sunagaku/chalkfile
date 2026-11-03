@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { CodeScene, Theme } from '../../content/types';
 import { Glass, Smart } from '../components/ui';
-import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, mix, PAD, usePalette, W } from '../theme';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
@@ -101,7 +101,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
             width: '100%',
             height: '100%',
             borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`,
+            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
             border: `1.5px solid ${C.line2}`,
             boxShadow: C.shadow,
             overflow: 'hidden',
@@ -157,7 +157,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                     borderRadius: 12,
                     background: alpha(tt.main, 0.22),
                     borderLeft: `5px solid ${tt.main}`,
-                    boxShadow: `0 0 30px ${tt.main}30`,
+                    boxShadow: `0 0 30px ${alpha(tt.main, 0x30 / 255)}`,
                     opacity: p,
                   }}
                 />

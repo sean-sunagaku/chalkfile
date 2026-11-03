@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { SequenceScene } from '../../content/types';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { H, PAD, usePalette, W } from '../theme';
+import { alpha, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
@@ -107,14 +107,14 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
                   display: 'inline-block',
                   padding: '6px 18px',
                   borderRadius: 12,
-                  background: isLatest ? `${tt.main}26` : C.overlay,
-                  border: `1.5px solid ${tt.main}${isLatest ? 'cc' : '55'}`,
+                  background: isLatest ? alpha(tt.main, 0x26 / 255) : C.overlay,
+                  border: `1.5px solid ${alpha(tt.main, (isLatest ? 0xcc : 0x55) / 255)}`,
                   fontFamily: SANS,
                   fontWeight: 700,
                   fontSize: 25,
                   color: isLatest ? C.ink : tt.text,
                   whiteSpace: 'nowrap',
-                  boxShadow: isLatest ? `0 0 24px ${tt.main}40` : undefined,
+                  boxShadow: isLatest ? `0 0 24px ${alpha(tt.main, 0x40 / 255)}` : undefined,
                 }}
               >
                 <Smart text={st.label} t={st.tone} />

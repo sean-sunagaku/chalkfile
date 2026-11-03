@@ -75,7 +75,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import type { IconName, Tone } from '../../content/types';
-import { alpha, usePalette, type VideoPalette } from '../theme';
+import { alpha, usePalette, WHITE, type VideoPalette } from '../theme';
 
 const ICONS: Record<IconName, LucideIcon> = {
   user: User,
@@ -170,7 +170,7 @@ export const IconBadge: React.FC<{ name: IconName; t?: Tone; size?: number; glow
         height: size,
         borderRadius: size * 0.32,
         background: `linear-gradient(145deg, ${tt.deep}, ${tt.soft})`,
-        border: `1.5px solid ${tt.main}55`,
+        border: `1.5px solid ${alpha(tt.main, 0x55 / 255)}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -179,7 +179,7 @@ export const IconBadge: React.FC<{ name: IconName; t?: Tone; size?: number; glow
           glow <= 0
             ? undefined
             : THEME.scheme === 'dark'
-              ? `0 0 ${36 * glow}px ${tt.main}${Math.round(90 * glow).toString(16).padStart(2, '0')}`
+              ? `0 0 ${36 * glow}px ${alpha(tt.main, Math.round(90 * glow) / 255)}`
               : `0 ${10 * glow}px ${24 * glow}px -${8 * glow}px ${alpha(tt.main, 0.55)}`,
       }}
     >
@@ -201,12 +201,13 @@ export const Glass: React.FC<{
     <div
       style={{
         position: 'relative',
+        // 暗い地は、地に白を薄く重ねた面（上は白の 0.07 に active で 0.03 まで足す。下はテーマの dark.glass2）
         background: dark
-          ? `linear-gradient(160deg, rgba(255,255,255,${0.07 + active * 0.03}), rgba(255,255,255,0.025))`
+          ? `linear-gradient(160deg, ${alpha(WHITE, 0.07 + active * 0.03)}, ${C.glass2})`
           : `linear-gradient(160deg, ${alpha(tt.main, 0.07 * active)}, ${alpha(tt.main, 0)} 70%), ${C.glass}`,
-        border: `${dark ? 1.5 : 2}px solid ${active > 0 ? `${tt.main}${Math.round(60 + active * 120).toString(16).padStart(2, '0')}` : C.line}`,
+        border: `${dark ? 1.5 : 2}px solid ${active > 0 ? alpha(tt.main, Math.round(60 + active * 120) / 255) : C.line}`,
         borderRadius: THEME.radius,
-        boxShadow: `${C.shadow}${active > 0 && dark ? `, 0 0 ${48 * active}px ${tt.main}38` : ''}`,
+        boxShadow: `${C.shadow}${active > 0 && dark ? `, 0 0 ${48 * active}px ${alpha(tt.main, 0x38 / 255)}` : ''}`,
         ...style,
       }}
     >
@@ -227,7 +228,7 @@ export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolea
         padding: `${size * 0.28}px ${size * 0.7}px`,
         borderRadius: 999,
         background: tt.soft,
-        border: `1.5px solid ${tt.main}66`,
+        border: `1.5px solid ${alpha(tt.main, 0x66 / 255)}`,
         color: tt.text,
         fontFamily: mono ? MONO : SANS,
         fontWeight: 700,

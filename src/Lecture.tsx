@@ -79,7 +79,8 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
                 fontFamily: SANS,
                 fontWeight: 900,
                 fontSize: CAPTION.nameSize,
-                color: '#FFFFFF',
+                // 名前札の文字も、今は字幕と同じ白（onCode）。図の色の上の文字（onTone）にするのは見た目の更新（計画の T3A-14）
+                color: C.onCode,
                 background: tone(cue.who.tone).main,
                 borderRadius: 999,
                 padding: `6px ${CAPTION.namePadX}px`,
@@ -95,7 +96,7 @@ const Captions: React.FC<{ cues: Cue[] }> = ({ cues }) => {
               fontWeight: 700,
               fontSize: CAPTION.size,
               lineHeight: 1.42,
-              color: '#FFFFFF',
+              color: C.onCode,
               textAlign: cue.who ? 'left' : 'center',
               letterSpacing: CAPTION.spacing,
               textWrap: 'balance' as React.CSSProperties['textWrap'],

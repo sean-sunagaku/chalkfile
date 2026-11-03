@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
-import { alpha, H, PAD, usePalette, W } from '../theme';
+import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../content/types';
 import { dropY, useScene, useText } from '../timing';
 import { HEADING } from '../video.config';
@@ -85,7 +85,7 @@ export const Background: React.FC = () => {
           style={{
             backgroundImage: `radial-gradient(${alpha(C.ink, 0.11)} 1.3px, transparent 1.3px)`,
             backgroundSize: '40px 40px',
-            maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.4))',
+            maskImage: `linear-gradient(180deg, ${alpha(BLACK, 0.85)}, ${alpha(BLACK, 0.4)})`,
           }}
         />
         <Specks count={10} glow={false} base={0.16} />
@@ -107,9 +107,9 @@ export const Background: React.FC = () => {
       />
       <AbsoluteFill
         style={{
-          backgroundImage: 'radial-gradient(rgba(255,255,255,0.075) 1.2px, transparent 1.2px)',
+          backgroundImage: `radial-gradient(${alpha(WHITE, 0.075)} 1.2px, transparent 1.2px)`,
           backgroundSize: '44px 44px',
-          maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.9), rgba(0,0,0,0.35))',
+          maskImage: `linear-gradient(180deg, ${alpha(BLACK, 0.9)}, ${alpha(BLACK, 0.35)})`,
         }}
       />
       <Specks count={14} glow base={0.18} />

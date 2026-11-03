@@ -3,7 +3,7 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { QuizScene } from '../../content/types';
 import { Glass, Pill, Smart } from '../components/ui';
-import { CONTENT_TOP, PAD, usePalette } from '../theme';
+import { alpha, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
@@ -152,7 +152,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   fontSize: 150,
                   color: tt.main,
                   background: C.overlay,
-                  boxShadow: `0 0 60px ${tt.main}88`,
+                  boxShadow: `0 0 60px ${alpha(tt.main, 0x88 / 255)}`,
                   lineHeight: 1,
                 }}
               >

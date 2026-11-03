@@ -2,7 +2,7 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { Tone } from '../../content/types';
-import { H, usePalette, W } from '../theme';
+import { alpha, H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { Smart } from './ui';
@@ -122,7 +122,7 @@ export const Edge: React.FC<{
               padding: '7px 16px',
               borderRadius: 12,
               background: C.overlay,
-              border: `1.5px solid ${t ? `${tt.main}88` : C.line2}`,
+              border: `1.5px solid ${t ? alpha(tt.main, 0x88 / 255) : C.line2}`,
               fontFamily: SANS,
               fontWeight: 700,
               fontSize: 22,

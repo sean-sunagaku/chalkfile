@@ -3,7 +3,7 @@ import React from 'react';
 import type { StatesScene } from '../../content/types';
 import { Edge, type Box } from '../components/edge';
 import { Pill } from '../components/ui';
-import { usePalette } from '../theme';
+import { alpha, usePalette } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
 import { defineScene } from './define';
 
@@ -55,8 +55,8 @@ const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: nu
           boxSizing: 'border-box',
           borderRadius: 999,
           background: start ? C.faint : `linear-gradient(160deg, ${tt.deep}, ${C.glass2})`,
-          border: `2px ${start ? 'dashed' : 'solid'} ${focus > 0 ? tt.main : `${tt.main}88`}`,
-          boxShadow: focus > 0 ? `0 0 44px ${tt.main}66` : C.shadow,
+          border: `2px ${start ? 'dashed' : 'solid'} ${focus > 0 ? tt.main : alpha(tt.main, 0x88 / 255)}`,
+          boxShadow: focus > 0 ? `0 0 44px ${alpha(tt.main, 0x66 / 255)}` : C.shadow,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

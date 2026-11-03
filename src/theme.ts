@@ -18,7 +18,7 @@ export const CONTENT_BOTTOM = CONTENT.bottom;
 
 /* ───────────── 色の計算（engine/core/color.ts） ───────────── */
 
-export { alpha, mix } from '../engine/core/color';
+export { alpha, BLACK, mix, WHITE } from '../engine/core/color';
 
 /* ───────────── 書体（使うテーマの分だけ読み込む） ───────────── */
 

@@ -2,7 +2,7 @@
 import React from 'react';
 import type { CompareScene, CompareSide } from '../../content/types';
 import { Glass, Icon, IconBadge, Smart } from '../components/ui';
-import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
 import { defineScene } from './define';
 
@@ -40,7 +40,7 @@ const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) =
             ) : null}
           </div>
         </div>
-        <div style={{ height: 2, background: `linear-gradient(90deg, ${tt.main}88, transparent)` }} />
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${alpha(tt.main, 0x88 / 255)}, transparent)` }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           {side.items.map((it, i) => (
             <SideItem key={i} text={it.text} at={it.at} k={i} t={side.tone} />
@@ -112,7 +112,7 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
               borderRadius: 24,
               padding: 2,
               background: GRAD,
-              boxShadow: `0 0 40px ${vt.main}40`,
+              boxShadow: `0 0 40px ${alpha(vt.main, 0x40 / 255)}`,
             }}
           >
             <div

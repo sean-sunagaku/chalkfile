@@ -3,7 +3,7 @@ import React from 'react';
 import type { FlowScene, Tone } from '../../content/types';
 import { Edge, type Box } from '../components/edge';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { usePalette } from '../theme';
+import { alpha, usePalette } from '../theme';
 import { dropY, useAppear, useFocus } from '../timing';
 import { defineScene } from './define';
 
@@ -128,8 +128,8 @@ const GroupBox: React.FC<{ label: string; x: number; y: number; w: number; h: nu
         width: w,
         height: h,
         borderRadius: 30,
-        border: `2px dashed ${tt.main}66`,
-        background: `${tt.soft}`,
+        border: `2px dashed ${alpha(tt.main, 0x66 / 255)}`,
+        background: tt.soft,
         opacity: p * 0.9,
       }}
     >

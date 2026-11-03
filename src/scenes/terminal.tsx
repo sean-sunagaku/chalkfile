@@ -4,7 +4,7 @@ import { interpolate, useCurrentFrame } from 'remotion';
 import type { TerminalOut, TerminalScene, Theme } from '../../content/types';
 import { terminalText } from '../../engine/core/scenes';
 import { Glass, Smart } from '../components/ui';
-import { CONTENT_BOTTOM, CONTENT_TOP, mix, PAD, usePalette } from '../theme';
+import { CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
@@ -49,7 +49,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
             position: 'absolute',
             inset: 0,
             borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`,
+            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
             border: `1.5px solid ${C.line2}`,
             boxShadow: C.shadow,
             overflow: 'hidden',
