@@ -7,7 +7,6 @@ import { docsTitles } from './sources';
 // 局所性の場面（日本語 7・英語 8）と先回りの例の場面（日本語 9・英語 10）は、長い台詞を 2 つに分けたので、画面の要素の at を全部書いた
 // 読み: 複数の IDs は空けずに書く（「I Ds」と空けると「I・D・S」と読まれた。2026-11-02 に Kokoro の音素で確かめた）。単数は「I D」のまま
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const;
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 

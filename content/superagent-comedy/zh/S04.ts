@@ -8,7 +8,6 @@ import { docsTitles } from './sources';
 // 読み: Kokoro（misaki の pypinyin と声調の規則）が違う音を選ぶ所は、s を同じ音の字にした
 // （长 → 常（cháng）、用不用得上 → 的上、一发现 → 亦发现（发 を fà と読むため））
 const Z = 'zundamon' as const;
-const ZC = 'zundamon-cry' as const;
 const T = 'tsukkomi' as const;
 const TEN = 'tennokoe' as const;
 
