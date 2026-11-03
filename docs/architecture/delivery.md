@@ -74,4 +74,4 @@
 
 [Workers の制限](https://developers.cloudflare.com/workers/platform/limits/)・[static assets の料金](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)・[選んだパスだけ Worker を先に通す](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/)・[Workers の権限](https://developers.cloudflare.com/workers/authorization/workers/)・[Releases の制限](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)（2026-11-02）。
 
-本番での保存・移行・要求の数と、Actions の実行の結果は [公開確認の記録](../workers-verification.md) に残した。
+本番での保存・移行・要求の数と、Actions の実行の結果は [公開確認の記録](../history/2026-11-03-workers-verification.md) に残した。

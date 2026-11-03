@@ -87,7 +87,7 @@ bun scripts/materials.ts gc --keep origin/main --keep origin/<branch> --confirm 
 - すること
   1. 待つ。有料プランに変えない
   2. Cloudflare の管理画面の Workers Logs で、`/media/*` の要求と失敗（`media_upstream_failed`）を見る（ログの形は [配信の設計](../architecture/delivery.md) の「Worker のログ」）
-  3. 続くときは、持ち主が対策を決める。決める前に、要求の数を測る（測り方と、1 本の再生で Worker の要求が何回かは、[公開確認の記録](../workers-verification.md) の「無料枠の測定」）
+  3. 続くときは、持ち主が対策を決める。決める前に、要求の数を測る（測り方と、1 本の再生で Worker の要求が何回かは、[公開確認の記録](../history/2026-11-03-workers-verification.md) の「無料枠の測定」）
 - Workers Logs にも 1 日の枠がある。超えた日は取り込みが止まるだけで、請求は来ない
 - 数字といつ戻るかは変わるので、今の値は公式の [Workers の制限](https://developers.cloudflare.com/workers/platform/limits/) で確かめる
 

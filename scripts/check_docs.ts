@@ -393,11 +393,7 @@ export const checkDocs = (out: Finding[]) => {
     if (file.endsWith('.md')) checkLinks(file, text, read, out);
     if (/(^|\/)\.claude\/skills\/[^/]+\/SKILL\.md$/.test(file)) checkSkill(file, text, out);
     if (!SKIP_TEXT.test(file)) checkOldWords(file, text, out);
-    if (
-      /^docs\/courses\/.+\.md$/.test(file) &&
-      file !== 'docs/courses/production-notes.md' &&
-      !hasGeneratedMark(text)
-    ) {
+    if (/^docs\/courses\/.+\.md$/.test(file) && !hasGeneratedMark(text)) {
       out.push({
         level: 'warn',
         check: '生成物',

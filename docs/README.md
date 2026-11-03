@@ -29,8 +29,8 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 保存の設計（オフライン・PWA） | `docs/architecture/offline.md`（予定） | 今はスキルの [offline.md](../.claude/skills/study-video-course/references/offline.md) |
 | 学ぶ人向けの保存の説明 | `docs/guide/learner-offline.md`（予定） | 今は [README](../README.md) の「講座を保存してオフラインで学ぶ（PWA）」 |
 | 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
-| 日付つきの記録 | `docs/history/`（予定） | 今は [workers-verification.md](workers-verification.md) と [courses/production-notes.md](courses/production-notes.md) |
-| 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない（production-notes.md だけは手書きの記録） |
+| 日付つきの記録 | [history/](history/) | [2026-10-30 の制作メモ](history/2026-10-30-production-notes.md)・[2026-11-03 の公開確認](history/2026-11-03-workers-verification.md)。記録で、今の手順ではない |
+| 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない |
 | 参加・脆弱性の報告・ライセンス | [CONTRIBUTING.md](../CONTRIBUTING.md)・[SECURITY.md](../SECURITY.md)・[LICENSE](../LICENSE)・[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)・[DISCLAIMER.md](../DISCLAIMER.md) | |
 
 ## docs/ の置き方
@@ -42,7 +42,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | `courses/` | 生成物（読む教材） |
 | `guide/`（予定） | 始め方・講座の足し方・コマンド・学ぶ人の保存 |
 | `operations/` | 公開・初回の設定・戻し方・ハマりどころ |
-| `history/`（予定） | 日付つきの記録。今の `workers-verification.md` と `courses/production-notes.md` を移す |
+| `history/` | 日付つきの記録。名前の頭に日付を付ける。今の手順はここに書かない |
 
 ## 文書の決まり
 

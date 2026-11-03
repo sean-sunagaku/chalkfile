@@ -80,7 +80,7 @@ iOSもCache APIのブラウザ保存であり、「ファイル」アプリへ�
 
 ## 本番を再確認するとき
 
-`bun tests/verify-production.ts offline` で認証情報のない専用profileへ保存し、別プロセスの `offline-restart` で通信を切った再起動・再生・シーク・字幕切替・単体DLのSHA-256を確認する。要求数は `bun tests/measure-production.ts` で自分の検証用ヘッダーだけをCloudflare側で抽出して数える。profileと生ログはpushしない。結果・実機の手順は [公開確認の記録](../../../../docs/workers-verification.md) に残す。Chrome/自動試験の成功をSafariやiPhone実機の成功と混同しない。
+`bun tests/verify-production.ts offline` で認証情報のない専用profileへ保存し、別プロセスの `offline-restart` で通信を切った再起動・再生・シーク・字幕切替・単体DLのSHA-256を確認する。要求数は `bun tests/measure-production.ts` で自分の検証用ヘッダーだけをCloudflare側で抽出して数える。profileと生ログはpushしない。結果・実機の手順は [公開確認の記録](../../../../docs/history/2026-11-03-workers-verification.md) に残す。Chrome/自動試験の成功をSafariやiPhone実機の成功と混同しない。
 
 ## 一次資料（2026-10-31確認）
 
