@@ -50,17 +50,11 @@ const ring = (page: Page, p: Progress | undefined, i: number) => {
 
 /** カリキュラムを用意する。onPick は、レクチャーを選んだとき（その番号） */
 export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
-  const { T, tt, lectures } = page;
+  const { T, tt, tn, lectures } = page;
   const course = page.data.course;
   const progress = page.learning.progress;
-  const unitWord = (n: number) =>
-    course.unitLabel === 'CHAPTER'
-      ? n === 1
-        ? T.unitChapter1
-        : T.unitChapter
-      : n === 1
-        ? T.unitLecture1
-        : T.unitLecture;
+  /** 本数（講座の呼び名が CHAPTER なら章の数。数で形の変わる言語は tn が選ぶ） */
+  const count = (n: number) => tn(course.unitLabel === 'CHAPTER' ? 'chapterCount' : 'lectureCount', n);
 
   /** 上の帯の完了の数と棒・見出しの下と右の欄の、本数と長さ */
   const renderCourseProgress = () => {
@@ -69,15 +63,12 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
     byId('cpLabel').textContent = tt('cpLabel', { done, total: lectures.length });
     const total = lectures.reduce((a, l) => a + l.duration, 0);
     const all = lectures.length + course.planned.length;
-    const plan = course.planned.length ? tt('planned', { n: all, unit: unitWord(all) }) : '';
+    const plan = course.planned.length ? tt('planned', { count: count(all) }) : '';
     const min = Math.round(total / 60);
-    byId('curSum').textContent = tt('curSum', { n: lectures.length, unit: unitWord(lectures.length), min, plan });
-    const sections = course.sections.length;
+    byId('curSum').textContent = tt('curSum', { count: count(lectures.length), min, plan });
     byId('courseMeta').textContent = tt('courseMeta', {
-      sections,
-      sec: sections === 1 ? T.unitSection1 : T.unitSection,
-      n: lectures.length,
-      unit: unitWord(lectures.length),
+      sections: tn('sectionCount', course.sections.length),
+      count: count(lectures.length),
       min,
       plan,
     });

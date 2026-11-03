@@ -10,12 +10,7 @@ export const MATERIAL_TABS = ['material', 'exercise', 'ask'] as const;
 /** 教材を用意する。showTab は、節へ移るときに教材のタブを開く */
 export const createMaterial = (page: Page, showTab: (name: string) => void) => {
   const { T } = page;
-  const label: Record<Evidence, string> = {
-    research: T.evResearch,
-    official: T.evOfficial,
-    practice: T.evPractice,
-    example: T.evExample,
-  };
+  const label: Readonly<Record<Evidence, string>> = T.evidence;
   const chips = (list: readonly Evidence[]) =>
     h(
       'div',

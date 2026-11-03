@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { isLangFolder } from '../content/langs';
 import legacyConfig from '../site/legacy-config.json';
 import type { CourseManifest, SavedVersion } from '../site/offline-shared';
 
@@ -21,7 +22,7 @@ const base = `http://127.0.0.1:${port}`;
 const dist = path.join(root, 'site/dist');
 const ids = readdirSync(dist).filter((d) => existsSync(path.join(dist, d, 'offline-manifest.json')));
 // 訳の講座（en/… など）は、公開したら同じ形で足す
-for (const lang of readdirSync(dist).filter((d) => /^[a-z]{2}$/.test(d))) {
+for (const lang of readdirSync(dist).filter(isLangFolder)) {
   for (const d of readdirSync(path.join(dist, lang))) if (existsSync(path.join(dist, lang, d, 'offline-manifest.json'))) ids.push(`${lang}/${d}`);
 }
 const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();

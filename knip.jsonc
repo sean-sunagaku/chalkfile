@@ -22,6 +22,7 @@
     "site/*.ts",
     "site/lib/*.ts",
     "site/page/*.ts",
+    "site/i18n/*.ts",
     "worker/src/**/*.ts",
     "tests/**/*.ts",
     "*.ts"

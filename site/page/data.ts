@@ -2,7 +2,7 @@
 // 組み立て（scripts/site/model.ts の courseJson）が作る。組み立ての側は satisfies CourseData で、この形に合うかを型で確かめる。
 // 形を変えると、保存版の HTML には前の画面のコードと前の形の JSON が一緒に入っているので、保存版は前のまま動く（同じ HTML の中でそろう）。
 // ここは型だけ（DOM も Node も使わない。組み立ての型検査からも読む）
-import type { SiteText } from '../i18n';
+import type { CourseText } from '../i18n';
 
 /** 教材の根拠の種類（札の色と文字） */
 export type Evidence = 'research' | 'official' | 'practice' | 'example';
@@ -98,7 +98,7 @@ export type CourseData = {
   pageVersion: string;
   /** code は学習の記録の鍵に、html は字幕の言語に、label は字幕の名前に使う */
   lang: { code: string; html: string; label: string };
-  /** 決まった文字（site/i18n.ts の、このページの言語のもの） */
-  text: SiteText;
+  /** 決まった文字（site/i18n の courseText。このページの言語の common と course） */
+  text: CourseText;
   lectures: LectureData[];
 };

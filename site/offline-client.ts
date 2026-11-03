@@ -1,5 +1,5 @@
 import type { CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineOperation, OfflineReply, OfflineResults } from './offline-shared';
-import type { SiteText } from './i18n';
+import type { ClientText, ClientTextBase } from './i18n';
 import { texts } from './lib/text';
 import { OFFLINE_STATE, type OfflineState } from './page/events';
 
@@ -7,15 +7,15 @@ type AppData = {
   root: string;
   course?: { id: string; title: string; pageVersion: string };
   courses: { id: string; title: string }[];
-  /** このページの言語（保存機能のエラーもこの言語で返してもらう）と、決まった文字（site/i18n.ts） */
+  /** このページの言語（保存機能のエラーもこの言語で返してもらう）と、決まった文字（site/i18n の client） */
   lang: string;
   locale: string;
-  text: SiteText;
+  text: ClientText;
 };
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 const app = JSON.parse(document.getElementById('pwa-data')!.textContent!) as AppData;
 const T = app.text;
-const tt = texts(T);
+const { tt } = texts<ClientTextBase>(T, app.locale);
 const root = new URL(app.root, location.href);
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;

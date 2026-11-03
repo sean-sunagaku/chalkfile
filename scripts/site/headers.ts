@@ -101,9 +101,9 @@ export const headersFor = (
 /** MP4 とローカルの設定（. で始まるファイル）は、静的 assets に送らない */
 export const ASSETS_IGNORE = '**/*.mp4\n.*\n';
 
-/** 無いページの 404（wrangler.jsonc の not_found_handling: 404-page）。__CSP__ は呼ぶ側が CSP にする */
+/** 無いページの 404（wrangler.jsonc の not_found_handling: 404-page）。__CSP__ は呼ぶ側が CSP に、{{key}} は site/i18n の notFound にする */
 export const NOT_FOUND_HTML =
-  '<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title></head><body><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></body></html>';
+  '<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>{{title}}</title></head><body><h1>{{heading}}</h1><p><a href="/">{{link}}</a></p></body></html>';
 
 /** ヘッダー・送らないファイル・404 のページを書く。notFound は CSP を付けた 404 のページ */
 export const writeServingFiles = (dist: string, notFound: string) => {

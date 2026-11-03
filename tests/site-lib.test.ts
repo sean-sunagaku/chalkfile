@@ -116,7 +116,7 @@ describe('動画の配るパス（parseMediaPath）とダウンロードの名�
       entryOf({}),
       entryOf({ kind: 'captioned' }),
       entryOf({ lang: 'en', lecture: 'P01' }),
-      entryOf({ lang: 'pt-BR' }),
+      entryOf({ lang: 'zh', kind: 'captioned' }),
     ]) {
       expect(parseMediaPath(mediaPath(e))).toEqual({
         lang: e.lang,
@@ -127,8 +127,10 @@ describe('動画の配るパス（parseMediaPath）とダウンロードの名�
       });
     }
   });
-  test('形の違うパスは読まない', () => {
+  test('形の違うパスは読まない（言語は講座の言語の一覧 content/langs.ts にあるものだけ）', () => {
     for (const p of [
+      `/media/pt-BR/stripe-billing/L01.${sha256}.mp4`,
+      `/media/fr/stripe-billing/L01.${sha256}.mp4`,
       `/media/ja/stripe-billing/L01.${sha256}.mp4?download=1`,
       `/media/ja/stripe-billing/L01.${'A'.repeat(64)}.mp4`,
       `/media/ja/stripe-billing/L01.${'a'.repeat(63)}.mp4`,

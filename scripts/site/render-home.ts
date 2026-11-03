@@ -3,8 +3,8 @@
 import type { HeroSnippet } from '../../content/course-module';
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
-import type { SiteText } from '../../site/i18n';
-import { fill } from '../../site/lib/text';
+import type { HomeText, HomeTextBase } from '../../site/i18n';
+import { texts } from '../../site/lib/text';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
 import { readableOn } from './contrast';
@@ -39,7 +39,8 @@ export type HomePageInput = {
   langs: readonly Lang[];
   coursesIn: CoursesIn;
   lang: Lang;
-  T: SiteText;
+  /** 一覧のページの決まった文字（site/i18n の homeText） */
+  T: HomeText;
   /** 一覧のページのテーマ（既定のテーマ） */
   brand: Theme;
   /** 並べるテーマ（content/themes.ts の THEMES） */
@@ -48,7 +49,7 @@ export type HomePageInput = {
   themeOf: (id?: Course['theme']) => Theme;
   /** テーマの見本の画像（site/assets/themes/<id>.jpg）があるか */
   hasThemeImage: (id: string) => boolean;
-  /** テーマの紹介文（訳の言語。無ければ日本語の summary） */
+  /** テーマの紹介文（その言語の site/i18n の themes） */
   themeSummary: (theme: Theme) => string;
   /** 講座の動画の合計の長さ（分） */
   minutesOf: (course: Course) => number;
@@ -71,13 +72,14 @@ const courseCard = (
   o: { href: string; poster: string; tags: string[] },
 ): Html => {
   const T = p.T;
+  const { tt, tn } = texts<HomeTextBase>(T, LANG_INFO[p.lang].html);
   const minutes = p.minutesOf(c);
   // テーマの色は形を確かめてから style に入れる（エスケープもする）
   const style = `--card-grad: linear-gradient(100deg, ${t.gradient.map(cssColor).join(', ')}); --card-soft: ${cssColor(t.color.surface2)}; --card-ink: ${cssColor(readableOn(t.tones.violet, [t.color.surface2], t.color.ink))}`;
   const count =
     c.unitLabel === 'CHAPTER'
-      ? `${fill(T.cardChapters, { n: c.lectures.length })}${c.syllabus ? fill(T.cardPlanned, { n: c.syllabus.chapters.length }) : ''}`
-      : fill(T.cardLectures, { n: c.lectures.length });
+      ? `${tn('chapterCount', c.lectures.length)}${c.syllabus ? tt('cardPlanned', { n: c.syllabus.chapters.length }) : ''}`
+      : tn('lectureCount', c.lectures.length);
   // 一覧の言語と違う講座には、講座の言語を付ける（訳の一覧に並べる日本語の講座は ja）
   const langAttr =
     c.lang && c.lang !== p.lang
@@ -92,7 +94,7 @@ const courseCard = (
       html`  <div class="body">`,
       html`    <h3>${c.title}</h3>`,
       html`    <p>${plain(c.headline)}</p>`,
-      html`    <ul class="facts"><li>${count}</li><li>${fill(T.cardMinutes, { min: Math.round(minutes) })}</li><li class="is-theme">${fill(T.cardTheme, { theme: t.label })}</li>${o.tags.map((g) => html`<li>${g}</li>`)}</ul>`,
+      html`    <ul class="facts"><li>${count}</li><li>${tt('cardMinutes', { min: Math.round(minutes) })}</li><li class="is-theme">${tt('cardTheme', { theme: t.label })}</li>${o.tags.map((g) => html`<li>${g}</li>`)}</ul>`,
       html`    <span class="go">${T.cardOpen}</span>`,
       html`  </div>`,
       html`</a>`,
@@ -103,13 +105,14 @@ const courseCard = (
 
 /** テーマの一覧の 1 つ（見本の画像・名前・色の見本・紹介文） */
 const themeCard = (p: HomePageInput, t: Theme, root: string): Html => {
+  const { tt } = texts<HomeTextBase>(p.T, LANG_INFO[p.lang].html);
   const sw = [t.color.bg, t.color.ink, t.color.accent, t.tones.pink, t.tones.cyan, t.tones.mint];
   return joinHtml(
     [
       html`<article class="theme">`,
       ...(p.hasThemeImage(t.id)
         ? [
-            html`  <img src="${root}assets/themes/${t.id}.jpg" alt="${fill(p.T.themeAlt, { theme: t.label })}" width="960" height="540" loading="lazy">`,
+            html`  <img src="${root}assets/themes/${t.id}.jpg" alt="${tt('themeAlt', { theme: t.label })}" width="960" height="540" loading="lazy">`,
           ]
         : []),
       html`  <div class="body">`,
@@ -127,6 +130,7 @@ const themeCard = (p: HomePageInput, t: Theme, root: string): Html => {
 export const renderHomePage = (p: HomePageInput): string => {
   const T = p.T;
   const lang = p.lang;
+  const { tt } = texts<HomeTextBase>(T, LANG_INFO[lang].html);
   const info = LANG_INFO[lang];
   // 一覧ページから見たサイトの最上位（日本語は ./、訳は ../）
   const root = lang === 'ja' ? './' : '../';
@@ -180,7 +184,7 @@ export const renderHomePage = (p: HomePageInput): string => {
     OFFLINE_CSS: raw(p.offlineCss),
     OFFLINE_PANEL: p.app.panel,
     PWA_SCRIPT: p.app.script,
-    TITLE: html`${fill(T.homeDocTitle, { series: p.config.series })}`,
+    TITLE: html`${tt('homeDocTitle', { series: p.config.series })}`,
     HEAD_META: headMeta({
       series: p.config.series,
       title: p.config.series,
@@ -209,7 +213,7 @@ export const renderHomePage = (p: HomePageInput): string => {
       '\n',
     ),
     REPO: html`${p.config.repoUrl}`,
-    CREDITS: html`${fill(T.homeCredits, { voices: p.credits.join(T.creditsSep) })}`,
+    CREDITS: html`${tt('homeCredits', { voices: p.credits.join(T.creditsSep) })}`,
   };
   return fillTemplate(p.home, { marks, text: textOf(T) }, 'site/home.html');
 };

@@ -4,12 +4,12 @@ import { deflateSync } from 'node:zlib';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Theme } from '../content/types';
-import { isLang } from '../content/i18n';
-import { SITE_TEXT } from '../site/i18n';
-import { fill } from '../site/lib/text';
+import { isLang, LANGS } from '../content/i18n';
+import { LOCALES } from '../site/i18n';
 import { mimeOf } from '../site/mime';
 import type { Asset } from '../site/offline-shared';
 import { fillTemplate } from './site/html';
+import { textOf } from './site/parts';
 
 export const hash = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
 export function asset(url: string, data: Uint8Array, type: string): Asset {
@@ -73,16 +73,16 @@ export async function buildPwa(
   const manifest = JSON.stringify({
     id: './', name: 'Chalkfile', short_name: 'Chalkfile', lang: 'ja', start_url: './', scope: './', display: 'standalone',
     background_color: brand.color.bg, theme_color: brand.color.bg,
-    description: '選んだ講座を保存して、教材と動画でオフライン学習',
+    description: LOCALES.ja.app.description,
     icons: [192, 512].map((s) => ({ src: `icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any maskable' })),
   }, null, 2);
   writeFileSync(path.join(dist, 'manifest.webmanifest'), manifest);
   shell.push(asset('manifest.webmanifest', Buffer.from(manifest), mimeOf('manifest.webmanifest')));
-  // 未保存のページは 1 つで全部の言語を並べる（{{ja.key}} を site/i18n.ts の文字にする。エスケープは fillTemplate）。
+  // 未保存のページは 1 つで全部の言語を並べる（{{ja.key}} を site/i18n の offlinePage の文字にする。エスケープは fillTemplate）。
   // __ROOT__ は、SW が配るときにアプリの場所にする（sw.ts の fallback）
   const text = (k: string) => {
     const [lang, key] = k.split('.');
-    return isLang(lang) && key && Object.hasOwn(SITE_TEXT[lang], key) ? fill(SITE_TEXT[lang][key as keyof (typeof SITE_TEXT)['ja']]) : undefined;
+    return isLang(lang) && key ? textOf(LOCALES[lang].offlinePage)(key) : undefined;
   };
   const offline = Buffer.from(fillTemplate(readFileSync(path.join(site, 'offline.html'), 'utf8'), { text, keep: ['ROOT'] }, 'site/offline.html'));
   // Workers の HTML 正規化による転送を避け、redirect:error の保存取得で読める正規 URL を使う。
@@ -91,10 +91,12 @@ export async function buildPwa(
   writeFileSync(path.join(dist, 'offline/index.html'), offline);
   shell.push(asset('offline/', offline, 'text/html'));
   const build = hash(JSON.stringify(shell));
-  // sw.js も縮める（ページに入らないので、sw.js が変わってもページの版は変わらない）
+  // sw.js も縮める（ページに入らないので、sw.js が変わってもページの版は変わらない）。保存機能のエラーの文字は、全部の言語を入れる
+  // （ページは自分の言語を SW に送る。公開をやめた言語の保存版のページも、その言語で答える）
+  const messages = Object.fromEntries(LANGS.map((l) => [l, LOCALES[l].sw]));
   const result = await Bun.build({
     entrypoints: [path.join(site, 'sw.ts')], target: 'browser', minify: true,
-    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, disabledRevisions }) },
+    define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, disabledRevisions, messages }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));
   writeFileSync(path.join(dist, 'sw.js'), await result.outputs[0].text());

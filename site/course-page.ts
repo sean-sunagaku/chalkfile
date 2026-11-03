@@ -4,6 +4,7 @@
 // データはページの中の JSON（#course-data。形は site/page/data.ts の CourseData）。学習の記録は site/page/storage.ts。
 // 役割ごとの部品（site/page/）: player（動画・字幕・速度・全画面・次へ）・curriculum（カリキュラムと進み具合）・overview（概要）・
 // transcript（台本と検索）・notes（ノート）・quiz（クイズ）・material（教材・実践課題・AI に聞く）・tabs（タブ）・keyboard（ショートカット）
+import type { CourseTextBase } from './i18n';
 import { texts } from './lib/text';
 import { type Page, lectureOf } from './page/context';
 import { createCurriculum } from './page/curriculum';
@@ -22,12 +23,14 @@ import { createTranscript } from './page/transcript';
 
 const data = JSON.parse(byId('course-data').textContent ?? '') as CourseData;
 const T = data.text;
+const { tt, tn } = texts<CourseTextBase>(T, data.lang.html);
 const store = openStore(pageStorage(), storagePrefix(data.lang.code, data.course.id));
 const page: Page = {
   data,
   lectures: data.lectures,
   T,
-  tt: texts(T),
+  tt,
+  tn,
   learning: store.read(),
   store,
   video: byId<HTMLVideoElement>('video'),

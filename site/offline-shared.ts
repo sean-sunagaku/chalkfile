@@ -1,4 +1,5 @@
 // 保存対象は、このサイトが生成した公開教材と MP4・ポスターだけ。大きさの上限の正本は site/limits.ts
+import { FOLDER_PATTERN } from '../content/langs';
 import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, OFFLINE_PAGE_MAX_BYTES } from './limits';
 import { parseMediaPath } from './media-shared';
 
@@ -36,14 +37,14 @@ export type CourseStatus = {
    */
   disabled?: boolean;
 };
-/** 講座の ID。訳の講座は言語を頭に付ける（en/superagent-comedy）。日本語の講座は付けない */
-export const COURSE_ID = /^(?:[a-z]{2}\/)?[A-Za-z0-9][A-Za-z0-9_-]*$/;
+/** 講座の ID。訳の講座は言語のフォルダを頭に付ける（en/superagent-comedy。言語は content/langs.ts の一覧から）。日本語の講座は付けない */
+export const COURSE_ID = new RegExp(`^(?:${FOLDER_PATTERN}\\/)?[A-Za-z0-9][A-Za-z0-9_-]*$`);
 const HASH = /^[a-f0-9]{64}$/;
 export const MAX_FILE_BYTES = OFFLINE_FILE_MAX_BYTES;
-/** 動画とポスターの名前。S01・S01.cc（字幕を焼き込んだ版）・S01.en・S01.en.cc（言語の 2 文字は cc にしない） */
-const MEDIA_NAME = '([A-Za-z0-9][A-Za-z0-9_-]*(?:\\.(?!cc\\.)[a-z]{2})?)(\\.cc)?\\.(mp4|jpg)';
+/** 動画とポスターの名前。S01・S01.cc（字幕を焼き込んだ版）・S01.en・S01.en.cc（言語は訳の言語のフォルダの名前と同じ） */
+const MEDIA_NAME = `([A-Za-z0-9][A-Za-z0-9_-]*(?:\\.${FOLDER_PATTERN})?)(\\.cc)?\\.(mp4|jpg)`;
 
-/** 保存できないものを見つけたときのエラー。code は保存機能の文字（site/sw.ts の MESSAGES）を選ぶ */
+/** 保存できないものを見つけたときのエラー。code は保存機能の文字（site/i18n/<言語>.ts の sw.errors）を選ぶ */
 export type OfflineErrorCode =
   | 'manifest' | 'format' | 'origin' | 'page' | 'media' | 'incomplete' | 'unpublished' | 'fetchManifest' | 'tooLarge' | 'integrity'
   | 'fetchFile' | 'changed' | 'corrupt' | 'quota' | 'busy' | 'busyDelete' | 'verify' | 'cancelled' | 'noSpace' | 'pick' | 'unknownOp' | 'storage' | 'timeout';

@@ -4,7 +4,7 @@
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { ChapterMaterial, Course, Source, VoiceId } from '../../content/types';
 import { creditsIn, SITE_CREDITS } from '../../content/voices';
-import type { SiteText } from '../../site/i18n';
+import type { CourseText } from '../../site/i18n';
 import { type MediaEntry, mediaPath } from '../../site/media-shared';
 import type { CourseData } from '../../site/page/data';
 import { PAGE_VERSION_MARK } from '../site-version';
@@ -61,7 +61,7 @@ export const materialForSite = (course: Course, m: ChapterMaterial) => {
 export type LectureModel = ReturnType<typeof lectureModels>[number];
 
 /** 講座のレクチャー。講義のデータが無ければ止める（先に synth.ts を流す） */
-export const lectureModels = (course: Course, lang: Lang, T: SiteText, readData: ReadData) =>
+export const lectureModels = (course: Course, lang: Lang, T: CourseText, readData: ReadData) =>
   course.lectures.map((lec) => {
     const key = videoKey(lec.id, lang);
     const d = readData(key);
@@ -106,7 +106,7 @@ export const homeCredits = (courses: readonly Course[], lang: Lang): string[] =>
   lang === 'ja' ? SITE_CREDITS : creditsIn(lang, voicesOf(courses));
 
 /** 講座の情報（ページの JSON の course）。計画だけある章（まだ動画が無い）は、カリキュラムに「準備中」で出す */
-export const courseMeta = (course: Course, T: SiteText, config: SiteConfig) => {
+export const courseMeta = (course: Course, T: CourseText, config: SiteConfig) => {
   const made = new Set(course.lectures.map((l) => l.id));
   const planned = (course.syllabus?.chapters ?? [])
     .filter((ch) => !made.has(ch.lectureId))
@@ -135,7 +135,7 @@ export type VideoFor = (lecture: string, kind: MediaEntry['kind']) => MediaEntry
 export const courseJson = (o: {
   course: Course;
   lang: Lang;
-  T: SiteText;
+  T: CourseText;
   config: SiteConfig;
   lectures: LectureModel[];
   video: VideoFor;

@@ -9,7 +9,8 @@ import { THEMES, themeOf } from '../../content/themes';
 import type { Course } from '../../content/types';
 import { posterFile } from '../../engine/core/generated';
 import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
-import { SITE_TEXT, THEME_SUMMARY } from '../../site/i18n';
+import { courseText, homeText, LOCALES } from '../../site/i18n';
+import { fill } from '../../site/lib/text';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
 import { mimeOf } from '../../site/mime';
 import { SITE_NEWS, type SiteNews } from '../../site/news';
@@ -27,7 +28,7 @@ import { fillTemplate } from './html';
 import { newsFor, newsProblems } from './news';
 import { courseJson, homeCredits, lectureModels, minutesOf, type ReadData, type SiteData } from './model';
 import { courseManifest, type PosterFile, pageFiles } from './offline-manifest';
-import { type AppContext, appParts } from './parts';
+import { type AppContext, appParts, textOf } from './parts';
 import { renderCoursePage } from './render-course';
 import { homePosterOf, renderHomePage } from './render-home';
 
@@ -124,7 +125,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     offlineClient: await bundle(path.join(SITE_DIR, 'offline-client.ts')),
     themeColor: themeOf().color.bg,
     coursesIn,
-    text: SITE_TEXT,
+    text: LOCALES,
   };
   const readData: ReadData = (key) => {
     const f = path.join(o.dataDir, `${key}.json`);
@@ -141,7 +142,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
 
   /* ───────────── 講座のページ（言語ごと） ───────────── */
   for (const lang of langs) {
-    const T = SITE_TEXT[lang];
+    const T = courseText(lang);
     const info = LANG_INFO[lang];
     for (const course of coursesIn(lang).filter((c) => !only.length || only.includes(c.id))) {
       const theme = themeOf(course.theme);
@@ -213,12 +214,12 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       langs,
       coursesIn,
       lang,
-      T: SITE_TEXT[lang],
+      T: homeText(lang),
       brand,
       themes: Object.values(THEMES),
       themeOf,
       hasThemeImage: (id) => existsSync(path.join(assetsDir, `themes/${id}.jpg`)),
-      themeSummary: (t) => (lang === 'ja' ? t.summary : (THEME_SUMMARY[lang][t.id] ?? t.summary)),
+      themeSummary: (t) => textOf(LOCALES[lang].themes)(t.id) ?? t.summary,
       minutesOf: (c) => minutesOf(c, (c.lang ?? 'ja') as Lang, readData),
       credits: homeCredits(coursesIn(lang), lang),
       hero: o.hero,
@@ -256,7 +257,12 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const disabledProblems = disabledRevisionProblems(disabledRevisions, published);
   if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
   await buildPwa(SITE_DIR, dist, brand, saveable, shell, disabledRevisions);
-  writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
+  const notFound = textOf(LOCALES.ja.notFound);
+  const notFoundText = (key: string) => {
+    const value = notFound(key);
+    return value === undefined ? undefined : fill(value, { series: config.series });
+  };
+  writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) }, text: notFoundText }, '404.html'));
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
   // ページで動く script は、信頼できる 3 本（www の移動・講座のページの画面・offline-client）のどれかでなければ止める

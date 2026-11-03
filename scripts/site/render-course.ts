@@ -2,8 +2,8 @@
 // 版の印（scripts/site-version.ts）は入れたまま描く。CSP は、ページに入れる script（画面と offline-client）から先に作る（csp.ts）
 import { LANG_INFO, type Lang } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
-import type { SiteText } from '../../site/i18n';
-import { fill } from '../../site/lib/text';
+import type { CourseText, CourseTextBase } from '../../site/i18n';
+import { texts } from '../../site/lib/text';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
 import { cspHead } from './csp';
@@ -24,7 +24,8 @@ export type CoursePageInput = {
   langs: readonly Lang[];
   coursesIn: CoursesIn;
   lang: Lang;
-  T: SiteText;
+  /** 講座のページの決まった文字（site/i18n の courseText） */
+  T: CourseText;
   course: Course;
   theme: Theme;
   /** ページから見たサイトの最上位（日本語の講座は ../、訳の講座は ../../） */
@@ -52,6 +53,7 @@ const evidenceHintTail = (text: string): Html => {
 export const renderCoursePage = (p: CoursePageInput): string => {
   const info = LANG_INFO[p.lang];
   const T = p.T;
+  const { tt } = texts<CourseTextBase>(T, info.html);
   const cid = `${info.path}${p.course.id}`;
   const url = `${p.base}${cid}/`;
   const firstPoster = `${url}media/${p.lectures[0].key}.jpg`;
@@ -70,17 +72,17 @@ export const renderCoursePage = (p: CoursePageInput): string => {
       courseId: p.course.id,
     }),
     EV_HINT_TAIL: evidenceHintTail(T.evHintTail),
-    NOTE_AT_ZERO: html`${fill(T.noteAt, { t: '00:00' })}`,
+    NOTE_AT_ZERO: html`${tt('noteAt', { t: '00:00' })}`,
     PWA_HEAD: p.app.head,
     // site/offline.css（リポジトリのファイル）
     OFFLINE_CSS: raw(p.offlineCss),
     OFFLINE_PANEL: p.app.panel,
     PWA_SCRIPT: p.app.script,
-    TITLE: html`${fill(T.pageTitle, { course: p.course.title, series: p.config.series })}`,
+    TITLE: html`${tt('pageTitle', { course: p.course.title, series: p.config.series })}`,
     HEAD_META: headMeta({
       series: p.config.series,
       title: p.course.title,
-      description: fill(T.metaCourse, {
+      description: tt('metaCourse', {
         headline: plain(p.course.headline),
         n: p.lectures.length,
         min: Math.round(p.minutes),
