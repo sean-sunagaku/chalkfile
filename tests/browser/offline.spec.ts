@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
 import type { Control, SiteSession } from '../e2e/site';
-import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, openWithActiveWorker, seek, test } from './fixtures';
 
 // 保存と再生を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座。tests/e2e/sites.ts）
 /** 一覧の「講座ごとの保存状態」は、組み立てた講座の数だけ並ぶ */
@@ -56,7 +56,7 @@ test('一覧ページの375px表示から保存状態とインストール案内
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/');
+  await openWithActiveWorker(page, '/');
   await expect(page.locator('#savedCourses a')).toHaveCount(courseCount(site));
   await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
   await expect(page.locator('h1')).toHaveText('Chalkfile');
