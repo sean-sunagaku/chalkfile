@@ -68,7 +68,7 @@ describe('clean.ts（npm run clean）', () => {
       path.join(root, 'site/dist'),
       path.join(cache, 'tts'),
     ]);
-    expect(CLEAN).toEqual(['out', 'public/audio/mix', 'site/dist', '.work/state']);
+    expect(CLEAN).toEqual(['out', 'public/audio/mix', 'site/dist', '.work/state', '.work/render-tmp']);
   });
   test('共有のキャッシュの場所が、家のフォルダや作業フォルダそのものなら、消さずに止める', () => {
     const root = mkdtempSync(path.join(sandbox, 'root-'));

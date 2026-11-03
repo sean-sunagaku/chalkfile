@@ -1,6 +1,6 @@
 // 動画の書体を、手元のファイル（engine/fonts/ の woff2。台本の文字だけを入れたサブセット）から読み込む（@remotion/fonts）。
 // 書き出しにも Studio にもネットは要らない。ファイルは Remotion のバンドラ（webpack）がバンドルに写して URL にするので、
-// 書き出しの public（render.sh・stills.ts が渡す空のフォルダ）に書体を置かなくてよい（public の声を写さずに済む）。
+// 書き出しの public（scripts/stages/video/render.ts・stills.ts が渡す空のフォルダ）に書体を置かなくてよい（public の声を写さずに済む）。
 // 書体の一覧・名前・太さは engine/core/fonts.ts の FONTS、サブセットを作り直すのは scripts/fonts.ts（npm run fonts）
 import { loadFont } from '@remotion/fonts';
 import { useEffect, useRef, useState } from 'react';

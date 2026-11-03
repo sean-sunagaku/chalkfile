@@ -92,7 +92,7 @@
    ```
 
    場面の種類が全部そろう組み合わせ（カード・コード・端末・クイズ・数字・状態の図・強調・エンディング）。`out/stills/*-<id>.jpg` を全部見る
-3. 講座に `theme: '<id>'` を書き、`bash scripts/render.sh` で書き出し直す（色が変わると全部の動画が変わる）
+3. 講座に `theme: '<id>'` を書き、`npm run render` で書き出し直す（色が変わると全部の動画が変わる）
 4. `bun scripts/build_site.ts` → `bun scripts/serve.ts` でサイトの色・字幕の帯・背景の飾りを確かめる
 5. 一覧ページのテーマの見本を差し替える: `node scripts/stills.ts L02:3 --theme=<id>` の画像を `site/assets/themes/<id>.jpg` に置く（`hero.jpg` は一覧の最初の画面の画像）
 

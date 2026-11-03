@@ -15,7 +15,8 @@
   printf '157.0.8080.0-remotion-v3' > VERSION
   ```
 
-- **手元の ffmpeg に、字幕の焼き込み（libass）が無い**: 字幕は Remotion で描くので要らない（`CAPTIONS=1 npm run render`）
+- **手元の ffmpeg に、字幕の焼き込み（libass）が無い**: 字幕は Remotion で描くので要らない（掛け合いの講座は `npm run render` が字幕版も作る。ほかは `--captions`）
+- **書き出しが「ffprobe が動かない」で止まる（終了コード 3）**: 書き出した動画を ffprobe で確かめる。ffmpeg と一緒に入る（Homebrew の ffmpeg など）。`npm run chalk -- doctor` で確かめられる
 - **英語・中国語の声で synth が止まる**: Kokoro は uv が用意する。uv を入れる（初回は Python の道具とモデルの重みを取ってくる）。台詞を変えていないなら、先に `npm run materials:pull`
 
 ## 声と読み
@@ -27,12 +28,14 @@
 
 ## 書き出し
 
-- **Remotion が `public/` を一時フォルダへ写して、ディスクを埋める**: 書き出しのたびに `public/`（声で約 1GB）を写す。映像は音なしで書き出すので、`render.sh` と `stills.ts` は空の `.work/render-public` を渡している
+- **Remotion が `public/` を一時フォルダへ写して、ディスクを埋める**: 書き出しのたびに `public/`（声で約 1GB）を写す。映像は音なしで書き出すので、書き出し（`scripts/stages/video/render.ts`）と `stills.ts` は空の `.work/render-public` を渡している
+- **書き出し中のフレームで、ディスクが埋まる**: 5 分の動画で 1〜2GB の JPEG を、作業フォルダの `.work/render-tmp/` に置く（書き出しが終わったとき・止めたときに消す）。空きが少ないときは `npm run render -- <ID> --chunk 1200`（1,200 フレームずつ書き出して、最後につなぐ。`CHUNK=1200` も同じ）
+- **書き出しを Ctrl-C で止めた**: 一時のファイル（`<ID>.tmp.mp4` など）と `.work/render-tmp/` を消して、前の動画とポスターを残して止まる（終了コード 130）。2 回押すと、片付けずにすぐ止まる。残ったものは、次の書き出しが始めに消す
+- **書き出しが「書き出し のロックが … 外れない」で止まる**: 同じ作業フォルダで、ほかの書き出しが流れている（`.work/state/render.lock` に持ち主の pid がある）。終わるのを待つ。持ち主のプロセスがもう無いロックは、次の書き出しが取り直す
+- **一時フォルダの `remotion-webpack-bundle-*` をまとめて消さない**: ほかのプロジェクトのものかもしれない（`npm run render` は作業フォルダの `.work/render-tmp/` を使う）。消すなら、中身（bundle.js にこの講座の文字があるか）を確かめて 1 つずつ
+- **書き出しが遅い・CPU を取り合う**: 書き出しは 1 本ずつ流す（2 本を重ねると、それぞれ倍かかる。同じ作業フォルダでは、ロックで 1 つにする）。並列の数は `--jobs <数>`（`CONCURRENCY=<数>`。既定は 8 と CPU の数の小さいほう。CPU の数より多くすると止まる）。待ち方は [lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md) の「並行で作るとき」
 - **`npm run validate` が「書体に無い文字がある」で止まる**: 書体は台本の文字だけを入れたサブセット（`engine/fonts/`）。`npm run fonts` で作り直して commit する。元の書体にも無い文字（「元の書体にも無い」と出る）は、台本の文字を別の文字にする（[theme.md](../../.claude/skills/study-video-course/references/theme.md) の「書体」）
 - **見出し・字幕・図の名前の文字が、思ったより小さい**: 1 行に入らない文字は、描くときに測って縮める（役割の下限まで）。縮めても入らないものは `npm run validate` が注意を出すので、文を短くする（[style.md](../../.claude/skills/study-video-course/references/style.md) の「文字の量と大きさ」）
-- **書き出し中のフレームで、ディスクが埋まる**: 5 分の動画で 1〜2GB の JPEG を一時フォルダに置く。空きが少ないときは `CHUNK=1200 npm run render -- <ID>`（1,200 フレームずつ書き出して、最後につなぐ）
-- **一時フォルダの `remotion-webpack-bundle-*` をまとめて消さない**: ほかのプロジェクトのものかもしれない。消すなら、中身（bundle.js にこの講座の文字があるか）を確かめて 1 つずつ
-- **書き出しが遅い・CPU を取り合う**: 書き出しは 1 本ずつ流す（2 本を重ねると、それぞれ倍かかる）。並列の数は `CONCURRENCY=<コアの数より少なく>`。待ち方は [lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md) の「並行で作るとき」
 - **サイト用の動画が、大きさの上限を超えたと警告が出る**: 長い動画は、上限に収まらないことがある（[lessons.md](../../.claude/skills/course-from-prompt/references/lessons.md) の「台本」）
 
 ## サイトと保存
@@ -53,7 +56,7 @@
 - **`materials push` が「台詞の音声の長さを測れない」で止まる**: 手元のその WAV が壊れている。消してから、synth か `npm run materials:pull` で作り直す
 - **`media push` が「通常動画がありません」で止まる**: 選んだ講座（`--course`）の通常版が全部手元に要る（ほかの講座の動画は要らない）。作り直さない動画は `bun scripts/media.ts pull <講座 ID>` で取る（[公開の順番](publish.md) の 5）
 - **`media.ts pull` が「上書きしません」で止まる**: 手元の動画が、動画の一覧と違う。作り直した動画なら、その講座を外して pull する。古い写しなら、消してから pull する（[公開の順番](publish.md) の「ぶつかったとき」）
-- **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、`render.sh` と同じ 4.2 秒の所・幅 1280・JPEG の品質 3 で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
+- **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、書き出しと同じ 4.2 秒の所・幅 1280・JPEG の品質 3（`scripts/stages/video/render.config.ts` の `poster`）で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
 - **`media:check` が `retained` の期限の注意を出す**: 公開は止まらない。片付けるかどうかは持ち主が決める（[戻し方](recovery.md) の「古いハッシュの動画を片付ける」）
 - **Actions の ffmpeg の手順で止まる**: 版を固定したビルドを取れないか、sha256 が合わない。出し直す（[戻し方](recovery.md) の「Actions を出し直す」）。続くときは [CI の形](ci.md) の「ffmpeg」
 - **公開のあとで、前の版に戻った（deploy のジョブが失敗した）**: [戻し方](recovery.md) の「公開後の確かめが通らず、前の版に戻ったとき」

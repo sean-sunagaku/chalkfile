@@ -49,7 +49,6 @@ jobs:
         env:
           RUFF_OUTPUT_FORMAT: github
         run: npm run lint:py
-      # render.sh の SC2086（3 件）は #30 が直している。#30 が入ったら package.json の lint:sh の --exclude=SC2086 を外す
       - name: シェルの lint（shellcheck）
         run: |
           command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck; }

@@ -10,6 +10,7 @@ import { THEMES } from '../content/themes';
 import type { Course, Lecture } from '../content/types';
 import { VOICES, speechIn } from '../content/voices';
 import { mediaListFile, timelineFile } from '../engine/core/generated';
+import { readSiteConfig } from '../scripts/lib/config';
 import { materialOutputs } from '../scripts/build_materials';
 import { courseMediaJson, readCourseMedia } from '../scripts/media-lists';
 import { codeFiles, fileHasher, listFiles } from '../scripts/stages/pipeline/digest';
@@ -162,7 +163,9 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
       'content/courses.ts',
       'content/ga4-comedy/G01.ts',
       'remotion.config.ts',
-      'scripts/render.sh',
+      'scripts/stages/video/render.ts',
+      'scripts/stages/video/plan.ts',
+      'scripts/stages/video/render.config.ts',
       'scripts/mix.py',
       'site/limits.ts',
       'site/template.html',
@@ -178,14 +181,16 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
     return root;
   };
   const src = (root: string) => srcDigest(root, fileHasher(root, null));
-  test('src/・engine/・訳とテーマの部品・Remotion の設定・render.sh・site/limits.ts・Remotion などの依存の版で変わる', () => {
+  test('src/・engine/・訳とテーマの部品・Remotion の設定・書き出しの道具と設定・site/limits.ts・Remotion などの依存の版で変わる', () => {
     for (const f of [
       'src/Lecture.tsx',
       'engine/core/theme.ts',
       'content/i18n.ts',
       'content/themes.ts',
       'remotion.config.ts',
-      'scripts/render.sh',
+      'scripts/stages/video/render.ts',
+      'scripts/stages/video/plan.ts',
+      'scripts/stages/video/render.config.ts',
       'site/limits.ts',
       'src/scenes/new.tsx',
     ]) {
@@ -224,7 +229,12 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
       .trim()
       .split('\n');
     expect(tracked.filter((f) => !files.includes(f))).toEqual([]);
-    expect(files).toContain('scripts/render.sh');
+    for (const f of [
+      'scripts/stages/video/render.ts',
+      'scripts/stages/video/plan.ts',
+      'scripts/stages/video/render.config.ts',
+    ])
+      expect(files).toContain(f);
   });
 });
 
@@ -296,6 +306,8 @@ const voiceWorld = () => {
     timelineFile(video.course.id, video.key),
     readFileSync(path.join(ROOT, timelineFile(video.course.id, video.key))),
   );
+  // 書き出しの出力（ポスターの置き場所）は、公開する言語で決まる
+  put(root, 'site/config.json', readFileSync(path.join(ROOT, 'site/config.json')));
   const ctx = () => ({ root, hasher: fileHasher(root, null), store, runCommand: () => 0 });
   const stage = (name: string) => {
     const s = makeStages(ctx()).find((x) => x.name === name);
@@ -371,13 +383,16 @@ describe('段の指紋（本物の段 voice・mix・render を、一時のフォ
     const withAudio = r.fingerprint('G01') as { parts: Record<string, string> };
     expect(withAudio.parts.audio).toMatch(/^[0-9a-f]{16}$/);
     expect(withAudio.parts.src).toBe(currentInputs(w.root, video, srcDigest(w.root, fileHasher(w.root, null))).src);
-    // 掛け合いの講座は字幕版も出力に入り、CAPTIONS=1 で書き出していなければ記録しない
+    // 掛け合いの講座は字幕版も出力に入る（書き出しの道具が字幕版も作ってから記録する）
     expect(r.outputs('G01')).toEqual([
       'site/media/G01.mp4',
       'site/media/G01.cc.mp4',
       'content/ga4-comedy/generated/posters/G01.jpg',
     ]);
-    expect(r.recordable?.('G01')).toContain('CAPTIONS=1');
+    expect(r.recordable).toBeUndefined();
+    // 公開しない言語の動画のポスターは、講座のフォルダに置かない（site/media の写しだけ）
+    const tr = VIDEOS.find((v) => !readSiteConfig(ROOT).publishLangs.includes(v.lang));
+    if (tr) expect(r.outputs(tr.key)).toContain(`site/media/${tr.key}.jpg`);
   });
   test('render: 記録が無くても、手元の動画が公開した動画の一覧の動画と同じなら、一覧の inputs を記録の代わりにする', () => {
     const w = voiceWorld();
@@ -431,7 +446,7 @@ describe('段の指紋（本物の段 voice・mix・render を、一時のフォ
 });
 
 describe('段が流す道具（本物の段の run。道具は偽物の runCommand で受けるだけ）', () => {
-  test('voice は synth.ts、mix は mix.py、render は render.sh（掛け合いの講座は CAPTIONS=1、並列の数は CONCURRENCY）、docs と site は全部', async () => {
+  test('voice は synth.ts、mix は mix.py、render は書き出しの道具（全部の動画を 1 回で。並列の数は --jobs）、docs と site は全部', async () => {
     const calls: string[] = [];
     const stages = makeStages({
       root: ROOT,
@@ -456,8 +471,7 @@ describe('段が流す道具（本物の段の run。道具は偽物の runComma
     expect(calls).toEqual([
       'scripts/synth.ts --cached-only G01 N01',
       'uv run --locked --group audio python scripts/mix.py G01',
-      'CONCURRENCY=4 CAPTIONS=0 bash scripts/render.sh N01',
-      'CONCURRENCY=4 CAPTIONS=1 bash scripts/render.sh G01',
+      'scripts/stages/video/render.ts --jobs 4 G01 N01',
       'scripts/build_materials.ts',
       'scripts/build_site.ts',
     ]);

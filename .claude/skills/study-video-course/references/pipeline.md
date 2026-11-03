@@ -24,8 +24,8 @@ curl -s http://127.0.0.1:50021/version
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp`・`restamp`・`scaffold`（`npm run i18n -- …`） | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋・訳のひな形（[i18n.md](i18n.md)） |
 | `uv run --locked --group audio python scripts/mix.py <ID…>`（`npm run mix` は選んだ動画か、公開する言語の全部を渡す） | `.work/plan/`、声、BGM、効果音の一覧 `scripts/audio/sfx.json`、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav`。始める前に、設計図の形（`scripts/audio/handoff.py`）と、要る声・BGM・効果音がそろっているかを見る |
-| `bash scripts/render.sh [ID…]`（`npm run render`） | `src/`、書体 `engine/fonts/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター `content/<講座>/generated/posters/<id>.jpg`。`CAPTIONS=1` で `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用） |
-| `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、timeline、書体 `engine/fonts/` | `out/stills/` |
+| `npm run render -- [ID…]`（`bun scripts/stages/video/render.ts`。`npm run chalk -- render` も同じ） | `src/`、書体 `engine/fonts/`、timeline、mix | 選んだ動画を 1 回で書き出す（バンドルは 1 回）。`out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター（公開する言語の動画は `content/<講座>/generated/posters/<id>.jpg`。どの動画も写しを `site/media/<id>.jpg`）。掛け合いの講座（`cast` のある講座）は `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用）も（`--captions` か `CAPTIONS=1` で全部の動画）。出力は一時の名前に書き、ffprobe で確かめてから置き換える。設定は `scripts/stages/video/render.config.ts` |
+| `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、書体 `engine/fonts/`、timeline | `out/stills/` |
 | `bun scripts/fonts.ts [--check]`（`npm run fonts`） | 台本の全部の文字、元の書体（google/fonts の固定した commit。共有のキャッシュ `~/.cache/chalkfile/fonts/`） | `engine/fonts/`（サブセットの woff2・`fonts.json`・`OFL-<書体>.txt`。コミットする） |
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`site/config.json`（`--strict` は Releases も照らす） | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |

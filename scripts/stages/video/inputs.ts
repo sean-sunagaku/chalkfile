@@ -2,8 +2,8 @@
 // （scripts/media.ts push）・CI の確かめ（scripts/validate.ts）が、同じ作り方を使う。
 //   script  台本の側。動画が描く台本の項目（レクチャーの LECTURE_FIELDS、講座の COURSE_FIELDS。講座のレクチャーと章は数だけ）・
 //           講座のテーマの値・終わりの場面に出す声のクレジット・timeline（Git に入れたファイルの中身）
-//   src     描き方の側。RENDER_CODE のファイル（src/・engine/・訳の重ね方とテーマの部品・Remotion の設定・render.sh・サイト用の動画の
-//           大きさの目安）と、RENDER_DEPS の依存の版
+//   src     描き方の側。RENDER_CODE のファイル（src/・engine/・訳の重ね方とテーマの部品・Remotion の設定・書き出しの道具と設定・
+//           サイト用の動画の大きさの目安）と、RENDER_DEPS の依存の版
 // script に入れないもの: サイトと教材だけが使う項目（要点・クイズ・公式ドキュメント・教材・講座の前置き・リンク・出典・サイトの言葉）。
 //   直しても動画は変わらないので、入れると CI が書き出し直しを求めてしまう。動画が読む項目を src/ で増やしたら、ここの一覧にも足す
 //   （tests/pipeline-inputs.test.ts が src/ を読んで、一覧の外の項目を読んでいないかを確かめる）
@@ -39,7 +39,9 @@ export const RENDER_CODE = [
   'content/i18n.ts',
   'content/themes.ts',
   'remotion.config.ts',
-  'scripts/render.sh',
+  'scripts/stages/video/render.ts',
+  'scripts/stages/video/plan.ts',
+  'scripts/stages/video/render.config.ts',
   'site/limits.ts',
 ] as const;
 /** 描き方の側の依存（package-lock.json の版） */

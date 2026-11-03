@@ -8,7 +8,7 @@
 //   bun scripts/stills-compare.ts --theme night      # テーマを絞る（カンマで複数。既定は content/themes.ts の全部）
 //   bun scripts/stills-compare.ts L04:3 S01.en:5,7   # 場面を指定する（動画:場面の番号。1 始まり。番号を省くと全部の場面）
 //   bun scripts/stills-compare.ts --threshold 45     # PSNR（dB）がこれより低い場面を「差あり」にする（既定 45。同じ絵は inf。99 なら inf でないものを全部）
-//   bun scripts/stills-compare.ts --captions         # 字幕を焼き込んだ版（render.sh の CAPTIONS=1）で比べる
+//   bun scripts/stills-compare.ts --captions         # 字幕を焼き込んだ版（書き出しの字幕版と同じ）で比べる
 //   bun scripts/stills-compare.ts --concurrency 4    # 同時に書き出す枚数（既定 4）
 //   bun scripts/stills-compare.ts --out .work/stills-compare/pr38   # 出力の置き場所（.work の下。既定 .work/stills-compare）。比較をいくつか残すとき
 // 出力（.work の下なのでコミットしない）: <out>/{base,head}/<動画>-s<場面>-<テーマ>.png、

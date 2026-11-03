@@ -15,15 +15,15 @@ clone した手元で、講座の動画とサイトを作り直す。したい�
 
 | 道具 | A | B | C | 何に使うか |
 |---|---|---|---|---|
-| Node.js と npm | 要る | 要る | 要る | 依存を入れる（`npm ci --ignore-scripts`）・Remotion・Playwright |
-| bun | 要る | 要る | 要る | TypeScript のスクリプトと単体テスト |
-| ffmpeg | 要る | 要る | 要る | 素材の FLAC を WAV に戻す・音と映像を合わせる・ポスター |
+| Node.js と npm | 要る | 要る | 要る | 依存を入れる（`npm ci --ignore-scripts`）・Remotion の静止画と Studio・Playwright |
+| bun | 要る | 要る | 要る | TypeScript のスクリプト（動画の書き出しも）と単体テスト |
+| ffmpeg（ffprobe も） | 要る | 要る | 要る | 素材の FLAC を WAV に戻す・音と映像を合わせる・ポスター・書き出した動画を確かめる（ffprobe） |
 | uv | 要る | 要る | — | Python（BGM・効果音・ミックス、英語と中国語の声の Kokoro、聞き取りの Whisper、台本に新しい文字を足したときの書体のサブセット `npm run fonts`）。Python は uv が用意する |
-| python3（手元のもの） | 要る | 要る | — | `render.sh` が timeline を読む |
+| python3（手元のもの） | テストを流すとき | テストを流すとき | テストを流すとき | `npm test` の一部が、Python の道具が受け渡しの JSON を読めるかを確かめる（書き出しには要らない） |
 | gh（`gh auth login` 済み） | 要る | 要る | 要る | Releases の動画を取る・置く・照らし合わせる（`media.ts`・`build:site -- --strict`） |
 | VOICEVOX（エンジンが `127.0.0.1:50021`） | 要る | — | — | 日本語の声 |
 | Chrome（入れてあるもの） | サイトを確かめるとき | サイトを確かめるとき | 要る | ブラウザのテスト（`npm run test:e2e`）と smoke。書き出しの Chrome は Remotion が自分で取ってくる |
-| macOS | 確かめた | 確かめた | — | 書き出しは macOS で確かめている。CI（Ubuntu）で流しているのは、C の組み立てまで |
+| macOS か Linux | 確かめた | 確かめた | — | 書き出しは macOS で確かめている。Linux（Ubuntu）の書き出しは、手で流す CI（`render-check.yml`。[CI の形](../operations/ci.md)）で 1 本を確かめる。PR の CI で流すのは、C の組み立てまで |
 
 - 版は次のファイルにある（CI も同じファイルを読む）: Node.js は `.node-version`、bun は `.bun-version`、Python は `.python-version`。npm の依存は `package-lock.json`、Python の依存は `pyproject.toml` と `uv.lock`（Kokoro と Whisper は、スクリプトの頭と `scripts/<名前>.py.lock`）。ffmpeg と VOICEVOX の確かめた版は [pipeline.md](../../.claude/skills/study-video-course/references/pipeline.md) の「前提」
 - 手元の版は [mise](https://mise.jdx.dev/) でそろえられる（任意）。`mise settings add idiomatic_version_file_enable_tools node`（bun・python も同じように足す）で、上の版のファイルを読むようになる
@@ -59,7 +59,7 @@ npm ci --ignore-scripts
 npm run materials:pull                          # 台詞の音声を共有のキャッシュ（~/.cache/chalkfile/tts/）に、BGM・効果音を public/audio/ に取り出す
 npm run synth -- --cached-only                  # 声は素材から。足りないと止まる（VOICEVOX・Kokoro につながない）
 npm run mix
-npm run render                                  # CAPTIONS=1 を付けると、字幕を焼き込んだ版（サイト用の <ID>.cc.mp4）も作る
+npm run render                                  # 掛け合いの講座は、字幕を焼き込んだ版（サイト用の <ID>.cc.mp4）も作る（--captions で全部の動画）
 npm run build:materials && npm run build:site   # 読む教材と講座サイト
 ```
 

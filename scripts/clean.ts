@@ -1,5 +1,5 @@
 // 台本と素材から作り直せる生成物を消して、作業フォルダの空きを作る（台本・Git に入れるもの・素材のブランチには触らない）。
-//   npm run clean                 # out/・public/audio/mix/・site/dist/・.work/state/ を消す（共有のキャッシュは残す）
+//   npm run clean                 # out/・public/audio/mix/・site/dist/・.work/state/・.work/render-tmp/ を消す（共有のキャッシュは残す）
 //   npm run clean -- --cache      # 共有のキャッシュの台詞の声（CHALKFILE_CACHE_DIR の tts/。既定 ~/.cache/chalkfile/tts/）も消す。
 //                                 # ほかの作業フォルダも使っているので、消したら npm run materials:pull で取り出し直す
 //   npm run clean -- --dry-run    # 消すものと大きさを出すだけ（何も消さない）
@@ -14,7 +14,7 @@ import { readArgs, runMain, showHelp } from './lib/args';
 import { ROOT, ttsDirs } from './lib/paths';
 
 /** 作業フォルダの中で消すもの（リポジトリの直下から） */
-export const CLEAN = ['out', 'public/audio/mix', 'site/dist', '.work/state'];
+export const CLEAN = ['out', 'public/audio/mix', 'site/dist', '.work/state', '.work/render-tmp'];
 
 /** フォルダの中のファイルの大きさの合計（symlink はたどらない） */
 const sizeOf = (p: string): number => {
