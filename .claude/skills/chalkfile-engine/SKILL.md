@@ -23,6 +23,11 @@ description: Chalkfile の講座サイト（PWA）・保存（オフライン）
 - 保存した講座を壊さない。検証を厳しくする変更には、互換のテスト（`tests/offline-compat.test.ts`）が当たる。fixture を書き換えて通さない（[保存の設計](../../../docs/architecture/offline.md) の「保存データの互換」）
 - 講座のページの画面は `site/course-page.ts` と `site/page/` に TypeScript で書く。`site/template.html` に script を書かない（組み立てが Bun で 1 本にまとめ、`__PAGE_SCRIPT__` の所に入れる。CSP のハッシュも組み立てが作る）。部品は `site/page/dom.ts` で作り、innerHTML を使わない
 - ページの JSON の形は `site/page/data.ts` の `CourseData` が正本（組み立ての `courseJson` が `satisfies` で確かめる）。学習の記録（localStorage）の形を変えるときは、前の版の画面が読み書きしても壊れない形にし、見本（`tests/fixtures/local-storage/`）を残したまま互換のテストを通す（[保存の設計](../../../docs/architecture/offline.md) の「学習の記録の互換」）
+- 決まった文字は `site/i18n/<言語>.ts` に書く（日本語の `ja.ts` が正本、訳の言語は `defineLocale<typeof ja>()`。どの表がページと sw.js に入るかは `site/i18n/index.ts`）。差し込みは `tt('key', { … })`、本数などの数で形の変わる文字は `tn('key', n)`（名前は型で確かめる）。言語を足す手順は [i18n.md](../study-video-course/references/i18n.md) の「言語を足す」
+- 講座のページの動画は `preload="none"`（開いただけで `/media/` を呼ばない。Worker の回数の枠を使わない）。動画は `src` で渡し、`load()` を呼ばない（Chrome は `load()` を呼ぶと、`preload="none"` でも読み始める）。読む前の時刻は `site/page/player.ts` の「読んだら移る時刻」で扱う
+- 講座のポスター（`<講座>/media/*`）は `?v=` の付いた資源として、`_headers` で 1 年キャッシュさせる（`immutable`）。ポスターを指すときは、いつも `?v=`（その講座のページの版）を付ける（組み立ての最後が、`?v=` 無しで指す所を止める）
+- 声のクレジット（講座のページと一覧のページ）は、台詞の声から作る（`scripts/site/model.ts` の `courseCredits`・`homeCredits`）。抜けたら `npm run validate` が止める
+- 無いページ（`site/not-found.html`）と Web App Manifest は言語ごと。手元の配信とテストのサーバーも、本番と同じく、いちばん近いフォルダの `404.html` を返す（`scripts/site/serve-files.ts`）。検索のための `sitemap.xml` と `robots.txt` は組み立てが作る（`scripts/site/seo.ts`）。JS が無くても、最初のレクチャーとカリキュラムを読めるように、組み立てが HTML に書く（`scripts/site/render-course.ts`。形は画面と同じにする）
 - 画面を変えたら、キーボードだけで使えることと、axe を確かめる。axe の重大（critical）と深刻（serious）は 0 にする（既知の一覧 `tests/fixtures/a11y-known/` に入れても落ちる）。1 文字のショートカットは、動画を選んでいるときだけ効かせる。フォーカスのある要素を作り直さない（作り直すときは、同じ所へフォーカスを戻す）
 - 講座の版が変わる回（「新しい版」が出る回）は、何が変わったかの 1 文を `site/news.ts` に、その回のお知らせを `docs/history/` に足す（[保存の設計](../../../docs/architecture/offline.md) の「新しい版の案内」）
 - 不完全な保存を、成功として扱わない。オンラインの視聴・1 本のダウンロード・アプリ内の保存・インストールを、分けて見せる
@@ -44,6 +49,7 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/                              
 - 再生を確かめるには、本物の動画と字幕のデータが要る（`bun scripts/media.ts pull stripe-billing pstack-comedy`）。mock・型・ブラウザのスマホの幅から、iPhone の実機での成功を推し量らない
 - 見るもの: PC と 375px の画面・本当の通信断・ブラウザを閉じてからの起動・保存と削除・更新の失敗と成功・取り消しとやり直し・容量の例外・バイトを照らした Range と途中への移動・字幕版の切り替え・1 本のダウンロード。移行を変えたら、新しいブラウザの context で、Service Worker の install と scope も見る
 - 画面を変えたら、`npm run test:e2e:ci -- tests/browser/a11y.spec.ts` で axe と、キーボードだけでの操作（本文へ飛ぶ・再生・タブ・クイズ・チャプターとレクチャーの移動）を見る
+- 決まった文字を変えたら、`bun test tests/site-i18n.test.ts`（全言語のキー・差し込みの名前・数の形・使われていないキー）。動画の読み方を変えたら、`tests/browser/offline.spec.ts` の「講座を開いただけでは」（開いただけでは `/media/` の要求が 0）
 - 案内（保存の状態・進み具合・通信のエラー）を変えたら、`npm run test:browser -- tests/browser/offline-status.spec.ts` も流す。一時の profile で全部の動画を 1 回保存し、完全に閉じたあとのオフラインの起動・完全な版がある／無いときの保存の欠け・遅い確認のエラーと保存の進み具合の取り合い・エラーと操作の結果が消えないことを見る。テストで起こした欠けや通信のエラーを、本物の故障と混ぜない
 - 公開していない訳の講座の場面を、日本語の成功に数えない（公開していない言語のテストは、skip として記録する）
 - 公開したあとの表示の直しは、新しい版を選んで保存し直してから、オフラインで確かめる（保存した前の版の HTML は書き換わらない）

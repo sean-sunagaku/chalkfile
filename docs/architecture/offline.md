@@ -18,27 +18,28 @@
 
 | ファイル | すること |
 |---|---|
-| `scripts/build_site.ts`（本体は `scripts/site/` の `buildSite`）・`scripts/pwa.ts` | 教材の版・ファイルごとの SHA-256 と大きさ・講座の `offline-manifest.json`・起動用のページ・Web App Manifest・アイコン・worker を作る。ページの 2 本の script（画面と offline-client）は、Bun で 1 本ずつ iife にまとめて縮め、ページの中に入れる（保存版の HTML が 1 枚で完結する。外の JS にすると、SW を更新したときに古い保存版が壊れる） |
+| `scripts/build_site.ts`（本体は `scripts/site/` の `buildSite`）・`scripts/pwa.ts` | 教材の版・ファイルごとの SHA-256 と大きさ・講座の `offline-manifest.json`・起動用のページ・言語ごとの Web App Manifest（`<言語>/manifest.webmanifest`）・アイコン（`any` と `maskable` を別の画像に）・worker を作る。ページの 2 本の script（画面と offline-client）は、Bun で 1 本ずつ iife にまとめて縮め、ページの中に入れる（保存版の HTML が 1 枚で完結する。外の JS にすると、SW を更新したときに古い保存版が壊れる） |
 | `scripts/site-version.ts` | 教材の版（pageVersion）を出力から計算する。版の印を入れたまま描いたページと、保存する動画・ポスターの URL・大きさ・SHA-256 から求め、印に差し込む（テストは `tests/site-version.test.ts`） |
 | `site/offline-client.ts`・`offline-panel.html`・`offline.css` | 選んで保存・バイト単位の進み具合・保存の状態・取り消し・やり直し・削除・更新（何が変わったかの文も）・容量の見積もり・保持の要求・インストールの案内 |
-| `site/course-page.ts`・`site/page/` | 講座のページの画面（動画と字幕・カリキュラムと進み具合・概要・台本と検索・ノート・クイズ・教材・タブ・ショートカット）。ページの JSON の形は `page/data.ts` の `CourseData`（組み立ての `courseJson` が `satisfies` で確かめる）、offline-client からの知らせは `page/events.ts`、学習の記録は `page/storage.ts`（下の「学習の記録の互換」）、部品は文字を文字のまま入れる `page/dom.ts` |
+| `site/course-page.ts`・`site/page/` | 講座のページの画面（動画と字幕・カリキュラムと進み具合・概要・台本と検索・ノート・クイズ・教材・タブ・ショートカット）。本数と長さの文と見出しの上の札は `page/summary.ts`（JS が無くても読めるように、組み立てがページに書く最初のレクチャーとカリキュラムも、これで作る）。ページの JSON の形は `page/data.ts` の `CourseData`（組み立ての `courseJson` が `satisfies` で確かめる）、offline-client からの知らせは `page/events.ts`、学習の記録は `page/storage.ts`（下の「学習の記録の互換」）、部品は文字を文字のまま入れる `page/dom.ts` |
 | `site/news.ts` | 「新しい版」の案内に出す、何が変わったかの文の正本（下の「新しい版の案内」） |
+| `site/i18n/` | 画面・保存の欄・Service Worker・無いページ・manifest の決まった文字（言語ごとのファイル。置き場所ごとの表と、どれがページと sw.js に入るかは `site/i18n/index.ts`）。SW の文字は、組み立てが全部の言語の分を sw.js の設定に入れる |
 | `site/sw.ts` | 完全な講座の確定・前の保存版から変わらないファイルを写す・そろっているかの結果を覚える・保存版の教材と MP4 の配信・Range・無効にした版の扱い・起動用のページ・途中で終わったものの片付け・読めない記録の隔離 |
-| `site/offline-shared.ts` | 保存するものの形と範囲・保存の記録の読み込み・片付けと隔離の判断 |
+| `site/offline-shared.ts` | 保存するものの形と範囲（講座の ID の頭と、動画とポスターの名前の言語は、言語の一覧 `content/langs.ts` から作る）・保存の記録の読み込み・片付けと隔離の判断 |
 | `site/lib/http-range.ts`・`site/lib/text.ts` | SW と手元の配信が使う共有の部品（1 つの bytes の Range の読み方と応答・HTML のエスケープと差し込み）。動画の配るパスの読み方とダウンロードの名前は `site/media-shared.ts` |
 | `site/disabled-revisions.ts` | 無効にした保存版の revision の一覧の正本（下の「無効にした保存版」） |
 | `site/limits.ts` | 保存・動画・Workers の大きさの上限の正本（境目のテストは `tests/limits.test.ts`） |
 | `site/mime.ts` | 拡張子と MIME の対応表（Workers が返す型と同じ）。起動用のファイル（一覧のページの画像・講座のサムネイル・アイコン・manifest）と保存するファイルの型はここから付け、知らない拡張子なら組み立てを止める |
-| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本のどれかで CSP と合うか・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型。テストは `tests/site-invariants.test.ts`） |
+| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本のどれかで CSP と合うか・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型・`_headers` で長くキャッシュさせるポスターを `?v=` 無しで指していないか。テストは `tests/site-invariants.test.ts`） |
 | `tests/offline.test.ts`・`tests/browser/` | 境目の値と、実ブラウザの確かめ（合成の講座の `test:e2e:ci` と、本物の講座の `test:e2e:real`）。通信などの障害は、テストのサーバー（`tests/browser-server.ts`）が、テストごとのセッション（`tests/e2e/session.ts`）で起こす |
 | `tests/offline-compat.test.ts`・`tests/fixtures/saved-records/<日付>/` | 学ぶ人が保存した記録の互換のテスト（下の「保存データの互換」）。fixture は `tests/capture-saved-records.ts` で作る |
 
 ## 多言語と字幕版
 
-- 公開するのは `publishLangs` にある言語だけ。訳の講座の保存の ID は `en/pstack-comedy` の形
+- 公開するのは `publishLangs` にある言語だけ。訳の講座の保存の ID は `en/pstack-comedy` の形（頭は言語の一覧 `content/langs.ts` にある訳の言語だけ）
 - 訳の動画も、同じ origin の `/media/<言語>/<講座>/` から取る。ポスターは、教材のページの側の静的な assets に置く
 - 通常版と、字幕を焼き込んだ版の両方を、同じ教材情報から保存する
-- 保存のエラーは、ページの言語で出す。学習の記録の鍵も、言語ごとに分ける
+- 保存のエラーは、ページの言語で出す（文字は `site/i18n/<言語>.ts` の `sw`）。保存版の動画を使えないときと、保存していないファイルの 503 の文は、その講座の言語で返す。学習の記録の鍵も、言語ごとに分ける
 - 公開から外した講座の保存を、自動では消さない
 
 ## 旧 Pages の保存版
@@ -50,7 +51,7 @@
 
 ## 保存と更新の約束
 
-1. 表示するだけでは動画を保存しない。学ぶ人が講座を開いて、保存を選ぶ。worker の導入のときに持つのは、起動用の HTML・アイコン・トップの画像だけ
+1. 表示するだけでは動画を保存しない。学ぶ人が講座を開いて、保存を選ぶ。worker の導入のときに持つのは、起動用の HTML・アイコン・manifest・トップの画像と講座の縮小画像（`?v=` 付き）だけ。講座を開いただけでは、動画を取りに行かない（下の「再生と案内」）
 2. 保存するのは、組み立てで作った、同じ origin とアプリの scope の中の教材のページ・MP4・JPG だけ。外の URL・転送・opaque の応答・206・違う MIME・別の講座へのパス・DRM や認証つきの配信は受け入れない。取るときは `credentials: omit` を付ける。権利と保存の許可がある公開のものだけを対象にする
 3. 1 ファイルずつ全体を取り、教材情報の大きさと SHA-256 に照らす。上限（1 ファイル・講座のページ・1 講座の大きさとファイルの数。`OFFLINE_FILE_MAX_BYTES`・`OFFLINE_PAGE_MAX_BYTES`・`OFFLINE_COURSE_MAX_BYTES`・`OFFLINE_COURSE_MAX_FILES`）は `site/limits.ts`。サイト用の MP4 は、`render.sh` が目安の大きさ（`VIDEO_TARGET_BYTES`）に crf を上げて合わせる。目安は上限ではなく、crf 29 でも超えたら注意だけ出して、そのまま使う。保存の上限を超える動画は `media.ts push`・`check` が、超える講座は組み立ての最後（`scripts/site-invariants.ts`）が止める。合わないデータや、足りない生成物から、教材情報を配らない
 4. 仮の Cache に全部のファイルがそろってから、registry の 1 件が指す先を切り替える。失敗や取り消しで、前の完全な版を消さない。ブラウザを閉じて残った仮の領域は、次の状態の確認か起動のときに片付ける
@@ -101,6 +102,7 @@ Service Worker は、保存した記録（registry の 1 件）を使うたび�
 ## 再生と案内
 
 - 完全な 200 の応答から、1 つの `bytes=start-end`・`start-`・`-suffix` を切り出し、206 と正しい `Content-Range`・`Content-Length`・`video/mp4` を返す。範囲の外は 416。複数の Range と、知らない形・正しくない形は無視して 200 を返す。HEAD は本文なし。`If-Range` が保存版の ETag と違えば、全体の 200 を返す。オンラインで保存していない動画は、配信元の Range の応答を使う
+- 講座のページの動画は `preload="none"`。保存していない講座は、再生を押すか時刻を選んだときに、開いたレクチャーの動画だけを `/media/` から読む。続きの時刻・選んだ時刻は、読み始めて長さと形（metadata）が来たら移る。画面は動画を `src` で渡し、`load()` を呼ばない（Chrome は `load()` を呼ぶと、`preload="none"` でも読み始める）
 - 保存版がそろっているか（全部のファイルが、教材情報の大きさと SHA-256 の印で Cache にあるか）の結果は、Cache の名前と revision の組で覚え、再生の要求のたびに確かめ直さない。状態の確認（STATUS）と保存のときは確かめ直し、保存・削除が終わったら捨てる
 - オンラインで開いたページの応答が 4xx（無い URL・消えた講座の 404 のページ）か転送なら、配信元の応答をそのまま返す。起動用の画面と「保存されていません」（503）に頼るのは、通信の失敗と 5xx のときだけ
 - オンラインでの視聴・1 本の MP4 のダウンロード・アプリ内の講座の保存・PWA のインストールは、別の操作として見せる。インストールだけで、講座を保存したとは言わない。外の公式ドキュメントは通信が要る。書体を外から取れなくても、端末の日本語の書体で表示する
