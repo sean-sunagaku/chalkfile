@@ -93,7 +93,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
-| `npm run synth` | 声と時刻（`content/<講座>/generated/timeline/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
+| `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`） |
 | `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
