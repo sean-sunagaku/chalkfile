@@ -1,0 +1,9 @@
+# Issue を作るときの選択の画面。白紙の Issue は出さず、フォームで、直すのに要ることを先に聞く
+blank_issues_enabled: false
+contact_links:
+  - name: 脆弱性の報告（非公開）
+    url: https://github.com/sean-sunagaku/chalkfile/security/advisories/new
+    about: サイト・Worker・スクリプト・AI への指示の安全の問題は、公開の Issue に書かず、ここから非公開で知らせてください（SECURITY.md）
+  - name: 講座を保存して、オフラインで学ぶ（使い方）
+    url: https://github.com/sean-sunagaku/chalkfile/blob/main/docs/guide/learner-offline.md
+    about: 保存・通信なしでの再生・アプリとして入れる方法と、iPhone で使うときの注意
