@@ -70,3 +70,22 @@ export const runInherit = (cmd: string, args: string[], opts: Pick<RunOptions, '
   if (r.error) throw r.error;
   return r.status ?? 1;
 };
+
+/**
+ * git の参照のロック（.git の refs の <名前>.lock）を、ほかの作業フォルダの fetch と取り合ったときの失敗。
+ * 作業フォルダ（worktree）は .git を共有するので、2 つの作業フォルダで同時に fetch すると起きうる。少し待って流し直せば通る
+ */
+const REF_LOCKED =
+  /cannot lock ref|unable to update local ref|Unable to create '[^']*\.lock'|fetching ref \S+ failed: reference already exists/i;
+const sleepSync = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+/** git fetch を流す。参照のロックの取り合いで失敗したときだけ、少し待って 4 回まで流し直す（ほかの失敗は、すぐに止める） */
+export const gitFetch = (cwd: string, args: string[]): void => {
+  for (let attempt = 1; ; attempt++) {
+    const r = run('git', ['fetch', ...args], { cwd });
+    if (r.code === 0) return;
+    if (attempt >= 5 || !REF_LOCKED.test(r.stderr))
+      throw new Error(`git fetch が失敗した: ${tailOf(r.stderr) || `終了コード ${r.code}`}`);
+    sleepSync(250 * 2 ** (attempt - 1));
+  }
+};

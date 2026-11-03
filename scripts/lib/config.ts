@@ -6,7 +6,7 @@ import { ROOT } from './paths';
 
 /**
  * site/config.json。publishLangs: 公開する言語（synth・サイトの既定の対象）。
- * media: 訳の言語の動画を置くサイト（url はサイトの URL、repo は gh-pages を置くリポジトリ）
+ * media: 訳の言語の動画を置くサイト（url はサイトの URL、repo はそのサイトのリポジトリ）
  */
 export type SiteConfig = {
   series: string;

@@ -1,6 +1,7 @@
 """レクチャーごとの音（ナレーション・BGM・ジングル・効果音）を 1 本の WAV にまとめる。
 
-synth.ts が書いた .work/plan/<id>.json（台詞の開始時刻と効果音）を読み、
+synth.ts が書いた .work/plan/<id>.json（台詞の開始時刻と効果音）を読み、台詞の音声は作業フォルダの間で共有のキャッシュ
+（CHALKFILE_CACHE_DIR。既定 ~/.cache/chalkfile/tts/）から、無ければ .work/tts/ から読んで、
 public/audio/mix/<id>.wav（48kHz・ステレオ・16bit、-16 LUFS / true peak -1.5 dB）を作る。
 
 - ナレーションは -17 LUFS にそろえる
@@ -28,7 +29,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
 
-from audio.common import MISSING, USAGE, atomic_path, db_to_linear, run_ffmpeg, stop, wants_help
+from audio.common import MISSING, USAGE, atomic_path, db_to_linear, run_ffmpeg, stop, voice_file, wants_help
 
 if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy）を読む前に、使い方だけを出す
     print(__doc__)
@@ -233,8 +234,12 @@ def build(lec_id: str) -> None:
         if si > 0:
             sfx("whoosh", scene["start"] - 0.08)
         for li, line in enumerate(scene["lines"]):
-            # synth.ts はこのフォルダからの相対パスで書く（前の設計図の絶対パスもそのまま読める）
-            clip = read_wav(ROOT / line["file"])
+            # synth.ts は場所に縛られない名前（.work/tts/<鍵>.wav）で書く。共有のキャッシュ → .work/tts の順に探す
+            # （前の設計図の絶対パスもそのまま読める）
+            file = voice_file(ROOT, line["file"])
+            if not file.exists():
+                stop(MISSING, f"{lec_id}: 台詞の音声が無い（{line['file']}）。先に npm run materials:pull か npm run synth -- {lec_id}")
+            clip = read_wav(file)
             place(voice, clip, line["start"])
             intervals.append((line["start"], line["end"]))
             if line.get("sfx"):

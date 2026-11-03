@@ -1,6 +1,7 @@
 """Python の道具（scripts/mix.py・tts_kokoro.py・check_speech.py）が共有する部品。標準のモジュールだけを読む（依存を入れる前にも読める）。
 
 - wants_help・stop: 使い方と終了コード（0 成功・1 失敗・2 使い方の誤り・3 前提が足りない。TS の道具の scripts/lib/args.ts と同じ）
+- cache_dir・voice_file: 作業フォルダの間で共有するキャッシュと、台詞の音声の探し方（TS の scripts/lib/paths.ts と同じ）
 - write_atomic・atomic_path: 同じフォルダの一時の名前に書いてから置き換える。途中で止まっても、前の中身か新しい中身のどちらかになり、
   同じ作業フォルダで道具を並べて流しても（別々の動画の synth を 2 つなど）、書きかけのファイルが見えない
 - run_ffmpeg: ffmpeg を流す（-nostdin を付け、標準入力を読ませない）
@@ -31,6 +32,29 @@ def stop(code: int, message: str) -> NoReturn:
     """message を標準エラーに出して、code で終える"""
     print(message, file=sys.stderr)
     raise SystemExit(code)
+
+
+def cache_dir() -> Path:
+    """作業フォルダの間で共有するキャッシュ。環境変数 CHALKFILE_CACHE_DIR、無ければ ~/.cache/chalkfile"""
+    env = os.environ.get("CHALKFILE_CACHE_DIR")
+    return Path(env).resolve() if env else Path.home() / ".cache" / "chalkfile"
+
+
+TTS_REL = Path(".work") / "tts"  # 台詞の音声の、場所に縛られない名前の頭（設計図・聞き取りの対応に書く）
+
+
+def voice_file(root: Path, rel: str) -> Path:
+    """設計図などに書いた台詞の音声の名前（.work/tts/<鍵>.wav）の、今ある場所。
+
+    先に共有のキャッシュ（<キャッシュ>/tts）、無ければ作業フォルダの .work/tts（前の置き場所）。
+    ほかの名前（BGM など）と、前の設計図の絶対パスは、そのまま使う
+    """
+    p = Path(rel)
+    if not p.is_absolute() and p.parts[:2] == TTS_REL.parts:
+        cached = cache_dir() / "tts" / Path(*p.parts[2:])
+        if cached.exists():
+            return cached
+    return root / p
 
 
 def temp_path(path: Path, suffix: str = ".tmp") -> Path:

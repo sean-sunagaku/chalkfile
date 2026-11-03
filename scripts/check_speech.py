@@ -40,7 +40,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
 
-from audio.common import USAGE, stop, wants_help, write_atomic
+from audio.common import USAGE, stop, voice_file, wants_help, write_atomic
 
 if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy・Whisper）を読む前に、使い方だけを出す
     print(__doc__)
@@ -120,7 +120,8 @@ def main() -> None:
         rows = []
         for ln in data["lines"]:
             if ln["file"] not in heard:
-                segs, _ = asr.transcribe(read16k(ROOT / ln["file"]), language=lang, beam_size=1, condition_on_previous_text=False)
+                # 音声は、共有のキャッシュ → .work/tts の順に探す（記録の鍵は、場所に縛られない名前のまま）
+                segs, _ = asr.transcribe(read16k(voice_file(ROOT, ln["file"])), language=lang, beam_size=1, condition_on_previous_text=False)
                 heard[ln["file"]] = "".join(s.text for s in segs).strip()
                 # 一時の名前に書いてから置き換える（途中で止めても、聞き取りの記録が壊れない）
                 write_atomic(cache_file, json.dumps(heard, ensure_ascii=False))

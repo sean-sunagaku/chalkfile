@@ -2,7 +2,7 @@
 import { afterAll, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { AUDIO, check, gc, keepAt, pull, push, type Convert, type CourseKeys, type Repo } from '../scripts/materials';
@@ -470,3 +470,119 @@ test.skipIf(!Bun.which('ffmpeg'))(
   },
   60_000,
 );
+
+/* ───────────── 作業フォルダの間で共有するキャッシュ ───────────── */
+
+/** 共有のキャッシュを使う clone（キャッシュは一時のフォルダ。手元の ~/.cache には触れない） */
+const withCache = (repo: Repo, cache: string): Repo => ({ ...repo, cache });
+/** 変換の数を数える（変換はそのまま写す） */
+const counting = () => {
+  let jobs = 0;
+  const convert: Convert = async (list, to) => {
+    jobs += list.length;
+    await copy(list, to);
+  };
+  return { convert, jobs: () => jobs };
+};
+
+test('台詞の声は共有のキャッシュに取り出し、2 つ目の作業フォルダは変換しない（同じ中身はキャッシュから使う）', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  voice(a, 'a1');
+  voice(a, 'a2');
+  await push(a, [course('alpha', ['a1', 'a2'])], logs().opts);
+
+  const cache = mkdtempSync(path.join(sandbox, 'cache-'));
+  const b = withCache(cloneOf(remote, 'b'), cache);
+  const first = counting();
+  await pull(b, ['alpha'], { convert: first.convert, log: () => {} });
+  // 台詞の声と読みはキャッシュに、BGM・効果音は作業フォルダに置き、作業フォルダの .work/tts には書かない
+  expect(readFileSync(path.join(cache, 'a1.wav'), 'utf8')).toBe('wav:a1');
+  expect(readFileSync(path.join(cache, 'a2.kana'), 'utf8')).toBe('kana:a2');
+  expect(existsSync(path.join(b.root, '.work/tts'))).toBe(false);
+  expect(readFileSync(path.join(b.root, 'public/audio/sfx/zuko.wav'), 'utf8')).toBe('audio:zuko');
+  expect(first.jobs()).toBe(2 + AUDIO.reduce((n, x) => n + x.names.length, 0));
+  // 書きかけの一時のファイルを残さない
+  expect(readdirSync(cache).filter((f) => f.endsWith('.tmp'))).toEqual([]);
+
+  const c = withCache(cloneOf(remote, 'c'), cache);
+  const second = counting();
+  const out: string[] = [];
+  await pull(c, ['alpha'], { convert: second.convert, log: (l) => void out.push(l) });
+  // 台詞の声はキャッシュにあるので変換しない（BGM・効果音は作業フォルダごと）
+  expect(second.jobs()).toBe(AUDIO.reduce((n, x) => n + x.names.length, 0));
+  expect(out.join('\n')).toContain('同じ中身が手元にある 2 本は飛ばす');
+  // check と push は、キャッシュの声を読む（作業フォルダに .work/tts が無くても足りている）
+  const lines: string[] = [];
+  expect(check(c, [course('alpha', ['a1', 'a2'])], (l) => void lines.push(l))).toBe(true);
+  expect(lines).toContain('alpha（ja）: 台詞の音声 2/2');
+  expect((await push(c, [course('alpha', ['a1', 'a2'])], logs().opts)).pushed).toBe(false);
+}, 30_000);
+
+test('キャッシュの声が SHA256SUMS と合わなければ取り出し直し、合わない変換はキャッシュに置かない', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  voice(a, 'a1');
+  await push(a, [course('alpha', ['a1'])], logs().opts);
+  const cache = mkdtempSync(path.join(sandbox, 'cache-'));
+  const b = withCache(cloneOf(remote, 'b'), cache);
+  await pull(b, ['alpha'], logs().opts);
+  // 壊れたキャッシュ（中身が違う）は、SHA256SUMS と照らし合わせて取り出し直す
+  writeFileSync(path.join(cache, 'a1.wav'), 'wav:broken');
+  await pull(b, ['alpha'], logs().opts);
+  expect(readFileSync(path.join(cache, 'a1.wav'), 'utf8')).toBe('wav:a1');
+  // 変換した中身が SHA256SUMS と合わなければ止め、キャッシュの前の中身を変えない
+  writeFileSync(path.join(cache, 'a1.wav'), 'wav:broken');
+  const wrong: Convert = async (jobs) => {
+    for (const [, to] of jobs) {
+      mkdirSync(path.dirname(to), { recursive: true });
+      writeFileSync(to, 'wav:wrong');
+    }
+  };
+  await expect(pull(b, ['alpha'], { convert: wrong, log: () => {} })).rejects.toThrow('SHA256SUMS と合わない: .work/tts/a1.wav');
+  expect(readFileSync(path.join(cache, 'a1.wav'), 'utf8')).toBe('wav:broken');
+  expect(readdirSync(cache).filter((f) => f.endsWith('.tmp'))).toEqual([]);
+}, 30_000);
+
+test('前の置き場所（作業フォルダの .work/tts）の声も読め、同じ中身なら変換せずにキャッシュへ写す', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  audio(a);
+  voice(a, 'a1');
+  await push(a, [course('alpha', ['a1'])], logs().opts);
+  // 前の materials.ts で取り出した作業フォルダ（.work/tts にある）に、キャッシュを足す
+  const cache = mkdtempSync(path.join(sandbox, 'cache-'));
+  const old = withCache(a, cache);
+  const lines: string[] = [];
+  expect(check(old, [course('alpha', ['a1'])], (l) => void lines.push(l))).toBe(true);
+  const conv = counting();
+  const out: string[] = [];
+  await pull(old, ['alpha'], { convert: conv.convert, log: (l) => void out.push(l) });
+  expect(readFileSync(path.join(cache, 'a1.wav'), 'utf8')).toBe('wav:a1');
+  expect(out.join('\n')).toContain('そのうち 1 本は .work/tts から共有のキャッシュに写した');
+  // 台詞の声は変換していない（BGM・効果音は同じ中身が作業フォルダにある）
+  expect(conv.jobs()).toBe(0);
+}, 30_000);
+
+test('ほかの作業フォルダの fetch と参照のロックを取り合っても、少し待って取り直す', async () => {
+  const remote = makeRemote();
+  const a = cloneOf(remote, 'a');
+  // b は素材のブランチができる前の clone（取り出すとき、追跡のブランチの参照を作る）
+  const b = cloneOf(remote, 'b');
+  audio(a);
+  voice(a, 'a1');
+  await push(a, [course('alpha', ['a1'])], logs().opts);
+  // ほかの fetch が、追跡のブランチの参照のロックを持っている（0.4 秒後に外れる）
+  const lock = path.join(b.root, '.git/refs/remotes/origin/materials.lock');
+  mkdirSync(path.dirname(lock), { recursive: true });
+  writeFileSync(lock, '');
+  const release = Bun.spawn(['sh', '-c', `sleep 0.4; rm -f '${lock}'`]);
+  const started = Date.now();
+  await pull(b, ['alpha'], logs().opts);
+  await release.exited;
+  // ロックが外れるまで待って、取り直した
+  expect(Date.now() - started).toBeGreaterThanOrEqual(350);
+  expect(readFileSync(path.join(b.root, '.work/tts/a1.wav'), 'utf8')).toBe('wav:a1');
+}, 30_000);

@@ -1,7 +1,7 @@
 // 動画の素材（台詞の音声と読み・BGM とジングル・効果音）を、素材だけを置くブランチ `materials` と出し入れする。
 // 素材があれば、台詞を変えていない章は VOICEVOX・Kokoro なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せる。
 // 台詞の音声は、日本語（VOICEVOX）と訳の言語（Kokoro）のものを、講座ごとのフォルダにまとめて置く（名前は文と声から決まるので重ならない）。
-//   bun scripts/materials.ts pull [講座 ID …] [--videos]       # 素材を取り出す（--videos で Releases の動画も）
+//   bun scripts/materials.ts pull [講座 ID …] [--videos]       # 素材を取り出す（台詞の声は共有のキャッシュへ。--videos で Releases の動画も）
 //   bun scripts/materials.ts check [講座 ID …]                 # 台本の全部の台詞の音声と、BGM・効果音が手元にあるか
 //   bun scripts/materials.ts push [--dry-run] [--message 文]    # 手元の素材を `materials` ブランチに足す（消さない）
 //   bun scripts/materials.ts gc [--keep ref …] [--confirm]     # --keep（既定 origin/main）の台本が使わない台詞の音声を消す
@@ -10,10 +10,14 @@
 // push のコミットは前の版を親にする（送るのは新しい素材だけで済み、前の版にも戻せる。親の無いコミットだと、全部の素材を送り直す）。
 // 消すのは gc だけで、--confirm を付けたときだけ消す。gc は親の無い 1 コミットで置き換え、それまでの履歴を切る（消した素材を履歴にも残さない）。
 // 音声は FLAC（可逆圧縮）で置き、取り出すときに WAV に戻す。SHA256SUMS で、戻した WAV と読みが元と同じかを確かめる。
+// 台詞の音声と読みは、作業フォルダの間で共有のキャッシュ（CHALKFILE_CACHE_DIR。既定 ~/.cache/chalkfile/tts/）に取り出す。
+// 同じ中身（SHA256SUMS と同じ）がキャッシュにあれば取り出さないので、新しい作業フォルダでも 1GB を作り直さない。
+// 書くときは一時の名前から置き換え、SHA256SUMS と合ったものだけを置く（壊れたものをキャッシュに入れない）。
+// 読むとき（check・push）は、キャッシュに無ければ作業フォルダの .work/tts/（前の置き場所）も探す。SHA256SUMS のパスは .work/tts/ のまま
 // remote・素材のブランチ・main の名前は、環境変数 MATERIALS_REMOTE・MATERIALS_BRANCH・MATERIALS_BASE で差し替えられる。
 // 終了コード: 0 できた・1 失敗（check は足りないものがある）・2 使い方の誤り・3 前提が足りない（push の前の守り・素材のブランチ・道具）
 import { spawn, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
@@ -21,14 +25,15 @@ import { LANGS, type Lang } from '../content/i18n';
 import type { Course, Line, SfxId, VoiceId } from '../content/types';
 import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
+import { tempPath, writeAtomic } from './lib/fsx';
 import { sha256File } from './lib/hash';
-import { ROOT } from './lib/paths';
+import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { pool } from './lib/pool';
-import { run as runTool } from './lib/proc';
+import { gitFetch, run as runTool } from './lib/proc';
 import { pullMedia } from './media';
 import { ttsKeyIn } from './voices';
 
-const TTS = '.work/tts';
+const TTS = TTS_REL;
 const README = 'README.md';
 const SUMS = 'SHA256SUMS';
 /** 効果音の名前（台本の SfxId と同じ。scripts/build_music.py が作り、scripts/mix.py が読む） */
@@ -51,6 +56,10 @@ export type Repo = {
   branch: string;
   /** push の前に、HEAD が含んでいるべき remote のブランチ */
   base: string;
+  /**
+   * 台詞の音声と読みを置く、作業フォルダの間で共有のキャッシュ（<キャッシュ>/tts）。無ければ（テスト）、作業フォルダの .work/tts だけを使う
+   */
+  cache?: string;
 };
 
 export const defaultRepo = (): Repo => ({
@@ -58,7 +67,26 @@ export const defaultRepo = (): Repo => ({
   remote: process.env.MATERIALS_REMOTE ?? 'origin',
   branch: process.env.MATERIALS_BRANCH ?? 'materials',
   base: process.env.MATERIALS_BASE ?? 'main',
+  cache: ttsDirs(ROOT).cache,
 });
+
+/** 素材の名前（SHA256SUMS のパス）の、書く場所。台詞の音声と読みは共有のキャッシュ、BGM・効果音は作業フォルダ */
+const writePath = (repo: Repo, rel: string): string =>
+  repo.cache && rel.startsWith(`${TTS}/`) ? path.join(repo.cache, rel.slice(TTS.length + 1)) : path.join(repo.root, rel);
+/** 素材の名前の、今ある場所（台詞の音声と読みは、共有のキャッシュ → 作業フォルダの .work/tts）。どちらにも無ければ null */
+const readPath = (repo: Repo, rel: string): string | null =>
+  [writePath(repo, rel), path.join(repo.root, rel)].find((p) => existsSync(p)) ?? null;
+/** 一時の名前に写してから置き換える（APFS などでは中身を写さずに複製する） */
+const copyAtomic = (from: string, to: string) => {
+  mkdirSync(path.dirname(to), { recursive: true });
+  const tmp = tempPath(to);
+  try {
+    copyFileSync(from, tmp, constants.COPYFILE_FICLONE);
+    renameSync(tmp, to);
+  } finally {
+    rmSync(tmp, { force: true });
+  }
+};
 
 /** 講座ごとの、台詞の音声の名前（.work/tts/<key>.wav）と、素材の README に出す説明 */
 export type CourseKeys = { id: string; langs: string[]; keys: string[]; about: string };
@@ -231,7 +259,8 @@ const fetchBranch = (repo: Repo, branch: string): string | null => {
   if (found.code === 2) return null;
   if (found.code !== 0) throw new Error(`${repo.remote} を読めない: ${found.err.trim()}`);
   const tracking = `refs/remotes/${repo.remote}/${branch}`;
-  git(repo.root, ['fetch', '--quiet', '--no-tags', repo.remote, `+${ref}:${tracking}`]);
+  // ほかの作業フォルダの fetch と参照のロックを取り合ったら、少し待って流し直す（scripts/lib/proc.ts の gitFetch）
+  gitFetch(repo.root, ['--quiet', '--no-tags', repo.remote, `+${ref}:${tracking}`]);
   return git(repo.root, ['rev-parse', '--verify', `${tracking}^{commit}`]);
 };
 
@@ -315,7 +344,7 @@ ${rows.join('\n')}
 ## 使い方
 
 \`\`\`bash
-bun scripts/materials.ts pull                    # 全部の講座の素材を .work/tts/ と public/audio/ に取り出す
+bun scripts/materials.ts pull                    # 全部の講座の素材を取り出す（台詞の声は作業フォルダの間で共有のキャッシュ ~/.cache/chalkfile/tts/ に、BGM・効果音は public/audio/ に）
 bun scripts/materials.ts pull nudge-product      # 1 つの講座だけ
 bun scripts/materials.ts pull --videos           # Releases の動画も site/media/ に取り出す（ポスターは講座のフォルダの generated/posters/）
 bun scripts/materials.ts push --dry-run          # 足す・変える・同じ・残すの本数だけを見る（何も書かない）
@@ -363,13 +392,13 @@ const commitAndPush = async (repo: Repo, from: string | null, tree: string, mess
 
 /* ───────────── check ───────────── */
 
-const hasVoice = (root: string, key: string) => existsSync(path.join(root, TTS, `${key}.wav`)) && existsSync(path.join(root, TTS, `${key}.kana`));
+const hasVoice = (repo: Repo, key: string) => readPath(repo, `${TTS}/${key}.wav`) !== null && readPath(repo, `${TTS}/${key}.kana`) !== null;
 
 /** 台本の全部の台詞の音声と、BGM・効果音（決まった名前の一覧）が手元にあるか */
 export const check = (repo: Repo, courses: CourseKeys[], log: (line: string) => void = console.log): boolean => {
   let ok = true;
   for (const c of courses) {
-    const missing = c.keys.filter((k) => !hasVoice(repo.root, k));
+    const missing = c.keys.filter((k) => !hasVoice(repo, k));
     log(`${c.id}（${c.langs.join('・')}）: 台詞の音声 ${c.keys.length - missing.length}/${c.keys.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX・Kokoro で bun scripts/synth.ts）' : ''}`);
     if (missing.length) ok = false;
   }
@@ -388,19 +417,31 @@ type Local = {
   sha256: Map<string, string>;
   /** 読みの blob と大きさ（git hash-object で、書かずに求める） */
   kana: Map<string, Entry>;
+  /** 素材の名前 → 今ある場所 */
+  files: Map<string, string>;
 };
 
-/** 手元の素材の sha256 と、読みの blob を 1 回だけ求める（無いファイルは飛ばす） */
+/** 素材の名前の、手元の場所（readLocal で見つけたもの） */
+const fileOf = (local: Local, rel: string): string => {
+  const file = local.files.get(rel);
+  if (!file) throw new Error(`手元の素材が途中で無くなった: ${rel}`);
+  return file;
+};
+
+/** 手元の素材の sha256 と、読みの blob を 1 回だけ求める（無いファイルは飛ばす。台詞は共有のキャッシュ → .work/tts の順に探す） */
 const readLocal = (repo: Repo, courses: CourseKeys[]): Local => {
   const rels = new Set<string>();
   for (const c of courses) for (const k of c.keys) rels.add(`${TTS}/${k}.wav`).add(`${TTS}/${k}.kana`);
   for (const a of AUDIO) for (const n of a.names) rels.add(`${a.local}/${n}.wav`);
-  const present = [...rels].filter((rel) => existsSync(path.join(repo.root, rel)));
-  const sha256 = new Map(present.map((rel) => [rel, sha256Of(path.join(repo.root, rel))]));
-  const kanaRels = present.filter((rel) => rel.endsWith('.kana'));
-  const blobs = hashFiles(repo.root, kanaRels.map((rel) => path.join(repo.root, rel)), false);
-  const kana = new Map(kanaRels.map((rel, i): [string, Entry] => [rel, { blob: blobs[i], size: statSync(path.join(repo.root, rel)).size }]));
-  return { sha256, kana };
+  const present = new Map([...rels].flatMap((rel) => {
+    const file = readPath(repo, rel);
+    return file ? [[rel, file] as const] : [];
+  }));
+  const sha256 = new Map([...present].map(([rel, file]) => [rel, sha256Of(file)]));
+  const kanaFiles = [...present].filter(([rel]) => rel.endsWith('.kana'));
+  const blobs = hashFiles(repo.root, kanaFiles.map(([, file]) => file), false);
+  const kana = new Map(kanaFiles.map(([rel, file], i): [string, Entry] => [rel, { blob: blobs[i], size: statSync(file).size }]));
+  return { sha256, kana, files: present };
 };
 
 type Change = { action: 'add' | 'change'; rel: string; blob?: string; size?: number };
@@ -562,7 +603,7 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       if (todo.length) {
         log(`FLAC にする: ${todo.length} 本`);
         const files = todo.map((rel) => path.join(tmpDir(), 'flac', rel.replace(/\.wav$/, '.flac')));
-        await convert(todo.map((rel, i): [string, string] => [path.join(repo.root, rel), files[i]]), 'flac');
+        await convert(todo.map((rel, i): [string, string] => [fileOf(local, rel), files[i]]), 'flac');
         const blobs = hashFiles(repo.root, files, true);
         todo.forEach((rel, i) => {
           flacs.set(rel, { blob: blobs[i], size: statSync(files[i]).size });
@@ -571,7 +612,7 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       for (const c of plan.changes.values()) if (!c.blob) Object.assign(c, flacs.get(c.rel));
       // 読みをオブジェクトとして書く（ID は、前に書かずに求めたものと同じになる）
       const kanaRels = [...new Set([...plan.changes.values()].map((c) => c.rel).filter((rel) => rel.endsWith('.kana') && !written.has(rel)))];
-      hashFiles(repo.root, kanaRels.map((rel) => path.join(repo.root, rel)), true).forEach((blob, i) => {
+      hashFiles(repo.root, kanaRels.map((rel) => fileOf(local, rel)), true).forEach((blob, i) => {
         if (blob !== local.kana.get(kanaRels[i])?.blob) throw new Error(`読みのファイルが途中で変わった: ${kanaRels[i]}`);
         written.add(kanaRels[i]);
       });
@@ -746,7 +787,6 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
   try {
     extract(repo.root, sha, [...present.map((id) => `tts/${id}`), 'audio', SUMS], tmp);
     const sums = parseSums(readFileSync(path.join(tmp, SUMS), 'utf8'));
-    mkdirSync(path.join(repo.root, TTS), { recursive: true });
     // 取り出す先（WAV）と、もとの FLAC。同じ台詞が 2 つの講座にあっても、1 回だけ戻す
     const targets = new Map<string, string>();
     const kana = new Map<string, string>();
@@ -764,18 +804,38 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
     }
     const badKana = [...kana].filter(([rel, file]) => sums.has(rel) && sha256Of(file) !== sums.get(rel)).map(([rel]) => rel);
     if (badKana.length) throw new Error(`読みが SHA256SUMS と合わない: ${badKana.slice(0, 5).join(', ')}${badKana.length > 5 ? ` ほか ${badKana.length - 5} 本` : ''}`);
-    for (const [rel, file] of kana) copyFileSync(file, path.join(repo.root, rel));
+    // 読みは、同じ中身が置いてあれば書かない（共有のキャッシュを、ほかの作業フォルダが読んでいても、置き換えは一瞬）
+    for (const [rel, file] of kana) {
+      const dest = writePath(repo, rel);
+      const body = readFileSync(file);
+      if (!(existsSync(dest) && readFileSync(dest).equals(body))) writeAtomic(dest, body);
+    }
     const checkedKana = [...kana.keys()].filter((rel) => sums.has(rel)).length;
 
-    // 中身が同じ WAV が手元にあれば、変換を飛ばす（sha256 は 1 本につき 1 回だけ求める）
-    const jobs = [...targets].filter(([rel]) => {
-      const file = path.join(repo.root, rel);
-      return !(existsSync(file) && sha256Of(file) === sums.get(rel));
-    });
-    log(`WAV に戻す: ${jobs.length} 本（同じ中身が手元にある ${targets.size - jobs.length} 本は飛ばす）`);
-    await convert(jobs.map(([rel, flac]): [string, string] => [flac, path.join(repo.root, rel)]), 'wav');
-    const bad = jobs.map(([rel]) => rel).filter((rel) => sha256Of(path.join(repo.root, rel)) !== sums.get(rel));
-    if (bad.length) throw new Error(`SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`);
+    // 中身が同じ WAV が書く場所にあれば、変換を飛ばす（sha256 は 1 本につき 1 回だけ求める）。共有のキャッシュに無くても、
+    // 作業フォルダの .work/tts（前の置き場所）に同じ中身があれば、変換せずに写す
+    const jobs: { rel: string; flac: string; dest: string; tmp: string }[] = [];
+    const copies: [from: string, to: string][] = [];
+    for (const [rel, flac] of targets) {
+      const dest = writePath(repo, rel);
+      if (existsSync(dest) && sha256Of(dest) === sums.get(rel)) continue;
+      const old = path.join(repo.root, rel);
+      if (old !== dest && existsSync(old) && sha256Of(old) === sums.get(rel)) copies.push([old, dest]);
+      else jobs.push({ rel, flac, dest, tmp: tempPath(dest) });
+    }
+    for (const [from, to] of copies) copyAtomic(from, to);
+    const copied = copies.length ? `。そのうち ${copies.length} 本は .work/tts から共有のキャッシュに写した` : '';
+    log(`WAV に戻す: ${jobs.length} 本（同じ中身が手元にある ${targets.size - jobs.length} 本は飛ばす${copied}）`);
+    // 一時の名前に戻し、SHA256SUMS と合ったものだけを置き換える（合わないものは、キャッシュにも作業フォルダにも残さない）
+    try {
+      for (const j of jobs) mkdirSync(path.dirname(j.dest), { recursive: true });
+      await convert(jobs.map((j): [string, string] => [j.flac, j.tmp]), 'wav');
+      const bad = jobs.filter((j) => sha256Of(j.tmp) !== sums.get(j.rel)).map((j) => j.rel);
+      if (bad.length) throw new Error(`SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`);
+      for (const j of jobs) renameSync(j.tmp, j.dest);
+    } finally {
+      for (const j of jobs) rmSync(j.tmp, { force: true });
+    }
     const kanaNote = checkedKana === kana.size ? '' : `。読みは SHA256SUMS に行がある ${checkedKana}/${kana.size} 本だけを確かめた（前の形の素材）`;
     log(`素材を取り出した（${repo.branch} @ ${sha.slice(0, 7)}・音声 ${targets.size} 本・読み ${kana.size} 本。SHA256SUMS と一致${kanaNote}）`);
   } finally {
