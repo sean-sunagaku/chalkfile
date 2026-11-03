@@ -15,6 +15,7 @@ import { isHex } from './color';
 import { timelineFile } from './generated';
 import { AT_KEYS, l10nProblems, videoKey, type Lang } from './i18n';
 import { legacyUses } from './legacy';
+import { COURSE_SCHEMA_VERSION, isKnownSchemaVersion, schemaVersionOf } from './migrate';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
 import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from './schema';
 import { timelineFingerprint, type TimelineEntry } from './timeline';
@@ -53,6 +54,7 @@ export const RULES = {
   prefix: 'レクチャー ID の頭文字（prefix）',
   order: '講座の並び（order）',
   'course-id': '講座 ID',
+  schema: '台本の形の版（schemaVersion）',
   'caption-lines': '焼き込み字幕の行数（見込み）',
   'heading-width': '見出しの幅（見込み）',
   style: 'style.md の目安（表・コードの大きさ）',
@@ -486,6 +488,11 @@ export const validateCourse = (course: Course, ctx: CourseContext): Issue[] => {
   const out: Issue[] = [];
   const where = courseWhere(course);
   for (const p of l10nProblems(course)) push(out, 'error', 'l10n', `${where} ${p.where}`, p.message);
+  // 台本の形の版（書かなければ 1）。読めない版は、読み込み（engine/core/migrate.ts）が今の形に直せていない
+  const version = schemaVersionOf(course);
+  if (!isKnownSchemaVersion(version)) {
+    push(out, 'error', 'schema', `${where} schemaVersion`, `台本の形の版 ${JSON.stringify(version)} を読めない（このエンジンが読めるのは 1〜${COURSE_SCHEMA_VERSION}。新しい形で書いた台本なら、main を取り込んでエンジンを新しくする）`);
+  }
   if (course.theme !== undefined && !ctx.themes.includes(course.theme)) {
     push(out, 'error', 'theme', `${where} theme`, `テーマ「${course.theme}」が無い（content/themes.ts の THEMES にあるのは ${ctx.themes.join('・')}）`);
   }

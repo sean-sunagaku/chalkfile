@@ -575,6 +575,11 @@ export type AuthoredLecture = Lecture<At>;
 export type Course<A extends At = number> = {
   id: string; // 例: 'stripe-billing'。サイトの URL（/<id>/）になる
   /**
+   * 台本の形の版。書かなければ 1（今の形）。台本の形を変えたとき、古い形で書いた講座を読み込みで今の形に直すのに使う
+   * （engine/core/migrate.ts。凍結しているものと変えるときの手順は docs/adr/2026-11-03-frozen-contracts.md）
+   */
+  schemaVersion?: number;
+  /**
    * レクチャー ID の頭文字（英大文字 1 字。例: 'G'）。ID は頭文字と 2 桁の番号（G01）。講座をまたいで重ねない
    * （npm run validate が確かめ、空いている文字を出す。使っている文字の表は docs/guide/new-course.md）
    */

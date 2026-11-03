@@ -1,5 +1,6 @@
 // 講座 1 つ分の登録（講座と、言語ごとの訳）。各講座のフォルダの index.ts が export default し、content/courses.ts に 1 行で並べる
 import type { CourseL10n, TranslatedLang } from './i18n';
+import { migrateCourse } from './migrate';
 import type { Reading } from './reading';
 import type { AuthoredCourse } from './schema';
 
@@ -22,5 +23,11 @@ export type CourseModule = {
   heroSnippet?: HeroSnippet;
 };
 
-/** 講座のフォルダの index.ts で使う（型を確かめるだけで、中身はそのまま返す） */
-export const defineCourseModule = (m: CourseModule): CourseModule => m;
+/**
+ * 講座のフォルダの index.ts で使う。型を確かめ、古い形（schemaVersion が古い）で書いた講座は今の形に直す（engine/core/migrate.ts）。
+ * 今の形の講座は、中身をそのまま返す（同じオブジェクト）
+ */
+export const defineCourseModule = (m: CourseModule): CourseModule => {
+  const course = migrateCourse(m.course);
+  return course === m.course ? m : { ...m, course };
+};

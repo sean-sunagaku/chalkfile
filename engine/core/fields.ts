@@ -183,6 +183,7 @@ export const LECTURE_FIELDS: FieldsOf<Lecture> = {
 /** 講座の項目。動画（lectures）は walkLecture でたどる。章の計画（syllabus）は、まだ訳さない */
 export const COURSE_FIELDS: FieldsOf<Course> = {
   id: 'value',
+  schemaVersion: 'value',
   prefix: 'value',
   order: 'value',
   lang: 'value',
