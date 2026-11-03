@@ -63,7 +63,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | Releases のタグ | 動画を置く GitHub Releases の名前。形は `media-<言語>-<講座 ID>` | `site/media-shared.ts` |
 | ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `content/<講座>/generated/posters/<key>.jpg`。作るのは `scripts/render.sh` |
 | Worker | chalkfile.com の `/media/*` を受ける Cloudflare Workers のコード。ほかのパスは、組み立てたサイトの静的なファイル（assets）から返す | `worker/src/`・`wrangler.jsonc` |
-| 公開 | サイトを chalkfile.com に出すこと。main の CI が wrangler で行う。動画は、Releases に置いた時点で誰でも取れる | `.github/workflows/deploy.yml` |
+| 公開 | サイトを chalkfile.com に出すこと。main の CI が wrangler で行う。動画は、Releases に置いた時点で誰でも取れる | `.github/workflows/ci.yml` の deploy のジョブ |
 | 保存（アプリ内に保存） | 学ぶ人が講座を選んでブラウザに保存し、通信なしで見られるようにする仕組み（PWA） | `site/sw.ts`・`site/offline-client.ts`。設計は [保存の設計](offline.md) |
 | 保存版 | 保存した講座の教材と動画の一式。新しい版に替えるのは、学ぶ人が選んだときだけ | 同上 |
 | サイトの版 | 講座のページの版。変わると、保存した人に「新しい版」を案内する | `scripts/site-version.ts` の `pageVersionOf`（組み立ての `scripts/site/build.ts` が使う） |
