@@ -149,22 +149,24 @@ const oneCourse = (values: Values): string => {
   return ids[0];
 };
 
-/** 字幕を焼き込んだ版も作る動画か（掛け合いの講座＝cast のある講座。CAPTIONS=1 なら全部） */
-const captioned = (key: string) => Boolean(VIDEOS.find((v) => v.key === key)?.course.cast);
-
-/** 書き出し。字幕版を作るかは講座で決める（cast のある講座は作る）。--captions か CAPTIONS=1 なら、全部の動画で作る */
+/**
+ * 書き出し。全部の動画を 1 回で書き出しの道具に渡す（バンドルを 1 回で済ませる）。字幕版を作るかは、道具が講座で決める
+ * （cast のある講座は作る。--captions か CAPTIONS=1 なら全部、CAPTIONS=0 なら作らない）。CHUNK・CONCURRENCY も、そのまま道具が読む
+ */
 const renderSteps = ({ values, positionals }: Ctx): Step[] => {
-  const keys = pickVideos(values, positionals);
-  const env: Record<string, string> = values.jobs ? { CONCURRENCY: String(values.jobs) } : {};
-  if (values.jobs !== undefined && !/^[1-9]\d*$/.test(String(values.jobs)))
-    throw new UsageError(`--jobs は 1 以上の整数: ${values.jobs}`);
-  if (values.captions || process.env.CAPTIONS === '1')
-    return [sh('scripts/render.sh', keys, { ...env, CAPTIONS: '1' })];
-  const withCc = keys.filter(captioned);
-  const without = keys.filter((k) => !captioned(k));
+  for (const name of ['jobs', 'chunk'] as const)
+    if (values[name] !== undefined && !/^\d+$/.test(String(values[name])))
+      throw new UsageError(`--${name} は整数: ${values[name]}`);
+  if (values.jobs !== undefined && Number(values.jobs) < 1) throw new UsageError(`--jobs は 1 以上の整数: ${values.jobs}`);
   return [
-    ...(without.length ? [sh('scripts/render.sh', without, { ...env, CAPTIONS: '0' })] : []),
-    ...(withCc.length ? [sh('scripts/render.sh', withCc, { ...env, CAPTIONS: '1' })] : []),
+    bun(
+      'scripts/stages/video/render.ts',
+      ...flag(values, 'captions'),
+      ...opt(values, 'jobs'),
+      ...opt(values, 'chunk'),
+      ...flag(values, 'dry-run'),
+      ...pickVideos(values, positionals),
+    ),
   ];
 };
 
@@ -373,13 +375,20 @@ export const COMMANDS: Command[] = [
   },
   {
     name: 'render',
-    usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>]',
-    summary: '動画とポスター。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画）',
-    old: ['npm run render', 'CAPTIONS=1 bash scripts/render.sh'],
-    file: 'scripts/render.sh',
-    options: { ...TARGET, captions: { type: 'boolean' }, jobs: { type: 'string' }, ...DRY },
+    usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>] [--chunk <枚数>]',
+    summary:
+      '動画とポスター（バンドルは 1 回だけ作る）。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画）。書き出しの前後に、段の記録（.work/state/render/）も書く。--dry-run は書き出すものを出すだけ',
+    old: ['npm run render', 'bun scripts/stages/video/render.ts'],
+    file: 'scripts/stages/video/render.ts',
+    options: {
+      ...TARGET,
+      captions: { type: 'boolean' },
+      jobs: { type: 'string' },
+      chunk: { type: 'string' },
+      ...DRY,
+    },
     positionals: true,
-    dry: 'plan',
+    dry: 'pass',
     steps: renderSteps,
   },
   {

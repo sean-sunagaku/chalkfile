@@ -12,7 +12,7 @@
 
 - 対象: `--course <講座 ID>`・`--video <動画>`（`*` と `?` を使える。`'S03.*'` は S03 の全部の言語）・`--lang <言語>`（`all` で全部）。選ばなければ、公開する言語（`site/config.json` の `publishLangs`）の全部の動画
 - 共通: `--dry-run`（流すコマンドを出すだけ）・`--json`（AI・ほかの道具が読む）・`-v`（流すコマンドも出す。`voice synth`・`materials`・`media` は、中の道具にも `--verbose` を渡し、VOICEVOX・git・ffmpeg・gh への問い合わせと、失敗したときの stderr の全部を伏せてから出す）。受け取るのは、意味のあるコマンドだけ
-- 書き出し（`render`）は、掛け合いの講座（`cast` のある講座）で、字幕を焼き込んだ版も作る（前の `CAPTIONS=1` も、そのまま使える）
+- 書き出し（`render`）は、選んだ動画を 1 回で書き出す（バンドルは 1 回だけ作る）。掛け合いの講座（`cast` のある講座）は、字幕を焼き込んだ版も作る。前の環境変数（`CAPTIONS=1` で全部の動画・`CAPTIONS=0` で作らない・`CHUNK`・`CONCURRENCY`）も、そのまま使える
 - 終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（道具・素材・認証。`npm run chalk -- doctor` で確かめる）
 
 <!-- cli:start -->
@@ -31,7 +31,7 @@
 | `i18n try <講座 ID> <言語> <レクチャー ID>` | 講座に並べる前の訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ） | `bun scripts/i18n.ts try` |
 | `music build [--only <名前>…] [--skip-verify] [--check]` | BGM・ジングル・効果音（public/audio/）。--check は素材と同じ音ができるかだけを見る | `npm run build:music`・`npm run music:verify` |
 | `mix [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 音のミックス（public/audio/mix/）。先に voice synth。ミックスの前後に、段の記録（.work/state/mix/）も書く | `npm run mix` |
-| `render [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>]` | 動画とポスター。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画） | `npm run render`・`CAPTIONS=1 bash scripts/render.sh` |
+| `render [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>] [--chunk <枚数>]` | 動画とポスター（バンドルは 1 回だけ作る）。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画）。書き出しの前後に、段の記録（.work/state/render/）も書く。--dry-run は書き出すものを出すだけ | `npm run render`・`bun scripts/stages/video/render.ts` |
 | `stills [動画[:場面,…]・動画@フレーム…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]` | 確かめるための静止画（out/stills/） | `npm run stills` |
 | `export [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 章ごとの完成動画・字幕・音・教材と声のクレジットを out/deliverables/ にまとめる（要るファイルが欠けていたら、何も書かずに止める） | `bun scripts/export_deliverables.ts` |
 | `docs build [--course <ID>] [--check]` | 読む教材（docs/courses/）を台本と timeline から作る。--check は書かずに、ずれだけを見る | `npm run build:materials`・`npm run check:materials` |
@@ -57,8 +57,8 @@
 | 道具 | 役割 |
 |---|---|
 | npm | 依存を入れる（`npm ci --ignore-scripts`）・`package-lock.json`・コマンドの入口（`npm run …`） |
-| bun | TypeScript のスクリプト（合成・教材・サイト・点検）と単体テスト |
-| node | Remotion（書き出し・静止画・Studio）と Playwright（ブラウザのテスト） |
+| bun | TypeScript のスクリプト（合成・動画の書き出し・教材・サイト・点検）と単体テスト。書き出しは `@remotion/renderer` を bun から呼ぶ（[ADR](../adr/2026-11-04-render-with-remotion-renderer.md)） |
+| node | Remotion の静止画（`stills.ts`）と Studio、Playwright（ブラウザのテスト） |
 | uv | Python（BGM・効果音・音のミックス、Kokoro・Whisper） |
 
 npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-bun-run.md)。
@@ -101,7 +101,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
 | `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --cached-only --durations-only` で素材ブランチの長さの一覧と読みだけを使う（音声を取り出さない。mix と render の前には `materials:pull` が要る）。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す、`-- -v` で声の見つけ方と VOICEVOX への問い合わせも出す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`）。中は `npm run chalk -- mix` と同じで、選ばなければ公開する言語の全部の動画（`-- L01 S01.en`・`-- --course <講座 ID>` で選ぶ）。始める前に、設計図の形と、要る声・BGM・効果音がそろっているかを見る |
-| `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
+| `npm run render` | 動画（`site/media/`）とポスター（公開する言語の動画は `content/<講座>/generated/posters/`）。中は `npm run chalk -- render` と同じで、選ばなければ公開する言語の全部の動画。掛け合いの講座は字幕を焼き込んだ版も作る（`-- --captions` か `CAPTIONS=1` で全部、`CAPTIONS=0` で作らない）。`-- --chunk 1200`（`CHUNK=1200`）で分けて書き出し、`-- --jobs <数>`（`CONCURRENCY=<数>`）で並列の数を変える。設定は `scripts/stages/video/render.config.ts` |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`-- L04@120`・`--theme=<id>`・`--captions`。動画・場面・フレームの形と範囲は、バンドルを作る前に確かめる（timeline の無い動画は止める） |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
@@ -131,7 +131,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run worktree:new -- <type>/<slug>` | 新しい作業フォルダ（git worktree）を作る。origin/main から branch と隣の `../chalkfile-<slug>` を作り、node_modules を複製して（APFS。ほかは `npm ci --ignore-scripts`）、素材を取り出す（1 分ほど）。`-- --dry-run` で何をするかだけを出す |
-| `npm run clean` | 作り直せる生成物（`out/`・`public/audio/mix/`・`site/dist/`・段の記録 `.work/state/`）を消す。`-- --cache` で共有のキャッシュの台詞の声も消す（ほかの作業フォルダも使う）。`-- --dry-run` で消すものと大きさだけを出す |
+| `npm run clean` | 作り直せる生成物（`out/`・`public/audio/mix/`・`site/dist/`・段の記録 `.work/state/`・書き出しの一時フォルダ `.work/render-tmp/`）を消す。`-- --cache` で共有のキャッシュの台詞の声も消す（ほかの作業フォルダも使う）。`-- --dry-run` で消すものと大きさだけを出す |
 
 ## npm run に無いもの
 
@@ -158,7 +158,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 - 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・読みの辞書・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
 - 見た目: `npm run stills -- L04:3 --mid`（場面の中ほどと終わりを静止画にする）
 - 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`
-- ディスクの空きが少ないとき: `CHUNK=1200 npm run render -- L04`（1,200 フレームずつ書き出してつなぐ）
+- ディスクの空きが少ないとき: `npm run render -- L04 --chunk 1200`（1,200 フレームずつ書き出してつなぐ。`CHUNK=1200` も同じ）
 
 ## 多言語の動画を作る
 
@@ -169,7 +169,7 @@ npm run i18n -- stamp 'S03.*'                      # 訳したときの日本語
 npm run synth -- S03.en S03.zh                     # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルを取ってくる）
 uv run --locked --script scripts/check_speech.py S03.en S03.zh   # 聞き取りの点検
 npm run mix -- S03.en S03.zh
-CAPTIONS=1 npm run render -- S03.en S03.zh
+npm run render -- S03.en S03.zh                   # 掛け合いの講座は、字幕を焼き込んだ版も作る（ほかの講座で作るなら --captions）
 npm run build:site
 npm run i18n -- status                             # 訳の表（訳あり・日本語の台本が変わった・未訳）と訳し残し
 ```

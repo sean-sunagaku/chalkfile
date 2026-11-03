@@ -4,6 +4,7 @@
   "entry": [
     // 道具（CLI。ほかから読まれる部品も兼ねる）
     "scripts/*.ts",
+    "scripts/stages/video/render.ts",
     // 動画（Remotion の入口）
     "src/index.ts",
     "remotion.config.ts",

@@ -229,6 +229,16 @@ describe('proc（外の道具の流し方と、伏せ字）', () => {
     // 出力が上限を超えたら、終わりの分だけを残す
     expect((await runAsync('sh', ['-c', 'printf 0123456789 >&2'], { maxBuffer: 4 })).stderr).toBe('6789');
   });
+  test('runAsync は、signal が止められたら道具を止める（Ctrl-C を受けた書き出しが ffmpeg を止める）', async () => {
+    const ac = new AbortController();
+    const t0 = performance.now();
+    const running = runAsync('sh', ['-c', 'sleep 5; :'], { signal: ac.signal });
+    setTimeout(() => ac.abort(), 50);
+    expect((await running).code).not.toBe(0);
+    // 止めてから流しても、すぐに止める
+    expect((await runAsync('sh', ['-c', 'sleep 5'], { signal: ac.signal })).code).not.toBe(0);
+    expect(performance.now() - t0).toBeLessThan(3000);
+  });
   test('runInherit は、時間を過ぎたら止めて、何が終わらなかったかを出す', () => {
     expect(runInherit('sh', ['-c', 'exit 5'])).toBe(5);
     expect(() => runInherit('sh', ['-c', 'sleep 5'], { timeoutMs: 100, what: '試しの読み上げ' })).toThrow(

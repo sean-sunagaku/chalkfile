@@ -127,13 +127,14 @@ export const checks = async (): Promise<Item[]> => {
   const items: Item[] = [
     tool('git', 'git', '', '入れる', true),
     tool('bun', process.execPath, pinned('.bun-version'), 'https://bun.sh', true),
-    tool('node', 'node', pinned('.node-version'), 'Remotion・Playwright に要る', true),
+    tool('node', 'node', pinned('.node-version'), '依存を入れる（npm）・Remotion の静止画と Studio・Playwright に要る', true),
     existsSync(path.join(ROOT, 'node_modules/.bin/remotion'))
       ? { name: 'node_modules', state: 'ok', detail: 'ある' }
       : { name: 'node_modules', state: 'missing', detail: '無い（npm ci --ignore-scripts）', need: true },
     tool('uv', 'uv', '', 'Python の道具（mix・Kokoro・BGM）に要る'),
     tool('python', 'python3', pinned('.python-version'), 'uv が用意する。mix・Kokoro に要る'),
     tool('ffmpeg', 'ffmpeg', '', '素材の取り出し・mix・書き出しに要る', false, ['-version']),
+    tool('ffprobe', 'ffprobe', '', '書き出した動画を確かめるのに要る（ffmpeg と一緒に入る）', false, ['-version']),
     ghAuth(),
     await voicevox(),
     voiceCache(),
