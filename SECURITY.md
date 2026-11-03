@@ -31,6 +31,7 @@ To report a vulnerability, please use GitHub's private vulnerability reporting (
   - `--self-test` で、見つけるべき例を見つけ、見逃すべき例を見逃すかを確かめる（`tests/check-content.test.ts`）
 - clone した人の手元で勝手に動くものを置かない
   - Claude Code: `.claude/` に入れるのはスキルと `launch.json` だけ（設定・hooks・agents・commands は入れない）。スキルの頭書きに `hooks`・`allowed-tools` を書かない。`launch.json` が起動するのは、決めたコマンド（`bun scripts/serve.ts`・`npx remotion studio`・`npx wrangler dev`）だけ
+  - AI への指示のファイル（`AGENTS.md`・`CLAUDE.md`）: リポジトリの直下にだけ置く。`@` で読み込むのは、リポジトリの中のファイルだけ（`~` や `/` で始まるパス・`..` で外に出るパスと、`.git/`・認証ファイル（`.env` など）を指すものを止める。開いた人の手元のファイルを AI に渡さない）
   - 開く・入る・使うだけでコマンドが動く設定（`.npmrc`・`.mcp.json`・`.vscode/tasks.json`・`.devcontainer/`・`.envrc`・`.husky/`・`lefthook.yml`・`.pre-commit-config.yaml` など）を入れない。`bunfig.toml` の `preload`・`plugins` と、`.vscode/settings.json` のシェル・実行ファイルの場所・自動で動く tasks の許可も止める
   - npm のインストール時スクリプト（`postinstall` など）を置かない。CI は `npm ci --ignore-scripts` で依存のスクリプトも動かさない
 - AI への指示（`.claude/`・`CLAUDE.md`・`AGENTS.md`）・スクリプト・CI・配信の設定・依存の変更は、`.github/CODEOWNERS` で持ち主のレビューに回す

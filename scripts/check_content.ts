@@ -21,6 +21,8 @@
 //      - npm のインストール時スクリプト［install-script］
 //      - Claude Code［claude］: .claude/ に入れてよいのはスキルと launch.json だけ。スキルの頭書きに hooks・allowed-tools を書かない
 //      - .claude/launch.json が起動するのは、決めたコマンドだけ［launch］（LAUNCH_COMMANDS）
+//      - AI への指示のファイル（CLAUDE.md・AGENTS.md）［agents］: リポジトリの直下にだけ置く。@ で読み込むのはリポジトリの中のファイルだけ
+//        （Claude Code は @<パス> のファイルを開いた人の手元から読んで AI に渡す。~ や / で始まるパス・.. で外に出るパス・.git/・認証ファイルを止める）
 //
 // ローカルの禁止語: 1 行 1 語の一覧（# で始まる行は注釈）を置くと、全部のファイルと台本から探す。一覧は Git に入れない。
 //   自分の仕事のサービス名・社内の言葉など、公開物に入ってはいけない語を書いておく。置き場所は 2 つで、両方あれば合わせて使う
@@ -43,7 +45,7 @@ type Level = 'error' | 'warn';
 /** 規則の名前。出力の［］の中と、scripts/content-allow.json の rule に使う */
 export type Rule =
   | 'injection' | 'html' | 'invisible' | 'control' | 'secret' | 'denylist' | 'http' | 'email' | 'phone' | 'untranslated' | 'stale'
-  | 'media' | 'size' | 'credential' | 'symlink' | 'autorun' | 'install-script' | 'claude' | 'launch' | 'allow';
+  | 'media' | 'size' | 'credential' | 'symlink' | 'autorun' | 'install-script' | 'claude' | 'launch' | 'agents' | 'allow';
 export type Finding = { level: Level; where: string; what: string; sample: string; rule: Rule };
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 export const checkSecrets = (text: string, where: string, out: Finding[]) => {
@@ -302,6 +304,19 @@ const AUTORUN: [RegExp, string][] = [
 const CLAUDE_CONFIG = /(^|\/)\.claude\/(settings(\.local)?\.json$|hooks\/)/;
 /** .claude/ に入れてよいもの（.gitignore と同じ）: スキルと launch.json だけ */
 const CLAUDE_SHARED = /(^|\/)\.claude\/(skills\/|launch\.json$)/;
+/** AI への指示のファイル。AI エージェントが自分から読む（Claude Code は CLAUDE.md、Codex などは AGENTS.md。CLAUDE.md は @AGENTS.md で読み込む） */
+const AGENT_FILE = /(^|\/)(CLAUDE|AGENTS)\.md$/i;
+/** AI への指示のファイルの @<パス>（Claude Code が読み込むファイル）のうち、開いた人の手元の、リポジトリの外か Git に入れないファイルを指すもの。
+ *  行の頭か空白のあとの @ を読み込みとみなす（メールアドレスの @ は見ない）。ファイルは直下に置くので、パスは直下から読む。
+ *  コードの囲みの中も見分けずに見る（Claude Code はそこを読み込まないが、見分け方の違いですり抜けさせない） */
+export const agentImportsOutside = (text: string): string[] =>
+  [...text.matchAll(/(?:^|\s)@(\S+)/g)]
+    .map((m) => m[1])
+    .filter((p) => {
+      if (/^[~/\\]|^[A-Za-z]:/.test(p)) return true;
+      const to = path.posix.normalize(p.replaceAll('\\', '/'));
+      return to === '..' || to.startsWith('../') || to === '.git' || to.startsWith('.git/') || CREDENTIAL.test(to);
+    });
 
 /** ファイルの名前と大きさで決まるもの: 名前の見えない文字・制御文字、動画と音声、大きさ、手元で動く設定ファイル、Claude Code の設定。bytes は分からなければ省く */
 export const checkPath = (f: string, bytes: number | undefined, out: Finding[]) => {
@@ -320,6 +335,7 @@ export const checkPath = (f: string, bytes: number | undefined, out: Finding[]) 
   for (const [rx, what] of AUTORUN) if (rx.test(f)) stop('autorun', `clone した人の手元で勝手に動く: ${what}`);
   if (CLAUDE_CONFIG.test(f)) stop('claude', 'Claude Code の設定・hooks は Git に入れない（clone した人の手元でコマンドが動く）');
   else if (/(^|\/)\.claude\//.test(f) && !CLAUDE_SHARED.test(f)) stop('claude', 'Claude Code のフォルダに入れてよいのは skills/ と launch.json だけ（設定・agents・commands は、開いた人の手元で使われる）');
+  if (AGENT_FILE.test(f) && f.includes('/')) stop('agents', 'AI への指示のファイル（CLAUDE.md・AGENTS.md）は、リポジトリの直下にだけ置く（下のフォルダのものは、そこで作業するときだけ AI が読むので、見落としやすい）');
 };
 
 /** .claude/launch.json（Claude Code のプレビューが起動するコマンド）で起動してよいもの。後ろに付けてよいのは、port が true のものの --port <番号> だけ */
@@ -454,6 +470,9 @@ export const checkFileText = (f: string, text: string, out: Finding[], deny: str
   if (/(^|\/)\.?bunfig\.toml$/.test(f)) checkBunfig(where, text, out);
   if (/(^|\/)package\.json$/.test(f)) checkPackageJson(where, text, out);
   if (/(^|\/)\.claude\/skills\/.+\/SKILL\.md$/.test(f)) checkSkill(where, text, out);
+  if (AGENT_FILE.test(f)) {
+    for (const p of agentImportsOutside(text)) out.push({ level: 'error', where, what: 'AI への指示のファイルが、リポジトリの外か Git に入れないファイルを @ で読み込む（開いた人の手元のファイルが AI に渡る）', sample: shown(p), rule: 'agents' });
+  }
 };
 
 /** Git に入れる全部のファイル（追跡しているものと、追跡していないが無視もしていないもの）を調べる。root と deny はテストで変える */

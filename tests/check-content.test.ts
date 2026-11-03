@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   ALLOWABLE_RULES,
+  agentImportsOutside,
   checkFiles,
   checkFileText,
   checkLaunch,
@@ -473,6 +474,57 @@ describe('スキルの頭書きに hooks・allowed-tools を書かない', () =>
   });
 });
 
+describe('AI への指示のファイル（AGENTS.md・CLAUDE.md）', () => {
+  test.each(['docs/AGENTS.md', 'content/x/CLAUDE.md', 'worker/agents.md'])('直下のほかに置かない: %s', (f) =>
+    expect(pathRules(f)).toEqual(['agents']),
+  );
+  test('直下の AGENTS.md と CLAUDE.md は置いてよい', () => {
+    for (const f of ['AGENTS.md', 'CLAUDE.md']) expect(pathRules(f)).toEqual([]);
+  });
+  test.each(
+    named(
+      [
+        '@~/.ssh/id_ed25519',
+        '@~/.claude/CLAUDE.md',
+        '@/etc/hosts',
+        '@../secret.md',
+        '@docs/../../x.md',
+        '@..\\x.md',
+        '@C:\\Users\\x.md',
+        '@.git/config',
+        '@.env',
+        '@.dev.vars',
+        '@keys/deploy.pem',
+      ].map((s) => [s] as [string]),
+      (s) => s,
+    ),
+  )('リポジトリの外か Git に入れないファイルを @ で読み込ませない: %s', (_name, line) => {
+    for (const f of ['AGENTS.md', 'CLAUDE.md']) {
+      expect(fileRules(f, `# x${LF}${line}${LF}`)).toEqual(['agents']);
+      expect(fileRules(f, `読み込む: ${line}${LF}`)).toEqual(['agents']);
+    }
+  });
+  test('リポジトリの中の @ と、読み込みでない @ は通す', () => {
+    const text = [
+      '@AGENTS.md',
+      '見る: @docs/README.md と @./README.md と @docs/../README.md',
+      'メールは a@example.com に送る',
+      '`@types/bun` は依存の名前',
+    ].join(LF);
+    expect(agentImportsOutside(text)).toEqual([]);
+    for (const f of ['AGENTS.md', 'CLAUDE.md']) expect(fileRules(f, text)).toEqual([]);
+  });
+  test('ほかのファイルの @ は見ない', () =>
+    expect(fileRules('docs/x.md', `@~/.ssh/id_ed25519${LF}`)).toEqual([]));
+  test('リポジトリの AGENTS.md と CLAUDE.md は通す（CLAUDE.md は AGENTS.md を読み込む）', () => {
+    for (const f of ['AGENTS.md', 'CLAUDE.md']) {
+      expect(pathRules(f)).toEqual([]);
+      expect(fileRules(f, readFileSync(path.join(REPO, f), 'utf8'))).toEqual([]);
+    }
+    expect(readFileSync(path.join(REPO, 'CLAUDE.md'), 'utf8').split(LF)).toContain('@AGENTS.md');
+  });
+});
+
 /** 一時のフォルダで fn を流す。Git は手元の設定（hooks・全体の .gitignore・署名）を使わない */
 const inTempRepo = (fn: (dir: string, git: (cwd: string, ...args: string[]) => string) => void) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-check-'));
@@ -516,6 +568,9 @@ describe('一時の Git リポジトリで、Git に入れる全部のファイ�
         'out/T01.mp4': 'mp4',
         'site/assets/big.jpg': Buffer.alloc(MAX_TRACKED_BYTES + 1),
         '.env': 'X=1',
+        'AGENTS.md': `# AI への指示${LF}`,
+        'CLAUDE.md': `@AGENTS.md${LF}@~/.aws/credentials${LF}`,
+        'docs/AGENTS.md': `# 下のフォルダの指示${LF}`,
       };
       for (const [f, body] of Object.entries(files)) {
         mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
@@ -532,7 +587,9 @@ describe('一時の Git リポジトリで、Git に入れる全部のファイ�
         '.claude/settings.json claude',
         '.env credential',
         '.npmrc autorun',
+        'CLAUDE.md agents',
         'bunfig.toml autorun',
+        'docs/AGENTS.md agents',
         'notes/clip.wav media',
         'out/T01.mp4 media',
         'scripts/a.ts control',
