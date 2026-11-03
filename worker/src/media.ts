@@ -13,8 +13,10 @@ type LogFailure = (value: MediaLog) => void;
 const FORWARD = ['Content-Length', 'Content-Range', 'ETag', 'Last-Modified'] as const;
 const REDIRECT = [301, 302, 303, 307, 308];
 const ASSET_HOST = 'release-assets.githubusercontent.com';
+// 同じ origin のページだけが読み込める。ほかのサイトに動画を埋め込ませず、Worker の無料枠を使わせない。
+const CORP = 'same-origin';
 const error = (status: number, message: string) => new Response(message, {
-  status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+  status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': CORP },
 });
 const parseUrl = (value: string | null, base: string) => {
   try { return value ? new URL(value, base) : null; } catch { return null; }
@@ -80,6 +82,7 @@ export function createMediaHandler(entries: MediaEntry[], fetchMedia: FetchMedia
       responseHeaders.set('Content-Type', 'video/mp4');
       responseHeaders.set('Accept-Ranges', 'bytes');
       responseHeaders.set('X-Content-Type-Options', 'nosniff');
+      responseHeaders.set('Cross-Origin-Resource-Policy', CORP);
       responseHeaders.set('Cache-Control', upstream.status === 416 ? 'no-store' : 'public, max-age=31536000, immutable');
       if (url.searchParams.get('download') === '1') {
         responseHeaders.set('Content-Disposition', `attachment; filename="${entry.lecture}${entry.kind === 'captioned' ? '.captioned' : ''}.mp4"`);

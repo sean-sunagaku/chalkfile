@@ -55,8 +55,9 @@ for (const mode of ['navigate', 'no-cors']) {
   check(`知らないページ（${mode}）は 404`, missing.status === 404 && header(missing, 'Cache-Control').includes('no-transform'), `${missing.status}`);
 }
 const media = await get(UNKNOWN_MEDIA);
-check('知らない /media/ は 404', media.status === 404 && header(media, 'Cache-Control') === 'no-store' &&
-  header(media, 'X-Content-Type-Options') === 'nosniff' && await media.text() === '動画が見つかりません。', `${media.status} ${header(media, 'Cache-Control')}`);
+check('知らない /media/ は 404', media.status === 404 && header(media, 'Cache-Control') === 'no-store' && header(media, 'X-Content-Type-Options') === 'nosniff' &&
+  header(media, 'Cross-Origin-Resource-Policy') === 'same-origin' && await media.text() === '動画が見つかりません。',
+  `${media.status} ${header(media, 'Cache-Control')} CORP=${header(media, 'Cross-Origin-Resource-Policy')}`);
 const post = await get(UNKNOWN_MEDIA, { method: 'POST' });
 await post.body?.cancel();
 check('/media/ への POST は 405', post.status === 405 && header(post, 'Allow') === 'GET, HEAD', `${post.status} Allow=${header(post, 'Allow')}`);

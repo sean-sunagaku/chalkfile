@@ -28,6 +28,7 @@ describe('/media/ の中継', () => {
     expect(response.headers.get('ETag')).toBe('"upstream-etag"');
     expect(response.headers.get('Accept-Ranges')).toBe('bytes');
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
     expect(response.headers.get('Content-Disposition')).toBeNull();
     expect(response.headers.get('Set-Cookie')).toBeNull();
     expect(response.headers.get('X-Private-Header')).toBeNull();
@@ -56,6 +57,7 @@ describe('/media/ の中継', () => {
     });
     const response = await handle(request('', { method: 'HEAD', headers: { Range: 'bytes=0-1' } }));
     expect(response.status).toBe(200); expect(await response.text()).toBe('');
+    expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
   });
   test('download=1 だけに読みやすい attachment を付ける', async () => {
     const handle = createMediaHandler([entry, captioned], async () => success());
@@ -66,10 +68,12 @@ describe('/media/ の中継', () => {
   test('許可リスト外と非GET/HEADは上流へアクセスしない', async () => {
     let count = 0; const handle = createMediaHandler([entry], async () => { count++; return success(); });
     for (const suffix of ['/media/ja/other/L01.mp4', '/media/https://example.com/video.mp4', '/media/ja/sample/%2e%2e/file.mp4']) {
-      expect((await handle(new Request(`https://chalkfile.com${suffix}`))).status).toBe(404);
+      const response = await handle(new Request(`https://chalkfile.com${suffix}`));
+      expect(response.status).toBe(404); expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
     }
     const response = await handle(request('', { method: 'POST' }));
     expect(response.status).toBe(405); expect(response.headers.get('Allow')).toBe('GET, HEAD'); expect(count).toBe(0);
+    expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
   });
   const logOf = (code: MediaLog['code'], status: number | null, host: string | null): MediaLog =>
     ({ code, status, host, course: entry.course, lecture: entry.lecture });
@@ -80,6 +84,7 @@ describe('/media/ の中継', () => {
       expect(response.status).toBe(status === 404 ? 404 : 502);
       expect(await response.text()).not.toContain('private');
       expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
       expect(logs).toEqual([logOf(status === 404 ? 'upstream_missing' : 'status', status, 'github.com')]);
     }
     const logs: MediaLog[] = [];

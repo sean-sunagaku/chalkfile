@@ -70,6 +70,8 @@ CI側のtokenへはtoken作成権限・KV/R2/D1/Registrar/請求権限を渡さ�
 
 サイトは無料の静的assetsが配り、Workerを先に通すのは `/media/*` だけ。動画は固定リポジトリのReleasesへRange/If-Rangeだけを渡し、本文をstreamで返す。毎回元のURLからredirectをたどり、署名付きLocationを保存・ログ出力しない。
 
+`/media/` の応答（200・206・416・HEAD・エラー）には `Cross-Origin-Resource-Policy: same-origin` を付け、ほかのサイトに動画を埋め込ませない（その再生で Worker の無料枠を使わせない）。
+
 静的応答には `Cache-Control: public, max-age=0, must-revalidate, no-transform` を付ける。CloudflareによるHTML/画像の変更と自動Web Analytics beaconの挿入を防ぎ、CSPと保存用SHA-256を維持する。SWはno-cache。2026-11-02に自動beaconによるCSP違反を実際に検出し、no-transform後に全9ページで違反なしを確認した。[Cloudflareの仕様](https://developers.cloudflare.com/web-analytics/get-started/)
 
 wwwも同じWorkerのCustom Domainで管理する。HTMLはassetsで返し、その先頭のCSPハッシュ付き `location.replace` で同じpath/query/hashのapexへ自動移動する。HTMLの最初のHTTP状態は200（不明pathは404）。`www/media/` はWorkerから301を返す。この構成では通常の静的リクエストでWorkerを呼ばず、zone Redirect Ruleの追加権限もCIへ渡さない。
