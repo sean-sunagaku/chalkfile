@@ -2,55 +2,30 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { CodeScene, Theme } from '../../engine/core/schema';
-import { WINDOW_LIGHTS } from '../components/app-colors';
 import { textWidth } from '../components/fit';
+import { CodeWindow } from '../components/frame';
+import { italicComments, tokenize } from '../components/syntax';
 import { NoteCard } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useCurrentIndex, useScene } from '../timing';
 import { LEAD, TYPE, TYPE_MIN } from '../video.config';
 import { defineScene } from './define';
 
-const RX =
-  /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b(?:def|return|if|not|in|for|and|or|try|except|class|async|await|None|True|False|import|from|with|as|elif|else|while|is)\b)|(@[\w.]+)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*(?=\())/gm;
-
-// JSON はキー（: が続く文字列）・値の文字列・true/false/null・数値を塗り分ける
-const RX_JSON = /("(?:[^"\\]|\\.)*"(?=\s*:))|("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm;
-
+/** 1 行を、言語ごとの規則で色分けして描く（規則は src/components/syntax.ts。text は色を付けない） */
 const highlight = (line: string, lang: CodeScene['lang'], SYNTAX: Theme['syntax']): React.ReactNode[] => {
-  const out: React.ReactNode[] = [];
-  let last = 0;
-  const json = lang === 'json';
-  for (const m of line.matchAll(json ? RX_JSON : RX)) {
-    const i = m.index ?? 0;
-    if (i > last) out.push(line.slice(last, i));
-    const color = json
-      ? m[1]
-        ? SYNTAX.fn
-        : m[2]
-          ? SYNTAX.string
-          : m[3]
-            ? SYNTAX.keyword
-            : SYNTAX.number
-      : m[1]
-        ? SYNTAX.comment
-        : m[2]
-          ? SYNTAX.string
-          : m[3]
-            ? SYNTAX.keyword
-            : m[4]
-              ? SYNTAX.deco
-              : m[5]
-                ? SYNTAX.number
-                : SYNTAX.fn;
-    out.push(
-      <span key={i} style={{ color, fontStyle: !json && m[1] ? 'italic' : undefined }}>
-        {m[0]}
-      </span>,
+  const italic = italicComments(lang);
+  let at = 0;
+  return tokenize(line, lang).map((t) => {
+    const key = at;
+    at += t.text.length;
+    return t.kind ? (
+      <span key={key} style={{ color: SYNTAX[t.kind], fontStyle: italic && t.kind === 'comment' ? 'italic' : undefined }}>
+        {t.text}
+      </span>
+    ) : (
+      <React.Fragment key={key}>{t.text}</React.Fragment>
     );
-    last = i + m[0].length;
-  }
-  if (last < line.length) out.push(line.slice(last));
-  return out;
+  });
 };
 
 const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
@@ -97,46 +72,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
           transform: `translateY(${dropY(enter, 16)}px)`,
         }}
       >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
-            border: `1.5px solid ${C.line2}`,
-            boxShadow: C.shadow,
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              height: 56,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '0 24px',
-              borderBottom: `1.5px solid ${C.codeLine}`,
-              background: C.codeBar,
-            }}
-          >
-            {WINDOW_LIGHTS.editor.map((c) => (
-              <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
-            ))}
-            <div
-              style={{
-                marginLeft: 14,
-                fontFamily: MONO,
-                fontSize: TYPE.label.windowTitle,
-                color: C.codeMuted,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {s.file}
-            </div>
-          </div>
+        <CodeWindow title={s.file}>
           <div style={{ position: 'absolute', left: 0, right: 0, top: codeTop - 16 + pad }}>
             {s.marks.map((m, i) => {
               const on = i === activeMark;
@@ -196,7 +132,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               );
             })}
           </div>
-        </div>
+        </CodeWindow>
       </div>
       {hasNotes
         ? s.marks.map((m, i) => {

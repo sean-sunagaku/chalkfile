@@ -1,7 +1,8 @@
 // 場面「screens」: 画面の比較（改善前・改善後。架空のアプリの画面と、部品の右の番号つきの注）
 import React from 'react';
 import type { MockBlock, MockScreen, ScreensScene, Tone } from '../../engine/core/schema';
-import { DEVICE, MOCK, WINDOW_LIGHTS } from '../components/app-colors';
+import { MOCK } from '../components/app-colors';
+import { DeviceFrame, WindowLights } from '../components/frame';
 import { Icon, Pill, Rich } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, useAppear, useText } from '../timing';
@@ -206,42 +207,46 @@ const NoteDot: React.FC<{ n: number; t: Tone; p: number; size: number }> = ({ n,
   );
 };
 
-/** 画面 1 枚（窓の枠・部品・部品の右の番号） */
-const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; h: number; zoom?: number }> = ({ sc, device, w, h, zoom = 1 }) => {
-  const { C, SANS } = usePalette();
-  const phone = device === 'phone';
+/** 画面の中身（図ごと zoom 倍に拡大する。上の帯 bar・部品・部品の右の番号） */
+const ScreenBody: React.FC<{ sc: MockScreen; zoom: number; bar: React.ReactNode; padding: string }> = ({ sc, zoom, bar, padding }) => {
+  const { SANS } = usePalette();
   return (
-    <div
-      style={{
-        width: w,
-        height: h,
-        borderRadius: phone ? 44 : 16,
-        background: phone ? DEVICE.mock.body : M.bg,
-        border: phone ? `2px solid ${DEVICE.mock.rim}` : `1.5px solid ${C.line2}`,
-        boxShadow: C.shadow,
-        padding: phone ? 12 : 0,
-        overflow: 'hidden',
-        position: 'relative',
-      }}
-    >
-      <div style={{ position: 'absolute', inset: phone ? 12 : 0, borderRadius: phone ? 34 : 15, background: M.bg, overflow: 'hidden', fontFamily: SANS }}>
-        <div style={{ width: `${100 / zoom}%`, height: `${100 / zoom}%`, transform: `scale(${zoom})`, transformOrigin: '0 0', display: 'flex', flexDirection: 'column' }}>
-        {phone ? (
-          <div style={{ height: 46, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 6, fontSize: T.phoneBar, fontWeight: 800, color: M.sub }}>{sc.title ?? ''}</div>
-        ) : (
-          <div style={{ height: 42, background: M.bar, display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', flexShrink: 0 }}>
-            {WINDOW_LIGHTS.browser.map((c) => (
-              <div key={c} style={{ width: 12, height: 12, borderRadius: 99, background: c }} />
-            ))}
-            <div style={{ marginLeft: 14, flex: 1, height: 26, borderRadius: 8, background: M.bg, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: T.browserBar, color: M.sub, fontWeight: 600 }}>{sc.title ?? ''}</div>
-          </div>
-        )}
-        <div style={{ flex: 1, padding: phone ? '14px 24px 22px' : '24px 40px 24px 32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ position: 'absolute', inset: 0, background: M.bg, overflow: 'hidden', fontFamily: SANS }}>
+      <div style={{ width: `${100 / zoom}%`, height: `${100 / zoom}%`, transform: `scale(${zoom})`, transformOrigin: '0 0', display: 'flex', flexDirection: 'column' }}>
+        {bar}
+        <div style={{ flex: 1, padding, display: 'flex', flexDirection: 'column', gap: 14 }}>
           {sc.blocks.map((b, i) => (
             <BlockWithNote key={i} b={b} notes={(sc.notes ?? []).filter((x) => x.block === i)} t={sc.tone} />
           ))}
         </div>
-        </div>
+      </div>
+    </div>
+  );
+};
+
+/** 画面 1 枚。スマホは本体の枠（DeviceFrame）、ブラウザは窓の枠（左上の信号とアドレスの欄） */
+const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; h: number; zoom?: number }> = ({ sc, device, w, h, zoom = 1 }) => {
+  const { C } = usePalette();
+  if (device === 'phone') {
+    const bar = (
+      <div style={{ height: 46, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 6, fontSize: T.phoneBar, fontWeight: 800, color: M.sub }}>{sc.title ?? ''}</div>
+    );
+    return (
+      <DeviceFrame width={w} height={h} screen={M.bg}>
+        <ScreenBody sc={sc} zoom={zoom} bar={bar} padding="14px 24px 22px" />
+      </DeviceFrame>
+    );
+  }
+  const bar = (
+    <div style={{ height: 42, background: M.bar, display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
+      <WindowLights size={12} gap={8} />
+      <div style={{ marginLeft: 22, flex: 1, height: 26, borderRadius: 8, background: M.bg, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: T.browserBar, color: M.sub, fontWeight: 600 }}>{sc.title ?? ''}</div>
+    </div>
+  );
+  return (
+    <div style={{ width: w, height: h, borderRadius: 16, background: M.bg, border: `1.5px solid ${C.line2}`, boxShadow: C.shadow, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 15, overflow: 'hidden' }}>
+        <ScreenBody sc={sc} zoom={zoom} bar={bar} padding="24px 40px 24px 32px" />
       </div>
     </div>
   );

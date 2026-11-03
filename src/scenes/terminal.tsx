@@ -3,8 +3,8 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { TerminalOut, TerminalScene, Theme } from '../../engine/core/schema';
 import { terminalText } from '../../engine/core/scenes';
-import { WINDOW_LIGHTS } from '../components/app-colors';
 import { lineCount } from '../components/fit';
+import { CodeWindow } from '../components/frame';
 import { NoteCard } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, ramp, useActiveLine, useAppear, useScene } from '../timing';
@@ -52,33 +52,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
           transform: `translateY(${dropY(box)}px)`,
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
-            border: `1.5px solid ${C.line2}`,
-            boxShadow: C.shadow,
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              height: 56,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '0 24px',
-              borderBottom: `1.5px solid ${C.codeLine}`,
-              background: C.codeBar,
-            }}
-          >
-            {WINDOW_LIGHTS.editor.map((c) => (
-              <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
-            ))}
-            <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: TYPE.label.windowTitle, color: C.codeMuted }}>{s.title}</div>
-          </div>
+        <CodeWindow title={s.title}>
           {s.entries.map((e, i) => {
             const st = lineStart(lines, e.at) - LEAD.appear;
             const len = e.cmd?.length ?? 0;
@@ -131,7 +105,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
               </div>
             );
           })}
-        </div>
+        </CodeWindow>
       </div>
       {(() => {
         let prev = -Infinity;

@@ -14,11 +14,8 @@ export type ArrowTiming = {
   dotFade: [number, number, number, number];
 };
 
-/** 流れの図・状態の図の矢印（Edge） */
-export const EDGE_TIMING: ArrowTiming = { draw: [0, 16], dot: [4, 26], dotFade: [4, 8, 24, 30] };
-
-/** やりとりの図の矢印。光の粒が少し早く着く（Edge とそろえると見た目が変わるので、見た目の更新 T3A-14 でまとめる） */
-export const STEP_TIMING: ArrowTiming = { draw: [0, 16], dot: [4, 24], dotFade: [4, 8, 22, 28] };
+/** 矢印の動き。流れの図・状態の図の矢印（Edge）と、やりとりの図の矢印で同じにする */
+export const ARROW_TIMING: ArrowTiming = { draw: [0, 16], dot: [4, 26], dotFade: [4, 8, 24, 30] };
 
 /** f（線を引き始めてからのフレーム）での、線の伸び（draw）・光の粒の位置（dot）・光の粒の濃さ（dotO） */
 export const arrowProgress = (f: number, t: ArrowTiming) => ({

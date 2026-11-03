@@ -98,7 +98,7 @@ VOICEVOX が文脈で間違えやすいもの（Stripe 講座で実際にあっ�
 
 1. 型: `engine/core/schema.ts` に `XxxScene` を書き、`Scene` の union に足す。項目の役目（訳す文字・`at`・`key`・訳さない値）を `engine/core/fields.ts` の `SCENE_FIELDS` に書く（書かないと型で止まる）
 2. 描かない側: `engine/core/scenes.ts` の `SCENE_INFO` に 1 つ足す（`label` は教材の絵コンテの「図解の種類」、`describe` は絵コンテの表示内容）
-3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の大きさ `fit.ts`・箱から箱への矢印 `edge.tsx` など）
+3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の幅と大きさ `fit.ts`・スマホと窓の枠 `frame.tsx`・コードの色分け `syntax.ts`・箱から箱への矢印 `edge.tsx` など）
 4. 登録: `src/scenes/index.ts` の `SCENES` に 1 行（と、その import）を足す。`src/Lecture.tsx` は場面の `kind` でここを引いて描く
 
 あわせて、台本の検証（`engine/core/validate.ts` の `checkBody`。その種類の参照と範囲。書かないと型で止まる）と、全場面の見本（`tests/fixtures/content/all-scenes/X01.ts`。足さないとテストで止まる）にも足し、静止画で確かめる。

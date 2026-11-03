@@ -3,6 +3,7 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../engine/core/schema';
 import { DEVICE, PHONE_APP } from '../components/app-colors';
+import { DeviceFrame } from '../components/frame';
 import { Icon, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette } from '../theme';
 import { dropY, lineStart, ramp, useAppear, useScene } from '../timing';
@@ -158,34 +159,11 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
           position: 'absolute',
           left: px,
           top: py,
-          width: pw,
-          height: ph,
           opacity: appear,
           transform: `translateY(${dropY(appear)}px)`,
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 56,
-            background: DEVICE.phone.body,
-            border: `2px solid ${DEVICE.phone.rim}`,
-            boxShadow: `${C.shadow}, 0 0 60px ${DEVICE.phone.glow}`,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            left: 14,
-            top: 14,
-            right: 14,
-            bottom: 14,
-            borderRadius: 44,
-            overflow: 'hidden',
-            background: DEVICE.phone.screen,
-          }}
-        >
+        <DeviceFrame width={pw} height={ph} screen={DEVICE.screen} notch glow={A.glow}>
           {sc ? (
             <div
               style={{ position: 'absolute', inset: 0, transform: `translateX(${(1 - enter) * 60}px)`, opacity: enter }}
@@ -193,19 +171,7 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
               <Screen sc={sc} />
             </div>
           ) : null}
-          <div
-            style={{
-              position: 'absolute',
-              top: 12,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 110,
-              height: 30,
-              borderRadius: 99,
-              background: DEVICE.phone.notch,
-            }}
-          />
-        </div>
+        </DeviceFrame>
       </div>
       <div
         style={{

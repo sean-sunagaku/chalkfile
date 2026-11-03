@@ -5,7 +5,7 @@ import type { Tone } from '../../engine/core/schema';
 import { alpha, H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
 import { LEAD, TYPE } from '../video.config';
-import { arrowProgress, EDGE_TIMING, GlowDot } from './arrow';
+import { ARROW_TIMING, arrowProgress, GlowDot } from './arrow';
 import { Smart } from './ui';
 
 type Pt = [number, number];
@@ -53,7 +53,7 @@ export const Edge: React.FC<{
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const start = lineStart(lines, at) - LEAD.draw + stagger;
-  const { draw, dot, dotO } = arrowProgress(frame - start, EDGE_TIMING);
+  const { draw, dot, dotO } = arrowProgress(frame - start, ARROW_TIMING);
   if (draw <= 0) return null;
   const [fs, ts] = autoSides(a, b);
   const p0 = anchor(a, fromSide ?? fs);

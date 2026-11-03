@@ -2,7 +2,7 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { SequenceScene } from '../../engine/core/schema';
-import { arrowProgress, GlowDot, STEP_TIMING } from '../components/arrow';
+import { ARROW_TIMING, arrowProgress, GlowDot } from '../components/arrow';
 import { fitSize } from '../components/fit';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, H, PAD, usePalette, W } from '../theme';
@@ -52,7 +52,7 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         seen.set(st.at, k + 1);
         const y = firstY + i * gap;
         const start = lineStart(lines, st.at) - LEAD.draw + k * 14;
-        const { draw, dot, dotO } = arrowProgress(frame - start, STEP_TIMING);
+        const { draw, dot, dotO } = arrowProgress(frame - start, ARROW_TIMING);
         if (draw <= 0) return null;
         const x1 = xOf(st.from);
         const x2 = xOf(st.to);
