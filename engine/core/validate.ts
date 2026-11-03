@@ -1,5 +1,6 @@
 // 台本の検証。描く前・声を作る前に、台本の誤りを見つける（React・Remotion・Node に依存しない純粋な関数）。
 //   validateCourse(course)            講座 1 つ（講座の項目と、全部の動画）
+//   validateCourses(courses)          講座をまたいだもの（頭文字・並び・講座 ID が重ならないか。日本語の講座の一覧を渡す）
 //   validateLecture(lecture, course)  動画 1 本（訳の動画は、訳を重ねたあとのレクチャーと訳の講座を渡す）
 //   validateTimeline(lecture, course, timeline)  synth が書いた timeline が台本の形と合うか（指紋が今の台本と同じか）
 //   validateTimelineFiles(lecture, course, files)  置いてある timeline のファイル（重なり・置き場所・読めるか）と、上の確かめ
@@ -46,6 +47,9 @@ export const RULES = {
   syllabus: 'syllabus と動画',
   'lecture-no': '動画の番号',
   timeline: 'timeline と台本',
+  prefix: 'レクチャー ID の頭文字（prefix）',
+  order: '講座の並び（order）',
+  'course-id': '講座 ID',
   'caption-lines': '焼き込み字幕の行数（見込み）',
   'heading-width': '見出しの幅（見込み）',
   style: 'style.md の目安（表・コードの大きさ）',
@@ -442,6 +446,13 @@ export const validateCourse = (course: Course): Issue[] => {
   dup(list(course.sections).map((s) => s.no), 'section', 'セクションの番号', `${where} sections`);
   dup(list(course.lectures).map((l) => l.id), 'lecture-no', '動画の ID', `${where} lectures`);
   dup(list(course.lectures).map((l) => l.no), 'lecture-no', '動画の番号', `${where} lectures`);
+  // レクチャー ID は頭文字と 2 桁の番号（G01）。頭文字そのものの形と重なりは validateCourses が見る
+  if (typeof course.prefix === 'string' && PREFIX.test(course.prefix)) {
+    const idShape = new RegExp(`^${course.prefix}\\d{2}$`);
+    list(course.lectures).forEach((l, i) => {
+      if (!idShape.test(l.id)) push(out, 'error', 'prefix', `${where} lectures[${i}].id`, `レクチャー ID「${l.id}」が、頭文字 ${course.prefix} と 2 桁の番号（${course.prefix}01）の形でない`);
+    });
+  }
   for (const [voice, c] of Object.entries(course.cast ?? {})) {
     if (!has(VOICE_SET, voice)) push(out, 'error', 'voice', `${where} cast.${voice}`, `声「${voice}」が無い（あるのは ${names(VOICE_SET)}）`);
     if (!has(TONE_SET, c?.tone)) push(out, 'error', 'tone', `${where} cast.${voice}.tone`, `色の名前「${String(c?.tone)}」が無い（あるのは ${names(TONE_SET)}）`);
@@ -457,6 +468,48 @@ export const validateCourse = (course: Course): Issue[] => {
     });
   }
   for (const lec of list(course.lectures)) out.push(...validateLecture(lec, course));
+  return out;
+};
+
+/** レクチャー ID の頭文字（英大文字 1 字） */
+const PREFIX = /^[A-Z]$/;
+/** 講座に使わない頭文字（X はテストの見本の講座が使う） */
+const RESERVED_PREFIXES = ['X'];
+
+/** まだどの講座も使っていない頭文字（エラーと docs/guide/new-course.md の表に出す） */
+export const freePrefixes = (courses: readonly Course[]): string[] =>
+  [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].filter((c) => !RESERVED_PREFIXES.includes(c) && !courses.some((x) => x.prefix === c));
+
+/**
+ * 講座をまたいだ確かめ（日本語の講座の一覧を渡す）。並行の PR が講座を足すと、マージするまでぶつかりに気づけないもの:
+ * 頭文字（prefix）の形と重なり（エラーに空いている文字を出す）・並び（order）の重なり・講座 ID の重なりと、言語の名前（2 文字の英小文字）との重なり
+ */
+export const validateCourses = (courses: readonly Course[]): Issue[] => {
+  const out: Issue[] = [];
+  const free = () => `空いている文字: ${freePrefixes(courses).join(' ') || 'なし'}（X はテストの見本が使う）`;
+  courses.forEach((c, i) => {
+    const where = `${c.id} prefix`;
+    if (typeof c.prefix !== 'string' || !PREFIX.test(c.prefix)) {
+      push(out, 'error', 'prefix', where, `頭文字（prefix）は英大文字 1 字で書く（書いたのは ${JSON.stringify(c.prefix)}）。${free()}`);
+    } else if (RESERVED_PREFIXES.includes(c.prefix)) {
+      push(out, 'error', 'prefix', where, `頭文字 ${c.prefix} はテストの見本が使うので、講座には使わない。${free()}`);
+    } else {
+      const first = courses.findIndex((x) => x.prefix === c.prefix);
+      if (first !== i) push(out, 'error', 'prefix', where, `頭文字 ${c.prefix} が ${courses[first].id} と重なっている（レクチャー ID がぶつかる）。${free()}`);
+    }
+    if (!isInt(c.order) || c.order < 1) {
+      push(out, 'error', 'order', `${c.id} order`, `order（一覧の並び）は 1 以上の整数で書く（書いたのは ${JSON.stringify(c.order)}）`);
+    } else {
+      const first = courses.findIndex((x) => x.order === c.order);
+      if (first !== i) {
+        const used = [...new Set(courses.map((x) => x.order))].filter((n) => isInt(n)).sort((a, b) => a - b);
+        push(out, 'error', 'order', `${c.id} order`, `order ${c.order} が ${courses[first].id} と重なっている（一覧の並びが決まらない）。使っている数: ${used.join(' ')}`);
+      }
+    }
+    if (courses.findIndex((x) => x.id === c.id) !== i) push(out, 'error', 'course-id', `${c.id}`, `講座 ID ${c.id} が 2 つの講座で重なっている（content/courses.ts に同じ講座を 2 回並べていないか）`);
+    // 訳の講座の URL と保存の ID は <言語>/<講座>（en/pstack-comedy）。Service Worker は頭の 2 文字の英小文字を言語のフォルダとして読む
+    if (/^[a-z]{2}$/.test(c.id)) push(out, 'error', 'course-id', `${c.id}`, `講座 ID に 2 文字の英小文字（ja・en・zh などの言語の名前）は使えない（訳の講座の URL の頭と重なる）`);
+  });
   return out;
 };
 

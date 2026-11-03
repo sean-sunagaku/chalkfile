@@ -26,6 +26,8 @@ export const lecture = (scenes: Scene[], patch: Partial<Lecture> = {}): Lecture 
 /** 正しい講座 1 つ */
 export const course = (lectures: Lecture[], patch: Partial<Course> = {}): Course => ({
   id: 'invalid-sample',
+  prefix: 'X',
+  order: 1,
   title: '検証の見本',
   subtitle: '誤った台本の見本',
   headline: '誤った台本の見本',

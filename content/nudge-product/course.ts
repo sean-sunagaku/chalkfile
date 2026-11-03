@@ -13,6 +13,8 @@ import { NUDGE_SYLLABUS } from './syllabus';
 /** ナッジ理論をプロダクト改善に活かす（選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間・倫理と検証） */
 export const NUDGE_PRODUCT: Course = {
   id: 'nudge-product',
+  prefix: 'N',
+  order: 20,
   unitLabel: 'CHAPTER',
   theme: 'chalkfile',
   title: 'ナッジ理論をプロダクト改善に活かす',

@@ -3,7 +3,8 @@
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）
 // 見るもの
-//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）
+//   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）・
+//     講座をまたいだもの（レクチャー ID の頭文字・一覧の並び・講座 ID が重ならないか）
 //   公開で止まること（このファイル）: 講座サイトの設定・ID・リンク（siteProblems。scripts/build_site.ts も組み立ての前に呼ぶ）、
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
 //     全部の動画のポスター（site/posters/）と動画の一覧（site/media-manifest.json）。これまで main の公開の CI でしか分からなかった
@@ -12,12 +13,12 @@
 //       手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い・台本と形の合わない timeline・公開で止まること
 // 注意: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安（表 6 行×3 列・コード 18 行）・** の対応・意図かもしれない食い違い
 // synth.ts の最初（対象の動画だけ）と Studio（src/Root.tsx。その動画だけ止める）も、同じ台本の検証を使う
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES } from '../content/themes';
 import type { Course, Theme } from '../content/types';
-import { formatIssues, RULES, validateCourse, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
+import { formatIssues, RULES, validateCourse, validateCourses, validateTheme, validateTimelineFiles, type Issue, type Rule } from '../engine/core/validate';
 import { mediaKey, validateMediaManifest, type MediaManifest } from '../site/media-shared';
 import { PAGE_VERSION_MARK } from './site-version';
 import { readTimelinesByKey } from './timelines';
@@ -162,6 +163,31 @@ export const publishIssues = (courses: Course[], coursesIn: (lang: Lang) => Cour
   return out;
 };
 
+/* ───────────── 講座の登録 ───────────── */
+
+/**
+ * 講座のフォルダ（content/<講座 ID>/index.ts）と、登録表（content/courses.ts の COURSES）が合うか。フォルダの名前は講座 ID にする
+ * （生成物の置き場所 content/<講座 ID>/generated/ にも使う）。dirs は index.ts のある講座のフォルダの名前（渡さなければ content/ を見る）
+ */
+export const registryProblems = (courses: readonly Course[], dirs = courseDirs()): Issue[] => {
+  const ids = courses.map((c) => c.id);
+  return [
+    ...dirs
+      .filter((d) => !ids.includes(d))
+      .map((d): Issue => ({ level: 'error', rule: 'course-id', where: `content/${d}/index.ts`, message: `講座のフォルダがあるのに、content/courses.ts に登録が無い（export { default as … } from './${d}'; の 1 行を足す）` })),
+    ...ids
+      .filter((id) => !dirs.includes(id))
+      .map((id): Issue => ({ level: 'error', rule: 'course-id', where: id, message: `講座のフォルダ content/${id}/（index.ts）が無い。フォルダの名前は講座 ID にする` })),
+  ];
+};
+
+/** index.ts のある講座のフォルダの名前 */
+const courseDirs = (): string[] =>
+  readdirSync(path.join(ROOT, 'content'), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && existsSync(path.join(ROOT, 'content', d.name, 'index.ts')))
+    .map((d) => d.name)
+    .sort();
+
 /* ───────────── 全部 ───────────── */
 
 /** 全講座・全言語を検証する。台本の読み込み（訳の重ね方）で止まったときも、誤りとして返す */
@@ -177,6 +203,8 @@ export const validateAll = async (): Promise<Report> => {
     const { COURSES, coursesIn } = await import('../content');
     // timeline は動画ごとのファイル（content/<講座>/generated/timeline/<key>.json）。指紋で、台本を直したのに合成し直していない動画も見つける
     const timelines = readTimelinesByKey();
+    // 講座をまたいだもの（頭文字・並び・講座 ID の重なり）。並行の PR が講座を足すと、マージするまで気づけない
+    issues.push(...validateCourses(COURSES), ...registryProblems(COURSES));
     const keys = new Set<string>();
     for (const lang of LANGS) {
       for (const course of coursesIn(lang)) {

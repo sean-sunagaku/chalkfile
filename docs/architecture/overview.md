@@ -79,9 +79,10 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 
 | パス | 中身 |
 |---|---|
-| `content/index.ts` | 講座の一覧（`COURSES`）と訳の一覧（`TRANSLATIONS`）。Stripe 講座の定義もここにある |
-| `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・講座の定義（`course.ts`）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・訳（`<言語>/`）。Stripe 講座のフォルダは台本だけ |
-| `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み |
+| `content/courses.ts` | 講座の登録表（1 講座 1 行。`.gitattributes` で `merge=union`）。並びは各講座の `order` で決まる |
+| `content/index.ts` | 登録表から作る講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
+| `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
+| `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts`・`voices.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み・声の一覧とクレジット |
 | `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` がテーマの色と書体を差し込む。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
 | `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・色のコントラスト） |
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
