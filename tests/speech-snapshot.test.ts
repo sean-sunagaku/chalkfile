@@ -1,4 +1,4 @@
-// 全台詞の音声の鍵・読みと動画の終わりのクレジット、訳がある動画の訳の指紋が、tests/fixtures/snapshots/videos と同じかを見る。
+// 全台詞の音声の鍵（v1 と v2）・読みと動画の終わりのクレジット、訳がある動画の訳の指紋が、tests/fixtures/snapshots/videos と同じかを見る。
 // 違ったら、変わった動画と台詞（何番目・どの値）を出す。わざと変えたなら bun scripts/snapshots.ts --update で作り直し、
 // PR に「合成し直しが要る」と書く（tests/fixtures/snapshots/README.md）
 import { describe, expect, test } from 'bun:test';
@@ -14,7 +14,7 @@ const same = (c: Category) => {
 
 describe('音声の鍵・読み・訳の指紋のスナップショット', () => {
   test('動画とファイルが 1 対 1（content/index.ts の VIDEOS と videos/<動画>.json）', () => same('videos'));
-  test('音声の鍵（日本語は VOICEVOX の ttsKeyV1、訳は Kokoro の kokoroKeyV1）', () => same('keys'));
+  test('音声の鍵（v1 は凍結した前の作り方、v2 は合成のレシピから。scripts/voices.ts）', () => same('keys'));
   test('読み（toSpeech・toSpeechZh。synth.ts と同じ speechIn）', () => same('speech'));
   test('訳の指紋（訳がある動画だけ。scripts/i18n.ts の stamp が書く値）', () => same('fingerprints'));
   test('動画の終わりのクレジット（VOICES の並び・credit の表記で変わる）', () => same('credits'));
@@ -34,7 +34,9 @@ describe('音声の鍵・読み・訳の指紋のスナップショット', () =
     expect(i).toBeGreaterThanOrEqual(0);
     const video = values[i].video;
     const cases: [Category, (v: VideoValue) => void][] = [
-      ['keys', (v) => { v.lines[0].key = '0'.repeat(16); }],
+      ['keys', (v) => { v.lines[0].v1 = '0'.repeat(16); }],
+      ['keys', (v) => { v.lines[0].v2 = 'f'.repeat(16); }],
+      ['keys', (v) => { v.lines[0].v1 = null; }],
       ['speech', (v) => { v.lines[0].speech += 'ね'; }],
       ['fingerprints', (v) => { v.fingerprint = '0'.repeat(12); }],
       ['credits', (v) => { v.credits.reverse(); }],
@@ -45,12 +47,19 @@ describe('音声の鍵・読み・訳の指紋のスナップショット', () =
       change(changed[i]);
       expect(differences(base, changed).found[c].join('\n')).toContain(video);
     }
-    // スナップショットに無い鍵は、合成が要る動画として数える
+    // v1 も v2 もスナップショットに無い台詞は、合成が要る動画として数える
     const changed = structuredClone(values);
-    changed[i].lines[0].key = '0'.repeat(16);
+    changed[i].lines[0].v1 = '0'.repeat(16);
+    changed[i].lines[0].v2 = 'f'.repeat(16);
     const d = differences(base, changed);
     expect(d.resynth).toEqual([`${video}（1）`]);
-    expect(d.found.keyList.join('\n')).toContain('スナップショットに無い鍵 1');
+    expect(d.found.keyList.join('\n')).toContain('スナップショットに無い鍵の台詞 1（合成が要る');
+    // v2 だけが変わっても、v1 の音声が当たるなら合成は要らない
+    const v2only = structuredClone(values);
+    v2only[i].lines[0].v2 = 'f'.repeat(16);
+    const d2 = differences(base, v2only);
+    expect(d2.resynth).toEqual([]);
+    expect(d2.found.keyList.join('\n')).toContain('台詞の声は、ほかの鍵で当たる');
     // 動画のファイルが無い・残っている
     const without = new Map([...base].filter(([k]) => k !== video));
     expect(differences(without, values).found.videos.join('\n')).toContain(`${video}: videos/${video}.json が無い`);
