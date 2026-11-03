@@ -3,7 +3,8 @@
 import type { HeroSnippet } from '../../content/course-module';
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
-import { fill, type SiteText } from '../../site/i18n';
+import type { SiteText } from '../../site/i18n';
+import { fill } from '../../site/lib/text';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
 import { cspHead } from './csp';

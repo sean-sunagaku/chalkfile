@@ -2,7 +2,8 @@
 // 版の印（scripts/site-version.ts）は入れたまま描く。CSP は、ページに入れる script（本体と offline-client）から先に作る（csp.ts）
 import { LANG_INFO, type Lang } from '../../content/i18n';
 import type { Course, Theme } from '../../content/types';
-import { fill, type SiteText } from '../../site/i18n';
+import type { SiteText } from '../../site/i18n';
+import { fill } from '../../site/lib/text';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
 import { cspHead } from './csp';

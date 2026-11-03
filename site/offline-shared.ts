@@ -1,4 +1,9 @@
-// 保存対象は、このサイトが生成した公開教材と MP4・ポスターだけ。
+// 保存対象は、このサイトが生成した公開教材と MP4・ポスターだけ。大きさの上限の正本は site/limits.ts
+import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, OFFLINE_PAGE_MAX_BYTES } from './limits';
+import { parseMediaPath } from './media-shared';
+
+// 1 つの bytes の Range の読み方は site/lib/http-range.ts（再生の応答の組み立てと一緒）。前からここを読むもの（旧 Pages の移行の SW）のために、ここからも出す
+export { byteRange } from './lib/http-range';
 export type Asset = { url: string; bytes: number; sha256: string; type: string };
 export type CourseManifest = {
   schema: 1;
@@ -18,11 +23,16 @@ export type CourseStatus = {
   saved: SavedVersion | null;
   incomplete: boolean;
   progress: DownloadProgress | null;
+  /**
+   * saved の版を、重大な不具合で無効にした（site/disabled-revisions.ts）。オンラインでは公開中のページを開くので、新しい版に更新して
+   * 保存し直すよう案内する。前の SW は送らない（無いときは false と同じ）
+   */
+  disabled?: boolean;
 };
 /** 講座の ID。訳の講座は言語を頭に付ける（en/superagent-comedy）。日本語の講座は付けない */
 export const COURSE_ID = /^(?:[a-z]{2}\/)?[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const HASH = /^[a-f0-9]{64}$/;
-export const MAX_FILE_BYTES = 32 * 1024 * 1024;
+export const MAX_FILE_BYTES = OFFLINE_FILE_MAX_BYTES;
 /** 動画とポスターの名前。S01・S01.cc（字幕を焼き込んだ版）・S01.en・S01.en.cc（言語の 2 文字は cc にしない） */
 const MEDIA_NAME = '([A-Za-z0-9][A-Za-z0-9_-]*(?:\\.(?!cc\\.)[a-z]{2})?)(\\.cc)?\\.(mp4|jpg)';
 
@@ -44,7 +54,7 @@ export class OfflineError extends Error {
 export function validateManifest(value: unknown, id: string, scope: string, mediaRoots: Record<string, string> = {}): CourseManifest {
   const m = value as CourseManifest;
   if (!m || m.schema !== 1 || !COURSE_ID.test(id) || m.id !== id || typeof m.title !== 'string' || m.title.length > 300 ||
-      !HASH.test(m.pageVersion) || !HASH.test(m.revision) || !Array.isArray(m.files) || m.files.length < 3 || m.files.length > 201) {
+      !HASH.test(m.pageVersion) || !HASH.test(m.revision) || !Array.isArray(m.files) || m.files.length < 3 || m.files.length > OFFLINE_COURSE_MAX_FILES) {
     throw new OfflineError('manifest');
   }
   const origin = new URL(scope).origin;
@@ -63,15 +73,15 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
     const inMedia = !!mediaRoot && url.href.startsWith(mediaRoot);
     if (url.origin !== origin || (!inScope && !inMedia) || url.hash || url.username || url.password) throw new OfflineError('origin');
     if (f.url === `${id}/`) {
-      if (f.type !== 'text/html' || f.bytes > 4 * 1024 * 1024) throw new OfflineError('page');
+      if (f.type !== 'text/html' || f.bytes > OFFLINE_PAGE_MAX_BYTES) throw new OfflineError('page');
     } else {
-      // 同じoriginの /media/ を先に判定。通常版・字幕版とも本文のhashとパスのhashを一致させる。
-      const hashed = /^\/media\/([a-z]{2})\/([A-Za-z0-9][A-Za-z0-9_-]*)\/([A-Za-z0-9][A-Za-z0-9_-]*)(\.cc)?\.([a-f0-9]{64})\.mp4$/.exec(f.url);
+      // 同じoriginの /media/ を先に判定。通常版・字幕版とも本文のhashとパスのhashを一致させる（パスの読み方は media-shared.ts の parseMediaPath。query の付いたものは読まない）
+      const hashed = parseMediaPath(f.url);
       if (hashed) {
-        if (hashed[1] !== (lang || 'ja') || hashed[2] !== slug || hashed[5] !== f.sha256 || f.type !== 'video/mp4') throw new OfflineError('media');
-        const key = `${hashed[3]}${lang ? `.${lang}` : ''}`;
+        if (hashed.lang !== (lang || 'ja') || hashed.course !== slug || hashed.sha256 !== f.sha256 || f.type !== 'video/mp4') throw new OfflineError('media');
+        const key = `${hashed.lecture}${lang ? `.${lang}` : ''}`;
         const types = media.get(key) ?? new Set<string>();
-        types.add(hashed[4] ? 'cc' : 'mp4');
+        types.add(hashed.kind === 'captioned' ? 'cc' : 'mp4');
         media.set(key, types);
         bytes += f.bytes;
         continue;
@@ -91,7 +101,7 @@ export function validateManifest(value: unknown, id: string, scope: string, medi
     bytes += f.bytes;
   }
   if (!urls.has(`${id}/`) || media.size === 0 || [...media.values()].some((x) => !x.has('mp4') || !x.has('jpg')) ||
-      bytes !== m.bytes || bytes > 1024 * 1024 * 1024) throw new OfflineError('incomplete');
+      bytes !== m.bytes || bytes > OFFLINE_COURSE_MAX_BYTES) throw new OfflineError('incomplete');
   return m;
 }
 
@@ -185,21 +195,6 @@ export function planCleanup({ names, prefix, keep, held, oldShell, now }: Cleanu
 
 export async function sha256(data: ArrayBuffer): Promise<string> {
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), (x) => x.toString(16).padStart(2, '0')).join('');
-}
-
-export type ByteRange = { kind: 'full' } | { kind: 'partial'; start: number; end: number } | { kind: 'unsatisfiable' };
-// 複数 Range と未知の単位は無視して 200。対応する単一 bytes Range は 206 / 416。
-export function byteRange(header: string | null, size: number): ByteRange {
-  if (!header || !header.startsWith('bytes=') || header.includes(',')) return { kind: 'full' };
-  const m = /^bytes=(\d*)-(\d*)$/.exec(header);
-  if (!m || (!m[1] && !m[2])) return { kind: 'full' };
-  const a = m[1] ? Number(m[1]) : null;
-  const b = m[2] ? Number(m[2]) : null;
-  if ((a !== null && !Number.isSafeInteger(a)) || (b !== null && !Number.isSafeInteger(b)) || size === 0) return { kind: 'unsatisfiable' };
-  const start = a ?? Math.max(0, size - b!);
-  const end = a === null || b === null ? size - 1 : Math.min(b, size - 1);
-  if (start >= size || start > end || (a === null && b === 0)) return { kind: 'unsatisfiable' };
-  return { kind: 'partial', start, end };
 }
 
 /*

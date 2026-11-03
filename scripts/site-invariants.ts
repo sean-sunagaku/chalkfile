@@ -5,8 +5,10 @@
 //   3. CSP の script-src のハッシュの数と、ページで実際に動く script の数が合い、どの script のハッシュも CSP にある。
 //      動く script は、組み立てが入れた信頼できるもの（scripts に渡したもの）のどれか（エスケープし忘れて紛れ込んだ script は、CSP に入っていても止める）
 //   4. 全部の offline-manifest.json が、SW と同じ validateManifest を通る。revision と、ページ・ポスターの大きさと SHA-256 が、置いたファイルと
-//      合う。動画は動画の一覧（Worker の許可リスト）にあり、大きさと SHA-256 が合う。sw.js に入れた講座には、どれも manifest がある
+//      合う。動画は動画の一覧（Worker の許可リスト）にあり、大きさと SHA-256 が合う。sw.js に入れた講座と、manifest のある講座が同じ
 //   5. sw.js が install のときに取る起動用ファイルが置いてあり、大きさと SHA-256 が合い、型が拡張子の対応表（site/mime.ts）と合う
+//   6. _headers（scripts/site/headers.ts）の規則で、どの静的な応答にも Cache-Control の no-transform が付き、同じヘッダーを付ける規則が
+//      2 つ当たって値がつながっていない（Workers の静的 assets は、当たる規則のヘッダーをカンマでつなぐ）
 // 使い方: import { assertSiteInvariants } from './site-invariants' で呼ぶ（手で流す入口は無い。テストは tests/site-invariants.test.ts）
 import { createHash } from 'node:crypto';
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
@@ -16,6 +18,7 @@ import { allMediaEntries, type MediaManifest, mediaPath } from '../site/media-sh
 import { mimeTypeOf } from '../site/mime';
 import { type Asset, type CourseManifest, OfflineError, validateManifest } from '../site/offline-shared';
 import { hash } from './pwa';
+import { type HeaderRule, headersFor, parseHeaders } from './site/headers';
 import { PAGE_VERSION_MARK } from './site-version';
 
 export type SiteInvariantInput = {
@@ -231,12 +234,46 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
       problems.push(`sw.js に入れた講座 ${id} の offline-manifest.json がありません`);
     }
   }
+  // manifest があるのに sw.js に入っていない講座は、保存できない（SW が「公開されていない」と断る）
+  if (input.courses) {
+    for (const rel of manifests) {
+      if (!input.courses.includes(path.posix.dirname(rel))) {
+        problems.push(
+          `${rel}: sw.js に入っていない講座の保存の manifest です（保存できない。講座を外したなら、講座を指定せずに組み立て直す）`,
+        );
+      }
+    }
+  }
 
   // 5. 起動用ファイル（sw.js の install が全部を取る。1 つでも取れないと install が止まる）
   for (const a of input.shell ?? []) {
     const file = fileOf(a.url);
     if (!file) problems.push(`起動用ファイル: ${a.url} がアプリの外を指しています`);
     else sameFile('起動用ファイル', a, file);
+  }
+
+  // 6. 静的な応答のヘッダー（_headers）。送らないファイル（. で始まるもの）と _headers そのものは見ない。index.html は、フォルダの URL でも見る
+  if (!known.has('_headers')) problems.push('_headers がありません（静的な応答に no-transform が付かない）');
+  else {
+    let rules: HeaderRule[] = [];
+    try {
+      rules = parseHeaders(read('_headers').toString('utf8'));
+    } catch (e) {
+      problems.push(e instanceof Error ? e.message : String(e));
+    }
+    const served = files.map((f) => f.rel).filter((rel) => rel !== '_headers' && !rel.split('/').some((p) => p.startsWith('.')));
+    const paths = served.flatMap((rel) =>
+      rel === 'index.html' || rel.endsWith('/index.html') ? [`/${rel}`, `/${rel.slice(0, -'index.html'.length)}`] : [`/${rel}`],
+    );
+    for (const p of paths) {
+      const { headers, joined } = headersFor(p, rules);
+      if (joined.length) {
+        problems.push(`_headers: ${p} に ${joined.join('・')} を付ける規則が 2 つ当たり、値がつながります（上書きする規則で、先に「! 名前」で外す）`);
+      }
+      if (!headers.get('cache-control')?.includes('no-transform')) {
+        problems.push(`_headers: ${p} の Cache-Control に no-transform がありません（Cloudflare が書き換えると、CSP と保存の SHA-256 が合わない）`);
+      }
+    }
   }
   return problems;
 }

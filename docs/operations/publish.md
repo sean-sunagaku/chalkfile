@@ -163,7 +163,7 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 - Worker の許可リスト（`worker/src/generated/media-manifest.json`）は `npm run gen` が作る。`npm run dev:worker` は先に作る。`npx wrangler dev`（`.claude/launch.json` の worker も）を直に流すときは、先に `npm run gen`
 - PR の CI の `smoke` のジョブも、同じ smoke を、build の artifact と `wrangler dev` の手元のモードで流す（[CI の形](ci.md)）
 
-- HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る
+- HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、`/` と `/sw.js` のヘッダーが `_headers` の規則（`scripts/site/headers.ts`）のとおりか（セキュリティのヘッダー・2 つの規則の値がつながっていないこと）、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る
 - ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 かを見る
 
 ## ぶつかったとき
