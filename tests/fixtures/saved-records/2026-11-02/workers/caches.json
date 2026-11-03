@@ -1,0 +1,53 @@
+{
+  "caches": [
+    "chalkfile:/:offline-v1:course:ga4-comedy:66850979-51a2-4ec7-843e-f895a4262bdc",
+    "chalkfile:/:offline-v1:course:indie-marketing:e0715ab0-3e06-47d8-a80a-f6ec41cef1e8",
+    "chalkfile:/:offline-v1:course:nudge-comedy:91f8e33b-a630-4f1d-b77f-722410697126",
+    "chalkfile:/:offline-v1:course:nudge-product:2a684768-6e5c-4f6b-b9dc-98adfc99699c",
+    "chalkfile:/:offline-v1:course:pstack-comedy:ab2f4c4b-d0e2-453c-bb26-84c34aa4208f",
+    "chalkfile:/:offline-v1:course:rive-comedy:8cdc0169-2344-4c83-9400-316454f4cf93",
+    "chalkfile:/:offline-v1:course:stripe-billing:bf192362-8cdf-4ee1-939e-6385550e27f3",
+    "chalkfile:/:offline-v1:course:superagent-comedy:e632b68b-f8fe-486f-b6b1-53109942eb1a",
+    "chalkfile:/:offline-v1:course:uiux-engineers:ac1afd05-792f-47e8-a774-3b59bef1abd3",
+    "chalkfile:/:offline-v1:registry",
+    "chalkfile:/:offline-v1:shell:ec7de851c8c9b62fa23fa5f5c0489564cb970e752fe3f0b0dc983ea6d94f8424"
+  ],
+  "registry": [
+    {
+      "key": ".offline-records/pstack-comedy",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/ga4-comedy",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/nudge-comedy",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/nudge-product",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/superagent-comedy",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/uiux-engineers",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/indie-marketing",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/rive-comedy",
+      "type": "application/json"
+    },
+    {
+      "key": ".offline-records/stripe-billing",
+      "type": "application/json"
+    }
+  ]
+}

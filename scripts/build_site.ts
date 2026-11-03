@@ -20,6 +20,7 @@ import type { ChapterMaterial, Course, Source, VoiceId } from '../content/types'
 import { fill, SITE_TEXT, THEME_SUMMARY, type SiteText } from '../site/i18n';
 import { fontLink, themeCss } from './site_theme';
 import { asset, buildPwa, bundle, hash } from './pwa';
+import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from './site-version';
 import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
 import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
@@ -193,6 +194,8 @@ for (const lang of LANGS)
       if (m) for (const id of [m.id, ...m.sections.map((x) => x.id), ...m.figures.map((x) => x.id), m.exercise.id]) if (!ID.test(id)) problems.push(`${lec.id} の教材の ID が英数字でない: ${id}`);
     }
     for (const x of c.sources ?? []) if (!HTTPS.test(x.url)) problems.push(`${c.id} の出典のリンクが https:// でない: ${x.url}`);
+    // 版の印（scripts/site-version.ts）は、版が決まるとページの中で全部置き換えるので、台本には書けない
+    if (JSON.stringify(c).includes(PAGE_VERSION_MARK)) problems.push(`${c.id} の台本に、版の印と同じ文字 ${PAGE_VERSION_MARK} がある`);
   }
 for (const t of Object.values(THEMES)) if (!ID.test(t.id)) problems.push(`テーマ ID が英数字でない: ${t.id}`);
 if (problems.length) {
@@ -300,26 +303,20 @@ for (const lang of SITE_LANGS) {
       planned,
     };
     const mediaFiles: { file: string; data: Buffer; type: string }[] = [];
-    const videos: MediaEntry[] = [];
     for (const lec of lectures) {
-      videos.push(videoFor(lang, course.id, lec.id, 'standard')!);
-      const cc = videoFor(lang, course.id, lec.id, 'captioned', false);
-      if (cc) videos.push(cc);
       const file = `${lec.key}.jpg`;
       const from = existsSync(path.join(POSTERS, file)) ? path.join(POSTERS, file) : path.join(MEDIA, file);
       if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: 'image/jpeg' });
       else missing.push(file);
     }
     const courseCreditsList = courseCredits(course, lang);
-    // 版は教材・表示・動画の全入力で決まる。保存した HTML と MP4 を別の版に混ぜない。
-    const pageVersion = hash(JSON.stringify({ lang, meta, credits: courseCreditsList, lectures, theme, template, offlinePanel, offlineCss, offlineClient, text: T,
-      builder: readFileSync(import.meta.path, 'utf8'), media: mediaFiles.map((f) => [f.file, hash(f.data)]), videos }));
-    const json = JSON.stringify({ course: meta, credits: courseCreditsList, pageVersion, lang: { code: lang, html: info.html, label: info.label }, text: T,
+    // 版は出力から決める（scripts/site-version.ts）。ページとポスターの ?v= には版の印を入れて描き、版が決まってから差し込む
+    const json = JSON.stringify({ course: meta, credits: courseCreditsList, pageVersion: PAGE_VERSION_MARK, lang: { code: lang, html: info.html, label: info.label }, text: T,
       lectures: lectures.map(({ key, ...lec }) => ({ ...lec,
-        video: mediaPath(videoFor(lang, course.id, lec.id, 'standard')!), poster: `media/${key}.jpg?v=${pageVersion}`,
+        video: mediaPath(videoFor(lang, course.id, lec.id, 'standard')!), poster: `media/${key}.jpg?v=${PAGE_VERSION_MARK}`,
         videoCc: videoFor(lang, course.id, lec.id, 'captioned', false) ? mediaPath(videoFor(lang, course.id, lec.id, 'captioned')!) : '',
       })) }).replace(/</g, '\\u003c');
-    const app = appParts(lang, root, { id: cid, title: course.title, pageVersion });
+    const app = appParts(lang, root, { id: cid, title: course.title, pageVersion: PAGE_VERSION_MARK });
     const url = `${base}${cid}/`;
     const firstPoster = `${url}media/${lectures[0].key}.jpg`;
     const html = fillText(template, T)
@@ -351,9 +348,20 @@ for (const lang of SITE_LANGS) {
       .replace('__HEADLINE__', () => esc(plain(course.headline)))
       .replace('__DOCS_NOTE__', () => esc(course.docsNote))
       .replace('__COURSE_JSON__', () => json);
+    // 保存の manifest に入る、ページのほかのファイル（レクチャーごとに動画・ポスター・字幕版）。ポスターの ?v= は版の印のまま
+    const videoAsset = (e: MediaEntry): Asset => ({ url: mediaPath(e), bytes: e.bytes, sha256: e.sha256, type: 'video/mp4' });
+    const files = lectures.flatMap((lec) => {
+      const poster = mediaFiles.find((f) => f.file === `${lec.key}.jpg`);
+      const cc = videoFor(lang, course.id, lec.id, 'captioned', false);
+      return [videoAsset(videoFor(lang, course.id, lec.id, 'standard')!),
+        ...(poster ? [asset(`${cid}/media/${poster.file}?v=${PAGE_VERSION_MARK}`, poster.data, poster.type)] : []), ...(cc ? [videoAsset(cc)] : [])];
+    });
+    // 版は、版の印を入れたまま描いたページ（CSP まで）と、動画・ポスターの URL・大きさ・sha256 から計算する。保存した HTML と MP4 を別の版に混ぜない
+    const pageVersion = pageVersionOf({ html: csp(html), files });
     const out = path.join(DIST, cid);
     mkdirSync(out, { recursive: true });
-    const page = Buffer.from(csp(html));
+    // CSP のハッシュは、版を差し込んだ最終のページから作る
+    const page = Buffer.from(csp(stampVersion(html, pageVersion)));
     writeFileSync(path.join(out, 'index.html'), page);
     // 動画とポスターを置く（日本語は講座の media/、訳の言語は動画のサイトの <講座>/）
     const mediaOut = path.join(out, 'media');
@@ -364,16 +372,10 @@ for (const lang of SITE_LANGS) {
     const manifestPath = path.join(out, 'offline-manifest.json');
     rmSync(manifestPath, { force: true });
     if (mediaFiles.length === lectures.length) {
-      const files = [asset(`${cid}/`, page, 'text/html'),
-        ...lectures.flatMap((lec) => {
-          const normal = videoFor(lang, course.id, lec.id, 'standard')!;
-          const poster = mediaFiles.find((f) => f.file === `${lec.key}.jpg`)!;
-          const cc = videoFor(lang, course.id, lec.id, 'captioned', false);
-          const videoAsset = (e: MediaEntry): Asset => ({ url: mediaPath(e), bytes: e.bytes, sha256: e.sha256, type: 'video/mp4' });
-          return [videoAsset(normal), asset(`${cid}/media/${poster.file}?v=${pageVersion}`, poster.data, poster.type), ...(cc ? [videoAsset(cc)] : [])];
-        })];
-      const manifest: CourseManifest = { schema: 1, id: cid, title: course.title, pageVersion, revision: hash(JSON.stringify(files)),
-        bytes: files.reduce((sum, f) => sum + f.bytes, 0), files };
+      // ページの sha256 と大きさは、版を差し込んだ最終のページから計算する。ポスターの ?v= も版にする
+      const saved = [asset(`${cid}/`, page, 'text/html'), ...files.map((f) => ({ ...f, url: stampVersion(f.url, pageVersion) }))];
+      const manifest: CourseManifest = { schema: 1, id: cid, title: course.title, pageVersion, revision: hash(JSON.stringify(saved)),
+        bytes: saved.reduce((sum, f) => sum + f.bytes, 0), files: saved };
       generatedManifests.push(manifest);
       writeFileSync(manifestPath, JSON.stringify(manifest));
     }

@@ -57,7 +57,7 @@ Workers assets の HTML 正規化で `.html` は転送される。保存用の�
 
 ```bash
 bun scripts/synth.ts L01 L02                                     # 声と時刻（VOICEVOX）
-uv run --with numpy --with scipy python scripts/mix.py L01 L02   # 音
+uv run --locked --group audio python scripts/mix.py L01 L02     # 音
 CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字幕なし・サイト用の字幕焼き込み・配る用の字幕焼き込み）
 ```
 
@@ -68,7 +68,7 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 公開の前に、全部やる。
 
 - 読み: `.work/kana/<id>.txt` を全部読む。誤読は `content/reading.ts` に足して synth し直す
-- 見た目: `node scripts/stills.mjs L01 --mid` で `out/stills/` に静止画を書き、全部見る。文字のはみ出し・重なり・小さすぎを直す
+- 見た目: `node scripts/stills.ts L01 --mid` で `out/stills/` に静止画を書き、全部見る。文字のはみ出し・重なり・小さすぎを直す
 - 長さ: `ffprobe` の動画の長さが `src/generated/timeline.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本ファイルを渡して、主張ごとに公式で確かめてもらう（research.md の「事実確認」）
 - 型: `npm run typecheck`（動画・台本と、PWAのページ/worker）
@@ -104,7 +104,7 @@ Mac解除後はdocumentがvisibleであることを確かめ、通常のWebDrive
 | 台詞を直す | 台本を直す → synth → kana を見る → mix → render → stills → build_site → コミット → deploy |
 | 読み間違いを直す | `reading.ts` の `PHRASES`（語句）か `WORDS`（英単語）に足す → synth（読みが変わった台詞だけ作り直される）→ mix → render |
 | 図や画面の文字だけ直す | 台本を直す → stills → render（声は変わらないので synth と mix は要らない） |
-| トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.mjs --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
+| トンマナを変える | `content/themes.ts` のテーマを選ぶか作る → 講座の `theme` を書き換える → `stills.ts --theme=<id>` で試す → render（全部の動画）→ build_site（theme.md） |
 | 事実が古くなった | research.md の手順で確かめ直す → 台本・`docs`・`takeaways`・`docsNote`・`sourceNote` の日付を直す |
 | 事前保存・PWAを直す | offline.md → 保存版の整合性・権利条件を保つ → 型・境界値・content点検・strict build・実ブラウザ回帰 → READMEとこのSkillの案内を合わせる |
 | レクチャーを足す | 台本を書く → `COURSES` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |

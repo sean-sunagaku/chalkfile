@@ -1,9 +1,9 @@
 # /// script
-# requires-python = ">=3.10,<3.13"
+# requires-python = ">=3.12,<3.13"
 # dependencies = [
 #   "faster-whisper==1.2.1",
-#   "numpy",
-#   "scipy",
+#   "numpy==2.5.4",
+#   "scipy==1.18.1",
 #   "opencc-python-reimplemented==0.1.7",
 #   "pypinyin==0.55.0",
 #   "cn2an==0.5.23",
@@ -13,8 +13,10 @@
 
 synth.ts が書く .work/speech/<key>.json（台詞と音声ファイルの対応）を読む。
 
-  uv run scripts/check_speech.py P01.en P01.zh       # 動画ごと
-  uv run scripts/check_speech.py --all                # .work/speech/ の全部
+  uv run --locked --script scripts/check_speech.py P01.en P01.zh       # 動画ごと
+  uv run --locked --script scripts/check_speech.py --all                # .work/speech/ の全部
+
+依存の版は頭書きと scripts/check_speech.py.lock で固定する。頭書きを変えたら uv lock --script scripts/check_speech.py でロックも作り直す。
 
 出力: 誤りの多い台詞から順に、読ませた文と聞き取った文を並べる（.work/speech/<key>.report.txt にも書く）。
 英語は文字の誤り率（空白と記号を除き、数字は英単語にそろえる）、中国語は拼音（声調なし）の音節の誤り率（繁体字は簡体字に、数字は漢数字にそろえ、中の英語の語は比べない）。
@@ -92,7 +94,7 @@ def main() -> None:
     if keys == ["--all"]:
         keys = sorted(p.stem for p in SPEECH.glob("*.json"))
     if not keys:
-        raise SystemExit("使い方: uv run scripts/check_speech.py P01.en P01.zh | --all")
+        raise SystemExit("使い方: uv run --locked --script scripts/check_speech.py P01.en P01.zh | --all")
     t2s = OpenCC("t2s")
     asr = WhisperModel("medium", device="cpu", compute_type="int8")
     # 聞き取りの結果は音声ファイルごとに覚えておく（名前は文と声から決まるので、台詞を直した所だけ聞き直す）

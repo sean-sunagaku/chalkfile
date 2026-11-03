@@ -83,7 +83,12 @@ if (import.meta.main) {
     const findings: { level: string; where: string; what: string; sample: string }[] = [];
     const walk = (v: unknown, where: string, key = '') => {
       if (typeof v === 'string') return checkText(v, where, !['code', 'cmd', 'out'].includes(key), findings as never);
-      if (Array.isArray(v)) return v.forEach((x, i) => walk(x, `${where}[${i}]`, key));
+      if (Array.isArray(v)) {
+        v.forEach((x, i) => {
+          walk(x, `${where}[${i}]`, key);
+        });
+        return;
+      }
       if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, `${where}.${k}`, k);
     };
     walk(lec, `${id}.${lang}`);

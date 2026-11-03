@@ -1,7 +1,65 @@
-# GitHub Actions の版を月に 1 回見直す（SHA で固定しているので、更新は Pull Request で届く）
+# 依存の版を月に 1 回見直す（版は固定しているので、更新は Pull Request で届く）
+#   github-actions: SHA で固定した Actions
+#   npm: package.json と package-lock.json（いっしょに上げるものはまとめて 1 本の PR にする）
+#   uv: pyproject.toml と uv.lock（BGM・効果音の numpy・scipy。上げたら素材の SHA256SUMS と比べる）
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      # remotion と @remotion/* は同じ版にそろえる。上げたら静止画を比べ、1 本を書き出し、npm run test:browser を流す
+      remotion:
+        patterns:
+          - remotion
+          - '@remotion/*'
+      playwright:
+        patterns:
+          - '@playwright/*'
+          - playwright
+          - playwright-core
+      wrangler:
+        patterns:
+          - wrangler
+      typescript:
+        patterns:
+          - typescript
+      dev-tools:
+        patterns:
+          - '@biomejs/biome'
+          - knip
+          - '@types/*'
+    ignore:
+      # メジャー版は計画してから上げる（T6-02）。Remotion 5 は書き出しの見た目が変わりうる
+      - dependency-name: remotion
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@remotion/*'
+        update-types: ['version-update:semver-major']
+      # TypeScript 7 は型検査の作りが変わる（T6-02）
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # bun の型は .bun-version の bun と同じ版にする（bun を上げるときに一緒に上げる）
+      - dependency-name: '@types/bun'
+
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      audio:
+        patterns:
+          - numpy
+          - scipy

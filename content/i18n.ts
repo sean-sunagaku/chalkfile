@@ -86,8 +86,8 @@ export type CourseL10n = {
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 /** 丸ごと置き換える配列（数が変わってよい） */
 const REPLACE = new Set(['lines', 'takeaways']);
-/** 台詞の番号（何番目の台詞の頭で出すか） */
-const AT_KEYS = ['at', 'textAt', 'subAt', 'revealAt', 'showAt'];
+/** 台詞の番号（何番目の台詞の頭で出すか）を書く項目。台本の検証（engine/core/validate.ts）も、この一覧で at の範囲を見る */
+export const AT_KEYS: readonly string[] = ['at', 'textAt', 'subAt', 'revealAt', 'showAt'];
 
 const merge = (base: unknown, over: unknown, where: string, key = ''): unknown => {
   if (over === undefined) return base;
@@ -107,7 +107,9 @@ const merge = (base: unknown, over: unknown, where: string, key = ''): unknown =
 /** 台詞の数が日本語と違う場面で、上書きに書いていない at（日本語の台詞の番号のまま）を探す */
 const missingAt = (base: unknown, over: unknown, where: string, out: string[]) => {
   if (Array.isArray(base)) {
-    base.forEach((b, i) => missingAt(b, Array.isArray(over) ? over[i] : undefined, `${where}[${i}]`, out));
+    base.forEach((b, i) => {
+      missingAt(b, Array.isArray(over) ? over[i] : undefined, `${where}[${i}]`, out);
+    });
     return;
   }
   if (!isObj(base)) return;
@@ -122,7 +124,12 @@ const missingAt = (base: unknown, over: unknown, where: string, out: string[]) =
 /** 出す番号（at）が、その場面の台詞の数を超えていないか */
 const atOutOfRange = (scene: Scene, where: string, out: string[]) => {
   const walk = (v: unknown, path: string) => {
-    if (Array.isArray(v)) return v.forEach((x, i) => walk(x, `${path}[${i}]`));
+    if (Array.isArray(v)) {
+      v.forEach((x, i) => {
+        walk(x, `${path}[${i}]`);
+      });
+      return;
+    }
     if (!isObj(v)) return;
     for (const [k, x] of Object.entries(v)) {
       if (k === 'lines') continue;
@@ -220,7 +227,12 @@ export const untranslated = (course: Course, lang: TranslatedLang, base?: Course
       if (bad(v, ja)) out.push(`${path}: ${v.slice(0, 60)}`);
       return;
     }
-    if (Array.isArray(v)) return v.forEach((x, i) => walk(x, Array.isArray(ja) ? ja[i] : undefined, `${path}[${i}]`, key));
+    if (Array.isArray(v)) {
+      v.forEach((x, i) => {
+        walk(x, Array.isArray(ja) ? ja[i] : undefined, `${path}[${i}]`, key);
+      });
+      return;
+    }
     if (isObj(v)) for (const [k, x] of Object.entries(v)) walk(x, isObj(ja) ? ja[k] : undefined, `${path}.${k}`, k);
   };
   const { lectures, ...rest } = course;
