@@ -1,7 +1,8 @@
 // 組み立てたサイトを手元で配る部品（Bun.serve の fetch の中で使う）。手元で見る scripts/serve.ts と、ブラウザのテストのサーバー
 // （tests/browser-server.ts）が同じものを使う。本番の配り方に合わせる:
-//   静的なファイル: Workers の静的 assets と同じく、ディレクトリは index.html・/ の無いディレクトリは 301・無いページは 404.html を 404
-//                  （wrangler.jsonc の not_found_handling: 404-page）。型は拡張子の対応表（site/mime.ts の contentTypeOf）
+//   静的なファイル: Workers の静的 assets と同じく、ディレクトリは index.html・/ の無いディレクトリは 301・無いページは、そのパスから
+//                  いちばん近いフォルダの 404.html を 404（wrangler.jsonc の not_found_handling: 404-page。/en/ の下は en/404.html）。
+//                  型は拡張子の対応表（site/mime.ts の contentTypeOf）
 //   /media/: Worker と同じく、動画の一覧にあるものだけ・GET と HEAD だけ・Range と If-Range・?download=1 は attachment
 // python3 -m http.server は Range に答えないので、動画の途中へ飛べない（このファイルの bodyResponse が答える。Range の答え方は
 // SW と同じ site/lib/http-range.ts の rangeResponse）
@@ -53,7 +54,9 @@ export async function mediaResponse(req: Request, media: MediaFiles, extra: Serv
 export type StaticTarget =
   | { kind: 'file'; file: string; rel: string }
   | { kind: 'redirect'; location: string }
-  | { kind: 'missing' | 'forbidden' | 'bad' };
+  | { kind: 'missing'; rel?: string }
+  | { kind: 'forbidden' }
+  | { kind: 'bad' };
 
 /** root の下の、URL のパス（prefix を外した残り）のファイル。ディレクトリは index.html（/ が無ければ付けて移る） */
 export function findStatic(root: string, pathname: string, prefix = '/'): StaticTarget {
@@ -72,7 +75,7 @@ export function findStatic(root: string, pathname: string, prefix = '/'): Static
     file = path.join(file, 'index.html');
     rel = path.posix.join(rel, 'index.html');
   }
-  if (!existsSync(file) || !statSync(file).isFile()) return { kind: 'missing' };
+  if (!existsSync(file) || !statSync(file).isFile()) return { kind: 'missing', rel: rel.split(path.sep).join('/') };
   return { kind: 'file', file, rel: rel.split(path.sep).join('/') };
 }
 
@@ -84,11 +87,25 @@ export const fileResponse = (
   extra: ServeHeaders = {},
 ) => bodyResponse(req, body, { 'Content-Type': contentTypeOf(file) ?? 'application/octet-stream', ...extra });
 
-/** 静的なファイルを返す。無いものは、root の 404.html を 404 で返す（無ければ素の 404） */
+/** 静的なファイルを返す。無いものは、いちばん近いフォルダの 404.html を 404 で返す（無ければ素の 404） */
 export async function staticResponse(req: Request, root: string, prefix = '/', extra: ServeHeaders = {}): Promise<Response> {
   const target = findStatic(root, new URL(req.url).pathname, prefix);
   if (target.kind === 'file') return fileResponse(req, target.file, undefined, extra);
   return notFoundResponse(target, root, extra);
+}
+
+/**
+ * 無いパス（root からの場所）に返す 404.html。そのパスのフォルダ（/ で終わるならそのフォルダ）から上へたどり、最初にあるもの
+ * （Workers の静的 assets の not_found_handling: 404-page と同じ選び方）。無ければ null
+ */
+export function nearestNotFound(root: string, rel: string): string | null {
+  const parts = rel.split('/').filter(Boolean);
+  if (!rel.endsWith('/')) parts.pop();
+  for (let n = parts.length; n >= 0; n--) {
+    const page = path.join(root, ...parts.slice(0, n), '404.html');
+    if (existsSync(page) && statSync(page).isFile()) return page;
+  }
+  return null;
 }
 
 /** ファイルではなかったときの応答（301・400・403・404） */
@@ -100,8 +117,8 @@ export function notFoundResponse(
   if (target.kind === 'redirect') return Response.redirect(target.location, 301);
   if (target.kind === 'bad') return new Response('bad request', { status: 400 });
   if (target.kind === 'forbidden') return new Response('forbidden', { status: 403 });
-  const page = path.join(root, '404.html');
-  if (!existsSync(page)) return new Response('not found', { status: 404 });
+  const page = nearestNotFound(root, target.rel ?? '');
+  if (!page) return new Response('not found', { status: 404 });
   return new Response(Bun.file(page), {
     status: 404,
     headers: { 'Content-Type': 'text/html; charset=utf-8', ...extra },

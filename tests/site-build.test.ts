@@ -15,6 +15,7 @@ import { bundle } from '../scripts/pwa';
 import { type BuildSiteOptions, buildSite, disabledRevisionProblems } from '../scripts/site/build';
 import { heroSnippetOf } from '../scripts/site/config';
 import { scriptHash, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
+import { nearestNotFound, staticResponse } from '../scripts/site/serve-files';
 import { type MediaEntry, mediaFilename } from '../site/media-shared';
 import { resolveCourse } from '../content/lines';
 import SAMPLE from './fixtures/content/site-sample';
@@ -196,6 +197,102 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     expect(data.lectures[0].title).toBe('__TITLE__ {{sep}}');
     const home = readFileSync(path.join(outDir, 'index.html'), 'utf8');
     expect(home).toContain('<h3>見本 &#95;_DOCS_NOTE__ の講座</h3>');
+  });
+});
+
+describe('言語ごとの公開物（無いページ・Web App Manifest・sitemap・robots）と、JS が無くても読める講座のページ', () => {
+  /** 合成の講座の英語の版（訳の文字は日本語のまま。言語ごとに置き場所が分かれることだけを見る） */
+  const enCourse: Course = { ...SAMPLE_COURSE, lang: 'en' };
+  const buildBoth = async () => {
+    const dataDir = mkdtempSync(path.join(tmpdir(), 'chalkfile-site-data-'));
+    dirs.push(dataDir);
+    for (const id of ['Y01', 'Y02']) {
+      const data = readFileSync(path.join(FIXTURE, 'data', `${id}.json`));
+      writeFileSync(path.join(dataDir, `${id}.json`), data);
+      writeFileSync(path.join(dataDir, `${id}.en.json`), data);
+    }
+    const ja = sampleMedia(SAMPLE_COURSE).entries;
+    const en = ja.map((e) => {
+      const x = { ...e, lang: 'en', sha256: e.sha256.replace(/./g, (c) => String((Number(c) + 5) % 10)), tag: `media-en-${e.course}` };
+      return { ...x, filename: mediaFilename(x) };
+    });
+    return buildSample({
+      courses: { ja: [SAMPLE_COURSE], en: [enCourse], zh: [] },
+      langs: ['ja', 'en'],
+      dataDir,
+      mediaManifest: { schema: 1, entries: [...ja, ...en] },
+      posterOf: (_, key) => path.join(FIXTURE, 'posters', `${key.split('.')[0]}.jpg`),
+    });
+  };
+  test('無いページは言語ごと（en/404.html は英語で、英語の一覧へ戻る）。main の中に見出しと案内を置く', async () => {
+    const { outDir } = await buildBoth();
+    const ja = readFileSync(path.join(outDir, '404.html'), 'utf8');
+    const en = readFileSync(path.join(outDir, 'en/404.html'), 'utf8');
+    expect(ja).toContain('<html lang="ja">');
+    expect(ja).toContain('<title>教材が見つかりません｜Chalkfile</title>');
+    expect(ja).toContain('<main><h1>教材が見つかりません</h1>');
+    expect(ja).toContain('<a href="/">講座一覧へ</a>');
+    expect(en).toContain('<html lang="en">');
+    expect(en).toContain('<title>Page not found | Chalkfile</title>');
+    expect(en).toContain('<a href="/en/">Go to the course list</a>');
+  });
+  test('手元の配信も、本番と同じく、無いパスにいちばん近いフォルダの 404.html を返す', async () => {
+    const { outDir } = await buildBoth();
+    const page = async (p: string) => {
+      const r = await staticResponse(new Request(`http://127.0.0.1${p}`), outDir);
+      return { status: r.status, lang: /<html lang="([^"]+)"/.exec(await r.text())?.[1] };
+    };
+    expect(await page('/no-such-page/')).toEqual({ status: 404, lang: 'ja' });
+    expect(await page('/en/no-such-page')).toEqual({ status: 404, lang: 'en' });
+    expect(await page('/en/site-sample/no-such/x')).toEqual({ status: 404, lang: 'en' });
+    expect(await page('/site-sample/no-such')).toEqual({ status: 404, lang: 'ja' });
+    expect(nearestNotFound(outDir, 'zh/x')).toBe(path.join(outDir, '404.html'));
+  });
+  test('Web App Manifest は言語ごと。日本語のアプリの id・start_url・scope は前と同じで、アイコンは any と maskable を分ける', async () => {
+    const { outDir } = await buildBoth();
+    const ja = JSON.parse(readFileSync(path.join(outDir, 'manifest.webmanifest'), 'utf8'));
+    const en = JSON.parse(readFileSync(path.join(outDir, 'en/manifest.webmanifest'), 'utf8'));
+    expect([ja.id, ja.start_url, ja.scope, ja.lang]).toEqual(['./', './', './', 'ja']);
+    expect([en.id, en.start_url, en.scope, en.lang]).toEqual(['./', './', '../', 'en']);
+    for (const m of [ja, en]) {
+      expect((m.icons as { purpose: string }[]).map((i) => i.purpose)).toEqual(['any', 'any', 'maskable', 'maskable']);
+    }
+    expect(en.icons[0].src).toBe('../icons/icon-192.png');
+    expect(en.description).not.toBe(ja.description);
+    // ページは自分の言語の manifest を読む
+    expect(readFileSync(path.join(outDir, 'en/site-sample/index.html'), 'utf8')).toContain('href="../../en/manifest.webmanifest"');
+    expect(readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8')).toContain('href="../manifest.webmanifest"');
+  });
+  test('sitemap.xml は一覧のページと講座のページを、同じページのほかの言語と一緒に並べ、robots.txt が場所を指す', async () => {
+    const { outDir } = await buildBoth();
+    const sitemap = readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8');
+    const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    expect(locs).toEqual([
+      'https://chalkfile.com/',
+      'https://chalkfile.com/site-sample/',
+      'https://chalkfile.com/en/',
+      'https://chalkfile.com/en/site-sample/',
+    ]);
+    expect(sitemap).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://chalkfile.com/en/site-sample/"/>');
+    expect(sitemap).toContain('<xhtml:link rel="alternate" hreflang="x-default" href="https://chalkfile.com/site-sample/"/>');
+    expect(readFileSync(path.join(outDir, 'robots.txt'), 'utf8')).toBe(
+      'User-agent: *\nDisallow: /media/\nDisallow: /offline/\n\nSitemap: https://chalkfile.com/sitemap.xml\n',
+    );
+    // 出す言語が 1 つなら、ほかの言語の行を書かない
+    const { outDir: one } = await buildSample();
+    expect(readFileSync(path.join(one, 'sitemap.xml'), 'utf8')).not.toContain('xhtml');
+  });
+  test('JS が無くても、最初のレクチャーの要約・要点・チャプターと、カリキュラム・本数と長さ・クレジットを読める', async () => {
+    const { outDir } = await buildSample();
+    const page = readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8');
+    const first = SAMPLE_COURSE.lectures[0];
+    expect(page).toContain(`<h2 id="nowTitle">${first.title}</h2>`);
+    expect(page).toContain(`<p id="summary">${first.summary}</p>`);
+    for (const t of first.takeaways) expect(page).toContain(`<li><span>${t}</span></li>`);
+    expect(page).toMatch(/<ol class="chapters" id="chapters"><li><button type="button" data-t="0" data-k="0"><span class="t">00:00<\/span>/);
+    for (const l of SAMPLE_COURSE.lectures) expect(page).toContain(`<span class="ttl">${l.title}</span>`);
+    expect(page).toMatch(/<span class="sum" id="curSum">2 レクチャー・\d+ 分<\/span>/);
+    expect(page).toMatch(/<div id="credits">ナレーション VOICEVOX:No\.7/);
   });
 });
 

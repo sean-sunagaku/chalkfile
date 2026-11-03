@@ -436,10 +436,10 @@ main:focus { outline: none; }
   <div class="intro">
     <div class="intro-text">
       <h1>__HEADLINE__</h1>
-      <span class="meta" id="courseMeta"></span>
-      <span class="note" id="courseNote" hidden></span>
+      <span class="meta" id="courseMeta">__COURSE_META__</span>
+      __COURSE_NOTE__
     </div>
-    <span class="links" id="links" hidden></span>
+    __LINKS__
   </div>
 
   __OFFLINE_PANEL__
@@ -468,8 +468,8 @@ main:focus { outline: none; }
       <p id="playbackStatus" role="status">{{preparing}}</p>
       <div class="now">
         <div class="now-title">
-          <div class="eyebrow" id="nowEyebrow">LECTURE 01</div>
-          <h2 id="nowTitle"></h2>
+          <div class="eyebrow" id="nowEyebrow">__NOW_EYEBROW__</div>
+          <h2 id="nowTitle">__NOW_TITLE__</h2>
         </div>
         <div class="now-actions">
           <button class="btn" id="loopToggle" type="button" aria-pressed="false">{{loop}}</button>
@@ -502,23 +502,23 @@ main:focus { outline: none; }
         <button role="tab" type="button" id="tab-material" aria-controls="p-material" aria-selected="false" hidden>{{tabMaterial}}</button>
         <button role="tab" type="button" id="tab-transcript" aria-controls="p-transcript" aria-selected="false">{{tabTranscript}}</button>
         <button role="tab" type="button" id="tab-notes" aria-controls="p-notes" aria-selected="false">{{tabNotes}}</button>
-        <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">{{tabDocs}}</button>
+        <button role="tab" type="button" id="tab-docs" aria-controls="p-docs" aria-selected="false">__TAB_DOCS__</button>
         <button role="tab" type="button" id="tab-quiz" aria-controls="p-quiz" aria-selected="false">{{tabQuiz}}</button>
         <button role="tab" type="button" id="tab-exercise" aria-controls="p-exercise" aria-selected="false" hidden>{{tabExercise}}</button>
         <button role="tab" type="button" id="tab-ask" aria-controls="p-ask" aria-selected="false" hidden>{{tabAsk}}</button>
       </div>
 
       <div class="panel" id="p-overview" role="tabpanel" tabindex="0" aria-labelledby="tab-overview">
-        <p id="summary"></p>
-        <p class="caution" id="caution" hidden></p>
+        <p id="summary">__SUMMARY__</p>
+        __CAUTION__
         <div class="two">
           <div class="box">
-            <h3 id="takeawaysTitle">{{takeaways}}</h3>
-            <ul class="takeaways" id="takeaways"></ul>
+            <h3 id="takeawaysTitle">__TAKEAWAYS_TITLE__</h3>
+            <ul class="takeaways" id="takeaways">__TAKEAWAYS__</ul>
           </div>
           <div class="box">
             <h3>{{chapters}}</h3>
-            <ol class="chapters" id="chapters"></ol>
+            <ol class="chapters" id="chapters">__CHAPTERS__</ol>
           </div>
         </div>
       </div>
@@ -549,7 +549,7 @@ main:focus { outline: none; }
         <div class="tools">
           <label class="search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-            <input id="q" type="search" placeholder="{{searchPh}}" autocomplete="off">
+            <input id="q" type="search" placeholder="__SEARCH_PH__" autocomplete="off">
           </label>
           <label class="check"><input id="follow" type="checkbox" checked> {{follow}}</label>
         </div>
@@ -588,16 +588,16 @@ main:focus { outline: none; }
     <nav class="curriculum" aria-label="{{curriculum}}">
       <div class="cur-head">
         <h2>{{curriculum}}</h2>
-        <span class="sum" id="curSum"></span>
+        <span class="sum" id="curSum">__CUR_SUM__</span>
       </div>
-      <div id="sections"></div>
+      <div id="sections">__SECTIONS__</div>
     </nav>
   </div>
   </main>
 
   <footer class="foot">
     <div>{{scLabel}} <span class="kbd">Space</span> {{scPlay}}{{sep}}<span class="kbd">←</span><span class="kbd">→</span> {{sc5}}{{sep}}<span class="kbd">J</span><span class="kbd">L</span> {{sc10}}{{sep}}<span class="kbd">C</span> {{scCc}}{{sep}}<span class="kbd">F</span> {{scFull}}{{sep}}<span class="kbd">N</span> {{scNext}}</div>
-    <div id="credits"></div>
+    <div id="credits">__CREDITS__</div>
     <div>{{footNote}}</div>
   </footer>
 </div>

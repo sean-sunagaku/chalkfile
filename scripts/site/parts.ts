@@ -111,7 +111,7 @@ export const appParts = (
   root: string,
   course?: { id: string; title: string; pageVersion: string },
 ): AppParts => ({
-  head: html`<link rel="manifest" href="${root}manifest.webmanifest"><link rel="apple-touch-icon" href="${root}icons/icon-180.png"><meta name="theme-color" content="${cssColor(ctx.themeColor)}"><meta name="apple-mobile-web-app-capable" content="yes">`,
+  head: html`<link rel="manifest" href="${root}${LANG_INFO[lang].path}manifest.webmanifest"><link rel="apple-touch-icon" href="${root}icons/icon-180.png"><meta name="theme-color" content="${cssColor(ctx.themeColor)}"><meta name="apple-mobile-web-app-capable" content="yes">`,
   panel: raw(
     fillTemplate(
       ctx.offlinePanel,

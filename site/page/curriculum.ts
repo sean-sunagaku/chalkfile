@@ -3,6 +3,7 @@ import type { Page } from './context';
 import { byId, closest, h, put, svg } from './dom';
 import { clock } from './format';
 import type { Progress } from './storage';
+import { courseCounts } from './summary';
 
 /** 見た割合の輪（完了は丸に印） */
 const ring = (page: Page, p: Progress | undefined, i: number) => {
@@ -50,28 +51,22 @@ const ring = (page: Page, p: Progress | undefined, i: number) => {
 
 /** カリキュラムを用意する。onPick は、レクチャーを選んだとき（その番号） */
 export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
-  const { T, tt, tn, lectures } = page;
+  const { T, tt, lectures } = page;
   const course = page.data.course;
   const progress = page.learning.progress;
-  /** 本数（講座の呼び名が CHAPTER なら章の数。数で形の変わる言語は tn が選ぶ） */
-  const count = (n: number) => tn(course.unitLabel === 'CHAPTER' ? 'chapterCount' : 'lectureCount', n);
 
   /** 上の帯の完了の数と棒・見出しの下と右の欄の、本数と長さ */
   const renderCourseProgress = () => {
     const done = lectures.filter((l) => progress[l.id]?.done).length;
     byId('cpBar').style.width = `${(done / lectures.length) * 100}%`;
     byId('cpLabel').textContent = tt('cpLabel', { done, total: lectures.length });
-    const total = lectures.reduce((a, l) => a + l.duration, 0);
-    const all = lectures.length + course.planned.length;
-    const plan = course.planned.length ? tt('planned', { count: count(all) }) : '';
-    const min = Math.round(total / 60);
-    byId('curSum').textContent = tt('curSum', { count: count(lectures.length), min, plan });
-    byId('courseMeta').textContent = tt('courseMeta', {
-      sections: tn('sectionCount', course.sections.length),
-      count: count(lectures.length),
-      min,
-      plan,
-    });
+    const counts = courseCounts(
+      page,
+      course,
+      lectures.map((l) => l.duration),
+    );
+    byId('curSum').textContent = counts.curSum;
+    byId('courseMeta').textContent = counts.courseMeta;
   };
 
   const box = byId('sections');

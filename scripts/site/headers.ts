@@ -1,4 +1,5 @@
-// Workers の静的 assets に置く、ページのほかのファイル: 応答のヘッダー（_headers）・送らないファイル（.assetsignore）・404 のページ
+// Workers の静的 assets に置く、ページのほかのファイル: 応答のヘッダー（_headers）・送らないファイル（.assetsignore）。
+// 言語ごとの 404 のページは scripts/site/render-not-found.ts
 import { rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -101,14 +102,9 @@ export const headersFor = (
 /** MP4 とローカルの設定（. で始まるファイル）は、静的 assets に送らない */
 export const ASSETS_IGNORE = '**/*.mp4\n.*\n';
 
-/** 無いページの 404（wrangler.jsonc の not_found_handling: 404-page）。__CSP__ は呼ぶ側が CSP に、{{key}} は site/i18n の notFound にする */
-export const NOT_FOUND_HTML =
-  '<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>{{title}}</title></head><body><h1>{{heading}}</h1><p><a href="/">{{link}}</a></p></body></html>';
-
-/** ヘッダー・送らないファイル・404 のページを書く。notFound は CSP を付けた 404 のページ */
-export const writeServingFiles = (dist: string, notFound: string) => {
+/** ヘッダーと送らないファイルを書く */
+export const writeServingFiles = (dist: string) => {
   writeFileSync(path.join(dist, '.assetsignore'), ASSETS_IGNORE);
   rmSync(path.join(dist, '_redirects'), { force: true });
   writeFileSync(path.join(dist, '_headers'), HEADERS);
-  writeFileSync(path.join(dist, '404.html'), notFound);
 };

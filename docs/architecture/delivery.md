@@ -15,7 +15,7 @@
 
 ## 入口の振り分け
 
-- `run_worker_first` に合わないパスには、合う静的なファイルに当たらなくても assets が答え（`404.html` を 404 で返す。GET と HEAD のほかは 405）、Worker を呼ばない。Worker の入口に受け口を足しても、`run_worker_first` に入れるまで本番の要求は届かない
+- `run_worker_first` に合わないパスには、合う静的なファイルに当たらなくても assets が答え（そのパスからいちばん近いフォルダの `404.html` を 404 で返す。無いページは言語ごとで、`/en/` の下は `en/404.html`。GET と HEAD のほかは 405）、Worker を呼ばない。Worker の入口に受け口を足しても、`run_worker_first` に入れるまで本番の要求は届かない
 - Worker の入口（`worker/src/app.ts`）は、パスの頭で受け口を選ぶ小さなルーター。どれにも合わなければ assets に渡す。形と、`run_worker_first` を広げる時期は [ADR](../adr/2026-11-03-worker-api-shape.md)
 
 | パスの頭 | 受け口 |
@@ -41,7 +41,8 @@
 - Workers の静的 assets は、パスに当たる規則を上から順に重ね、同じヘッダーを 2 つの規則が付けると値をカンマでつなぐ（[_headers の仕様](https://developers.cloudflare.com/workers/static-assets/headers/)。2026-11-03 に確かめた）。上書きする規則は、先に `! 名前` で外す。組み立ての最後（`scripts/site-invariants.ts`）が、どの静的な応答にも `no-transform` が付き、値がつながっていないことを確かめ、smoke（`scripts/smoke_worker.ts`）が `/` と `/sw.js` の実際のヘッダーを規則と照らす
 - 規則はパスでしか当たらない（query を見ない）。`?v=` の付いたポスターは、同じパスを一覧のページの縮小画像・og:image・SW の起動用ファイルが `?v=` 無しで読むので、ほかの静的な応答と同じ `Cache-Control` にする（長くキャッシュさせると、描き直したあとも一覧のページの縮小画像が古いまま残る）。中身のハッシュが名前に入る動画（`/media/`）は、Worker が `immutable` を付ける
 - HSTS（`Strict-Transport-Security`）は、ゾーンの設定（Cloudflare の HSTS の設定と、ほかのサブドメイン）を持ち主が確かめてから決める
-- www も、同じ Worker の Custom Domain で持つ。HTML は assets で返し、その頭の CSP のハッシュつきの `location.replace` で、同じ path・query・hash の apex へ移す。HTML の最初の HTTP の状態は 200（知らないパスは 404）。`www` の `/media/` は Worker が 301 を返す。この形なら、ふつうの静的な要求で Worker を呼ばず、zone の Redirect Rule の権限も CI に渡さずに済む
+- 検索のための `sitemap.xml`（出す言語の一覧のページと講座のページ。同じページのほかの言語も書く）と `robots.txt` は、組み立てが最上位に置く（`scripts/site/seo.ts`）。robots は、動画（`/media/`。Worker の枠を使う）と、通信できないときに SW が出すページ（`offline/`）を取りに来させない
+- www も、同じ Worker の Custom Domain で持つ。HTML は assets で返し、その頭の CSP のハッシュつきの `location.replace` で、同じ path・query・hash の apex へ移す。HTML の最初の HTTP の状態は 200（知らないパスは 404）。`www` の `/media/` は Worker が 301 を返す。この形なら、ふつうの静的な要求で Worker を呼ばず、zone の Redirect Rule の権限も CI に渡さずに済む（ダッシュボードの規則で 301 にするのは任意。理由は [ADR](../adr/2026-11-04-www-redirect-in-page.md)）
 
 ## 公開に要るもの
 

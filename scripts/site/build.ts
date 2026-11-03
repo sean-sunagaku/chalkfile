@@ -1,6 +1,6 @@
 // 講座サイトを組み立てる本体（buildSite）。本物の講座は scripts/build_site.ts（CLI）が渡し、テストは合成の講座を渡す。
 // 順番: 安全のための確かめ → 講座のページ（データ → 描く → CSP → 版 → 保存の manifest → 書く）→ 一覧のページ → 画像 → PWA（アイコン・
-// manifest・オフラインの案内・sw.js）→ ヘッダーと 404 → 公開物の決まりの確かめ（scripts/site-invariants.ts）
+// 言語ごとの manifest・オフラインの案内・sw.js）→ ヘッダー・sitemap.xml と robots.txt・言語ごとの 404 → 公開物の決まりの確かめ（scripts/site-invariants.ts）
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { HeroSnippet } from '../../content/course-module';
@@ -10,7 +10,6 @@ import type { Course } from '../../content/types';
 import { posterFile } from '../../engine/core/generated';
 import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
 import { courseText, homeText, LOCALES } from '../../site/i18n';
-import { fill } from '../../site/lib/text';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
 import { mimeOf } from '../../site/mime';
 import { SITE_NEWS, type SiteNews } from '../../site/news';
@@ -21,15 +20,16 @@ import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version'
 import { readSiteConfig, type SiteConfig, siteProblems } from '../validate';
 import { copyAssets, thumbnailAssets } from './assets';
 import { ROOT, realPosterOf, SITE_DIR, siteBase } from './config';
-import { cspHead, WWW_REDIRECT_SCRIPT } from './csp';
+import { WWW_REDIRECT_SCRIPT } from './csp';
 import { cleanOutput, listOutput, writeCourse } from './emit';
-import { NOT_FOUND_HTML, writeServingFiles } from './headers';
-import { fillTemplate } from './html';
+import { writeServingFiles } from './headers';
 import { newsFor, newsProblems } from './news';
 import { courseJson, homeCredits, lectureModels, minutesOf, type ReadData, type SiteData } from './model';
 import { courseManifest, type PosterFile, pageFiles } from './offline-manifest';
 import { type AppContext, appParts, textOf } from './parts';
 import { renderCoursePage } from './render-course';
+import { notFoundFile, renderNotFound } from './render-not-found';
+import { robotsTxt, type SitemapPage, sitemapXml } from './seo';
 import { homePosterOf, renderHomePage } from './render-home';
 
 /** 組み立ての入力 */
@@ -256,13 +256,27 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
   const disabledProblems = disabledRevisionProblems(disabledRevisions, published);
   if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
-  await buildPwa(SITE_DIR, dist, brand, saveable, shell, disabledRevisions);
-  const notFound = textOf(LOCALES.ja.notFound);
-  const notFoundText = (key: string) => {
-    const value = notFound(key);
-    return value === undefined ? undefined : fill(value, { series: config.series });
-  };
-  writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) }, text: notFoundText }, '404.html'));
+  await buildPwa(SITE_DIR, dist, { brand, courses: saveable, shell, langs, series: config.series, disabledRevisions });
+  writeServingFiles(dist);
+  // 検索のための sitemap.xml と robots.txt（出す言語の一覧のページと講座のページ。講座を指定して組み立てても、全部の講座を並べる）
+  const sitemap: SitemapPage[] = langs.flatMap((lang) => [
+    { url: `${base}${LANG_INFO[lang].path}`, alternates: langs.map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}` })) },
+    ...coursesIn(lang).map((c) => ({
+      url: `${base}${LANG_INFO[lang].path}${c.id}/`,
+      alternates: langs
+        .filter((l) => coursesIn(l).some((x) => x.id === c.id))
+        .map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}${c.id}/` })),
+    })),
+  ]);
+  writeFileSync(path.join(dist, 'sitemap.xml'), sitemapXml(sitemap));
+  writeFileSync(path.join(dist, 'robots.txt'), robotsTxt(base));
+  // 無いページは言語ごと（Workers の静的 assets は、いちばん近いフォルダの 404.html を返す）
+  const notFound = readFileSync(path.join(SITE_DIR, 'not-found.html'), 'utf8');
+  for (const lang of langs) {
+    const file = path.join(dist, notFoundFile(lang));
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, renderNotFound({ template: notFound, lang, series: config.series, basePath: new URL(base).pathname }));
+  }
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
   // ページで動く script は、信頼できる 3 本（www の移動・講座のページの画面・offline-client）のどれかでなければ止める

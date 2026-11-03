@@ -10,7 +10,7 @@ import { type Page, lectureOf } from './page/context';
 import { createCurriculum } from './page/curriculum';
 import type { CourseData } from './page/data';
 import { byId, h, put, svg } from './page/dom';
-import { findCue, pad2, safeUrl } from './page/format';
+import { findCue, safeUrl } from './page/format';
 import { bindKeyboard } from './page/keyboard';
 import { createMaterial } from './page/material';
 import { createNotes } from './page/notes';
@@ -18,6 +18,7 @@ import { createOverview } from './page/overview';
 import { createPlayer } from './page/player';
 import { createQuiz } from './page/quiz';
 import { openStore, pageStorage, storagePrefix } from './page/storage';
+import { eyebrowOf } from './page/summary';
 import { createTabs } from './page/tabs';
 import { createTranscript } from './page/transcript';
 
@@ -67,7 +68,7 @@ function load(i: number, autoplay: boolean) {
   transcript.reset();
   const p = progress[lec.id];
   player.open(lec, p && !p.done ? p.t : 0, autoplay);
-  byId('nowEyebrow').textContent = `${unit} ${pad2(lec.no)}${T.sep}SECTION ${lec.section.no} ${lec.section.title}`;
+  byId('nowEyebrow').textContent = eyebrowOf(T.sep, unit, lec);
   byId('nowTitle').textContent = lec.title;
   overview.render(lec);
   transcript.render();

@@ -112,7 +112,7 @@ describe('使われていないキー', () => {
     panel: ['site/offline-panel.html'],
     client: ['site/offline-client.ts', 'site/offline-panel.html'],
     offlinePage: ['site/offline.html'],
-    notFound: ['scripts/site/headers.ts'],
+    notFound: ['site/not-found.html', 'scripts/site/render-not-found.ts'],
     app: ['scripts/pwa.ts'],
     sw: ['site/sw.ts'],
   };

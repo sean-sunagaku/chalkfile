@@ -107,7 +107,11 @@ test('オンライン再生、単体ファイル保存、学習UI、PWA情報と
   const appManifest = await cdp.send('Page.getAppManifest');
   expect(appManifest.errors).toEqual([]);
   const data = JSON.parse(appManifest.data!);
-  expect(data.scope).toBe('./'); expect(data.start_url).toBe('./'); expect(data.icons).toHaveLength(2);
+  expect(data.scope).toBe('./'); expect(data.start_url).toBe('./'); expect(data.lang).toBe('ja');
+  // ふつうのアイコンと、形を切り抜くアイコン（maskable）は別の画像
+  expect((data.icons as { src: string; purpose: string }[]).map((i) => `${i.purpose} ${i.src}`)).toEqual([
+    'any icons/icon-192.png', 'any icons/icon-512.png', 'maskable icons/maskable-192.png', 'maskable icons/maskable-512.png',
+  ]);
   const installability = await cdp.send('Page.getInstallabilityErrors');
   // 通常のテストcontextはシークレット。アプリ自体の不備が無いことを分けて確認する。
   expect(installability.installabilityErrors.map((e) => e.errorId)).toEqual(['in-incognito']);

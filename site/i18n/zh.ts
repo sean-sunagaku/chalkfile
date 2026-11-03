@@ -252,10 +252,11 @@ export const zh = defineLocale<typeof ja>()({
     body: '当前无法联网。已保存的课程可以从课程一览打开。新的课程请在联网时打开，并选择“将本课程保存到应用内”。',
     link: '前往 Chalkfile 的课程一览和保存状态',
   },
-  /** 無いページ（404.html。{series} は site/config.json の series） */
+  /** 無いページ（言語ごとの 404.html。site/not-found.html。{series} は site/config.json の series） */
   notFound: {
     title: '找不到页面｜{series}',
     heading: '找不到页面',
+    body: '网址可能已变更，或该页面已停止发布。请从课程一览中查找。',
     link: '前往课程一览',
   },
   /** インストールしたアプリの説明（manifest.webmanifest） */

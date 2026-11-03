@@ -18,6 +18,8 @@ export const MIME: Readonly<Record<string, string>> = {
   '.webp': 'image/webp',
   '.mp4': 'video/mp4',
   '.vtt': 'text/vtt',
+  '.xml': 'application/xml',
+  '.txt': 'text/plain',
 };
 
 /** ファイルの名前か URL のパスの拡張子（小文字。. から）。無ければ '' */
