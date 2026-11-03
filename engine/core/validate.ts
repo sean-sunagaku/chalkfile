@@ -1,0 +1,526 @@
+// 台本の検証。描く前・声を作る前に、台本の誤りを見つける（React・Remotion・Node に依存しない純粋な関数）。
+//   validateCourse(course)            講座 1 つ（講座の項目と、全部の動画）
+//   validateLecture(lecture, course)  動画 1 本（訳の動画は、訳を重ねたあとのレクチャーと訳の講座を渡す）
+//   validateTimeline(lecture, course, timeline)  synth が書いた timeline が台本の形と合うか
+//   validateTheme(theme)              テーマの色の形と数
+// 呼ぶ場所: bun scripts/validate.ts（全講座・全言語）・scripts/synth.ts の最初（対象の動画だけ）・src/Root.tsx（Studio はその動画だけを止める）
+// 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
+//   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い
+//   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い
+// いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から読む
+import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
+import { THEMES } from '../../content/themes';
+import type { Course, Evidence, Lecture, Line, Scene, SfxId, Theme, Tone, VoiceId } from '../../content/types';
+import { VIDEO_TEXT } from '../../src/i18n';
+
+export type Level = 'error' | 'warning';
+
+/** 誤りと注意の種類（一覧の内訳と、テストで何が見つかったかを見分けるのに使う） */
+export const RULES = {
+  scenes: '場面の並び',
+  kind: '場面の種類',
+  lines: '台詞',
+  at: '台詞の番号（at）',
+  key: 'key の抜けと重なり',
+  ref: '矢印・focus の行き先',
+  empty: '中身が空',
+  table: '表の幅とセル',
+  'code-marks': 'コードの光らせる行',
+  'mock-notes': '画面の図の注',
+  quiz: 'クイズ',
+  'quiz-no': 'クイズの番号',
+  theme: 'テーマ',
+  sfx: '効果音',
+  voice: '声',
+  tone: '色の名前',
+  evidence: '根拠の札',
+  hold: '場面の後の間',
+  section: 'セクション',
+  'ending-next': 'エンディングの次の動画',
+  syllabus: 'syllabus と動画',
+  'lecture-no': '動画の番号',
+  timeline: 'timeline と台本',
+  'caption-lines': '焼き込み字幕の行数（見込み）',
+  'heading-width': '見出しの幅（見込み）',
+  style: 'style.md の目安（表・コードの大きさ）',
+  emphasis: '強調の **',
+} as const;
+export type Rule = keyof typeof RULES;
+
+export type Issue = { where: string; message: string; level: Level; rule: Rule };
+
+/* ───────────── 名前の一覧（型と同じものを、実行時に確かめる用に持つ。足し忘れると型で止まる） ───────────── */
+
+const SCENE_KIND_SET: Record<Scene['kind'], true> = {
+  opening: true,
+  goals: true,
+  points: true,
+  concepts: true,
+  sequence: true,
+  flow: true,
+  states: true,
+  code: true,
+  table: true,
+  compare: true,
+  big: true,
+  numbers: true,
+  timeline: true,
+  quiz: true,
+  recap: true,
+  refs: true,
+  phone: true,
+  screens: true,
+  terminal: true,
+  ending: true,
+};
+/** 場面の種類（20 種類） */
+export const SCENE_KINDS = Object.keys(SCENE_KIND_SET) as Scene['kind'][];
+
+/** 効果音（scripts/mix.py の SFX_DB と public/audio/sfx/<名前>.wav） */
+const SFX_SET: Record<SfxId, true> = { pop: true, whoosh: true, chime: true, tick: true, reveal: true, correct: true, type: true, harisen: true, chin: true, drumroll: true, deden: true, zuko: true };
+export const SFX_IDS = Object.keys(SFX_SET) as SfxId[];
+
+/** 声（scripts/voices.ts の VOICES と KOKORO） */
+const VOICE_SET: Record<VoiceId, true> = { narrator: true, announcer: true, zundamon: true, 'zundamon-cry': true, tsukkomi: true, tennokoe: true };
+export const VOICE_IDS = Object.keys(VOICE_SET) as VoiceId[];
+
+const TONE_SET: Record<Tone, true> = { pink: true, violet: true, cyan: true, mint: true, amber: true, coral: true, slate: true };
+const EVIDENCE_SET: Record<Evidence, true> = { research: true, official: true, practice: true, example: true };
+
+const has = <K extends string>(set: Record<K, true>, v: unknown): v is K => typeof v === 'string' && Object.hasOwn(set, v);
+const names = (set: Record<string, true>) => Object.keys(set).join('・');
+
+/* ───────────── 画面の大きさの見込み ─────────────
+ * src/ の値を写したもの（T3A-07 で 1 か所にまとめ、T3A-14 で実際に測る形に変える）。文字の幅は見積もりなので、注意にとどめる。
+ * 半角の英数字と記号は平均 0.5em、ほか（かな・漢字・全角の記号）は 1em と見る。2026-11-02 に、字幕つきの静止画 22 枚（日本語・英語・中国語）と
+ * 見出し 4 枚を書き出して、行数と幅がこの見込みと合うことを確かめた（Zen Maru Gothic の英字は約 0.44em、Inter はもう少し広い）
+ */
+const LAYOUT = {
+  /** 焼き込み字幕（src/Lecture.tsx の Captions）: 38px・字間 1px・左右の余白 120px（使える幅 1680px）・帯に入るのは 2 行まで。名前札は 28px で左右に 20px ずつ・札と文の間 22px */
+  caption: { size: 38, spacing: 1, width: 1920 - 120 * 2, lines: 2, nameSize: 28, namePad: 40, gap: 22 },
+  /** 場面の見出し（src/components/chrome.tsx の Header）: 60px・字間 1px・折り返さない。内容の幅は 1920 − 左右の 96px。根拠の札（22px・字間 1px）は、札の余白とアイコンで 64px・見出しとの間 28px */
+  heading: { size: 60, spacing: 1, width: 1920 - 96 * 2, chipSize: 22, chipSpacing: 1, chipPad: 64, gap: 28 },
+};
+
+/** 文字の幅の見込み（px）。半角の英数字と記号は 0.5em、ほか（かな・漢字・全角の記号）は 1em。字間は 1 字ごとに足す */
+export const estimateWidth = (text: string, size: number, spacing = 0): number =>
+  [...text].reduce((w, ch) => w + (/[\x20-\x7E]/.test(ch) ? 0.5 : 1) * size + spacing, 0);
+
+/** 焼き込み字幕の、文字の幅の見込みと、1 行に使える幅（px）。name は掛け合いの名前札（講座の cast） */
+const captionFit = (text: string, name?: string) => {
+  const c = LAYOUT.caption;
+  const tag = name ? estimateWidth(name, c.nameSize) + c.namePad + c.gap : 0;
+  return { width: estimateWidth(text, c.size, c.spacing), line: c.width - tag };
+};
+
+/** 焼き込み字幕の行数の見込み */
+export const captionLines = (text: string, name?: string): number => {
+  const { width, line } = captionFit(text, name);
+  return Math.ceil(width / line);
+};
+
+/* ───────────── 小さな道具 ───────────── */
+
+const push = (out: Issue[], level: Level, rule: Rule, where: string, message: string): void => {
+  out.push({ where, message, level, rule });
+};
+const list = <T>(x: T[] | undefined | null): T[] => (Array.isArray(x) ? x : []);
+const isInt = (x: unknown): x is number => typeof x === 'number' && Number.isInteger(x);
+const count = (s: string, sub: string) => s.split(sub).length - 1;
+
+/** 動画の場所（講座/動画。訳の動画は S01.en） */
+export const videoWhere = (lecture: Lecture, course: Course) => `${course.id}/${videoKey(lecture.id, course.lang ?? 'ja')}`;
+const courseWhere = (course: Course) => (course.lang && course.lang !== 'ja' ? `${course.id}（${course.lang}）` : course.id);
+
+type Leaf = (key: string, value: unknown, path: string) => void;
+/** 値を末端までたどる。配列の中の値は、配列の項目の名前で呼ぶ（cells[1] の key は cells） */
+const walk = (v: unknown, path: string, key: string, leaf: Leaf): void => {
+  if (Array.isArray(v)) { v.forEach((x, i) => { walk(x, `${path}[${i}]`, key, leaf); }); return; }
+  if (v && typeof v === 'object') {
+    for (const [k, x] of Object.entries(v)) walk(x, path ? `${path}.${k}` : k, k, leaf);
+    return;
+  }
+  leaf(key, v, path);
+};
+
+/** key の一覧を作る。抜けと重なりは誤り（矢印と focus が、どれを指すか決まらない） */
+const keysOf = (items: { key?: unknown }[], where: string, out: Issue[]): Set<string> => {
+  const seen = new Set<string>();
+  items.forEach((it, i) => {
+    const k = it?.key;
+    if (typeof k !== 'string' || !k) { push(out, 'error', 'key', `${where}[${i}].key`, 'key が無い'); return; }
+    if (seen.has(k)) push(out, 'error', 'key', `${where}[${i}].key`, `key「${k}」が重なっている（矢印と focus が、どれを指すか決まらない）`);
+    seen.add(k);
+  });
+  return seen;
+};
+
+/** 行き先の key が一覧にあるか */
+const refTo = (keys: Set<string>, k: unknown, what: string, effect: string, where: string, out: Issue[]) => {
+  if (typeof k === 'string' && keys.has(k)) return;
+  push(out, 'error', 'ref', where, `${what}「${String(k)}」が無い（あるのは ${[...keys].join('・') || 'なし'}）。${effect}`);
+};
+
+/** 中身の一覧が空でないか */
+const notEmpty = (x: unknown[] | undefined, what: string, where: string, out: Issue[]) => {
+  if (!list(x).length) push(out, 'error', 'empty', where, `${what}が無い（画面に何も出ない）`);
+};
+
+/* ───────────── 場面 ───────────── */
+
+/** ** を強調として描く項目（src/components/ui.tsx の Rich で描く）。ほかの項目の ** は、そのまま文字として出る */
+const richField = (s: Scene, path: string) => (s.kind === 'big' && path === 'text') || (s.kind === 'screens' && /^(left|right)\.notes\[\d+\]\.text$/.test(path));
+/** 文字として描かない項目（コード・端末・読み上げ・URL）。** を見ない */
+const LITERAL = new Set(['code', 'cmd', 'out', 'url', 'file', 's']);
+
+const checkEmphasis = (text: string, rich: boolean, where: string, out: Issue[]) => {
+  const n = count(text, '**');
+  if (!n) return;
+  if (!rich) push(out, 'warning', 'emphasis', where, 'この項目の ** は強調にならず、そのまま文字で出る（強調できるのは big の text と画面の図の注だけ）');
+  else if (n % 2) push(out, 'warning', 'emphasis', where, `強調の ** が閉じていない（${n} 個）`);
+};
+
+const checkLine = (line: Line, k: number, sw: string, course: Course, out: Issue[]) => {
+  const w = `${sw} lines[${k}]`;
+  if (typeof line?.t !== 'string' || !line.t.trim()) push(out, 'error', 'lines', `${w}.t`, '台詞が空（字幕も声も作れない）');
+  if (line?.v !== undefined && !has(VOICE_SET, line.v)) push(out, 'error', 'voice', `${w}.v`, `声「${String(line.v)}」が無い（あるのは ${names(VOICE_SET)}）`);
+  for (const key of ['sfx', 'sfxAfter'] as const) {
+    if (line?.[key] !== undefined && !has(SFX_SET, line[key])) push(out, 'error', 'sfx', `${w}.${key}`, `効果音「${String(line[key])}」が無い（あるのは ${names(SFX_SET)}）`);
+  }
+  if (line?.bgm !== undefined && line.bgm !== 'cut' && line.bgm !== 'back') push(out, 'error', 'lines', `${w}.bgm`, `bgm は cut か back（書いたのは ${String(line.bgm)}）`);
+  if (typeof line?.t !== 'string') return;
+  checkEmphasis(line.t, false, `${w}.t`, out);
+  const name = course.cast?.[line.v ?? 'narrator']?.name;
+  const { width, line: room } = captionFit(line.t, name);
+  const n = Math.ceil(width / room);
+  if (n > LAYOUT.caption.lines) {
+    push(out, 'warning', 'caption-lines', `${w}.t`, `焼き込み字幕が ${n} 行になる見込み（文字の幅は約 ${Math.round(width)}px、帯の 2 行に入るのは約 ${Math.round(room * 2)}px まで）。台詞を短くするか、2 つに分ける`);
+  }
+};
+
+const checkHeading = (s: Scene, sw: string, course: Course, lang: Lang, out: Issue[]) => {
+  if (!s.heading || s.kind === 'opening' || s.kind === 'ending') return;
+  const h = LAYOUT.heading;
+  const chip = s.evidence && has(EVIDENCE_SET, s.evidence) && !course.standalone ? h.chipPad + estimateWidth(VIDEO_TEXT[lang].evidence[s.evidence], h.chipSize, h.chipSpacing) + h.gap : 0;
+  const width = estimateWidth(s.heading, h.size, h.spacing);
+  if (width > h.width - chip) {
+    push(out, 'warning', 'heading-width', `${sw} heading`, `見出しが 1 行に入らない見込み（約 ${Math.round(width)}px・使える幅 ${Math.round(h.width - chip)}px${chip ? '。根拠の札のぶんを引いた幅' : ''}）。短くする`);
+  }
+};
+
+/** 場面の種類ごとの中身（参照の行き先・範囲・数） */
+const checkBody = (s: Scene, sw: string, out: Issue[]) => {
+  const w = (path: string) => `${sw} ${s.kind}.${path}`;
+  switch (s.kind) {
+    case 'opening':
+      if (!s.title?.trim()) push(out, 'error', 'empty', w('title'), '題が無い');
+      return;
+    case 'goals':
+    case 'points':
+    case 'recap':
+      return notEmpty(s.items, '項目（items）', w('items'), out);
+    case 'concepts': {
+      notEmpty(s.cards, 'カード（cards）', w('cards'), out);
+      const keys = keysOf(list(s.cards), w('cards'), out);
+      list(s.focus).forEach((f, i) => { f?.key !== null && refTo(keys, f?.key, 'focus のカード', 'focus が何も光らせない', w(`focus[${i}].key`), out); });
+      return;
+    }
+    case 'sequence': {
+      notEmpty(s.actors, '登場人物（actors）', w('actors'), out);
+      notEmpty(s.steps, '矢印（steps）', w('steps'), out);
+      const keys = keysOf(list(s.actors), w('actors'), out);
+      list(s.steps).forEach((st, i) => {
+        refTo(keys, st?.from, '矢印の出どころ', '矢印が画面の外に描かれる', w(`steps[${i}].from`), out);
+        refTo(keys, st?.to, '矢印の行き先', '矢印が画面の外に描かれる', w(`steps[${i}].to`), out);
+      });
+      return;
+    }
+    case 'flow':
+    case 'states': {
+      notEmpty(s.nodes, '箱（nodes）', w('nodes'), out);
+      const keys = keysOf(list<{ key?: unknown }>(s.nodes), w('nodes'), out);
+      list<{ from?: unknown; to?: unknown }>(s.edges).forEach((e, i) => {
+        refTo(keys, e?.from, '矢印の出どころ', '描くと TypeError で止まる', w(`edges[${i}].from`), out);
+        refTo(keys, e?.to, '矢印の行き先', '描くと TypeError で止まる', w(`edges[${i}].to`), out);
+      });
+      list<{ keys?: unknown[] }>(s.focus).forEach((f, i) => { list(f?.keys).forEach((k, j) => { refTo(keys, k, 'focus の箱', 'focus が光らせない', w(`focus[${i}].keys[${j}]`), out); }); });
+      return;
+    }
+    case 'code': {
+      const n = typeof s.code === 'string' ? s.code.split('\n').length : 0;
+      if (!n || !s.code.trim()) push(out, 'error', 'empty', w('code'), 'コードが無い');
+      list(s.marks).forEach((m, i) => {
+        if (!isInt(m?.from) || !isInt(m?.to) || m.from < 1 || m.to > n) {
+          push(out, 'error', 'code-marks', w(`marks[${i}]`), `光らせる行 ${String(m?.from)}〜${String(m?.to)} が、コードの行（1〜${n}）の外`);
+        } else if (m.from > m.to) {
+          push(out, 'error', 'code-marks', w(`marks[${i}]`), `光らせる行の始まり（${m.from}）が終わり（${m.to}）より後`);
+        }
+      });
+      if (n > 18) push(out, 'warning', 'style', w('code'), `コードが ${n} 行ある（style.md の目安は 18 行まで。場面を分けて、光らせる行を絞る）`);
+      return;
+    }
+    case 'table': {
+      const n = list(s.columns).length;
+      if (!n) push(out, 'error', 'empty', w('columns'), '列（columns）が無い');
+      notEmpty(s.rows, '行（rows）', w('rows'), out);
+      if (s.widths !== undefined) {
+        if (list(s.widths).length !== n) push(out, 'error', 'table', w('widths'), `widths の数（${list(s.widths).length}）が列の数（${n}）と合わない（列の幅が NaN% になる）`);
+        else {
+          const sum = s.widths.reduce((a, b) => a + b, 0);
+          if (s.widths.some((x) => !(x > 0))) push(out, 'error', 'table', w('widths'), 'widths に 0 以下の幅がある');
+          else if (Math.abs(sum - 1) > 0.01) push(out, 'warning', 'table', w('widths'), `widths の合計が 1 でない（${+sum.toFixed(3)}）。表の幅が内容の枠とずれる`);
+        }
+      }
+      list(s.rows).forEach((r, i) => {
+        if (list(r?.cells).length !== n) push(out, 'error', 'table', w(`rows[${i}].cells`), `セルの数（${list(r?.cells).length}）が列の数（${n}）と合わない`);
+      });
+      list(s.mono).forEach((m, i) => {
+        if (!isInt(m) || m < 0 || m >= n) push(out, 'error', 'table', w(`mono[${i}]`), `等幅にする列の番号（${String(m)}）が、列（0〜${n - 1}）の外`);
+      });
+      const rows = list(s.rows).length;
+      if (rows > 6 || n > 3) push(out, 'warning', 'style', w(rows > 6 ? 'rows' : 'columns'), `表が ${rows} 行 × ${n} 列ある（style.md の目安は 6 行・3 列まで。場面を分ける）`);
+      return;
+    }
+    case 'compare':
+      return;
+    case 'big':
+      if (!s.text?.trim()) push(out, 'error', 'empty', w('text'), '大きな文字（text）が無い');
+      return;
+    case 'numbers':
+      return notEmpty(s.items, '数字（items）', w('items'), out);
+    case 'timeline': {
+      notEmpty(s.items, '項目（items）', w('items'), out);
+      const keys = keysOf(list(s.items), w('items'), out);
+      list(s.focus).forEach((f, i) => { f?.key !== null && refTo(keys, f?.key, 'focus の項目', 'focus が何も光らせず、進み具合の線も伸びない', w(`focus[${i}].key`), out); });
+      list(s.items).forEach((it, i) => {
+        if (typeof it?.title === 'string' && count(it.title, '　') > 1) push(out, 'warning', 'style', w(`items[${i}].title`), '題に全角の空白が 2 つ以上ある（1 つ目で札と題に分け、3 つ目より後は出ない）');
+      });
+      return;
+    }
+    case 'quiz':
+      if (isInt(s.revealAt) && s.revealAt < 1) push(out, 'error', 'quiz', w('revealAt'), `答え合わせ（revealAt: ${s.revealAt}）が問いの台詞（0）と同時になる。1 以上にする`);
+      if (typeof s.answer !== 'boolean') push(out, 'error', 'quiz', w('answer'), 'answer は true（正しい）か false（誤解）');
+      return;
+    case 'refs':
+      return notEmpty(s.refs, '参考（refs）', w('refs'), out);
+    case 'phone':
+      return notEmpty(s.screens, '画面（screens）', w('screens'), out);
+    case 'screens':
+      for (const side of ['left', 'right'] as const) {
+        const sc = s[side];
+        if (!sc) continue;
+        const blocks = list(sc.blocks).length;
+        if (!blocks) push(out, 'error', 'empty', w(`${side}.blocks`), '画面の部品（blocks）が無い');
+        const seen = new Set<number>();
+        list(sc.notes).forEach((nt, i) => {
+          if (!isInt(nt?.block) || nt.block < 0 || nt.block >= blocks) {
+            push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].block`), `注の block（${String(nt?.block)}）が部品の範囲（0〜${blocks - 1}）の外（注の枠と番号が出ない）`);
+          }
+          if (seen.has(nt?.n)) push(out, 'error', 'mock-notes', w(`${side}.notes[${i}].n`), `注の番号 ${nt.n} が、同じ画面の中で重なっている`);
+          seen.add(nt?.n);
+        });
+      }
+      return;
+    case 'terminal':
+      return notEmpty(s.entries, '入力と出力（entries）', w('entries'), out);
+    case 'ending':
+      return;
+    default:
+      // 場面の種類を足したのに、ここで扱っていないと型で止まる（知らない種類は checkScene が先に誤りにする）
+      return s satisfies never;
+  }
+};
+
+/** 場面に共通のこと: 台詞・at の範囲・色の名前・根拠の札・** */
+const checkScene = (s: Scene, i: number, where: string, course: Course, lang: Lang, out: Issue[]) => {
+  const sw = `${where} 場面 ${i + 1}`;
+  if (!s || typeof s !== 'object') { push(out, 'error', 'kind', sw, '場面が空'); return; }
+  if (!has(SCENE_KIND_SET, s.kind)) {
+    push(out, 'error', 'kind', sw, `場面の種類「${String((s as { kind?: unknown }).kind)}」が無い（あるのは ${SCENE_KINDS.join('・')}）`);
+    return;
+  }
+  const lines = list(s.lines);
+  if (!lines.length) push(out, 'error', 'lines', `${sw} lines`, '台詞が無い（場面は台詞で進むので、1 つは書く）');
+  lines.forEach((ln, k) => { checkLine(ln, k, sw, course, out); });
+  if (s.hold !== undefined && !(typeof s.hold === 'number' && s.hold >= 0)) push(out, 'error', 'hold', `${sw} hold`, `hold は 0 以上の秒（書いたのは ${String(s.hold)}）`);
+  if (s.evidence !== undefined && !has(EVIDENCE_SET, s.evidence)) push(out, 'error', 'evidence', `${sw} evidence`, `根拠の種類「${String(s.evidence)}」が無い（あるのは ${names(EVIDENCE_SET)}）`);
+  for (const [key, value] of Object.entries(s)) {
+    if (key === 'lines') continue;
+    walk(value, key, key, (k, v, path) => {
+      const at = `${sw} ${s.kind}.${path}`;
+      if (AT_KEYS.includes(k) && v !== undefined) {
+        if (typeof v !== 'number' || !Number.isInteger(v)) push(out, 'error', 'at', at, `台詞の番号が整数でない: ${String(v)}`);
+        else if (v < 0 || v > lines.length) push(out, 'error', 'at', at, `台詞の番号 ${v} が範囲の外（この場面の台詞は ${lines.length} 個。0〜${lines.length} で書く）`);
+      }
+      // 画面の図の部品（blocks）の tone は、注意の帯の種類（error・info・warn・success）で、図の色ではない
+      if (k === 'tone' && v !== undefined && !/(^|\.)blocks\[/.test(path) && !has(TONE_SET, v)) push(out, 'error', 'tone', at, `色の名前「${String(v)}」が無い（あるのは ${names(TONE_SET)}）`);
+      if (typeof v === 'string' && !LITERAL.has(k)) checkEmphasis(v, richField(s, path), at, out);
+    });
+  }
+  checkBody(s, sw, out);
+  checkHeading(s, sw, course, lang, out);
+};
+
+/* ───────────── 手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus） ───────────── */
+
+const SECTION_LABEL = /^SECTION\s*(\d+)[\s　]+(.+)$/;
+
+const checkDerived = (lec: Lecture, course: Course, where: string, out: Issue[]) => {
+  const sections = list(course.sections);
+  const sec = sections.find((x) => x.no === lec.section?.no);
+  if (!sec) push(out, 'error', 'section', `${where} section.no`, `セクション ${String(lec.section?.no)} が講座の sections に無い（あるのは ${sections.map((x) => x.no).join('・') || 'なし'}）`);
+  else if (sec.title !== lec.section.title) push(out, 'error', 'section', `${where} section.title`, `セクションの題「${lec.section.title}」が、講座の sections の ${sec.no}「${sec.title}」と違う`);
+
+  const scenes = list(lec.scenes);
+  scenes.forEach((s, i) => {
+    if (s?.kind !== 'opening' || !s.section) return;
+    const m = SECTION_LABEL.exec(s.section);
+    const w = `${where} 場面 ${i + 1} opening.section`;
+    if (m && Number(m[1]) !== lec.section?.no) push(out, 'error', 'section', w, `札の「SECTION ${m[1]}」が、この動画のセクション（${String(lec.section?.no)}）と違う`);
+    else if (sec && (m ? m[2] : s.section) !== sec.title) push(out, 'warning', 'section', w, `札の題「${m ? m[2] : s.section}」が、セクションの題「${sec.title}」と違う`);
+  });
+
+  // クイズの番号は、この動画の何問目か（画面に Q1・1 / 3 と出る）
+  let q = 0;
+  scenes.forEach((s, i) => {
+    if (s?.kind !== 'quiz') return;
+    q++;
+    if (s.no !== q) push(out, 'error', 'quiz-no', `${where} 場面 ${i + 1} quiz.no`, `クイズの番号 no: ${String(s.no)} が、この動画の ${q} 問目と合わない（画面に Q${String(s.no)} と出る）`);
+  });
+
+  // エンディングの次の動画は、講座の次の番号の動画（まだ無ければ syllabus の章）
+  const nextNo = lec.no + 1;
+  const nextLec = list(course.lectures).find((l) => l.no === nextNo);
+  const nextCh = list(course.syllabus?.chapters).find((c) => c.no === nextNo);
+  scenes.forEach((s, i) => {
+    if (s?.kind !== 'ending') return;
+    const w = `${where} 場面 ${i + 1} ending.next`;
+    if (!s.next) {
+      if (nextLec && !course.standalone) push(out, 'warning', 'ending-next', w, `次の動画（${nextLec.id}）があるのに、エンディングに next が無い`);
+      return;
+    }
+    if (s.next.no !== nextNo) { push(out, 'error', 'ending-next', `${w}.no`, `次の番号 ${s.next.no} が、この動画の次（${nextNo}）と合わない`); return; }
+    const title = nextLec?.title ?? nextCh?.title;
+    if (title === undefined) push(out, 'warning', 'ending-next', w, `次の ${nextNo} 本目が講座にまだ無い（予告として書いたなら、このままでよい）`);
+    else if (s.next.title !== title) push(out, 'warning', 'ending-next', `${w}.title`, `次の題「${s.next.title}」が、${nextLec ? `次の動画（${nextLec.id}）` : 'syllabus の章'}の題「${title}」と違う`);
+  });
+
+  // syllabus（講座の設計）にある章と、動画の二重持ち
+  if (course.syllabus) {
+    const ch = list(course.syllabus.chapters).find((c) => c.lectureId === lec.id);
+    const w = `${where} syllabus`;
+    if (!ch) push(out, 'error', 'syllabus', w, `講座の syllabus に、この動画（${lec.id}）の章が無い`);
+    else {
+      if (ch.no !== lec.no) push(out, 'error', 'syllabus', `${w}.no`, `syllabus の番号 ${ch.no} が、動画の番号 ${lec.no} と違う`);
+      if (ch.section !== lec.section?.no) push(out, 'error', 'syllabus', `${w}.section`, `syllabus のセクション ${ch.section} が、動画のセクション ${String(lec.section?.no)} と違う`);
+      if (ch.title !== lec.title) push(out, 'warning', 'syllabus', `${w}.title`, `syllabus の題「${ch.title}」が、動画の題「${lec.title}」と違う`);
+      if (ch.status !== 'produced') push(out, 'warning', 'syllabus', `${w}.status`, `動画があるのに、syllabus の status が ${ch.status} のまま`);
+    }
+  }
+  const total = course.syllabus?.chapters.length ?? list(course.lectures).length;
+  if (!isInt(lec.no) || lec.no < 1 || lec.no > total) push(out, 'warning', 'lecture-no', `${where} no`, `動画の番号 ${String(lec.no)} が、講座の本数（1〜${total}）の外（進み具合の点が光らない）`);
+};
+
+/* ───────────── 入口 ───────────── */
+
+/** 動画 1 本。訳の動画は、訳を重ねたあとのレクチャーと、訳の講座（coursesIn(lang) のもの）を渡す */
+export const validateLecture = (lecture: Lecture, course: Course): Issue[] => {
+  const out: Issue[] = [];
+  const where = videoWhere(lecture, course);
+  const lang: Lang = course.lang ?? 'ja';
+  const scenes = list(lecture.scenes);
+  if (!scenes.length) push(out, 'error', 'scenes', `${where} scenes`, '場面が無い');
+  scenes.forEach((s, i) => { checkScene(s, i, where, course, lang, out); });
+  list(lecture.quiz).forEach((qz, i) => {
+    const n = list(qz?.choices).length;
+    if (n < 2) push(out, 'error', 'quiz', `${where} quiz[${i}].choices`, `選択肢が ${n} つ（2 つ以上書く）`);
+    if (!isInt(qz?.answer) || qz.answer < 0 || qz.answer >= n) push(out, 'error', 'quiz', `${where} quiz[${i}].answer`, `答えの番号 ${String(qz?.answer)} が、選択肢の範囲（0〜${n - 1}）の外`);
+  });
+  checkDerived(lecture, course, where, out);
+  return out;
+};
+
+/** 講座 1 つ（講座の項目と、全部の動画） */
+export const validateCourse = (course: Course): Issue[] => {
+  const out: Issue[] = [];
+  const where = courseWhere(course);
+  if (course.theme !== undefined && !Object.hasOwn(THEMES, course.theme)) {
+    push(out, 'error', 'theme', `${where} theme`, `テーマ「${course.theme}」が無い（content/themes.ts の THEMES にあるのは ${Object.keys(THEMES).join('・')}）`);
+  }
+  const dup = <T>(xs: T[], rule: Rule, what: string, w: string) => xs.forEach((x, i) => { xs.indexOf(x) !== i && push(out, 'error', rule, w, `${what} ${String(x)} が重なっている`); });
+  dup(list(course.sections).map((s) => s.no), 'section', 'セクションの番号', `${where} sections`);
+  dup(list(course.lectures).map((l) => l.id), 'lecture-no', '動画の ID', `${where} lectures`);
+  dup(list(course.lectures).map((l) => l.no), 'lecture-no', '動画の番号', `${where} lectures`);
+  for (const [voice, c] of Object.entries(course.cast ?? {})) {
+    if (!has(VOICE_SET, voice)) push(out, 'error', 'voice', `${where} cast.${voice}`, `声「${voice}」が無い（あるのは ${names(VOICE_SET)}）`);
+    if (!has(TONE_SET, c?.tone)) push(out, 'error', 'tone', `${where} cast.${voice}.tone`, `色の名前「${String(c?.tone)}」が無い（あるのは ${names(TONE_SET)}）`);
+  }
+  if (course.syllabus) {
+    const chapters = list(course.syllabus.chapters);
+    dup(chapters.map((c) => c.no), 'syllabus', 'syllabus の章の番号', `${where} syllabus.chapters`);
+    dup(chapters.map((c) => c.lectureId), 'syllabus', 'syllabus の動画の ID', `${where} syllabus.chapters`);
+    chapters.forEach((c, i) => {
+      const w = `${where} syllabus.chapters[${i}]`;
+      if (!list(course.sections).some((s) => s.no === c.section)) push(out, 'error', 'syllabus', `${w}.section`, `セクション ${c.section} が講座の sections に無い`);
+      if (c.status === 'produced' && !list(course.lectures).some((l) => l.id === c.lectureId)) push(out, 'warning', 'syllabus', `${w}.status`, `status が produced なのに、動画（${c.lectureId}）が講座に無い`);
+    });
+  }
+  for (const lec of list(course.lectures)) out.push(...validateLecture(lec, course));
+  return out;
+};
+
+/** synth が書く timeline の形（src/Lecture.tsx の LectureTimeline） */
+export type TimelineShape = { durationInFrames: number; scenes: { start: number; duration: number; lines: { start: number; end: number }[] }[] };
+
+/** timeline が台本の形と合うか。場面や台詞の数が違うと、描く途中で TypeError になるか、台詞と画面がずれる */
+export const validateTimeline = (lecture: Lecture, course: Course, timeline: TimelineShape | undefined): Issue[] => {
+  const out: Issue[] = [];
+  const where = videoWhere(lecture, course);
+  const key = videoKey(lecture.id, course.lang ?? 'ja');
+  const fix = `bun scripts/synth.ts ${key} で作り直す`;
+  if (!timeline) {
+    push(out, 'warning', 'timeline', `${where} timeline`, `timeline が無い（まだ合成していない。${fix}）`);
+    return out;
+  }
+  const scenes = list(lecture.scenes);
+  const ts = list(timeline.scenes);
+  if (ts.length !== scenes.length) {
+    push(out, 'error', 'timeline', `${where} timeline`, `timeline の場面の数（${ts.length}）が台本（${scenes.length}）と合わない。${fix}`);
+    return out;
+  }
+  scenes.forEach((s, i) => {
+    const a = list(ts[i]?.lines).length;
+    const b = list(s?.lines).length;
+    if (a !== b) push(out, 'error', 'timeline', `${where} 場面 ${i + 1} timeline`, `timeline の台詞の数（${a}）が台本（${b}）と合わない。${fix}`);
+  });
+  return out;
+};
+
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+
+/** テーマの色の形（#RRGGBB）と数。#RRGGBB でないと、透明度を付ける所（alpha・mix）で色が壊れる */
+export const validateTheme = (theme: Theme, where = `テーマ ${theme?.id}`): Issue[] => {
+  const out: Issue[] = [];
+  const color = (v: unknown, path: string) => {
+    if (typeof v !== 'string' || !HEX.test(v)) push(out, 'error', 'theme', `${where} ${path}`, `色が #RRGGBB でない: ${String(v)}`);
+  };
+  for (const [k, v] of Object.entries(theme.color ?? {})) color(v, `color.${k}`);
+  for (const t of Object.keys(TONE_SET)) color(theme.tones?.[t as Tone], `tones.${t}`);
+  for (const [k, v] of Object.entries(theme.syntax ?? {})) color(v, `syntax.${k}`);
+  for (const key of ['gradient', 'display', 'mesh'] as const) list(theme[key]).forEach((v, i) => { color(v, `${key}[${i}]`); });
+  if (list(theme.gradient).length < 2) push(out, 'error', 'theme', `${where} gradient`, 'gradient は 2 色以上');
+  if (list(theme.display).length < 2) push(out, 'error', 'theme', `${where} display`, 'display は 2 色以上');
+  // 背景の飾り（src/components/chrome.tsx）: chalk と stars は mesh の 4 色目まで使う
+  const meshMin = theme.decor === 'band' ? 2 : 4;
+  if (list(theme.mesh).length < meshMin) push(out, 'error', 'theme', `${where} mesh`, `decor が ${theme.decor} のときの mesh は ${meshMin} 色以上`);
+  if (!['chalk', 'band', 'stars'].includes(theme.decor)) push(out, 'error', 'theme', `${where} decor`, `decor は chalk・band・stars のどれか（書いたのは ${String(theme.decor)}）`);
+  if (theme.scheme !== 'light' && theme.scheme !== 'dark') push(out, 'error', 'theme', `${where} scheme`, 'scheme は light か dark');
+  if (!list(theme.fonts).length) push(out, 'error', 'theme', `${where} fonts`, '書体（fonts）が無い');
+  return out;
+};
+
+/* ───────────── 表示 ───────────── */
+
+const LABEL: Record<Level, string> = { error: '止める', warning: '注意  ' };
+export const formatIssue = (x: Issue) => `${LABEL[x.level]}  ${x.where}  ${x.message}`;
+export const formatIssues = (xs: Issue[]) => xs.map(formatIssue).join('\n');
