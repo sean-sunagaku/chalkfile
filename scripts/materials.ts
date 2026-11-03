@@ -197,7 +197,7 @@ const scriptsIn = async (dir: string): Promise<Scripts> => {
 /** gc で残すもの（--keep の ref と、その台本の講座ごとの鍵） */
 export type Keep = { refs: string[]; courses: CourseKeys[] };
 
-/** --keep の ref の台本（content/ と scripts/voices.ts）を一時フォルダに取り出して読み、講座ごとの鍵を作る */
+/** --keep の ref の台本（content/ と scripts/voices.ts。台本が読むエンジンの部品 engine/core/ も）を一時フォルダに取り出して読み、講座ごとの鍵を作る */
 export const keepAt = async (repo: Repo, refs: string[]): Promise<Keep> => {
   const keep: Keep = { refs: [], courses: [] };
   for (const ref of refs) {
@@ -209,7 +209,9 @@ export const keepAt = async (repo: Repo, refs: string[]): Promise<Keep> => {
     const commit = found.out.trim();
     const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-keep-'));
     try {
-      extract(repo.root, commit, ['content', 'scripts/voices.ts'], dir);
+      // content/ は engine/core/（台本の型・多言語の重ね方・読み・声）を読む。engine/core/ が無い前の版は、content/ だけで読める
+      const core = run(repo.root, ['cat-file', '-e', `${commit}:engine/core`]).code === 0 ? ['engine/core'] : [];
+      extract(repo.root, commit, ['content', 'scripts/voices.ts', ...core], dir);
       keep.courses.push(...courseKeys(await scriptsIn(dir)));
     } catch (e) {
       throw new Error(`${ref} の台本から、台詞の音声の名前を作れない: ${e instanceof Error ? e.message : e}`);

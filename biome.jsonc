@@ -92,6 +92,29 @@
       }
     },
     {
+      // エンジンの部品（engine/core）は、React・Remotion・Node（fs・crypto など）・中身（content/）・動画（src/）・道具（scripts/）に依存しない。
+      // 読んでよいのは同じフォルダのファイル（./）だけ（型も）。中身の値が要るとき（テーマの一覧など）は、呼ぶ側が引数で渡す。
+      // 台本（content/）と一緒に取り出して読む道具がある（scripts/reading-diff.ts・scripts/materials.ts の gc）ので、外を読むと壊れる
+      "includes": ["engine/core/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**", "!./*"],
+                    "message": "engine/core は engine/core の中（./ のファイル）だけを読む。React・Remotion・Node・content/・src/・scripts/ を読まない（中身の値は、呼ぶ側が引数で渡す）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["tests/browser/**", "playwright.config.ts"],
       "linter": { "domains": { "playwright": "recommended" } }
     },

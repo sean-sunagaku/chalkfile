@@ -7,6 +7,7 @@ import { AT_KEYS, COURSE_FIELDS, LECTURE_FIELDS, lectureTexts, REPLACE, SCENE_FI
 import { l10nProblems, localizeCourse, localizeLecture, TRANSLATED_LANGS, untranslated, type CourseL10n, type LectureL10n } from '../content/i18n';
 import type { ConceptsScene, Course, Lecture } from '../content/types';
 import { validateCourse, validateLecture } from '../engine/core/validate';
+import { THEMES } from '../content/themes';
 import { fingerprint, fingerprintV1, scaffold, staleNotices, translationRows, type Row } from '../scripts/i18n';
 import { ALL_SCENES } from './fixtures/content/all-scenes/course';
 import { LINE_IDS } from './fixtures/content/line-ids/course';
@@ -151,7 +152,7 @@ describe('講座の訳（content/i18n.ts の localizeCourse）', () => {
   test('日本語に無いレクチャーの訳と、セクションの数の違いは、講座の誤りになる', () => {
     const extra = localizeCourse(course(), courseTr({ lectures: { X01: tr(), X09: tr() } }), 'en');
     expect(l10nProblems(extra).map((p) => p.message)).toEqual(['日本語の講座に無いレクチャーの訳: X09']);
-    expect(validateCourse(extra).filter((x) => x.rule === 'l10n').map((x) => x.where)).toEqual(['sample（en） lectures.X09']);
+    expect(validateCourse(extra, { themes: Object.keys(THEMES) }).filter((x) => x.rule === 'l10n').map((x) => x.where)).toEqual(['sample（en） lectures.X09']);
     expect(l10nProblems(localizeCourse(course(), courseTr({ sections: [] }), 'en')).map((p) => p.message)).toEqual(['セクションの数が合わない（講座 1・訳 0）']);
   });
   test('誤りは動画ごと: 1 本の訳が壊れていても、ほかの動画の訳は誤りにならない（Studio はその動画だけを止める）', () => {

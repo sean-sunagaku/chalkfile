@@ -15,6 +15,8 @@ import { course, lecture, say, type Expected } from './fixtures/content/invalid/
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const brief = (xs: Issue[]) => xs.map((x) => `${x.level} ${x.rule} ${x.where}`).sort();
+/** 講座の theme が指してよいテーマ（台本の検証に渡す、台本の外の一覧） */
+const CTX = { themes: Object.keys(THEMES) };
 
 describe('今の台本', () => {
   test('全講座・全言語の台本と、テーマ・timeline の形に誤りが無い', async () => {
@@ -33,13 +35,13 @@ describe('誤った台本（tests/fixtures/content/invalid）', () => {
   for (const f of files) {
     test(`${f} の誤りと注意を、過不足なく見つける`, async () => {
       const { COURSE, EXPECTED } = (await import(path.join(dir, f))) as { COURSE: Parameters<typeof validateCourse>[0]; EXPECTED: Expected[] };
-      const got = validateCourse(COURSE);
+      const got = validateCourse(COURSE, CTX);
       expect(brief(got)).toEqual(EXPECTED.map((e) => e.join(' ')).sort());
       for (const x of got) expect(x.message.length).toBeGreaterThan(0);
     });
   }
   test('土台の講座（壊す前）は、誤りも注意も 0 件', () => {
-    expect(validateCourse(course([lecture([{ kind: 'big', heading: '大事なこと', text: '台本が **正本**', lines: say('台本が正本です。') }])]))).toEqual([]);
+    expect(validateCourse(course([lecture([{ kind: 'big', heading: '大事なこと', text: '台本が **正本**', lines: say('台本が正本です。') }])]), CTX)).toEqual([]);
   });
 });
 
@@ -76,9 +78,9 @@ describe('講座の登録（頭文字・並び・講座 ID）', () => {
   });
   test('レクチャー ID が頭文字と 2 桁の番号の形でなければ、その講座の誤り', () => {
     const c = relabel(course(say1(), { prefix: 'Q' }), 'invalid-sample');
-    expect(validateCourse(c)).toEqual([]);
-    expect(brief(validateCourse({ ...c, lectures: [{ ...c.lectures[0], id: 'Q1' }] }))).toEqual(['error prefix invalid-sample lectures[0].id']);
-    expect(brief(validateCourse({ ...c, prefix: 'R' }))).toEqual(['error prefix invalid-sample lectures[0].id']);
+    expect(validateCourse(c, CTX)).toEqual([]);
+    expect(brief(validateCourse({ ...c, lectures: [{ ...c.lectures[0], id: 'Q1' }] }, CTX))).toEqual(['error prefix invalid-sample lectures[0].id']);
+    expect(brief(validateCourse({ ...c, prefix: 'R' }, CTX))).toEqual(['error prefix invalid-sample lectures[0].id']);
   });
   test('講座のフォルダ（content/<講座 ID>/index.ts）と登録表（content/courses.ts）が合う', () => {
     expect(registryProblems(COURSES)).toEqual([]);
