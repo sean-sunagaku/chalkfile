@@ -31,7 +31,8 @@ curl -s http://127.0.0.1:50021/version
 | コマンド | 入力 | 出力 |
 |---|---|---|
 | `npm run gen:video-config` | `src/video.config.ts` | `scripts/audio/video_config.json`（mix.py・build_music.py が読む動画の値。コミットする） |
-| `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/video_config.json` | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
+| `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/music/`（合成のコード）、`scripts/audio/video_config.json` | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
+| `uv run --locked --group audio python scripts/build_music.py --check`（`npm run music:verify`） | 合成のコード、手元の `origin/materials` の `SHA256SUMS` | 作り直した WAV が素材と同じバイト列か（`public/audio/` には書かない） |
 | `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |

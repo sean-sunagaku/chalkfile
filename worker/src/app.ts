@@ -1,22 +1,35 @@
 // Worker の中身。サイトは assets が先に配信する。Worker を先に通すのは /media/* だけ（wrangler.jsonc の run_worker_first）。
+// 入口は小さなルーター: パスの頭で受け口を選び（/media/ は動画の中継、/api/ は AI チャットの受け口）、どれにも合わなければ assets に渡す。
+// 受け口を足しても、run_worker_first に入れるまで本番の要求は届かない。形と、広げる時期は docs/adr/2026-11-03-worker-api-shape.md
 // 動画の一覧（許可リスト）を受け取って作る。本番の入口（index.ts）は、npm run gen が作る全講座の一覧を渡し、テストは合成の一覧を渡す。
 // Env（binding の型）と ExportedHandler は、wrangler types が wrangler.jsonc から作る worker/worker-configuration.d.ts にある（手で書かない）。
 import { allMediaEntries, validateMediaManifest } from '../../site/media-shared';
+import { createApiHandler } from './api';
 import { createMediaHandler } from './media';
+
+/** 受け口の 1 つ。prefix は / で始まり / で終わるパスの頭（/media/ には /media と /mediax/ が合わない） */
+type Route = { prefix: `/${string}/`; handle: (request: Request, url: URL) => Response | Promise<Response> };
+
+// www の HTML も assets が返し、ページの先頭の location.replace で apex へ移す。Worker が 301 にするのは /media/ だけ。
+const toApex = (url: URL) => {
+  const apex = new URL(url);
+  apex.hostname = 'chalkfile.com';
+  apex.protocol = 'https:';
+  return Response.redirect(apex.href, 301);
+};
 
 export const createWorker = (manifest: unknown) => {
   const media = createMediaHandler(allMediaEntries(validateMediaManifest(manifest)));
+  const api = createApiHandler();
+  const routes: Route[] = [
+    { prefix: '/media/', handle: (request, url) => (url.hostname === 'www.chalkfile.com' ? toApex(url) : media(request)) },
+    { prefix: '/api/', handle: (request) => api(request) },
+  ];
   return {
     async fetch(request: Request, env: Env): Promise<Response> {
       const url = new URL(request.url);
-      // www の HTML も assets が返し、ページの先頭の location.replace で apex へ移す。Worker が 301 にするのは /media/ だけ。
-      if (!url.pathname.startsWith('/media/')) return env.ASSETS.fetch(request);
-      if (url.hostname === 'www.chalkfile.com') {
-        url.hostname = 'chalkfile.com';
-        url.protocol = 'https:';
-        return Response.redirect(url.href, 301);
-      }
-      return media(request);
+      const route = routes.find((r) => url.pathname.startsWith(r.prefix));
+      return route ? route.handle(request, url) : env.ASSETS.fetch(request);
     },
   } satisfies ExportedHandler<Env>;
 };

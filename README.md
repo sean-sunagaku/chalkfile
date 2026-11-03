@@ -1,5 +1,9 @@
 # Chalkfile
 
+[![check](https://github.com/sean-sunagaku/chalkfile/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/sean-sunagaku/chalkfile/actions/workflows/check.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](docs/guide/licenses.md)
+
+Narrated course videos and an offline course site, built from course scripts written in TypeScript. [English summary](#english) · [物ごとのライセンス](docs/guide/licenses.md)
+
 台本（TypeScript）から、ナレーション付きの講座動画（VOICEVOX の声・Remotion の動画）と講座サイトを作る。台本を直せば、声・動画・字幕・確認クイズ・サイトをコマンドで作り直せる。英語と中国語（簡体字）の版も、日本語の台本に訳を重ねて作れる。
 調べ方と書き方は Claude Code のスキルにまとめてあり、AI と一緒に講座を作れる。まだ初期の段階で、エンジン（動画とサイトを作る部分）は、このあとパッケージと CLI に分ける。
 
