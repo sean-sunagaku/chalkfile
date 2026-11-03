@@ -1,0 +1,27 @@
+name: 非公開で連絡したい
+description: 公開の場に書けないこと（行動規範の件など）を、持ち主に伝えたいとき。中身は書かない
+title: "[連絡] 非公開で伝えたいことがある"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        このフォームには、中身を書かないでください。持ち主から、非公開の連絡の方法を返します。
+
+        脆弱性は、先に[非公開の報告](https://github.com/sean-sunagaku/chalkfile/security/advisories/new)を使ってください。その画面が開けないときだけ、ここから知らせてください。
+  - type: dropdown
+    id: topic
+    attributes:
+      label: 用件
+      options:
+        - 行動規範の件
+        - 脆弱性（非公開の報告が開けないとき）
+        - そのほか
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 書く前に
+      options:
+        - label: 中身はここに書かず、持ち主からの返事を待つ
+          required: true

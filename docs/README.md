@@ -33,10 +33,14 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 安全（AI 向けのきまり・公開物・点検） | [AGENTS.md](../AGENTS.md) の「安全のきまり」と [safety.md](../.claude/skills/study-video-course/references/safety.md) | 点検そのものは `scripts/check_content.ts` |
 | 保存の設計（オフライン・PWA） | [architecture/offline.md](architecture/offline.md) | 直すときの決まりと確かめ方は、スキル [chalkfile-engine](../.claude/skills/chalkfile-engine/SKILL.md) |
 | 学ぶ人向けの保存の説明 | [guide/learner-offline.md](guide/learner-offline.md) | |
+| プライバシー（端末に残るもの・外に送られるもの・持ち主が見られる記録） | [guide/privacy.md](guide/privacy.md) | |
 | 決めたことと理由 | [adr/](adr/README.md) | ADR の書き方と一覧もここ |
+| 変更の記録（エンジン）と版の扱い | [CHANGELOG.md](../CHANGELOG.md) | 講座ごとの更新は、講座のフォルダの `content/<講座 ID>/CHANGES.md` |
 | 日付つきの記録 | [history/](history/) | [2026-10-30 の制作メモ](history/2026-10-30-production-notes.md)・[2026-11-03 の公開確認](history/2026-11-03-workers-verification.md)。記録で、今の手順ではない |
 | 生成物（読む教材・AI チャット用のチャンク） | [courses/](courses/README.md) | `scripts/build_materials.ts` が台本から作る。手で直さない |
-| 参加・脆弱性の報告・ライセンス | [CONTRIBUTING.md](../CONTRIBUTING.md)・[SECURITY.md](../SECURITY.md)・[LICENSE](../LICENSE)・[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)・[DISCLAIMER.md](../DISCLAIMER.md) | |
+| 参加の仕方（branch・commit・Pull Request・merge・スクリプトの頭書き・Issue のフォーム） | [CONTRIBUTING.md](../CONTRIBUTING.md) | ひな形は `.github/pull_request_template.md` と `.github/ISSUE_TEMPLATE/` |
+| 脆弱性の報告と、守っていること | [SECURITY.md](../SECURITY.md) | |
+| ライセンス（物ごとの条件） | [guide/licenses.md](guide/licenses.md) | 全文は [LICENSE](../LICENSE)、使っているものは [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)、免責は [DISCLAIMER.md](../DISCLAIMER.md) |
 
 ## docs/ の置き方
 
@@ -45,7 +49,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | `architecture/` | 仕組みの説明（全体図・用語集・配信の設計・保存の設計） |
 | `adr/` | 決めたことの記録 |
 | `courses/` | 生成物（読む教材） |
-| `guide/` | 始め方・講座の足し方・コマンド・学ぶ人の保存 |
+| `guide/` | 始め方・講座の足し方・コマンド・学ぶ人の保存・プライバシー・物ごとのライセンス |
 | `operations/` | 公開・初回の設定・戻し方・ハマりどころ |
 | `history/` | 日付つきの記録。名前の頭に日付を付ける。今の手順はここに書かない |
 
