@@ -6,8 +6,9 @@
 //   npm run chalk -- render --course ga4-comedy --dry-run   # 流すコマンドを出すだけ（何もしない）
 //   bun scripts/cli.ts <コマンド> …                    # npm run chalk と同じ（package.json の bin の chalkfile も、このファイル）
 // 入力: コマンドと引数。対象は --course <講座 ID>・--video <動画。* と ? を使える>・--lang <言語。all で全部>で選び、
-//   選ばなければ公開する言語（site/config.json の publishLangs）の全部の動画。--dry-run（流すコマンドを出すだけ）・--json・-v（流すコマンドも出す）は、
-//   意味のあるコマンドだけが受け取る（どれを受け取るかは、そのコマンドの --help）
+//   選ばなければ公開する言語（site/config.json の publishLangs）の全部の動画。--dry-run（流すコマンドを出すだけ）・--json は、
+//   意味のあるコマンドだけが受け取る（どれを受け取るかは、そのコマンドの --help）。-v は流すコマンドも出し、voice synth・materials・media では、
+//   中の道具にも --verbose を渡す（外の道具への問い合わせと、失敗したときの stderr の全部も出す）
 // 出力: 中の道具の出力と終了コード（0 成功・1 失敗・2 使い方の誤り・3 前提が足りない）。古い呼び方（bun scripts/synth.ts など）も、そのまま使える
 // 前提: 中で流す道具と同じ（npm run chalk -- doctor で確かめる）
 import path from 'node:path';
@@ -374,7 +375,9 @@ export const COMMANDS: Command[] = [
     file: 'scripts/materials.ts',
     options: { course: TARGET.course, videos: { type: 'boolean' }, ...DRY },
     dry: 'plan',
-    steps: ({ values }) => [bun('scripts/materials.ts', 'pull', ...pickCourses(values), ...flag(values, 'videos'))],
+    steps: ({ values }) => [
+      bun('scripts/materials.ts', 'pull', ...pickCourses(values), ...flag(values, 'videos'), ...flag(values, 'verbose')),
+    ],
   },
   {
     name: 'materials check',
@@ -383,7 +386,7 @@ export const COMMANDS: Command[] = [
     old: ['npm run materials:check'],
     file: 'scripts/materials.ts',
     options: { course: TARGET.course },
-    steps: ({ values }) => [bun('scripts/materials.ts', 'check', ...pickCourses(values))],
+    steps: ({ values }) => [bun('scripts/materials.ts', 'check', ...pickCourses(values), ...flag(values, 'verbose'))],
   },
   {
     name: 'materials push',
@@ -393,7 +396,9 @@ export const COMMANDS: Command[] = [
     file: 'scripts/materials.ts',
     options: { message: { type: 'string' }, ...DRY },
     dry: 'pass',
-    steps: ({ values }) => [bun('scripts/materials.ts', 'push', ...flag(values, 'dry-run'), ...opt(values, 'message'))],
+    steps: ({ values }) => [
+      bun('scripts/materials.ts', 'push', ...flag(values, 'dry-run'), ...opt(values, 'message'), ...flag(values, 'verbose')),
+    ],
   },
   {
     name: 'materials gc',
@@ -416,6 +421,7 @@ export const COMMANDS: Command[] = [
         ...flag(values, 'confirm'),
         ...flag(values, 'dry-run'),
         ...opt(values, 'message'),
+        ...flag(values, 'verbose'),
       ),
     ],
   },
@@ -427,7 +433,7 @@ export const COMMANDS: Command[] = [
     file: 'scripts/media.ts',
     options: { course: TARGET.course, ...DRY },
     dry: 'plan',
-    steps: ({ values }) => [bun('scripts/media.ts', 'pull', ...pickCourses(values))],
+    steps: ({ values }) => [bun('scripts/media.ts', 'pull', ...pickCourses(values), ...flag(values, 'verbose'))],
   },
   {
     name: 'media check',
@@ -436,7 +442,7 @@ export const COMMANDS: Command[] = [
     old: ['npm run media:check'],
     file: 'scripts/media.ts',
     options: {},
-    steps: () => [bun('scripts/media.ts', 'check')],
+    steps: ({ values }) => [bun('scripts/media.ts', 'check', ...flag(values, 'verbose'))],
   },
   {
     name: 'media push',
@@ -449,7 +455,15 @@ export const COMMANDS: Command[] = [
     steps: ({ values }) => {
       const ids = pickCourses(values);
       if (!ids.length) throw new UsageError('--course <講座 ID> を渡す');
-      return [bun('scripts/media.ts', 'push', ...ids.flatMap((id) => ['--course', id]), ...opt(values, 'lang'))];
+      return [
+        bun(
+          'scripts/media.ts',
+          'push',
+          ...ids.flatMap((id) => ['--course', id]),
+          ...opt(values, 'lang'),
+          ...flag(values, 'verbose'),
+        ),
+      ];
     },
   },
   {

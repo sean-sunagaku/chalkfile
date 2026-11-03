@@ -104,6 +104,21 @@ describe('流すコマンド（--dry-run は出すだけ）', () => {
     expect(all.stdout).toContain('CONCURRENCY=4 CAPTIONS=1 bash scripts/render.sh N01');
     expect(chalk('render', '--jobs', 'x', '--dry-run').code).toBe(2);
   });
+  test('-v は流すコマンドも出し、voice synth・materials・media の道具には --verbose も渡す', () => {
+    const r = chalk('voice', 'synth', 'G01', '--cached-only', '-v', '--dry-run');
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain('bun scripts/synth.ts --cached-only --verbose G01');
+    const shows = (name: string, values: Record<string, unknown>) =>
+      COMMANDS.find((c) => c.name === name)
+        ?.steps({ values: values as never, positionals: [] })
+        .map((s) => s.show);
+    expect(shows('materials pull', { verbose: true })).toEqual(['bun scripts/materials.ts pull --verbose']);
+    expect(shows('materials push', { verbose: true, 'dry-run': true })).toEqual([
+      'bun scripts/materials.ts push --dry-run --verbose',
+    ]);
+    expect(shows('media check', { verbose: true })).toEqual(['bun scripts/media.ts check --verbose']);
+    expect(shows('media check', {})).toEqual(['bun scripts/media.ts check']);
+  });
   test('道具に --dry-run があるもの（materials push）は、道具に渡す', () => {
     const push = COMMANDS.find((c) => c.name === 'materials push');
     expect(push?.dry).toBe('pass');

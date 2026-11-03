@@ -221,6 +221,9 @@ describe('proc（外の道具の流し方と、伏せ字）', () => {
     const t0 = performance.now();
     const slow = await runAsync('sh', ['-c', 'sleep 5'], { timeoutMs: 100 });
     expect(slow.timedOut).toBe(true);
+    // 止めた道具の子のプロセス（ここでは sleep）が出力を開いたままでも、待たずに返す
+    const nested = await runAsync('sh', ['-c', 'sleep 5; :'], { timeoutMs: 100 });
+    expect(nested.timedOut).toBe(true);
     expect(performance.now() - t0).toBeLessThan(3000);
     await expect(runAsync('chalkfile-no-such-tool', [])).rejects.toBeInstanceOf(MissingError);
     // 出力が上限を超えたら、終わりの分だけを残す

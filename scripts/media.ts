@@ -4,9 +4,12 @@
 //       だけを書き直す。ほかの講座の一覧には触らない（手元の動画が一覧と違えば、知らせるだけ）。前のハッシュの動画は消さず retained に回す
 //   bun scripts/media.ts check            # 全講座の一覧の動画が Releases にあり、大きさと SHA-256 が合うか（手元にあれば手元の動画も）
 //   bun scripts/media.ts pull [講座 ID…]  # 一覧の日本語の動画を、Releases から site/media/ に取り出す（手元の変更は上書きしない）
+//   --verbose（-v）                       # どれにも付けられる。流す gh のコマンドと、失敗したときの gh のエラーの出力の全部（伏せてから）も出す
 //   npm run chalk -- media push|check|pull …   # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 全講座の一覧（Worker の許可リスト）は、npm run gen が講座ごとの一覧をつないで worker/src/generated/media-manifest.json に作る（Git に入れない）
-// gh の認証が要る（push と pull。check も Releases を読む）。終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（gh が無い）
+// gh の認証が要る（push と pull。check も Releases を読む）。gh の呼び出しには時間切れを付ける（API は 2 分、動画の upload・download は 60 分）。
+// 読むだけの API は、一時の失敗（通信が途中で切れたなど）なら、少し待って 3 回まで試す。
+// 終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（gh が無い）
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -22,7 +25,7 @@ import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { writeAtomic } from './lib/fsx';
 import { sha256File } from './lib/hash';
 import { ROOT } from './lib/paths';
-import { run, tailOf } from './lib/proc';
+import { type RunOptions, type RunResult, run, setVerbose, sleepSync, tailOf } from './lib/proc';
 import { mediaManifestJson, readCourseMedia, readMediaLists } from './media-lists';
 
 export const localMediaPath = (e: Pick<MediaEntry, 'lang' | 'lecture' | 'kind'>, root = ROOT) =>
@@ -36,14 +39,40 @@ export const readMediaManifest = (root = ROOT): MediaManifest => readMediaLists(
 
 /** gh を流して標準出力を返す（テストでは偽物に差し替える） */
 export type Gh = (args: string[]) => string;
-/** gh は既存の認証を内部で使う。エラーの出力は、token などを伏せてから出す（scripts/lib/proc.ts の redact） */
-const realGh: Gh = (args) => {
-  const r = run('gh', args, { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 });
-  if (r.code === 0) return r.stdout;
-  // 理由が分かるように gh のエラーの出力も出す（伏せてから、最後の 5 行・500 字まで）
-  const detail = tailOf(r.stderr);
-  throw new Error(`GitHub の操作に失敗しました: ${args[0]} ${args[1]}（認証・権限・通信を確認してください）${detail ? `: ${detail}` : ''}`);
-};
+/** gh の 1 回の呼び出しの時間切れ（ミリ秒）。動画の upload・download は長く、ほかの API の問い合わせは短く */
+export const ghTimeoutMs = (args: string[]): number =>
+  args[0] === 'release' && (args[1] === 'upload' || args[1] === 'download') ? 60 * 60_000 : 2 * 60_000;
+/** 読むだけの API（GET。書き換えるための method・field を持たない）。流し直しても、何も変わらない */
+export const readOnlyGh = (args: string[]): boolean =>
+  args[0] === 'api' && !args.some((a) => /^(-X|--method(=.*)?|-f|-F|--field|--raw-field|--input)$/.test(a));
+/**
+ * gh の流し方（テストでは exec と sleep を差し替える）。gh は既存の認証を内部で使う。エラーの出力は、token などを伏せてから出す
+ * （scripts/lib/proc.ts の redact）。時間切れ（ghTimeoutMs）を付け、読むだけの API は一時の失敗なら 3 回まで試す
+ */
+export const ghWith =
+  (
+    exec: (cmd: string, args: string[], opts: RunOptions) => RunResult = run,
+    sleep: (ms: number) => void = sleepSync,
+    warn: (line: string) => void = (line) => console.warn(line),
+  ): Gh =>
+  (args) => {
+    const attempts = readOnlyGh(args) ? 3 : 1;
+    const timeoutMs = ghTimeoutMs(args);
+    for (let attempt = 1; ; attempt++) {
+      const r = exec('gh', args, { cwd: ROOT, maxBuffer: 16 * 1024 * 1024, timeoutMs });
+      if (r.code === 0 && !r.timedOut) return r.stdout;
+      // 理由が分かるように gh のエラーの出力も出す（伏せてから、最後の 5 行・500 字まで）
+      const detail = r.timedOut ? `${Math.round(timeoutMs / 1000)} 秒で終わらなかった` : tailOf(r.stderr);
+      if (attempt < attempts) {
+        const wait = 1000 * 2 ** (attempt - 1);
+        warn(`gh ${args[0]} ${args[1]} が失敗した（${detail || `終了コード ${r.code}`}）。${wait / 1000} 秒待って流し直す（${attempt + 1}/${attempts} 回目）`);
+        sleep(wait);
+        continue;
+      }
+      throw new Error(`GitHub の操作に失敗しました: ${args[0]} ${args[1]}（認証・権限・通信を確認してください）${detail ? `: ${detail}` : ''}`);
+    }
+  };
+const realGh: Gh = ghWith();
 type ReleaseAsset = { name: string; size: number; state: string; digest?: string | null };
 function assetsOf(tag: string, gh: Gh): ReleaseAsset[] {
   const release = JSON.parse(gh(['api', `repos/${MEDIA_REPOSITORY}/releases/tags/${tag}`])) as { id: number; draft: boolean };
@@ -237,25 +266,30 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
 
 /* ───────────── コマンド ───────────── */
 
+const VERBOSE = { verbose: { type: 'boolean', short: 'v' } } as const;
+
 const main = async (argv: string[]) => {
   const [command, ...rest] = argv;
   if (command === '-h' || command === '--help') return showHelp(import.meta.filename);
   if (command === undefined) throw new UsageError('コマンドを選ぶ: push・check・pull（使い方は --help）');
   if (command === 'push') {
-    const { values } = readArgs(rest, { course: { type: 'string', multiple: true }, lang: { type: 'string', default: 'ja' } });
+    const { values } = readArgs(rest, { course: { type: 'string', multiple: true }, lang: { type: 'string', default: 'ja' }, ...VERBOSE });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     if (!isLang(values.lang)) throw new UsageError(`--lang は ${LANGS.join('・')} のどれか: ${values.lang}`);
     if (!values.course?.length) throw new UsageError('push する講座を選んでください: bun scripts/media.ts push --course <講座 ID> [--lang ja]');
     return pushMedia({ courses: values.course, lang: values.lang });
   }
   if (command === 'check') {
-    const { values } = readArgs(rest, {});
+    const { values } = readArgs(rest, { ...VERBOSE });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     return checkMedia();
   }
   if (command === 'pull') {
-    const { values, positionals } = readArgs(rest, {}, { positionals: true });
+    const { values, positionals } = readArgs(rest, { ...VERBOSE }, { positionals: true });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     return pullMedia(positionals);
   }
   throw new UsageError(`知らないコマンド: ${command}（push・check・pull。使い方は --help）`);

@@ -2,10 +2,10 @@
 import { afterAll, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { AUDIO, check, gc, keepAt, pull, push, type Convert, type CourseKeys, type Repo } from '../scripts/materials';
+import { AUDIO, check, ffmpegConvertWith, gc, keepAt, pull, push, type Convert, type CourseKeys, type Repo } from '../scripts/materials';
 
 const sandbox = mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-test-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
@@ -470,6 +470,30 @@ test.skipIf(!Bun.which('ffmpeg'))(
   },
   60_000,
 );
+
+test('ffmpeg の変換は、止まったままなら時間で止め、失敗したら ffmpeg のエラーの終わり（伏せてから）を出す', async () => {
+  // PATH の頭に、偽の ffmpeg（止まったまま・失敗する）を置く
+  const bin = mkdtempSync(path.join(sandbox, 'bin-'));
+  const fakeFfmpeg = (body: string) => {
+    writeFileSync(path.join(bin, 'ffmpeg'), `#!/bin/sh\n${body}\n`);
+    chmodSync(path.join(bin, 'ffmpeg'), 0o755);
+  };
+  const job: [string, string][] = [[path.join(bin, 'in.wav'), path.join(bin, 'out/x.flac')]];
+  const PATH = process.env.PATH;
+  process.env.PATH = `${bin}:${PATH}`;
+  try {
+    fakeFfmpeg('sleep 5');
+    const t0 = performance.now();
+    await expect(ffmpegConvertWith({ timeoutMs: 200 })(job, 'flac')).rejects.toThrow('（0.2 秒で終わらなかった）');
+    expect(performance.now() - t0).toBeLessThan(3000);
+    fakeFfmpeg(`echo "in.wav: Invalid data found ghp_${'C'.repeat(36)}" >&2; exit 1`);
+    await expect(ffmpegConvertWith()(job, 'flac')).rejects.toThrow(
+      `ffmpeg が失敗した: ${job[0][0]}（終了コード 1）: in.wav: Invalid data found ［伏せた token］`,
+    );
+  } finally {
+    process.env.PATH = PATH;
+  }
+});
 
 /* ───────────── 作業フォルダの間で共有するキャッシュ ───────────── */
 

@@ -117,12 +117,23 @@ export const runAsync = (cmd: string, args: string[], opts: Omit<RunOptions, 'in
           : e,
       );
     });
-    child.on('close', (code) => {
+    let settled = false;
+    const finish = (code: number | null) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
       const result = { code: code ?? 1, stdout: out.text(), stderr: err.text(), timedOut };
       traceFailure(cmd, result);
       resolve(result);
+    };
+    // 時間切れで止めたときは、出力が閉じるのを待たない（止めた道具の子のプロセスが、出力を開いたまま残ることがある）
+    child.on('exit', (code) => {
+      if (!timedOut) return;
+      child.stdout.destroy();
+      child.stderr.destroy();
+      finish(code);
     });
+    child.on('close', finish);
   });
 
 /**
@@ -167,7 +178,10 @@ export const runInherit = (
  */
 const REF_LOCKED =
   /cannot lock ref|unable to update local ref|Unable to create '[^']*\.lock'|fetching ref \S+ failed: reference already exists/i;
-const sleepSync = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+/** ms ミリ秒、止まって待つ（同期の道具の流し直しの間） */
+export const sleepSync = (ms: number): void => {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+};
 
 /** git fetch を流す。参照のロックの取り合いで失敗したときだけ、少し待って 4 回まで流し直す（ほかの失敗は、すぐに止める） */
 export const gitFetch = (cwd: string, args: string[]): void => {

@@ -5,6 +5,7 @@
 //   bun scripts/materials.ts check [講座 ID …]                 # 台本の全部の台詞の音声と、BGM・効果音が手元にあるか
 //   bun scripts/materials.ts push [--dry-run] [--message 文]    # 手元の素材を `materials` ブランチに足す（消さない）
 //   bun scripts/materials.ts gc [--keep ref …] [--confirm]     # --keep（既定 origin/main）の台本が使わない台詞の音声を消す
+//   --verbose（-v）                                           # どれにも付けられる。流す git・ffmpeg と、失敗したときの stderr の全部（伏せてから）も出す
 //   npm run chalk -- materials pull|check|push|gc …            # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
 // 素材は main の履歴に入れず、素材だけを置くブランチに置く。
 // push は、リモートの木に手元の素材を足すか上書きするだけにする。並行する worktree が順に push しても、ほかの講座の素材は消えない。
@@ -17,7 +18,7 @@
 // 読むとき（check・push）は、キャッシュに無ければ作業フォルダの .work/tts/（前の置き場所）も探す。SHA256SUMS のパスは .work/tts/ のまま
 // remote・素材のブランチ・main の名前は、環境変数 MATERIALS_REMOTE・MATERIALS_BRANCH・MATERIALS_BASE で差し替えられる。
 // 終了コード: 0 できた・1 失敗（check は足りないものがある）・2 使い方の誤り・3 前提が足りない（push の前の守り・素材のブランチ・道具）
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -30,7 +31,7 @@ import { tempPath, writeAtomic } from './lib/fsx';
 import { sha256File } from './lib/hash';
 import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { pool } from './lib/pool';
-import { gitFetch, run as runTool } from './lib/proc';
+import { gitFetch, run as runTool, runAsync, setVerbose, tailOf, trace } from './lib/proc';
 import { pullMedia } from './media';
 import { ttsKeyIn } from './voices';
 
@@ -129,28 +130,40 @@ const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)}MB`;
 /** パスの並び（ロケールに左右されないよう、文字コードの順にする） */
 const byPath = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-/** WAV と FLAC の変換を、ffmpeg で 8 本ずつ並べて流す。FLAC は可逆なので、WAV に戻すと元と同じバイトになる */
-export const ffmpegConvert: Convert = (jobs, to) =>
-  pool(jobs, 8, async ([src, dest]) => {
-    mkdirSync(path.dirname(dest), { recursive: true });
-    const codec = to === 'flac' ? ['-c:a', 'flac', '-compression_level', '8'] : ['-c:a', 'pcm_s16le', '-f', 'wav'];
-    await new Promise<void>((resolve, reject) => {
-      const p = spawn('ffmpeg', ['-nostdin', '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-map_metadata', '-1', '-bitexact', ...codec, dest], {
-        stdio: ['ignore', 'ignore', 'inherit'],
-      });
-      p.on('error', (e) => reject((e as NodeJS.ErrnoException).code === 'ENOENT' ? new MissingError('ffmpeg が見つからない（入れてから流す。docs/guide/quickstart.md の「前提の道具」）') : e));
-      p.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg が失敗した: ${src}`))));
+/**
+ * WAV と FLAC の変換を、ffmpeg で 8 本ずつ並べて流す。FLAC は可逆なので、WAV に戻すと元と同じバイトになる。
+ * 1 本ごとに時間切れ（既定 2 分。台詞や BGM の 1 本は 1 秒もかからない）を付け、失敗したら ffmpeg のエラーの終わり（伏せてから）を出す
+ */
+export const ffmpegConvertWith =
+  ({ timeoutMs = 2 * 60_000 }: { timeoutMs?: number } = {}): Convert =>
+  (jobs, to) =>
+    pool(jobs, 8, async ([src, dest]) => {
+      mkdirSync(path.dirname(dest), { recursive: true });
+      const codec = to === 'flac' ? ['-c:a', 'flac', '-compression_level', '8'] : ['-c:a', 'pcm_s16le', '-f', 'wav'];
+      const args = ['-nostdin', '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-map_metadata', '-1', '-bitexact', ...codec, dest];
+      const r = await runAsync('ffmpeg', args, { timeoutMs });
+      if (r.code === 0 && !r.timedOut) return;
+      const why = r.timedOut ? `${Math.round(timeoutMs / 100) / 10} 秒で終わらなかった` : `終了コード ${r.code}`;
+      const detail = tailOf(r.stderr);
+      throw new Error(`ffmpeg が失敗した: ${src}（${why}）${detail ? `: ${detail}` : ''}`);
     });
-  });
+export const ffmpegConvert: Convert = ffmpegConvertWith();
 
-/** ブランチの一部を、一時フォルダに取り出す（git archive を tar に流す。pipefail で、どちらが失敗しても止める） */
+/** 取り出しの時間切れ（ミリ秒）。手元の Git から一時フォルダに写すだけ（全部の素材でも数十秒）なので、止まったままにしない */
+const EXTRACT_TIMEOUT_MS = 15 * 60_000;
+
+/** ブランチの一部を、一時フォルダに取り出す（git archive を tar に流す。pipefail で、どちらが失敗しても止める）。paths は Git のパスの形も使える */
 const extract = (root: string, ref: string, paths: string[], dest: string) => {
+  trace(`> git archive ${ref} -- ${paths.join(' ')} | tar -x -C ${dest}`);
   const r = spawnSync('bash', ['-c', 'set -eo pipefail; ref=$1; dest=$2; shift 2; git archive "$ref" -- "$@" | tar -x -C "$dest"', 'bash', ref, dest, ...paths], {
     cwd: root,
     stdio: ['ignore', 'ignore', 'pipe'],
+    timeout: EXTRACT_TIMEOUT_MS,
   });
+  if ((r.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT')
+    throw new Error(`素材を取り出せない（git archive と tar が ${EXTRACT_TIMEOUT_MS / 60_000} 分で終わらなかった）`);
   if (r.error) throw r.error;
-  if (r.status !== 0) throw new Error(`素材を取り出せない（git archive か tar が失敗した）: ${r.stderr.toString().trim()}`);
+  if (r.status !== 0) throw new Error(`素材を取り出せない（git archive か tar が失敗した）: ${tailOf(r.stderr.toString())}`);
 };
 
 /* ───────────── 台本から、台詞の音声の名前を作る ───────────── */
@@ -852,14 +865,17 @@ const pick = (ids: string[]): string[] => {
   return ids.length ? ids : COURSES.map((c) => c.id);
 };
 
+const VERBOSE = { verbose: { type: 'boolean', short: 'v' } } as const;
+
 const main = async (argv: string[]) => {
   const [cmd, ...rest] = argv;
   if (cmd === '-h' || cmd === '--help' || cmd === 'help') return showHelp(import.meta.filename);
   if (cmd === undefined) throw new UsageError('コマンドを選ぶ: pull・check・push・gc（使い方は --help）');
   const repo = defaultRepo();
   if (cmd === 'pull') {
-    const { values, positionals } = readArgs(rest, { videos: { type: 'boolean' } }, { positionals: true });
+    const { values, positionals } = readArgs(rest, { videos: { type: 'boolean' }, ...VERBOSE }, { positionals: true });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     const ids = pick(positionals);
     await pull(repo, ids);
     if (values.videos) await pullMedia(ids);
@@ -869,16 +885,19 @@ const main = async (argv: string[]) => {
         : '次は npm run synth（VOICEVOX なしで時刻を決める）→ npm run mix → npm run render → npm run build:site',
     );
   } else if (cmd === 'check') {
-    const { values, positionals } = readArgs(rest, {}, { positionals: true });
+    const { values, positionals } = readArgs(rest, { ...VERBOSE }, { positionals: true });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     if (!check(repo, courseKeys(HERE, pick(positionals)))) return 1;
   } else if (cmd === 'push') {
-    const { values } = readArgs(rest, { message: { type: 'string' }, 'dry-run': { type: 'boolean' } });
+    const { values } = readArgs(rest, { message: { type: 'string' }, 'dry-run': { type: 'boolean' }, ...VERBOSE });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     await push(repo, courseKeys(HERE), { dryRun: values['dry-run'] === true, message: values.message });
   } else if (cmd === 'gc') {
-    const { values } = readArgs(rest, { keep: { type: 'string', multiple: true }, confirm: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, message: { type: 'string' } });
+    const { values } = readArgs(rest, { keep: { type: 'string', multiple: true }, confirm: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, message: { type: 'string' }, ...VERBOSE });
     if (values.help) return showHelp(import.meta.filename);
+    setVerbose(values.verbose === true);
     if (values.confirm && values['dry-run']) throw new UsageError('--confirm と --dry-run は一緒に使えない');
     const refs = values.keep ?? [`${repo.remote}/${repo.base}`];
     await gc(repo, await keepAt(repo, refs), { confirm: values.confirm === true, message: values.message });
