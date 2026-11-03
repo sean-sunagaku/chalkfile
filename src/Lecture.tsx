@@ -6,10 +6,10 @@ import { themeOf } from '../content/themes';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
-import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/basic';
-import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/data';
-import { Flow, Sequence as SequenceDiagram, States } from './scenes/diagram';
-import { Screens } from './scenes/mock';
+import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/opening';
+import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/code';
+import { Flow, Sequence as SequenceDiagram, States } from './scenes/flow';
+import { Screens } from './scenes/screens';
 import { alpha, applyTheme, C, H, SANS, tone } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
 
