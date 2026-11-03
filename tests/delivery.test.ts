@@ -13,6 +13,14 @@ test('Workerを先に通すのは/media/だけで、静的404もassetsに任せ�
     expect(() => validateWorkerConfig({ ...value, assets: { ...value.assets, run_worker_first: first } })).toThrow();
   }
 });
+test('Workers Logs を切らない', () => {
+  const value = JSON.parse(readFileSync('wrangler.jsonc', 'utf8'));
+  expect(value.observability).toEqual({ enabled: true });
+  for (const observability of [undefined, { enabled: false }, { enabled: true, logs: { enabled: false } }]) {
+    expect(() => validateWorkerConfig({ ...value, observability })).toThrow();
+  }
+  expect(() => validateWorkerConfig({ ...value, observability: { logs: { enabled: true } } })).not.toThrow();
+});
 test('公開は main/production・最小権限・SHA固定・検証後のsecret限定にする', () => {
   expect(() => validateWorkflow(workflow())).not.toThrow();
   const mutations: ((v: any) => void)[] = [

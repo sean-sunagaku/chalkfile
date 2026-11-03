@@ -10,7 +10,10 @@ export type MediaEntry = {
   sha256: string;
   tag: string;
 };
-export type MediaManifest = { schema: 1; entries: MediaEntry[]; retained?: MediaEntry[] };
+// retained は、更新前のハッシュの動画を許可リストに残す項目。retainedUntil（UTC の日付。その日まで）を過ぎたら外す目安。
+// 期限の無い古い一覧も読める。
+export type RetainedMediaEntry = MediaEntry & { retainedUntil?: string };
+export type MediaManifest = { schema: 1; entries: MediaEntry[]; retained?: RetainedMediaEntry[] };
 export const allMediaEntries = (manifest: MediaManifest) => [...manifest.entries, ...(manifest.retained ?? [])];
 const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const LANG = /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
@@ -22,6 +25,21 @@ export const mediaKey = (entry: Pick<MediaEntry, 'lang' | 'course' | 'lecture' |
   `${entry.lang}/${entry.course}/${entry.lecture}/${entry.kind}`;
 export const releaseUrl = (entry: MediaEntry) =>
   `https://github.com/${MEDIA_REPOSITORY}/releases/download/${entry.tag}/${entry.filename}`;
+
+export const RETAIN_DAYS = 90;
+const utcDay = (date: Date) => date.toISOString().slice(0, 10);
+const isDay = (value: unknown) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  return Number.isFinite(time) && utcDay(new Date(time)) === value;
+};
+// retained に入れる日から数えた期限（YYYY-MM-DD・UTC）。
+export const retainDeadline = (today: Date, days = RETAIN_DAYS) => utcDay(new Date(today.getTime() + days * 24 * 60 * 60 * 1000));
+export const expiredRetained = (manifest: MediaManifest, today = new Date()) =>
+  (manifest.retained ?? []).filter((e) => e.retainedUntil !== undefined && e.retainedUntil < utcDay(today));
+// media check と check_delivery が同じ文で知らせる（失敗にはしない）。
+export const retainedWarnings = (manifest: MediaManifest, today = new Date()) => expiredRetained(manifest, today).map((e) =>
+  `retained の期限 ${e.retainedUntil} を過ぎた動画が許可リストに残っています: ${mediaPath(e)}。site/media-manifest.json の retained から外すか、期限を延ばしてください（Release の asset は消さない）。`);
 
 export function validateMediaManifest(value: unknown): MediaManifest {
   const m = value as MediaManifest;
@@ -41,6 +59,9 @@ export function validateMediaManifest(value: unknown): MediaManifest {
   }
   for (const e of allMediaEntries(m)) if (e.kind === 'captioned' && !keys.has(mediaKey({ ...e, kind: 'standard' }))) {
     throw new Error('字幕焼き込み版の通常動画がありません。');
+  }
+  if (m.entries.some((e) => 'retainedUntil' in e) || (m.retained ?? []).some((e) => e.retainedUntil !== undefined && !isDay(e.retainedUntil))) {
+    throw new Error('retainedUntil は retained の項目にだけ、YYYY-MM-DD の日付で付けてください。');
   }
   return m;
 }

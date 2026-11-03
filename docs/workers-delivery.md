@@ -70,9 +70,42 @@ CI側のtokenへはtoken作成権限・KV/R2/D1/Registrar/請求権限を渡さ�
 
 サイトは無料の静的assetsが配り、Workerを先に通すのは `/media/*` だけ。動画は固定リポジトリのReleasesへRange/If-Rangeだけを渡し、本文をstreamで返す。毎回元のURLからredirectをたどり、署名付きLocationを保存・ログ出力しない。
 
+`/media/` の応答（200・206・416・HEAD・エラー）には `Cross-Origin-Resource-Policy: same-origin` を付け、ほかのサイトに動画を埋め込ませない（その再生で Worker の無料枠を使わせない）。
+
 静的応答には `Cache-Control: public, max-age=0, must-revalidate, no-transform` を付ける。CloudflareによるHTML/画像の変更と自動Web Analytics beaconの挿入を防ぎ、CSPと保存用SHA-256を維持する。SWはno-cache。2026-11-02に自動beaconによるCSP違反を実際に検出し、no-transform後に全9ページで違反なしを確認した。[Cloudflareの仕様](https://developers.cloudflare.com/web-analytics/get-started/)
 
 wwwも同じWorkerのCustom Domainで管理する。HTMLはassetsで返し、その先頭のCSPハッシュ付き `location.replace` で同じpath/query/hashのapexへ自動移動する。HTMLの最初のHTTP状態は200（不明pathは404）。`www/media/` はWorkerから301を返す。この構成では通常の静的リクエストでWorkerを呼ばず、zone Redirect Ruleの追加権限もCIへ渡さない。
+
+## Worker のログ
+
+`wrangler.jsonc` の `observability.enabled` で Workers Logs を有効にしている（preview の env も受け継ぐ）。Free は 2026-11-30 まで 1 日 20 万件・3 日保存で、呼び出しの記録（1 回に 1 件）と `console` の出力（1 回の出力に 1 件）を数える。この Worker が `console` に出すのは失敗したときの 1 件だけで、Free の Worker の要求は 1 日 10 万件までなので、全部が失敗しても 20 万件に収まる。
+
+2026-12-01 からは Cloudflare Observability の料金に移り、Free は 1 日 0.5GB（ログと trace の合計）・7 日保存になる。上限に達すると、その日（00:00 UTC まで）は取り込みが止まるだけで、Free では超過分の料金はかからない。[Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)・[Observability の料金](https://developers.cloudflare.com/observability/pricing/)・[Workers の制限](https://developers.cloudflare.com/workers/platform/limits/)（2026-11-02 に確認）
+
+`/media/*` の失敗は `{ message: 'media_upstream_failed', code, status, host, course, lecture }` を 1 件だけ `console.error` に出す。URL・path・query・署名・例外の本文は出さず、`host` はホスト名だけにする。無い値は `null`。
+
+| code | 意味 | 利用者への応答 |
+|---|---|---|
+| `upstream_missing` | Releases が 404 を返した（asset か tag が無い） | 404 |
+| `redirect_host` | redirect を拒んだ（許可外のホスト・https でない・認証情報つき・Location が無いか読めない・4 回目）。`host` は拒んだ行き先 | 502 |
+| `status` | 上流が 200・206・416・404・redirect 以外を返した（403・429・5xx など） | 502 |
+| `network` | 上流につながらなかった（DNS・切断・時間切れ）。`host` はつなごうとした先 | 502 |
+
+## 手元の smoke
+
+`wrangler dev` は手元の workerd で動き、Cloudflare の認証は要らない（空の HOME・token なしで起動して確かめた）。既定では routes の先頭（`chalkfile.com`）を `request.url` と Host にするので、www を Host ヘッダーで試すために `--infer-origin-from-routes=false` を付ける。
+
+```bash
+bun scripts/synth.ts --cached-only && bun scripts/build_site.ts --strict
+npx --no-install wrangler dev --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で
+bun scripts/smoke_worker.ts http://127.0.0.1:8787/
+```
+
+HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る。ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 を見る。CI にはまだ入れていない。
+
+## 古いハッシュの動画（retained）の期限
+
+`media.ts push` で一覧から外れた旧ハッシュの動画は、`retained` に `retainedUntil`（UTC の日付。その日まで）を付けて残す。期限は retained に入れた日から 90 日で、すでに retained にあるものの期限は変えない（期限の無い古い項目には、次の push で付ける）。期限を過ぎたものが残っていると、`media.ts check`（`build_site.ts --strict` の中でも流れる）と `check_delivery.ts` が警告する。Actions では注釈にし、公開は止めない。外すと Worker はその URL に 404 を返すので、開いたままの旧ページが無くなった頃に持ち主が外す。延ばすときは `retainedUntil` を書き換える。Release の asset は消さない。
 
 ## 旧 GitHub Pages の切替
 

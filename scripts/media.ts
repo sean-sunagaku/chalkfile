@@ -5,7 +5,10 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../content';
-import { MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, validateMediaManifest, type MediaEntry } from '../site/media-shared';
+import {
+  MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, retainDeadline, retainedWarnings, validateMediaManifest,
+  type MediaEntry, type MediaManifest, type RetainedMediaEntry,
+} from '../site/media-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const MANIFEST = path.join(ROOT, 'site/media-manifest.json');
@@ -42,8 +45,25 @@ export function verifyLocalMedia(entries: MediaEntry[], required = false): numbe
   }
   return checked;
 }
+// 期限を過ぎた retained は警告だけにする（Actions では注釈にする）。外すかどうかは持ち主が決める。
+export function warnExpiredRetained(manifest: MediaManifest, today = new Date()): number {
+  const warnings = retainedWarnings(manifest, today);
+  for (const message of warnings) console.warn(process.env.GITHUB_ACTIONS === 'true' ? `::warning::${message}` : `警告: ${message}`);
+  return warnings.length;
+}
+// 一覧から外れた旧ハッシュを retained に残す。新しく入るものは今日から 90 日、すでにあるものは期限を変えない
+// （期限の無い古い項目には、今日から数えた期限を付ける）。
+export function retainEntries(previous: MediaManifest | null, active: MediaEntry[], today = new Date()): RetainedMediaEntry[] {
+  const current = new Set(active.map(mediaPath));
+  const until = retainDeadline(today);
+  return [
+    ...(previous?.entries ?? []).filter((e) => !current.has(mediaPath(e))).map((e) => ({ ...e, retainedUntil: until })),
+    ...(previous?.retained ?? []).filter((e) => !current.has(mediaPath(e))).map((e) => ({ ...e, retainedUntil: e.retainedUntil ?? until })),
+  ];
+}
 export function checkMedia(manifest = readMediaManifest()): void {
   validateMediaManifest(manifest);
+  warnExpiredRetained(manifest);
   const remote = allMediaEntries(manifest);
   for (const tag of new Set(remote.map((e) => e.tag))) {
     const entries = remote.filter((e) => e.tag === tag);
@@ -95,8 +115,7 @@ async function pushMedia() {
   // 他言語の既存一覧が将来増えても消さない。古いハッシュの Release asset も削除しない。
   const previous = existsSync(MANIFEST) ? readMediaManifest() : null;
   const active = [...entries, ...(previous?.entries.filter((e) => e.lang !== 'ja') ?? [])];
-  const currentPaths = new Set(active.map(mediaPath));
-  const retained = [...new Map((previous ? allMediaEntries(previous) : []).filter((e) => !currentPaths.has(mediaPath(e))).map((e) => [mediaPath(e), e])).values()];
+  const retained = retainEntries(previous, active);
   const manifest = validateMediaManifest({ schema: 1, entries: active, ...(retained.length ? { retained } : {}) });
   verifyLocalMedia(entries, true);
   const target = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
