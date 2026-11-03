@@ -15,7 +15,18 @@
 # CONCURRENCY=12 のように渡すと、Remotion の並列数を変える（既定 8。CPU のコア数より少なくする）
 # 出力は一時の名前（<id>.tmp.mp4 など）に書き、できてから置き換える。失敗したら 0 でない終了コードで止まり、前の書き出しの残り
 #   （字幕つきの映像・CHUNK の部品）で先へ進まない。Remotion の書き出し（字幕つきの版も）が全部できるまで、サイト用の出力は変えない
+# 終了コード: 0 できた・1 失敗・2 使い方の誤り（- で始まる知らない引数）・3 前提が足りない（timeline が無い。先に synth）
 set -euo pipefail
+# -h・--help は、この頭書きを出すだけ（何も消さず、何も書き出さない）。- で始まるほかの引数は、動画の名前と取り違えずに止める
+for a in "$@"; do
+  case $a in
+    -h | --help)
+      awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"
+      exit 0
+      ;;
+    -*) echo "知らない引数: $a（使い方は --help）" >&2; exit 2 ;;
+  esac
+done
 cd "$(dirname "$0")/.."
 ids=("$@")
 if [ ${#ids[@]} -eq 0 ]; then read -r -a ids <<< "$(bun -e "import { VIDEOS } from './content'; console.log(VIDEOS.map((v) => v.key).join(' '))")"; fi
@@ -84,7 +95,7 @@ site_encode() {
 # Remotion は書き出し中のフレームを一時フォルダに JPEG で置く（5 分で 1〜2GB）ので、ディスクの空きが少ないとき用
 CHUNK=${CHUNK:-0}
 # 書き出す前に、全部の動画の timeline があることを確かめる（無い動画があれば、何も消さず・書き出さずに止まる）
-for want in "${ids[@]}"; do timeline_of "$want" > /dev/null || exit 1; done
+for want in "${ids[@]}"; do timeline_of "$want" > /dev/null || exit 3; done
 for id in "${ids[@]}"; do
   start=$(date +%s)
   # Remotion のコンポジションの ID はドットを使えない（P01.en → P01-en）

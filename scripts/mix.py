@@ -13,13 +13,14 @@ public/audio/mix/<id>.wav（48kHz・ステレオ・16bit、-16 LUFS / true peak 
   uv run --locked --group audio python scripts/mix.py L01 L05    # 一部だけ（npm run mix -- L01 L05）
 
 numpy の版は pyproject.toml と uv.lock で固定している。ffmpeg は PATH から使う。
+仕上げの音は一時の名前に書いてから置き換える（書き出しが書きかけの音を読まない）。
+終了コード: 0 できた・1 失敗・2 使い方の誤り・3 前提が足りない（設計図が無い＝先に synth。ffmpeg が無い）
 """
 
 from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 import tempfile
 import wave
@@ -27,7 +28,11 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
 
-from audio.common import atomic_path
+from audio.common import MISSING, USAGE, atomic_path, db_to_linear, run_ffmpeg, stop, wants_help
+
+if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy）を読む前に、使い方だけを出す
+    print(__doc__)
+    raise SystemExit(0)
 
 import numpy as np
 
@@ -87,20 +92,13 @@ def write_wav(path: Path, x: np.ndarray) -> None:
         w.writeframes(pcm.tobytes())
 
 
-def db(v: float) -> float:
-    return 10 ** (v / 20)
-
-
 def lufs(x: np.ndarray) -> float:
     """ffmpeg の ebur128 で積分ラウドネスを測る"""
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "m.wav"
         write_wav(p, x)
-        r = subprocess.run(
-            ["ffmpeg", "-hide_banner", "-nostats", "-i", str(p), "-af", "ebur128=framelog=quiet", "-f", "null", "-"],
-            capture_output=True,
-            text=True,
-        )
+        # 終了コードは見ない（測った値は stderr から読む。今までの動き）
+        r = run_ffmpeg(["-hide_banner", "-nostats", "-i", str(p), "-af", "ebur128=framelog=quiet", "-f", "null", "-"])
     m = re.findall(r"I:\s+(-?[\d.]+) LUFS", r.stderr)
     return float(m[-1])
 
@@ -137,7 +135,7 @@ def speech_gain(n: int, intervals: list[tuple[float, float]]) -> np.ndarray:
     g_db = BED_FREE_DB + (BED_SPEECH_DB - BED_FREE_DB) * np.clip(m, 0, 1)
     t_ctl = np.arange(len(m)) / ctl
     t = np.arange(n) / RATE
-    return (10 ** (np.interp(t, t_ctl, g_db) / 20)).astype(np.float32)
+    return db_to_linear(np.interp(t, t_ctl, g_db)).astype(np.float32)
 
 
 def bgm_cuts(n: int, scenes: list[dict]) -> np.ndarray:
@@ -173,9 +171,8 @@ def fade(n: int, a: int, b: int, rising: bool) -> np.ndarray:
 
 def loudnorm(src: Path, dst: Path) -> dict:
     """ffmpeg loudnorm（2 パス・linear）で仕上げる"""
-    first = subprocess.run(
+    first = run_ffmpeg(
         [
-            "ffmpeg",
             "-hide_banner",
             "-nostats",
             "-i",
@@ -186,8 +183,6 @@ def loudnorm(src: Path, dst: Path) -> dict:
             "null",
             "-",
         ],
-        capture_output=True,
-        text=True,
     )
     meas = json.loads(first.stderr[first.stderr.rindex("{") : first.stderr.rindex("}") + 1])
     af = (
@@ -195,9 +190,8 @@ def loudnorm(src: Path, dst: Path) -> dict:
         f"measured_I={meas['input_i']}:measured_TP={meas['input_tp']}:measured_LRA={meas['input_lra']}:"
         f"measured_thresh={meas['input_thresh']}:offset={meas['target_offset']}"
     )
-    subprocess.run(
+    run_ffmpeg(
         [
-            "ffmpeg",
             "-y",
             "-hide_banner",
             "-loglevel",
@@ -212,13 +206,17 @@ def loudnorm(src: Path, dst: Path) -> dict:
             "pcm_s16le",
             str(dst),
         ],
+        capture=False,
         check=True,
     )
     return meas
 
 
 def build(lec_id: str) -> None:
-    plan = json.loads((PLAN_DIR / f"{lec_id}.json").read_text())
+    plan_file = PLAN_DIR / f"{lec_id}.json"
+    if not plan_file.exists():
+        stop(MISSING, f"{lec_id}: 設計図（.work/plan/{lec_id}.json）が無い。先に npm run synth -- {lec_id}")
+    plan = json.loads(plan_file.read_text())
     dur = plan["duration"]
     n = int(np.ceil(dur * RATE))
     voice = np.zeros((n, 1), dtype=np.float32)
@@ -229,7 +227,7 @@ def build(lec_id: str) -> None:
     def sfx(name: str, at: float) -> None:
         if name not in sfx_cache:
             sfx_cache[name] = read_wav(SFX_DIR / f"{name}.wav")
-        place(fx, sfx_cache[name], at, db(SFX_DB[name]))
+        place(fx, sfx_cache[name], at, db_to_linear(SFX_DB[name]))
 
     for si, scene in enumerate(plan["scenes"]):
         if si > 0:
@@ -252,7 +250,7 @@ def build(lec_id: str) -> None:
 
     # ナレーションを -17 LUFS に
     v_lufs = lufs(voice)
-    voice *= db(VOICE_LUFS - v_lufs)
+    voice *= db_to_linear(VOICE_LUFS - v_lufs)
 
     # BGM（ループ）
     bed = read_wav(MUSIC / "bed.wav")
@@ -274,8 +272,8 @@ def build(lec_id: str) -> None:
     intro = read_wav(MUSIC / "sting_intro.wav")
     t = np.arange(len(intro)) / RATE
     duck = np.interp(t, [0.0, STING_HIT + 0.1, STING_HIT + 0.45], [0.0, 0.0, -7.0])
-    place(stings, intro * (10 ** (duck / 20))[:, None].astype(np.float32), 0.0, db(STING_DB))
-    place(stings, read_wav(MUSIC / "sting_outro.wav"), out_at, db(STING_DB))
+    place(stings, intro * db_to_linear(duck)[:, None].astype(np.float32), 0.0, db_to_linear(STING_DB))
+    place(stings, read_wav(MUSIC / "sting_outro.wav"), out_at, db_to_linear(STING_DB))
 
     mix = np.repeat(voice, 2, axis=1) + bed_bus + stings + fx
     # 頭と尻の 10ms をフェード
@@ -301,9 +299,9 @@ def build(lec_id: str) -> None:
 
 
 def main() -> None:
-    if {"-h", "--help"} & set(sys.argv[1:]):
-        print(__doc__)
-        return
+    flags = [a for a in sys.argv[1:] if a.startswith("-")]
+    if flags:
+        stop(USAGE, f"知らない引数: {flags[0]}（使い方は --help）")
     ids = sys.argv[1:] or sorted(p.stem for p in PLAN_DIR.glob("*.json"))
     for i in ids:
         build(i)

@@ -23,6 +23,9 @@ jobs.json: [{"key": "...", "text": "...", "repo": "hexgrad/Kokoro-82M", "voice":
 - モデルの重み（Apache-2.0）は、初めて使うときに Hugging Face からダウンロードされる（~/.cache/huggingface）
 - 英語の読みは misaki（辞書）で作り、辞書に無い語は espeak-ng で補う。中国語の読みは misaki[zh]（jieba・pypinyin）。中の英語は英語の読みで補う
 - 声の大きさは台詞ごとにそろえる（話している所の RMS を -20 dBFS、ピークは -1 dBFS まで）。最後のラウドネスは mix.py が決める
+- 音声を先に、読みを後に、一時の名前から置き換えて書く（synth.ts は両方そろったものだけを使う。同時に流しても壊れない）
+
+終了コード: 0 できた・1 失敗・2 使い方の誤り
 """
 
 from __future__ import annotations
@@ -34,7 +37,11 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True  # scripts/audio/ に __pycache__ を作らない
 
-from audio.common import atomic_path, write_atomic
+from audio.common import USAGE, atomic_path, db_to_linear, linear_to_db, stop, wants_help, write_atomic
+
+if __name__ == "__main__" and wants_help(sys.argv):  # 依存（numpy など）を読む前に、使い方だけを出す
+    print(__doc__)
+    raise SystemExit(0)
 
 import numpy as np
 import soundfile as sf
@@ -52,7 +59,7 @@ def trim(x: np.ndarray, sr: int) -> np.ndarray:
     """前後の無音を切る（ピークから -45 dB 未満を無音とみなす。声の頭と尻を削らないよう 20ms 残す）"""
     if not len(x):
         return x
-    thr = np.max(np.abs(x)) * 10 ** (-45 / 20)
+    thr = np.max(np.abs(x)) * db_to_linear(-45)
     idx = np.where(np.abs(x) > thr)[0]
     if not len(idx):
         return x
@@ -67,17 +74,19 @@ def level(x: np.ndarray, sr: int) -> np.ndarray:
     if n == 0:
         return x
     rms = np.sqrt(np.mean(x[: n * frame].reshape(n, frame) ** 2, axis=1))
-    active = rms[rms > np.max(rms) * 10 ** (-40 / 20)]
+    active = rms[rms > np.max(rms) * db_to_linear(-40)]
     if not len(active):
         return x
-    cur = 20 * np.log10(np.sqrt(np.mean(active**2)) + 1e-12)
-    y = x * 10 ** ((TARGET_RMS_DB - cur) / 20)
+    cur = linear_to_db(np.sqrt(np.mean(active**2)) + 1e-12)
+    y = x * db_to_linear(TARGET_RMS_DB - cur)
     peak = np.max(np.abs(y))
-    limit = 10 ** (PEAK_DB / 20)
+    limit = db_to_linear(PEAK_DB)
     return y * (limit / peak) if peak > limit else y
 
 
 def main() -> None:
+    if len(sys.argv) != 3 or any(a.startswith("-") for a in sys.argv[1:]):
+        stop(USAGE, "使い方: uv run --locked --script scripts/tts_kokoro.py <jobs.json> <出力フォルダ>（synth.ts が流す。--help で説明）")
     jobs = json.loads(Path(sys.argv[1]).read_text())
     out_dir = Path(sys.argv[2])
     out_dir.mkdir(parents=True, exist_ok=True)
