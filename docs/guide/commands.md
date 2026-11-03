@@ -29,7 +29,9 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run knip` | 使っていないファイル・export・依存の一覧 |
 | `npm run typecheck` | tsc（動画と台本・サイト・Worker・scripts・tests） |
 | `npm test` | 単体テスト（`tests/*.test.ts`）。音声の鍵と読みのスナップショットも照らし合わせる |
-| `npm run test:e2e`（`test:browser` も同じ） | Playwright のブラウザのテスト（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
+| `npm run test:e2e:ci` | ブラウザのテストを、合成の講座（`tests/fixtures/content/site-sample`）で流す。本物の講座も動画も要らない（ffmpeg が要る）。CI の e2e と同じ |
+| `npm run test:e2e:real` | ブラウザのテストを、本物の講座（`site/dist` と手元の動画）と入れてある Chrome で流す |
+| `npm run test:e2e`（`test:browser` も同じ） | 上の 2 つを両方（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
 | `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声など）。注意も見るなら `-- --warnings` |
 | `npm run check:content` | 台本と Git に入れるファイルの点検（点検の点検も）。点検する中身は [safety.md](../../.claude/skills/study-video-course/references/safety.md) |
 | `npm run check:materials` | 読む教材（`docs/courses/`）が、Git に入れている台本と timeline から作り直したものと同じか（書かない。synth は要らない） |
@@ -61,7 +63,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `npm run serve` | 手元で講座サイトを見る（`http://127.0.0.1:8765/`。Range にも答える） |
+| `npm run serve` | 手元で講座サイトを見る（`http://127.0.0.1:8765/`。Range にも答える。配り方は本番に合わせる: 無いページは 404.html） |
 | `npm run dev:worker` | Worker を手元で動かす（先に Worker の許可リストを作ってから `wrangler dev`。Cloudflare の認証は要らない） |
 
 ### 素材と動画
@@ -124,7 +126,7 @@ bun scripts/i18n.ts status                         # 訳の表（訳あり・日
 | 講座サイト（`npm run serve`） | 8765 | `PORT=9000 npm run serve` |
 | Remotion Studio（`npm run studio`） | 3000 | `npm run studio -- --port 3001` |
 | Worker（`npm run dev:worker`） | 8787 | `npm run dev:worker -- --port 8788` |
-| ブラウザのテスト（`npm run test:e2e`） | 8877 | `playwright.config.ts` と `tests/browser-server.ts` で決めている。作業フォルダが違っても、同時に 2 つ流さない |
+| ブラウザのテスト（`npm run test:e2e:ci` など） | 8877（テストのサーバー。テストごとのサイトは空いている番号） | `playwright.config.ts` と `tests/browser-server.ts` で決めている。作業フォルダが違っても、同時に 2 つ流さない |
 
 - Claude Code のプレビュー（`.claude/launch.json`）は、`site`（8765）・`studio`（3000）・`worker`（8787）を起動できる。`worker` は `site/dist` を配るので、先に `npm run build:site` を流す。起動してよいコマンドは `scripts/check_content.ts` の一覧で決めている（[safety.md](../../.claude/skills/study-video-course/references/safety.md) の 6）
-- 証跡: ブラウザのテストは `/tmp/chalkfile-pwa-evidence/` に書く（`CHALKFILE_EVIDENCE_DIR` で変える）。本番の確かめは `.work/evidence/` に書く。どちらも Git に入れない
+- 証跡: ブラウザのテストは `/tmp/chalkfile-pwa-evidence/<project>/` に書く（`CHALKFILE_EVIDENCE_DIR` で変える）。本番の確かめは `.work/evidence/` に書く。どちらも Git に入れない

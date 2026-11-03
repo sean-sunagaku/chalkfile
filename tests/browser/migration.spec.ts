@@ -1,8 +1,11 @@
-import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import type { CourseManifest } from '../../site/offline-shared';
+import { expect, seek, test } from './fixtures';
 
-test('公開していた旧SWから移行し、保存・記録・Rangeを残してオンラインで同じURLへ移る', async ({ page, context, request }) => {
+// 旧 Pages（/chalkfile/）からの移行。前の公開（tests/fixtures/legacy-pages の本物の旧 SW）で保存したあと、公開済みの移行の案内
+// （tests/fixtures/legacy-migration。今のソースから作り直さない）に替える。動画は、ci は合成の動画（保存の manifest もそれに合わせる）、
+// real は手元の本物の P01
+test('公開していた旧SWから移行し、保存・記録・Rangeを残してオンラインで同じURLへ移る', async ({ page, context, request, site }) => {
   await request.post('/__test/control', { data: { legacyPhase: 'old' } });
   await page.goto('/chalkfile/pstack-comedy/');
   await expect(page.locator('#offlineSave')).toBeEnabled();
@@ -30,9 +33,10 @@ test('公開していた旧SWから移行し、保存・記録・Rangeを残し�
   await context.setOffline(true); await page.reload();
   await expect(page.locator('#chalkfileMoved')).toContainText('新しい場所で保存し直してください');
   const video = page.locator('video');
+  const at = seek(site, 30);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThanOrEqual(1);
-  await video.evaluate(async (v: HTMLVideoElement) => { v.muted = true; v.currentTime = 30; await v.play(); });
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(30.2);
+  await video.evaluate(async (v: HTMLVideoElement, at) => { v.muted = true; v.currentTime = at; await v.play(); }, at);
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(at + 0.2);
   await video.evaluate((v: HTMLVideoElement) => v.pause());
   const manifest = JSON.parse(readFileSync('tests/fixtures/legacy-pages/pstack-comedy/offline-manifest.json', 'utf8')) as CourseManifest;
   const mp4 = manifest.files.find((f) => f.type === 'video/mp4')!;
@@ -41,7 +45,7 @@ test('公開していた旧SWから移行し、保存・記録・Rangeを残し�
     return { status: r.status, bytes: [...new Uint8Array(await r.arrayBuffer())] };
   }, mp4.url);
   expect(range.status).toBe(206);
-  expect(range.bytes).toEqual([...readFileSync('site/media/P01.mp4').subarray(1000, 1128)]);
+  expect(range.bytes).toEqual([...readFileSync(site.legacyVideo).subarray(1000, 1128)]);
   expect(await page.evaluate(() => caches.keys())).toEqual(before);
   expect(await page.evaluate(() => localStorage.getItem('chalkfile:pstack-comedy:notes'))).toContain('消さない学習メモ');
   await context.setOffline(false);

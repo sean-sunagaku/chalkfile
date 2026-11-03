@@ -18,7 +18,7 @@ export const NOT_FOUND_HTML =
 
 /** ヘッダー・送らないファイル・404 のページを書く。notFound は CSP を付けた 404 のページ */
 export const writeServingFiles = (dist: string, notFound: string) => {
-  // GitHub Pages の頃の名残（Jekyll を通させない）。中身は空
+  // 前の配信先（旧 Pages）の頃の名残の、空のファイル。消すと公開物のファイルが変わるので、ここでは残す（前の配信先の名残をまとめて消す直しで消す）
   writeFileSync(path.join(dist, '.nojekyll'), '');
   writeFileSync(path.join(dist, '.assetsignore'), ASSETS_IGNORE);
   rmSync(path.join(dist, '_redirects'), { force: true });

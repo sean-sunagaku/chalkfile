@@ -33,6 +33,7 @@
 
 - `site/legacy-sw.ts` と `scripts/build_migration.ts` は変えない。ファイルの SHA-256 を `tests/legacy-freeze.test.ts` が見る。Biome の全体の整形からも外す（`biome.jsonc`）
 - 移行のテスト（`tests/browser/migration.spec.ts`）は、公開済みの移行の案内（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 を、そのまま写したもの）を配る。テストのサーバーは、今のソースから作り直さない。fixture が公開物と同じかも、`tests/legacy-freeze.test.ts` が見る
+- 移行のテストは、本物の講座がなくても流れる（合成の講座のテストでは、前の公開の動画を合成の動画に替える）
 - 凍結を解くとき（期限の前に、移行の不具合を直すなど）は、先にこの ADR を直し、そのあとでテストの値を直す
 
 ## 理由

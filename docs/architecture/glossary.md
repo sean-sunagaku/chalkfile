@@ -66,7 +66,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 | 公開 | サイトを chalkfile.com に出すこと。main の CI が wrangler で行う。動画は、Releases に置いた時点で誰でも取れる | `.github/workflows/deploy.yml` |
 | 保存（アプリ内に保存） | 学ぶ人が講座を選んでブラウザに保存し、通信なしで見られるようにする仕組み（PWA） | `site/sw.ts`・`site/offline-client.ts`。設計はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md) |
 | 保存版 | 保存した講座の教材と動画の一式。新しい版に替えるのは、学ぶ人が選んだときだけ | 同上 |
-| サイトの版 | 講座のページの版。変わると、保存した人に「新しい版」を案内する | `scripts/build_site.ts` の `pageVersion` |
+| サイトの版 | 講座のページの版。変わると、保存した人に「新しい版」を案内する | `scripts/site-version.ts` の `pageVersionOf`（組み立ての `scripts/site/build.ts` が使う） |
 | 旧 Pages | 前の公開先 `sean-sunagaku.github.io/chalkfile/`（`gh-pages` ブランチ）。新しいサイトへの案内を出す | `scripts/deploy_pages.sh`・`scripts/build_migration.ts`・`site/legacy-sw.ts` |
 
 ## 言語

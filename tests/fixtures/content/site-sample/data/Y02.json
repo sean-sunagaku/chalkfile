@@ -1,12 +1,12 @@
 {
   "id": "Y02",
-  "duration": 2,
+  "duration": 4,
   "chapters": [
     { "scene": 0, "start": 0, "heading": "新しい版", "kind": "big" },
-    { "scene": 1, "start": 1.2, "heading": "", "kind": "ending" }
+    { "scene": 1, "start": 2.4, "heading": "", "kind": "ending" }
   ],
   "cues": [
-    { "start": 0.1, "end": 1.15, "text": "新しい版は、全部のファイルがそろってから切り替えます。", "scene": 0 },
-    { "start": 1.2, "end": 1.95, "text": "これで、見本はおしまいです。", "scene": 1 }
+    { "start": 0.1, "end": 2.3, "text": "新しい版は、全部のファイルがそろってから切り替えます。", "scene": 0 },
+    { "start": 2.4, "end": 3.9, "text": "これで、見本はおしまいです。", "scene": 1 }
   ]
 }

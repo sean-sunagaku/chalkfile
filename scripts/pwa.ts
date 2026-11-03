@@ -47,7 +47,7 @@ export async function bundle(file: string): Promise<string> {
   return result.outputs[0].text();
 }
 
-/** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイトのパス（言語 → /chalkfile-media-en/ など） */
+/** mediaRoots: 訳の言語の動画のパス（言語 → /media/en/ など。site/config.json の media。sw.js の保存の検査が使う） */
 export async function buildPwa(site: string, dist: string, brand: Theme, courses: string[], shell: Asset[], mediaRoots: Record<string, string> = {}) {
   mkdirSync(path.join(dist, 'icons'), { recursive: true });
   for (const size of [180, 192, 512]) {

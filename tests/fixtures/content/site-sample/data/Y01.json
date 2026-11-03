@@ -1,12 +1,12 @@
 {
   "id": "Y01",
-  "duration": 2,
+  "duration": 4,
   "chapters": [
     { "scene": 0, "start": 0, "heading": "保存と再生の見本", "kind": "opening" },
-    { "scene": 1, "start": 1, "heading": "オフラインで学ぶ", "kind": "big" }
+    { "scene": 1, "start": 2, "heading": "オフラインで学ぶ", "kind": "big" }
   ],
   "cues": [
-    { "start": 0.1, "end": 0.95, "text": "見本 1。保存と再生の見本。", "scene": 0 },
-    { "start": 1, "end": 1.95, "text": "保存した講座は、通信が無くても見られます。", "scene": 1 }
+    { "start": 0.1, "end": 1.9, "text": "見本 1。保存と再生の見本。", "scene": 0 },
+    { "start": 2, "end": 3.9, "text": "保存した講座は、通信が無くても見られます。", "scene": 1 }
   ]
 }

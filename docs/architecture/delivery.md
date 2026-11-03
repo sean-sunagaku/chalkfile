@@ -61,7 +61,7 @@
 - 前の公開先（`gh-pages` ブランチ）には、新しいサイトへの案内だけを置く。置き換えるのは `scripts/legacy/deploy_pages.sh` だけ。最新の main・変更の無い作業フォルダ・公開先の全部の動画の Range・ブラウザでの CSP と Service Worker の確かめに通らないと止まる。見ていた `gh-pages` の SHA を指定した force-with-lease で置き換え、手元に復旧用の参照（`refs/chalkfile-backups/gh-pages-<main の SHA>`）を残す。ふつうのサイトと MP4 を `gh-pages` に出し直す用には使わない
 - 案内は、トップ・全部の講座・404 に、canonical・meta refresh・押せるリンク・path と query と hash を保つ `location.replace` を置く。旧サイトの scope の Service Worker を登録してから移る
 - 移行の Service Worker（`site/legacy-sw.ts`）は、旧サイトの保存の cache（registry・course・shell）を読み、install と activate では消さない。オンラインでは、次のページの移動で新しいサイトへ案内する。オフラインでは、完全な前の保存版と Range の再生を返し、保存し直しの案内を出す。前の保存・メモ・進み具合は、違う origin へ自動では移せない。旧サイトでは新しい保存をせず、学ぶ人が選んだ前の講座の削除だけを受け付ける
-- `tests/fixtures/legacy-pages/` は、前の公開の commit `a4399995c3ebd0b356459fcae3812da117c2ab9b` の本物の HTML・Service Worker・起動用のファイルを、少しだけ持つ。MP4 は持たず、同じハッシュの Releases の動画を使う。`tests/browser/migration.spec.ts` で、前の Service Worker から移行の Service Worker への切り替え、保存・記録・隣のアプリの cache が残ること、オフラインの Range と途中への移動、query と hash が保たれることを確かめる
+- `tests/fixtures/legacy-pages/` は、前の公開の commit `a4399995c3ebd0b356459fcae3812da117c2ab9b` の本物の HTML・Service Worker・起動用のファイルを、少しだけ持つ。MP4 は持たず、本物の講座のテスト（`test:e2e:real`）は同じハッシュの Releases の動画を使う。合成の講座のテスト（`test:e2e:ci`）は合成の動画に替え、保存の manifest の大きさと SHA-256 を、その動画に合わせて配る。`tests/browser/migration.spec.ts` で、前の Service Worker から移行の Service Worker への切り替え、保存・記録・隣のアプリの cache が残ること、オフラインの Range と途中への移動、query と hash が保たれることを確かめる
 - 移行のコードを終える日は [ADR](../adr/2026-11-02-legacy-pages-end-date.md)
 
 ## 秘密情報の扱い

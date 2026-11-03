@@ -129,20 +129,23 @@ bun tests/worker-site-smoke.ts https://chalkfile.com/   # 全ページの表示�
 
 ```bash
 npm run check
+npm run test:e2e:ci                # 合成の講座で、保存・再生・オフライン・移行・アクセシビリティ（本物の講座も動画も要らない）
 npm run build:site -- --strict     # site/data・ポスター・Releases の動画の一覧が要る。手元の MP4 はなくてよい
-npm run test:e2e                   # 入れてある Chrome と、生成した動画を使う（test:browser と同じ）
+npm run test:e2e:real              # 本物の講座と、入れてある Chrome と、生成した動画を使う（npm run test:e2e は両方）
 ```
 
-- テストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
+- 本物の講座のテストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
 - ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
 - PR の CI（`.github/workflows/check.yml`）は 2 つのジョブ。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）でサイトを組み立てる。公開はせず、秘密情報も使わない
-- `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP のハッシュと動く script の数・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
+- `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本（www の移動・講座のページの本体・offline-client）のどれかで、CSP のハッシュと過不足なく合うか・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
+- 組み立ての本体は `scripts/site/`（役割ごとのファイル。`build.ts` の `buildSite`）。HTML は、エスケープを既定にした `html` のテンプレートと、印を 1 回だけなめる置き換え（`scripts/site/html.ts`）で組む。CSP のハッシュは、描く前に信頼できる 3 本から作る。合成の講座の出力のスナップショット（`tests/site-build.test.ts`）が、出力の変化を止める（わざと変えたときは `UPDATE_SITE_SNAPSHOT=1 bun test tests/site-build.test.ts`）
 - 大きさの上限の正本は `site/limits.ts`（保存は 1 ファイル 32 MiB・ページ 4 MiB・1 講座 1 GiB・201 ファイル、Workers の静的 assets は 1 ファイル 25 MiB・2 万ファイル、Releases の動画は 2 GiB 未満）。サイト用の動画は 14,500 KiB を目安に書き出す（上限ではない）。保存の上限を超える動画は `media.ts push`・`check` が止める
 - ファイルの型は、拡張子の対応表 `site/mime.ts` から付ける。知らない拡張子のファイルを `site/assets` に置くと、組み立てが止まる
-- ブラウザのテストは、`127.0.0.1:8877` に本物の組み立てを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
-- ブラウザは、入れてある Chrome を一時の profile で使う。`PW_CHANNEL=chromium npm run test:browser` で、Playwright の Chromium も選べる（別に入れる）
-- 証跡の既定の置き場所は `/tmp/chalkfile-pwa-evidence/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない
-- 案内（保存の状態・進み具合・通信のエラー）の表示を変えたら、strict の組み立てのあとに `npm run test:browser -- tests/browser/offline-status.spec.ts` も流す
+- ブラウザのテストは、テストのサーバー（`tests/browser-server.ts`）が、テストごとに別の番号で講座サイトを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け、旧 Pages からの移行。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る（`tests/e2e/session.ts`。状態はテストごとなので、workers を 2 以上にできる）。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
+- `test:e2e:ci` は、合成の講座（`tests/fixtures/content/site-sample`。2 本）を `buildSite` で一時のフォルダに組み、4 秒の動画を ffmpeg の testsrc で作って配る。アクセシビリティ（axe-core）も見る。今ある違反は `tests/fixtures/a11y-known/` に並べて許し、新しい違反で落ちる
+- ブラウザは、入れてある Chrome を一時の profile で使う。`PW_CHANNEL=chromium npm run test:e2e:ci` で、Playwright の Chromium も選べる（CI と同じ。`npx playwright install chromium` で別に入れる）
+- 証跡の既定の置き場所は `/tmp/chalkfile-pwa-evidence/<project>/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない
+- 案内（保存の状態・進み具合・通信のエラー）の表示を変えたら、`npm run test:e2e:ci -- tests/browser/offline-status.spec.ts` も流す
 - ふだんの手元の確かめは、ルート `/` の `npm run serve` か `npm run dev:worker`。旧サイトの scope の互換は、移行のテスト（`tests/browser/migration.spec.ts`）で確かめる。localhost のほかは HTTPS が要る
 
 ### 手元の Worker で確かめる（smoke）

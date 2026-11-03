@@ -49,8 +49,6 @@ export type BuildSiteOptions = {
   config?: SiteConfig;
   /** ポスターの置き場所（既定は本物の講座の置き場所。config.ts の realPosterOf） */
   posterOf?: (courseId: string, key: string) => string;
-  /** 前の組み立ての訳の動画のフォルダ（site/dist-media）。渡すと、訳の言語のものを消す */
-  mediaOutDir?: string;
   /** 進み具合の出力（既定は console.log）と注意（既定は console.warn） */
   log?: (line: string) => void;
   warn?: (line: string) => void;
@@ -106,7 +104,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const manifests: CourseManifest[] = [];
   const shell: Asset[] = [];
 
-  cleanOutput({ outDir: dist, mediaOutDir: o.mediaOutDir, langs, partial: only.length > 0 });
+  cleanOutput({ outDir: dist, langs, partial: only.length > 0 });
 
   /* ───────────── 講座のページ（言語ごと） ───────────── */
   for (const lang of langs) {

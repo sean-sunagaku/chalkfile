@@ -8,15 +8,14 @@ import type { PosterFile } from './offline-manifest';
 
 /**
  * 前の組み立てを片付ける。全部の講座を組み立てるときは outDir を丸ごと消す（以前の MP4 や、公開をやめたページを残さない。元の動画には触れない）。
- * 訳の言語のページ（と、前の組み立ての訳の動画のフォルダ）は、出さない言語なら消し、全部の講座を組み立てるときは作り直す
+ * 訳の言語のページは、出さない言語なら消し、全部の講座を組み立てるときは作り直す
  * （outDir は丸ごと公開するので、残っていると出てしまう。訳をやめた講座も残さない）
  */
-export const cleanOutput = (o: { outDir: string; mediaOutDir?: string; langs: readonly Lang[]; partial: boolean }) => {
+export const cleanOutput = (o: { outDir: string; langs: readonly Lang[]; partial: boolean }) => {
   if (!o.partial) rmSync(o.outDir, { recursive: true, force: true });
   for (const l of LANGS) {
     if (!LANG_INFO[l].path || (o.langs.includes(l) && o.partial)) continue;
     rmSync(path.join(o.outDir, LANG_INFO[l].path), { recursive: true, force: true });
-    if (o.mediaOutDir) rmSync(path.join(o.mediaOutDir, l), { recursive: true, force: true });
   }
 };
 

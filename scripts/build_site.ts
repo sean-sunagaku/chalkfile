@@ -34,7 +34,6 @@ if (import.meta.main) {
       dataDir: path.join(SITE_DIR, 'data'),
       mediaManifest,
       outDir: path.join(SITE_DIR, 'dist'),
-      mediaOutDir: path.join(SITE_DIR, 'dist-media'),
       langs,
       hero: heroSnippetOf(courses.ja, Object.values(REGISTRY) as CourseModule[]),
       strict,
