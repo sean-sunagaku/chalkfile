@@ -16,7 +16,7 @@ import {
 } from '../../scripts/site/serve-files';
 import legacyConfig from '../../site/legacy-config.json';
 import type { CourseManifest } from '../../site/offline-shared';
-import type { Control } from './site';
+import { type Control, UPDATE_NEWS } from './site';
 import type { PreparedSite } from './sites';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
@@ -74,6 +74,8 @@ export class Session {
       m.files[0].bytes = Buffer.byteLength(page);
       m.bytes = m.files.reduce((n, f) => n + f.bytes, 0);
       m.revision = sha256(JSON.stringify(m.files));
+      // 新しい版で変わったこと（画面は、保存した日より後の日付のものを出す。テストの日の日付にする）
+      m.news = [{ date: new Date().toISOString().slice(0, 10), text: UPDATE_NEWS }, ...(m.news ?? [])];
     }
     if (this.control.mode === 'external') {
       m.files[1].url = 'https://example.com/restricted.mp4';

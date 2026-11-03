@@ -5,6 +5,9 @@
 /** どちらのサイトを配るか */
 export type SiteMode = 'ci' | 'real';
 
+/** 新しい版に見せるとき（Control の update）に、教材情報の news の先頭に足す文 */
+export const UPDATE_NEWS = '更新テストのお知らせ';
+
 /** 障害の差し込みの状態（POST /__test/control に渡す。書かなかった項目は既定に戻す） */
 export type Control = {
   /** 保存の取得（Range の無い GET）に差し込む失敗（差し込むのは faultLecture の faultTarget だけ）。external は保存の manifest に外の動画を入れる */
@@ -14,7 +17,7 @@ export type Control = {
    * 写すので取りに来ない。更新の保存の失敗は、版の変わるポスターに差し込む）
    */
   faultTarget: 'video' | 'poster';
-  /** 講座のページと保存の manifest を、新しい版に見せる */
+  /** 講座のページと保存の manifest を、新しい版に見せる（manifest の news の先頭に、テストの日の日付の UPDATE_NEWS を足す） */
   update: boolean;
   /** sw.js の中身を変えて、SW の更新を起こす */
   workerUpdate: boolean;

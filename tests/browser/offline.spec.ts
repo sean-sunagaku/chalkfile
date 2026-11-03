@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
 import type { Stats } from '../e2e/session';
-import type { Control, SiteSession } from '../e2e/site';
+import { type Control, type SiteSession, UPDATE_NEWS } from '../e2e/site';
 import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
 
 // 保存と再生を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座。tests/e2e/sites.ts）
@@ -271,12 +271,18 @@ test('キャンセル・別タブからの重複保存を処理し、再試行�
 test('教材更新：旧版の教材と動画を維持し、失敗後に再試行して完全な新版へ切り替える', async ({ page, context, request, site }) => {
   await ready(page, site); await save(page);
   const original = (await status(page, site)).saved!;
+  // 公開中の版と保存版が同じ間は、何が変わったかを出さない
+  await expect(page.locator('#offlineNews')).toBeHidden();
   // 変わっていない動画は前の保存版から写して取りに来ないので、更新の失敗は、版の変わるポスターに差し込む
   await control(request, { mode: 'fail', update: true, faultTarget: 'poster' });
   await page.reload();
   expect(await page.title()).not.toContain('更新テスト');
   await page.locator('#offlineCheck').click();
   await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
+  // 新しい版の案内に、何が変わったか（教材情報の news のうち、保存した日より後のもの）を出す
+  await expect(page.locator('#offlineMessage')).toContainText('新しい版があります');
+  await expect(page.locator('#offlineNews')).toBeVisible();
+  await expect(page.locator('#offlineNewsList li').first()).toContainText(UPDATE_NEWS);
   await page.locator('#offlineSave').click();
   await expect(page.locator('#offlineMessage')).toContainText('再試行');
   expect((await status(page, site)).saved!.manifest.revision).toBe(original.manifest.revision);
@@ -415,6 +421,11 @@ test('無効の一覧に入れた revision の保存版は、オンラインで�
     await expect(page).toHaveTitle(/更新テスト/);
     await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
     await expect(page.locator('#offlineSave')).toBeEnabled();
+    // 案内は更新だけ（開き直しても公開中のページになるので、「保存した版を開く」と「保存版が切り替わりました」は出さない）
+    await expect(page.locator('#offlineMessage')).toContainText('保存した版には直した不具合がある');
+    await expect(page.locator('#offlineReload')).toBeHidden();
+    await expect(page.locator('#playbackStatus')).toContainText('オンライン再生');
+    await expect(page.locator('#offlineNewsList li').first()).toContainText(UPDATE_NEWS);
     // 公開中のページのポスター（新しい版の ?v=。保存版には無い）と動画も、取って再生できる
     const poster = await page.locator('video').evaluate((v: HTMLVideoElement) => v.poster);
     expect(poster).toContain('?v=');

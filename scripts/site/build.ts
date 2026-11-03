@@ -12,17 +12,19 @@ import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
 import { SITE_TEXT, THEME_SUMMARY } from '../../site/i18n';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
 import { mimeOf } from '../../site/mime';
+import { SITE_NEWS, type SiteNews } from '../../site/news';
 import type { Asset, CourseManifest } from '../../site/offline-shared';
 import { asset, buildPwa, bundle } from '../pwa';
 import { assertSiteInvariants } from '../site-invariants';
 import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version';
 import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../validate';
 import { copyAssets, thumbnailAssets } from './assets';
-import { realPosterOf, SITE_DIR, siteBase } from './config';
+import { ROOT, realPosterOf, SITE_DIR, siteBase } from './config';
 import { cspHead, WWW_REDIRECT_SCRIPT } from './csp';
 import { cleanOutput, listOutput, writeCourse } from './emit';
 import { NOT_FOUND_HTML, writeServingFiles } from './headers';
 import { fillTemplate } from './html';
+import { newsFor, newsProblems } from './news';
 import { courseJson, homeCredits, lectureModels, minutesOf, type ReadData, type SiteData } from './model';
 import { courseManifest, type PosterFile, pageFiles } from './offline-manifest';
 import { type AppContext, appParts } from './parts';
@@ -55,6 +57,8 @@ export type BuildSiteOptions = {
   assetsDir?: string;
   /** 無効にした保存版の revision（既定は site/disabled-revisions.ts。sw.js の設定に入れる） */
   disabledRevisions?: readonly string[];
+  /** 「新しい版」の案内に出す、何が変わったか（既定は site/news.ts。講座の保存用の教材情報の news に入れる） */
+  news?: readonly SiteNews[];
   /** 進み具合の出力（既定は console.log）と注意（既定は console.warn） */
   log?: (line: string) => void;
   warn?: (line: string) => void;
@@ -102,7 +106,11 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
 
   // ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（PR の CI の npm run validate も同じものを流す）。
   // 台本の中身の確かめ（注入・隠し文字・秘密情報）は scripts/check_content.ts が受け持つ
-  const problems = siteProblems(config, coursesIn);
+  const news = o.news ?? SITE_NEWS;
+  const problems = [
+    ...siteProblems(config, coursesIn),
+    ...newsProblems(news, { root: ROOT, langs, courses: langs.flatMap((l) => coursesIn(l).map((c) => c.id)) }),
+  ];
   if (problems.length) throw new Error(problems.join('\n'));
 
   // 講座のページの画面（site/course-page.ts）と保存の画面（site/offline-client.ts）は、Bun で 1 本ずつにまとめてページに入れる
@@ -183,7 +191,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       const page = Buffer.from(stampVersion(html, pageVersion));
       const manifest =
         posters.length === lectures.length
-          ? courseManifest({ cid, title: course.title, page, files, pageVersion })
+          ? courseManifest({ cid, title: course.title, page, files, pageVersion, news: newsFor(news, course.id, lang) })
           : null;
       if (manifest) manifests.push(manifest);
       writeCourse({ outDir: dist, cid, page, posters, manifest });

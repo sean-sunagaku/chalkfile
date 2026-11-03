@@ -5,6 +5,8 @@ import { parseMediaPath } from './media-shared';
 // 1 つの bytes の Range の読み方は site/lib/http-range.ts（再生の応答の組み立てと一緒）。前からここを読むもの（旧 Pages の移行の SW）のために、ここからも出す
 export { byteRange } from './lib/http-range';
 export type Asset = { url: string; bytes: number; sha256: string; type: string };
+/** この講座の新しい版で変わったこと（site/news.ts から、講座の言語の文で。date は公開した日 YYYY-MM-DD） */
+export type CourseNews = { date: string; text: string };
 export type CourseManifest = {
   schema: 1;
   id: string;
@@ -13,6 +15,11 @@ export type CourseManifest = {
   revision: string;
   bytes: number;
   files: Asset[];
+  /**
+   * 「新しい版」の案内に出す、何が変わったか（新しいものから。無いこともある）。版（pageVersion・revision）には入らず、validateManifest も
+   * 見ない（前の SW も、知らない項目として、そのまま画面に渡す）。画面は文字として出すだけにする
+   */
+  news?: CourseNews[];
 };
 export type SavedVersion = { cache: string; manifest: CourseManifest; savedAt: string };
 /** 保存の記録（registry の 1 件。sw.ts が Response.json で書く）。新しい版が先頭で、前の完全な版を 1 つまで持つ */

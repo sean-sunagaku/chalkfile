@@ -29,12 +29,15 @@ export const createPlayer = (page: Page, onNext: () => void) => {
   const play = () => {
     video.play().catch(() => {});
   };
+  // 保存した版を無効にした講座は、オンラインでは公開中の版のページと動画を使うので、オンライン再生として案内する
   const playbackStatus = () => {
-    status.textContent = offline.saved ? T.playSaved : offline.online ? T.playOnline : T.playNeedNet;
+    status.textContent =
+      offline.saved && !offline.disabled ? T.playSaved : offline.online ? T.playOnline : T.playNeedNet;
   };
   window.addEventListener(OFFLINE_STATE, (event) => {
     offline = event.detail;
-    if (offline.saved && offline.pageVersion !== page.data.pageVersion) {
+    // 保存版がこのページの版と違えば、止めて開き直しを案内する（無効にした版は、開き直しても公開中のページになるので止めない）
+    if (offline.saved && !offline.disabled && offline.pageVersion !== page.data.pageVersion) {
       video.pause();
       status.textContent = T.playUpdated;
     } else playbackStatus();

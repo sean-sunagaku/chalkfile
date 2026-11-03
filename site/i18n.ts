@@ -1,5 +1,5 @@
 // 講座サイトの決まった文字（講座ページ・一覧ページ・オフライン保存）。言語ごと。
-// 日本語（ja）は、多言語にする前のサイトにあった文字と同じにする。{name} は差し込み（ページの中の tt() と build_site.ts の fill()）
+// 日本語（ja）は、多言語にする前のサイトにあった文字と同じにする。{name} は差し込み（site/lib/text.ts の fill と texts。画面の tt も同じもの）
 import type { Lang } from '../content/i18n';
 
 const ja = {
@@ -225,6 +225,8 @@ const ja = {
   ocNotPersisted: '保存の保持は未許可です。ブラウザが保存を削除する場合があります。',
   ocNoEstimate: '保存容量を取得できません。空き容量は保証されません。',
   ocNewVersion: '新しい版があります。更新は選んだときだけ行います。失敗した場合は今の保存を維持します。',
+  ocDisabled: '保存した版には直した不具合があるため、オンラインでは公開中の版を開いています。「新しい版に更新して保存」を選んでください。保存した版は、更新するまで消えません。',
+  offNewsHead: 'この版で変わったこと',
   ocSameVersion: '公開中の版と保存版は同じです。',
   ocCheckFailed: '{error} 保存済みの版は引き続き利用できます。',
   ocSaved: '教材と全動画の保存が完了しました。通信を切って再生を確認してください。',
@@ -465,6 +467,8 @@ const en: SiteText = {
   ocNotPersisted: 'Keeping the saved data is not allowed. The browser may delete it.',
   ocNoEstimate: 'Cannot read the storage size. Free space is not guaranteed.',
   ocNewVersion: 'A new version is available. It updates only when you choose to. If it fails, your current copy is kept.',
+  ocDisabled: 'The saved version has a problem that has been fixed, so the published version is open while you are online. Choose "Update to the new version and save". The saved version is kept until you update.',
+  offNewsHead: 'What changed in this version',
   ocSameVersion: 'The saved copy matches the published version.',
   ocCheckFailed: '{error} The saved copy is still usable.',
   ocSaved: 'The course and every video are saved. Turn off the connection and check playback.',
@@ -701,6 +705,8 @@ const zh: SiteText = {
   ocNotPersisted: '未允许保留保存的数据，浏览器可能会删除它。',
   ocNoEstimate: '无法获取存储空间，无法保证空闲空间。',
   ocNewVersion: '有新版本。只有在你选择时才会更新。失败时会保留当前的保存。',
+  ocDisabled: '保存的版本有已修复的问题，因此联网时打开的是发布中的版本。请选择“更新为新版本并保存”。在更新之前，保存的版本不会被删除。',
+  offNewsHead: '本版的变化',
   ocSameVersion: '保存的版本与发布的版本相同。',
   ocCheckFailed: '{error} 已保存的版本仍然可以使用。',
   ocSaved: '课程和全部视频已保存完成。请断开网络确认播放。',
@@ -739,5 +745,3 @@ export const THEME_SUMMARY: Record<Exclude<Lang, 'ja'>, Record<string, string>> 
   },
 };
 
-/** {name} を差し込む */
-export const fill = (s: string, vars: Record<string, string | number> = {}) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));

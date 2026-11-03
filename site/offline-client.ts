@@ -1,5 +1,6 @@
 import type { CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineOperation, OfflineReply, OfflineResults } from './offline-shared';
 import type { SiteText } from './i18n';
+import { texts } from './lib/text';
 import { OFFLINE_STATE, type OfflineState } from './page/events';
 
 type AppData = {
@@ -14,7 +15,7 @@ type AppData = {
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 const app = JSON.parse(document.getElementById('pwa-data')!.textContent!) as AppData;
 const T = app.text;
-const tt = (k: keyof SiteText, v: Record<string, string | number> = {}) => T[k].replace(/\{(\w+)\}/g, (m, n: string) => (n in v ? String(v[n]) : m));
+const tt = texts(T);
 const root = new URL(app.root, location.href);
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
@@ -104,7 +105,35 @@ function storageMessage() {
   if (!app.course) return T.ocStatusHome;
   const status = states.find((s) => s.id === app.course!.id);
   if (status?.incomplete) return status.saved ? T.ocIncompleteWithOld : T.ocIncomplete;
+  // 保存した版を無効にした講座（site/disabled-revisions.ts）で、公開中の版を開いているときは、更新して保存するよう案内する
+  if (openedPublished(status)) return T.ocDisabled;
   return status?.saved ? T.ocSavedReady : T.ocNotSaved;
+}
+/**
+ * 保存した版を無効にしたので、SW が保存版ではなく公開中の版のページを開いた（このページの版が保存版と違う）。オフラインでは SW は保存版を開くので、
+ * そのときは版が同じで、ふつうの保存版として扱う
+ */
+function openedPublished(status: CourseStatus | undefined) {
+  return !!app.course && !!status?.saved && !!status.disabled && status.saved.manifest.pageVersion !== app.course.pageVersion;
+}
+/**
+ * 新しい版で変わったこと（教材情報の news のうち、保存した日より後の日付のもの）。新しい版が見つかったときだけ出す。
+ * news は前の SW を通っても来るが、形は確かめていないので、文字のものだけを文字として出す
+ */
+let newsShown = '';
+function drawNews(saved: CourseStatus['saved'] | undefined) {
+  const since = saved?.savedAt.slice(0, 10) ?? '';
+  const news = saved && latest && saved.manifest.revision !== latest.revision && Array.isArray(latest.news) ? latest.news : [];
+  const items = news.filter((n) => typeof n?.date === 'string' && typeof n.text === 'string' && n.date >= since).slice(0, 3);
+  const key = JSON.stringify(items);
+  if (key === newsShown) return;
+  newsShown = key;
+  $('offlineNews').hidden = !items.length;
+  $('offlineNewsList').replaceChildren(...items.map((n) => {
+    const li = document.createElement('li');
+    li.textContent = `${n.date}　${n.text}`;
+    return li;
+  }));
 }
 function canShowStatus() { return !busy && !locallyDownloading && !states.some((s) => s.progress); }
 function drawProgress(p?: DownloadProgress | null) {
@@ -137,12 +166,15 @@ function render() {
     $<HTMLButtonElement>('offlineCancel').disabled = !workingId && !locallyDownloading;
     $<HTMLButtonElement>('offlineCheck').disabled = !registration || !navigator.onLine || processing;
     $('downloadSize').textContent = latest ? tt('ocSize', { size: mb(latest.bytes) }) : T.ocSizeOnline;
-    const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
+    // 保存版とこのページの版が違えば、保存した版を開き直す（無効にした版は、開き直しても公開中のページになるので案内しない）
+    const disabled = openedPublished(status);
+    const changed = !!saved && !disabled && saved.manifest.pageVersion !== app.course.pageVersion;
     $('offlineReload').hidden = !changed;
     if (changed) message(T.ocSwitched);
+    drawNews(saved);
     // 講座のページの画面（site/course-page.ts の player）が、再生の状態の文に使う
     window.dispatchEvent(new CustomEvent<OfflineState>(OFFLINE_STATE, { detail: {
-      saved: !!saved, pageVersion: saved?.manifest.pageVersion, incomplete: status?.incomplete, online: navigator.onLine,
+      saved: !!saved, pageVersion: saved?.manifest.pageVersion, incomplete: status?.incomplete, disabled, online: navigator.onLine,
     } }));
   }
   const list = $('savedCourses');
@@ -197,7 +229,8 @@ async function check() {
     latest = (await request('CHECK', app.course.id)).manifest;
     const status = states.find((s) => s.id === app.course!.id);
     const saved = status?.saved;
-    if (status && before === messageRevision && canShowStatus()) message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? T.ocNewVersion : saved ? T.ocSameVersion : storageMessage());
+    const newer = !!saved && saved.manifest.revision !== latest?.revision;
+    if (status && before === messageRevision && canShowStatus()) message(status.incomplete || openedPublished(status) ? storageMessage() : newer ? T.ocNewVersion : saved ? T.ocSameVersion : storageMessage());
   } catch (error) {
     // 確認を待つ間に始まった保存や、別操作の結果を遅い応答で置き換えない。
     if (before === messageRevision && canShowStatus()) {
