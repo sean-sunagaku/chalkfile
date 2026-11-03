@@ -129,8 +129,11 @@ if (lang === 'en') {
   const strings: { lecture: string; w: string[] }[] = [];
   const collect = (v: unknown, lecture: string): void => {
     if (typeof v === 'string') strings.push({ lecture, w: words(v) });
-    else if (Array.isArray(v)) v.forEach((x) => collect(x, lecture));
-    else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'docs' && k !== 'url') collect(x, lecture);
+    else if (Array.isArray(v)) {
+      v.forEach((x) => {
+        collect(x, lecture);
+      });
+    } else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'docs' && k !== 'url') collect(x, lecture);
   };
   for (const l of course.lectures) collect(l, l.id);
   const grams = new Map<string, [number, number][]>();

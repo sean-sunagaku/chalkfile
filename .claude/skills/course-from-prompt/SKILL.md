@@ -16,8 +16,8 @@ description: 共通プロンプト（実務に使える講座を、講師兼動�
 ```bash
 git clone https://github.com/sean-sunagaku/chalkfile.git && cd chalkfile && npm ci --ignore-scripts
 /Applications/VOICEVOX.app/Contents/Resources/vv-engine/run --host 127.0.0.1 --port 50021   # 別の端末で
-uv run --with numpy --with scipy python scripts/build_music.py
-node scripts/stills.mjs L01:1   # 初回は Chrome Headless Shell を落とす。Node 26 で止まったら lessons.md の手順で展開
+uv run --locked --group audio python scripts/build_music.py
+node scripts/stills.ts L01:1   # 初回は Chrome Headless Shell を落とす。Node 26 で止まったら lessons.md の手順で展開
 ```
 
 新しい作業は main を最新にしてからブランチを切る（`feat/<講座>`）。

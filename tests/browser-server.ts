@@ -86,7 +86,10 @@ Bun.serve({ hostname: '127.0.0.1', port: 8877, async fetch(req) {
   try { relative = decodeURIComponent(u.pathname.slice(prefix.length)); } catch { return new Response('bad request', { status: 400 }); }
   let file = media ? localMediaPath(media) : path.join(dir, relative);
   if (!media && !file.startsWith(dir + path.sep) && file !== dir) return new Response('forbidden', { status: 403 });
-  if (!existsSync(file)) return new Response('not found', { status: 404 });
+  // 本番（wrangler.jsonc の not_found_handling: 404-page）と同じく、無いページには 404.html を 404 で返す。動画は Worker と同じ素の 404
+  if (!existsSync(file)) {
+    return media ? new Response('not found', { status: 404 }) : new Response(readFileSync(path.join(dir, '404.html')), { status: 404, headers: { 'Content-Type': 'text/html' } });
+  }
   if (statSync(file).isDirectory()) {
     if (!u.pathname.endsWith('/')) return Response.redirect(`${u.pathname}/`, 301);
     relative += 'index.html'; file = path.join(file, 'index.html');

@@ -8,15 +8,16 @@
 
 ## 前提
 
-| ツール | 確かめた版 | 用途 |
+| ツール | 版（置き場所） | 用途 |
 |---|---|---|
-| Node.js | 26.12 | Remotion |
-| bun | 1.3.6 | synth・build_site・serve |
-| uv | 0.9 | mix.py・build_music.py（numpy・scipy） |
-| ffmpeg | 8.0 | 音と映像の合わせ・ポスター |
-| VOICEVOX | 0.25 | 日本語の声（エンジンが `127.0.0.1:50021`） |
-| Kokoro（`kokoro` 0.9.4・`misaki` 0.9.4） | Kokoro-82M・v1.1-zh | 英語と中国語の声（`scripts/tts_kokoro.py` を `uv run` が用意する。初回はモデルを取ってくる） |
-| Remotion | 4.0.440 | 映像 |
+| Node.js | `.node-version` | Remotion（書き出し・静止画）と Playwright |
+| bun | `.bun-version` | synth・build_site・serve・単体テスト |
+| Python | `.python-version`（uv が用意する） | mix.py・build_music.py・Kokoro・Whisper |
+| uv | `pyproject.toml` の `required-version` | mix.py・build_music.py（numpy・scipy の版は `pyproject.toml` と `uv.lock`） |
+| ffmpeg | 8.0 で確かめた | 音と映像の合わせ・ポスター |
+| VOICEVOX | 0.25 で確かめた | 日本語の声（エンジンが `127.0.0.1:50021`） |
+| Kokoro（`kokoro`・`misaki` の版は `scripts/tts_kokoro.py` の頭と `scripts/tts_kokoro.py.lock`） | Kokoro-82M・v1.1-zh | 英語と中国語の声（`scripts/tts_kokoro.py` を `uv run` が用意する。初回はモデルを取ってくる） |
+| Remotion | `package.json`（`remotion` と `@remotion/*`） | 映像 |
 
 VOICEVOX はアプリを開くか、macOS ならエンジンだけを起動する。台詞を変えずに作り直すだけなら、VOICEVOX の代わりに素材を取り出せばよい（下の「素材」）。
 
@@ -29,13 +30,13 @@ curl -s http://127.0.0.1:50021/version
 
 | コマンド | 入力 | 出力 |
 |---|---|---|
-| `uv run --with numpy --with scipy python scripts/build_music.py` | なし | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
+| `uv run --locked --group audio python scripts/build_music.py` | なし | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
 | `bun scripts/synth.ts [ID…]` | 台本、`reading.ts`（訳は `content/<講座>/<言語>/`） | `.work/tts/`（台詞の声。同じ文と声なら使い回す）、`src/generated/timeline.json`、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く） |
 | `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
 | `bun scripts/i18n.ts status`・`try`・`stamp` | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋（[i18n.md](i18n.md)） |
-| `uv run --with numpy --with scipy python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM | `public/audio/mix/<id>.wav` |
+| `uv run --locked --group audio python scripts/mix.py [ID…]` | `.work/plan/`、声、BGM | `public/audio/mix/<id>.wav` |
 | `bash scripts/render.sh [ID…]` | `src/`、timeline、mix | `out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（15MB 以下）・`.jpg`（ポスター） |
-| `node scripts/stills.mjs <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
+| `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、timeline | `out/stills/` |
 | `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、`site/media/`、`site/*.html`、`site/config.json` | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bash scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内のときだけ。講座サイトの公開には使わない） | `site/dist/`（`site/config.json` の `publishLangs` に訳の言語があるときは `site/dist-media/<言語>/` も） | 講座サイトの gh-pages（最新の main からだけ。いまは日本語だけ。訳の公開先は chalkfile.com の Worker に移る（[i18n.md](i18n.md)）） |
@@ -57,15 +58,16 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 ## 確かめ方
 
+- 台本: `bun scripts/validate.ts`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる
 - 読み: `.work/kana/<id>.txt`
-- 見た目: `node scripts/stills.mjs L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
+- 見た目: `node scripts/stills.ts L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
 - 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `timeline.json` の `durationInFrames / 30` と合う
 - 1 場面だけ見たいとき: `ffmpeg -ss <秒> -i site/media/L04.mp4 -frames:v 1 frame.jpg`
 - Remotion Studio: `npx remotion studio`（音つきで見るときは props の `audio` を true）
 
 ## ハマりどころ
 
-- **Remotion が public/ を一時フォルダへ複製してディスクを埋める**: 書き出しのたびに `public/`（声で約 1GB）を複製する。映像は無音で書き出すので、`render.sh` と `stills.mjs` は空の `.work/render-public` を渡している
+- **Remotion が public/ を一時フォルダへ複製してディスクを埋める**: 書き出しのたびに `public/`（声で約 1GB）を複製する。映像は無音で書き出すので、`render.sh` と `stills.ts` は空の `.work/render-public` を渡している
 - **書き出し中のフレームでディスクが埋まる**: 5 分の動画で 1〜2GB の JPEG を一時フォルダに置く。空きが少ないときは `CHUNK=1200 bash scripts/render.sh L04`（1,200 フレームずつ書き出して最後につなぐ）
 - **一時フォルダの `remotion-webpack-bundle-*` をまとめて消さない**: ほかのプロジェクトのものかもしれない。消すなら中身（bundle.js にこの講座の文字があるか）を確かめて 1 つずつ
 - **Node.js 26 で Chrome Headless Shell の展開が止まる**: 手で展開して版を書く
@@ -90,3 +92,16 @@ JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4�
 手元は `npm run dev:worker` でroot/CSP/scopeを確認。初回試験公開は `wrangler deploy --env preview`、本番は `wrangler deploy --env=""`。Workers Freeを維持する。静的assetsはMP4なし・2万files/25MiB以内。`no-transform` で本文hashとCSPを保つ。
 
 `scripts/legacy/deploy_pages.sh` は旧Pagesを移行案内だけへ置き換える専用手順。最新mainとcleanなcheckout、公開先のRange/CSP検証に通った後、明示した旧SHAに対するforce-with-leaseで置き換える。旧保存cacheは移行SWが保持する。公開と旧Pages切替は本人が依頼した範囲で実行し、許可済み操作を繰り返し確認しない。
+
+## 見た目が変わっていないかを見る（静止画の比較）
+
+見た目を変えないはずの整理の PR（エンジンの部品やテーマの作り方の整理など）では必ず流し、結果（`.work/stills-compare/report.md` の表）を PR に貼る。
+
+```bash
+git fetch origin
+bun scripts/stills-compare.ts --base origin/main     # 場面の種類ごとに 1 つ（20 場面）× 5 テーマ。1 分ほど
+bun scripts/stills-compare.ts L04:3,6 --theme night  # 場面とテーマを絞る（--captions で字幕つきの版を比べる）
+```
+
+- 基準の版を一時の worktree に作って同じ静止画（場面の終わり）を書き出し、ffmpeg の PSNR で比べる。同じ絵は inf。45dB（`--threshold`）より低いと「差あり」になり、`.work/stills-compare/diff/` に「基準・今・差を強めた絵」を並べた画像を出して 1 で終わる
+- 画像はコミットしない（`.work/` の下）。書体を Google Fonts から読むのでネットが要る。書体・Chrome・ネットに左右されるので、CI では流さなくてよい

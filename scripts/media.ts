@@ -5,7 +5,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../content';
-import { MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, validateMediaManifest, type MediaEntry, type MediaManifest } from '../site/media-shared';
+import { MEDIA_REPOSITORY, allMediaEntries, mediaFilename, mediaKey, mediaPath, validateMediaManifest, type MediaEntry } from '../site/media-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const MANIFEST = path.join(ROOT, 'site/media-manifest.json');

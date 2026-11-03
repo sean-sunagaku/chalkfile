@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-11-02T14:03:38.087Z",
+  "source": "5ac64dbac4b1fa0bba3c8eb59f9365358b0adf96",
+  "browser": "156.0.8078.48",
+  "eras": {
+    "workers": {
+      "scope": "https://chalkfile.com/",
+      "prefix": "chalkfile:/:offline-v1:",
+      "reader": "sw",
+      "mediaRoots": {},
+      "note": "今の main で組んだ site/dist の全講座を、本物の Chrome と site/dist/sw.js で保存した記録（record.json）。record-updated.json は教材の更新を保存した後の記録"
+    },
+    "legacy-pages": {
+      "scope": "https://sean-sunagaku.github.io/chalkfile/",
+      "prefix": "chalkfile:/chalkfile/:offline-v1:",
+      "reader": "legacy-sw",
+      "mediaRoots": {
+        "en": "/chalkfile-media-en/",
+        "zh": "/chalkfile-media-zh/"
+      },
+      "captured": [
+        "pstack-comedy"
+      ],
+      "composed": [
+        "indie-marketing",
+        "nudge-comedy",
+        "nudge-product",
+        "rive-comedy",
+        "stripe-billing",
+        "superagent-comedy",
+        "uiux-engineers"
+      ],
+      "note": "旧 Pages の最後の公開（a4399995c3ebd0b356459fcae3812da117c2ab9b）の教材情報。pstack-comedy は本物の旧 SW で保存した記録、ほかは同じ形で組んだ記録"
+    }
+  }
+}
