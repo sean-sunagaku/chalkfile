@@ -23,23 +23,65 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
     <Content style={{ alignItems: 'center', gap: 40, top: 150 }}>
       {s.next ? (
         <>
-          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}>NEXT {unit}</div>
+          <div
+            style={{ fontFamily: MONO, fontWeight: 700, fontSize: 28, letterSpacing: 8, color: C.muted, opacity: p }}
+          >
+            NEXT {unit}
+          </div>
           <div style={{ opacity: q, transform: `translateY(${dropY(q)}px)` }}>
-            <Glass t="violet" active={1} style={{ padding: '44px 64px', display: 'flex', alignItems: 'center', gap: 44 }}>
-              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 120, lineHeight: 1, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+            <Glass
+              t="violet"
+              active={1}
+              style={{ padding: '44px 64px', display: 'flex', alignItems: 'center', gap: 44 }}
+            >
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontWeight: 900,
+                  fontSize: 120,
+                  lineHeight: 1,
+                  background: DISPLAY,
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                }}
+              >
                 {String(s.next.no).padStart(2, '0')}
               </div>
-              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: fitSize(s.next.title, 64, 1180), color: C.ink, whiteSpace: 'nowrap' }}>{s.next.title}</div>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontWeight: 900,
+                  fontSize: fitSize(s.next.title, 64, 1180),
+                  color: C.ink,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.next.title}
+              </div>
               <Icon name="route" size={56} color={TONES.violet.main} />
             </Glass>
           </div>
         </>
       ) : (
         <>
-          <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 110, opacity: p, background: DISPLAY, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+          <div
+            style={{
+              fontFamily: SANS,
+              fontWeight: 900,
+              fontSize: 110,
+              opacity: p,
+              background: DISPLAY,
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
             {text.done}
           </div>
-          {s.closing ? <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 42, color: C.sub, opacity: q }}>{s.closing}</div> : null}
+          {s.closing ? (
+            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 42, color: C.sub, opacity: q }}>{s.closing}</div>
+          ) : null}
         </>
       )}
       {course.standalone ? null : (
@@ -56,10 +98,23 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
               }}
             />
           ))}
-          <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>{text.progress(lecture.no, total)}</div>
+          <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginLeft: 12 }}>
+            {text.progress(lecture.no, total)}
+          </div>
         </div>
       )}
-      <div style={{ position: 'absolute', bottom: 0, fontFamily: SANS, fontSize: 22, color: C.muted, opacity: c, textAlign: 'center', lineHeight: 1.7 }}>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          fontFamily: SANS,
+          fontSize: 22,
+          color: C.muted,
+          opacity: c,
+          textAlign: 'center',
+          lineHeight: 1.7,
+        }}
+      >
         {course.disclaimer ? <div>{course.disclaimer}</div> : null}
         <div>{text.credits((lectureCredits as Record<string, string[]>)[key] ?? (credits as string[]))}</div>
       </div>

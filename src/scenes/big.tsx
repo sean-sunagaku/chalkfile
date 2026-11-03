@@ -24,7 +24,17 @@ const Big: React.FC<{ s: BigScene }> = ({ s }) => {
         </div>
       ) : null}
       {s.kicker ? (
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 32, color: tt.text, opacity: k, transform: `translateY(${dropY(k, 14)}px)`, maxWidth: 1500 }}>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontWeight: 700,
+            fontSize: 32,
+            color: tt.text,
+            opacity: k,
+            transform: `translateY(${dropY(k, 14)}px)`,
+            maxWidth: 1500,
+          }}
+        >
           <Smart text={s.kicker} t={s.tone} />
         </div>
       ) : null}
@@ -43,7 +53,18 @@ const Big: React.FC<{ s: BigScene }> = ({ s }) => {
         <Rich text={s.text} t={s.tone} />
       </div>
       {s.sub ? (
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 36, color: C.sub, maxWidth: 1500, lineHeight: 1.5, opacity: sub, transform: `translateY(${dropY(sub, 14)}px)` }}>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontWeight: 500,
+            fontSize: 36,
+            color: C.sub,
+            maxWidth: 1500,
+            lineHeight: 1.5,
+            opacity: sub,
+            transform: `translateY(${dropY(sub, 14)}px)`,
+          }}
+        >
           <Smart text={s.sub} t={s.tone} />
         </div>
       ) : null}

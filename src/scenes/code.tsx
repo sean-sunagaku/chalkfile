@@ -8,7 +8,8 @@ import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing'
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
-const RX = /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b(?:def|return|if|not|in|for|and|or|try|except|class|async|await|None|True|False|import|from|with|as|elif|else|while|is)\b)|(@[\w.]+)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*(?=\())/gm;
+const RX =
+  /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b(?:def|return|if|not|in|for|and|or|try|except|class|async|await|None|True|False|import|from|with|as|elif|else|while|is)\b)|(@[\w.]+)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*(?=\())/gm;
 
 // JSON はキー（: が続く文字列）・値の文字列・true/false/null・数値を塗り分ける
 const RX_JSON = /("(?:[^"\\]|\\.)*"(?=\s*:))|("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm;
@@ -21,8 +22,24 @@ const highlight = (line: string, lang: CodeScene['lang']): React.ReactNode[] => 
     const i = m.index ?? 0;
     if (i > last) out.push(line.slice(last, i));
     const color = json
-      ? m[1] ? SYNTAX.fn : m[2] ? SYNTAX.string : m[3] ? SYNTAX.keyword : SYNTAX.number
-      : m[1] ? SYNTAX.comment : m[2] ? SYNTAX.string : m[3] ? SYNTAX.keyword : m[4] ? SYNTAX.deco : m[5] ? SYNTAX.number : SYNTAX.fn;
+      ? m[1]
+        ? SYNTAX.fn
+        : m[2]
+          ? SYNTAX.string
+          : m[3]
+            ? SYNTAX.keyword
+            : SYNTAX.number
+      : m[1]
+        ? SYNTAX.comment
+        : m[2]
+          ? SYNTAX.string
+          : m[3]
+            ? SYNTAX.keyword
+            : m[4]
+              ? SYNTAX.deco
+              : m[5]
+                ? SYNTAX.number
+                : SYNTAX.fn;
     out.push(
       <span key={i} style={{ color, fontStyle: !json && m[1] ? 'italic' : undefined }}>
         {m[0]}
@@ -47,7 +64,9 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   const hasNotes = s.marks.some((m) => m.note);
   const edW = hasNotes ? 1150 : W - PAD * 2;
   // 横にもはみ出さないように（英数字は 0.6em、日本語は 1em として最も長い行で決める）
-  const widestEm = Math.max(...codeLines.map((ln) => [...ln].reduce((w, ch) => w + (/[\x00-\x7F]/.test(ch) ? 0.6 : 1), 0)));
+  const widestEm = Math.max(
+    ...codeLines.map((ln) => [...ln].reduce((w, ch) => w + (/[\x00-\x7F]/.test(ch) ? 0.6 : 1), 0)),
+  );
   const fitW = Math.floor((edW - 64 - 48) / Math.max(1, widestEm));
   const fontSize = Math.min(s.fontSize ?? 26, fit, fitW);
   const lh = Math.round(fontSize * 1.52);
@@ -65,7 +84,17 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   });
   return (
     <>
-      <div style={{ position: 'absolute', left: PAD, top: edTop, width: edW, height: editorH, opacity: enter, transform: `translateY(${dropY(enter, 16)}px)` }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: PAD,
+          top: edTop,
+          width: edW,
+          height: editorH,
+          opacity: enter,
+          transform: `translateY(${dropY(enter, 16)}px)`,
+        }}
+      >
         <div
           style={{
             width: '100%',
@@ -78,16 +107,41 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
             position: 'relative',
           }}
         >
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', borderBottom: `1.5px solid ${C.codeLine}`, background: C.codeBar }}>
+          <div
+            style={{
+              height: 56,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '0 24px',
+              borderBottom: `1.5px solid ${C.codeLine}`,
+              background: C.codeBar,
+            }}
+          >
             {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
-            <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.codeMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.file}</div>
+            <div
+              style={{
+                marginLeft: 14,
+                fontFamily: MONO,
+                fontSize: 20,
+                color: C.codeMuted,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {s.file}
+            </div>
           </div>
           <div style={{ position: 'absolute', left: 0, right: 0, top: codeTop - 16 + pad }}>
             {s.marks.map((m, i) => {
               const on = i === activeMark;
-              const p = interpolate(frame - (lineStart(lines, m.at) - LEAD.appear), [0, 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+              const p = interpolate(frame - (lineStart(lines, m.at) - LEAD.appear), [0, 8], [0, 1], {
+                extrapolateLeft: 'clamp',
+                extrapolateRight: 'clamp',
+              });
               if (!on) return null;
               const tt = tone(m.tone ?? 'violet');
               return (
@@ -109,11 +163,38 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               );
             })}
             {codeLines.map((ln, i) => {
-              const o = interpolate(frame - show - i * 1.2, [0, 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+              const o = interpolate(frame - show - i * 1.2, [0, 8], [0, 1], {
+                extrapolateLeft: 'clamp',
+                extrapolateRight: 'clamp',
+              });
               const inMark = activeMark >= 0 && i + 1 >= s.marks[activeMark].from && i + 1 <= s.marks[activeMark].to;
               return (
-                <div key={i} style={{ height: lh, display: 'flex', alignItems: 'center', fontFamily: MONO, fontSize, whiteSpace: 'pre', opacity: o * (activeMark >= 0 && !inMark ? 0.55 : 1), position: 'relative', overflow: 'hidden' }}>
-                  <span style={{ width: 64, flexShrink: 0, textAlign: 'right', paddingRight: 22, color: C.codeMuted, fontSize: fontSize * 0.8 }}>{i + 1}</span>
+                <div
+                  key={i}
+                  style={{
+                    height: lh,
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontFamily: MONO,
+                    fontSize,
+                    whiteSpace: 'pre',
+                    opacity: o * (activeMark >= 0 && !inMark ? 0.55 : 1),
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 64,
+                      flexShrink: 0,
+                      textAlign: 'right',
+                      paddingRight: 22,
+                      color: C.codeMuted,
+                      fontSize: fontSize * 0.8,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
                   <span style={{ color: SYNTAX.plain }}>{highlight(ln, s.lang)}</span>
                 </div>
               );
@@ -126,27 +207,58 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
             if (!m.note || (i !== activeMark && i !== activeMark - 1)) return null;
             // ひとつ前の注釈は、次の注釈が出るときに消す
             const out = i === activeMark - 1 ? lineStart(lines, s.marks[activeMark].at) - LEAD.appear : null;
-            return <Note key={i} m={m} y={notePos[i].y} center={notePos[i].center} left={PAD + edW} out={out} h={noteH} />;
+            return (
+              <Note key={i} m={m} y={notePos[i].y} center={notePos[i].center} left={PAD + edW} out={out} h={noteH} />
+            );
           })
         : null}
     </>
   );
 };
 
-const Note: React.FC<{ m: CodeScene['marks'][number]; y: number; center: number; left: number; out: number | null; h: number }> = ({ m, y, center, left, out, h }) => {
+const Note: React.FC<{
+  m: CodeScene['marks'][number];
+  y: number;
+  center: number;
+  left: number;
+  out: number | null;
+  h: number;
+}> = ({ m, y, center, left, out, h }) => {
   const frame = useCurrentFrame();
   const p = useAppear(m.at, 2);
-  const o = out === null ? p : p * interpolate(frame - out, [0, 8], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const o =
+    out === null
+      ? p
+      : p * interpolate(frame - out, [0, 8], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   if (o <= 0.001) return null;
   const tt = tone(m.tone ?? 'violet');
   return (
     <>
       <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, opacity: o }}>
-        <path d={`M ${left + 4} ${center} C ${left + 30} ${center}, ${left + 24} ${y + h / 2}, ${left + 52} ${y + h / 2}`} fill="none" stroke={tt.main} strokeWidth={3} />
+        <path
+          d={`M ${left + 4} ${center} C ${left + 30} ${center}, ${left + 24} ${y + h / 2}, ${left + 52} ${y + h / 2}`}
+          fill="none"
+          stroke={tt.main}
+          strokeWidth={3}
+        />
         <circle cx={left + 4} cy={center} r={6} fill={tt.main} />
       </svg>
-      <div style={{ position: 'absolute', left: left + 52, width: W - PAD - left - 52, top: y, height: h, opacity: o, transform: `translateX(${(1 - p) * -18}px)` }}>
-        <Glass t={m.tone} active={1} style={{ height: '100%', boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center' }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: left + 52,
+          width: W - PAD - left - 52,
+          top: y,
+          height: h,
+          opacity: o,
+          transform: `translateX(${(1 - p) * -18}px)`,
+        }}
+      >
+        <Glass
+          t={m.tone}
+          active={1}
+          style={{ height: '100%', boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center' }}
+        >
           <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: C.ink, lineHeight: 1.38 }}>
             <Smart text={m.note!} t={m.tone} />
           </div>

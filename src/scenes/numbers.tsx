@@ -16,7 +16,7 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
   const eased = 1 - Math.pow(1 - c, 3);
   const v = it.value * eased;
   const tt = tone(it.tone);
-  const text = (it.decimals ? v.toFixed(it.decimals) : Math.round(v).toLocaleString('ja-JP'));
+  const text = it.decimals ? v.toFixed(it.decimals) : Math.round(v).toLocaleString('ja-JP');
   return (
     <div
       style={{
@@ -29,9 +29,24 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
         transform: `translateY(${dropY(p, 14)}px)`,
       }}
     >
-      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: 60, color: tt.main, textAlign: 'center' }}>{it.op}</div>
-      <div style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: last ? 44 : 38, color: last ? C.ink : C.sub }}>{it.label}</div>
-      <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: last ? 104 : 72, color: last ? tt.main : C.ink, fontVariantNumeric: 'tabular-nums', textShadow: last ? `0 0 40px ${tt.main}66` : undefined }}>
+      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: 60, color: tt.main, textAlign: 'center' }}>
+        {it.op}
+      </div>
+      <div
+        style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: last ? 44 : 38, color: last ? C.ink : C.sub }}
+      >
+        {it.label}
+      </div>
+      <div
+        style={{
+          fontFamily: SANS,
+          fontWeight: 900,
+          fontSize: last ? 104 : 72,
+          color: last ? tt.main : C.ink,
+          fontVariantNumeric: 'tabular-nums',
+          textShadow: last ? `0 0 40px ${tt.main}66` : undefined,
+        }}
+      >
         {it.prefix ?? ''}
         {text}
         <span style={{ fontSize: last ? 52 : 40, marginLeft: 6 }}>{it.suffix}</span>
@@ -45,7 +60,20 @@ const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
   // 枠は最初の数字と一緒に出す（数字の前の台詞の間、空の枠を見せない）
   const box = useAppear(Math.min(...s.items.map((it) => it.at)));
   return (
-    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: H - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: PAD,
+        right: PAD,
+        top: CONTENT_TOP,
+        bottom: H - CONTENT_BOTTOM,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 26,
+      }}
+    >
       <div style={{ width: 1260, opacity: box }}>
         <Glass t="mint" active={0.4} style={{ padding: '28px 56px 32px' }}>
           {s.items.map((it, i) => (
@@ -54,7 +82,9 @@ const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
         </Glass>
       </div>
       {s.footnote ? (
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 26, color: C.muted, opacity: f }}>{s.footnote.text}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 26, color: C.muted, opacity: f }}>
+          {s.footnote.text}
+        </div>
       ) : null}
     </div>
   );

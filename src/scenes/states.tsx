@@ -63,7 +63,16 @@ const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: nu
           gap: 4,
         }}
       >
-        <div style={{ fontFamily: start ? SANS : MONO, fontWeight: start ? 900 : 700, fontSize: start ? 30 : 29, color: C.ink }}>{n.code}</div>
+        <div
+          style={{
+            fontFamily: start ? SANS : MONO,
+            fontWeight: start ? 900 : 700,
+            fontSize: start ? 30 : 29,
+            color: C.ink,
+          }}
+        >
+          {n.code}
+        </div>
         <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 20, color: tt.text }}>{n.ja}</div>
       </div>
       {n.badge ? (

@@ -11,7 +11,11 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
   const p = useAppear(at);
   return (
     <div style={{ opacity: p, transform: `translateY(${dropY(p)}px)` }}>
-      <Glass active={active ? 1 : 0} t="violet" style={{ padding: '30px 40px', display: 'flex', alignItems: 'center', gap: 34 }}>
+      <Glass
+        active={active ? 1 : 0}
+        t="violet"
+        style={{ padding: '30px 40px', display: 'flex', alignItems: 'center', gap: 34 }}
+      >
         <div
           style={{
             width: 76,
@@ -26,7 +30,11 @@ const RecapRow: React.FC<{ text: string; at: number; i: number; active: boolean 
             fontSize: 34,
             color: C.onAccent,
             flexShrink: 0,
-            boxShadow: active ? (THEME.scheme === 'dark' ? `0 0 30px ${alpha(C.accent, 0.7)}` : `0 10px 22px -8px ${alpha(C.accent, 0.7)}`) : undefined,
+            boxShadow: active
+              ? THEME.scheme === 'dark'
+                ? `0 0 30px ${alpha(C.accent, 0.7)}`
+                : `0 10px 22px -8px ${alpha(C.accent, 0.7)}`
+              : undefined,
           }}
         >
           {i + 1}

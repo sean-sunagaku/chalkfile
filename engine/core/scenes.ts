@@ -33,7 +33,8 @@ export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
   },
   points: {
     label: '要点のカード',
-    describe: (s) => s.items.map((x, i) => `${s.numbered ? `${i + 1}. ` : ''}${x.title}${x.body ? `（${x.body}）` : ''}`).join('／'),
+    describe: (s) =>
+      s.items.map((x, i) => `${s.numbered ? `${i + 1}. ` : ''}${x.title}${x.body ? `（${x.body}）` : ''}`).join('／'),
   },
   concepts: {
     label: '用語のカード',
@@ -45,7 +46,11 @@ export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
   },
   flow: {
     label: '流れの図',
-    describe: (s) => `${s.nodes.map((n) => n.label).join('・')}。${s.edges.filter((e) => e.label).map((e) => e.label).join('／')}`,
+    describe: (s) =>
+      `${s.nodes.map((n) => n.label).join('・')}。${s.edges
+        .filter((e) => e.label)
+        .map((e) => e.label)
+        .join('／')}`,
   },
   states: {
     label: '状態の図',
@@ -70,7 +75,9 @@ export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
   },
   numbers: {
     label: '数字',
-    describe: (s) => s.items.map((x) => `${x.op ?? ''}${x.label} ${x.prefix ?? ''}${x.value}${x.suffix ?? ''}`).join(' ') + (s.footnote ? `／${s.footnote.text}` : ''),
+    describe: (s) =>
+      s.items.map((x) => `${x.op ?? ''}${x.label} ${x.prefix ?? ''}${x.value}${x.suffix ?? ''}`).join(' ') +
+      (s.footnote ? `／${s.footnote.text}` : ''),
   },
   timeline: {
     label: '時間の流れ',
@@ -97,7 +104,10 @@ export const SCENE_INFO: { [K in SceneKind]: SceneInfo<K> } = {
     describe: (s) =>
       [s.left, s.right]
         .filter((x): x is NonNullable<typeof x> => !!x)
-        .map((x) => `${x.label}${x.title ? `「${x.title}」` : ''}: ${(x.notes ?? []).map((n) => `${n.n}. ${n.text}`).join(' ')}`)
+        .map(
+          (x) =>
+            `${x.label}${x.title ? `「${x.title}」` : ''}: ${(x.notes ?? []).map((n) => `${n.n}. ${n.text}`).join(' ')}`,
+        )
         .join('／'),
   },
   terminal: {

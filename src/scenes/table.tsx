@@ -6,7 +6,14 @@ import { C, CONTENT_BOTTOM, CONTENT_TOP, H, MONO, PAD, SANS, TONES, tone } from 
 import { dropY, useActiveLine, useAppear } from '../timing';
 import { defineScene } from './define';
 
-const Row: React.FC<{ r: TableScene['rows'][number]; widths: number[]; mono: number[]; fontSize: number; on: boolean; h: number }> = ({ r, widths, mono, fontSize, on, h }) => {
+const Row: React.FC<{
+  r: TableScene['rows'][number];
+  widths: number[];
+  mono: number[];
+  fontSize: number;
+  on: boolean;
+  h: number;
+}> = ({ r, widths, mono, fontSize, on, h }) => {
   const p = useAppear(r.at);
   const tt = tone(r.tone ?? 'slate');
   return (
@@ -22,7 +29,18 @@ const Row: React.FC<{ r: TableScene['rows'][number]; widths: number[]; mono: num
         position: 'relative',
       }}
     >
-      <div style={{ position: 'absolute', left: 0, top: 10, bottom: 10, width: 6, borderRadius: 9, background: tt.main, opacity: on ? 1 : 0.6 }} />
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 10,
+          bottom: 10,
+          width: 6,
+          borderRadius: 9,
+          background: tt.main,
+          opacity: on ? 1 : 0.6,
+        }}
+      />
       {r.cells.map((c, i) => (
         <div
           key={i}
@@ -56,11 +74,34 @@ const Table: React.FC<{ s: TableScene }> = ({ s }) => {
   const avail = CONTENT_BOTTOM - CONTENT_TOP - 90;
   const rowH = Math.min(118, Math.max(64, Math.floor(avail / s.rows.length)));
   return (
-    <div style={{ position: 'absolute', left: PAD, right: PAD, top: CONTENT_TOP, bottom: H - CONTENT_BOTTOM, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: PAD,
+        right: PAD,
+        top: CONTENT_TOP,
+        bottom: H - CONTENT_BOTTOM,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
       <Glass style={{ overflow: 'hidden', opacity: head }}>
         <div style={{ display: 'flex', background: TONES.violet.soft }}>
           {s.columns.map((c, i) => (
-            <div key={i} style={{ width: `${widths[i] * 100}%`, padding: '18px 28px', fontFamily: SANS, fontWeight: 700, fontSize: 24, color: TONES.violet.text, letterSpacing: 2, boxSizing: 'border-box' }}>
+            <div
+              key={i}
+              style={{
+                width: `${widths[i] * 100}%`,
+                padding: '18px 28px',
+                fontFamily: SANS,
+                fontWeight: 700,
+                fontSize: 24,
+                color: TONES.violet.text,
+                letterSpacing: 2,
+                boxSizing: 'border-box',
+              }}
+            >
               {c}
             </div>
           ))}

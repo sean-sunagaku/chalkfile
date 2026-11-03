@@ -28,7 +28,16 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
       ))}
       <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0 }}>
         {s.actors.map((a, i) => (
-          <line key={a.key} x1={PAD + (i + 0.5) * colW} x2={PAD + (i + 0.5) * colW} y1={top + 128} y2={1004} stroke={C.lane} strokeWidth={2} strokeDasharray="6 10" />
+          <line
+            key={a.key}
+            x1={PAD + (i + 0.5) * colW}
+            x2={PAD + (i + 0.5) * colW}
+            y1={top + 128}
+            y2={1004}
+            stroke={C.lane}
+            strokeWidth={2}
+            strokeDasharray="6 10"
+          />
         ))}
       </svg>
       {s.steps.map((st, i) => {
@@ -36,7 +45,10 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         seen.set(st.at, k + 1);
         const y = firstY + i * gap;
         const start = lineStart(lines, st.at) - LEAD.draw + k * 14;
-        const draw = interpolate(frame - start, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+        const draw = interpolate(frame - start, [0, 16], [0, 1], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+        });
         if (draw <= 0) return null;
         const x1 = xOf(st.from);
         const x2 = xOf(st.to);
@@ -47,14 +59,38 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
         const isLatest = st.at === latestAt;
         const dim = isLatest ? 1 : 0.62;
         const xNow = xa + (xb - xa) * draw;
-        const dot = interpolate(frame - start, [4, 24], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-        const dotO = interpolate(frame - start, [4, 8, 22, 28], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+        const dot = interpolate(frame - start, [4, 24], [0, 1], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+        });
+        const dotO = interpolate(frame - start, [4, 8, 22, 28], [0, 1, 1, 0], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+        });
         return (
           <React.Fragment key={i}>
             <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, opacity: dim }}>
-              <line x1={xa} y1={y} x2={xNow} y2={y} stroke={tt.main} strokeWidth={isLatest ? 5 : 4} strokeLinecap="round" strokeDasharray={st.dashed ? '12 10' : undefined} />
-              {draw > 0.97 ? <polygon points={`${xb},${y} ${xb - dir * 18},${y - 10} ${xb - dir * 18},${y + 10}`} fill={tt.main} /> : null}
-              <circle cx={xa + (xb - xa) * dot} cy={y} r={10} fill={tt.main} opacity={dotO} style={{ filter: `drop-shadow(0 0 12px ${tt.main})` }} />
+              <line
+                x1={xa}
+                y1={y}
+                x2={xNow}
+                y2={y}
+                stroke={tt.main}
+                strokeWidth={isLatest ? 5 : 4}
+                strokeLinecap="round"
+                strokeDasharray={st.dashed ? '12 10' : undefined}
+              />
+              {draw > 0.97 ? (
+                <polygon points={`${xb},${y} ${xb - dir * 18},${y - 10} ${xb - dir * 18},${y + 10}`} fill={tt.main} />
+              ) : null}
+              <circle
+                cx={xa + (xb - xa) * dot}
+                cy={y}
+                r={10}
+                fill={tt.main}
+                opacity={dotO}
+                style={{ filter: `drop-shadow(0 0 12px ${tt.main})` }}
+              />
             </svg>
             <div
               style={{
@@ -90,15 +126,64 @@ const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
   );
 };
 
-const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number; top: number }> = ({ a, x, w, top }) => {
+const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number; top: number }> = ({
+  a,
+  x,
+  w,
+  top,
+}) => {
   const p = useAppear(0);
   return (
-    <div style={{ position: 'absolute', left: x - w / 2, top, width: w, height: 120, opacity: p, transform: `translateY(${dropY(p)}px)` }}>
-      <Glass t={a.tone} active={0.4} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', gap: 18, padding: '0 22px', boxSizing: 'border-box' }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: x - w / 2,
+        top,
+        width: w,
+        height: 120,
+        opacity: p,
+        transform: `translateY(${dropY(p)}px)`,
+      }}
+    >
+      <Glass
+        t={a.tone}
+        active={0.4}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 18,
+          padding: '0 22px',
+          boxSizing: 'border-box',
+        }}
+      >
         <IconBadge name={a.icon} t={a.tone} size={64} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: a.label.length > 9 ? 27 : 32, color: C.ink, whiteSpace: 'nowrap' }}>{a.label}</div>
-          {a.sub ? <div style={{ fontFamily: a.sub.includes('/') ? MONO : SANS, fontWeight: 500, fontSize: 20, color: C.sub, whiteSpace: 'nowrap' }}>{a.sub}</div> : null}
+          <div
+            style={{
+              fontFamily: SANS,
+              fontWeight: 900,
+              fontSize: a.label.length > 9 ? 27 : 32,
+              color: C.ink,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {a.label}
+          </div>
+          {a.sub ? (
+            <div
+              style={{
+                fontFamily: a.sub.includes('/') ? MONO : SANS,
+                fontWeight: 500,
+                fontSize: 20,
+                color: C.sub,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {a.sub}
+            </div>
+          ) : null}
         </div>
       </Glass>
     </div>

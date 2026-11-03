@@ -14,7 +14,18 @@ const RefCard: React.FC<{ r: RefsScene['refs'][number]; i: number }> = ({ r, i }
       <Glass t="cyan" style={{ flex: 1, padding: '44px 46px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         <IconBadge name={i === 0 ? 'file' : 'book'} t={i === 0 ? 'violet' : 'cyan'} size={84} />
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 44, color: C.ink }}>{r.title}</div>
-        <div style={{ fontFamily: MONO, fontWeight: 500, fontSize: 25, color: TONES.cyan.text, lineHeight: 1.45, wordBreak: 'break-all' }}>{r.url}</div>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontWeight: 500,
+            fontSize: 25,
+            color: TONES.cyan.text,
+            lineHeight: 1.45,
+            wordBreak: 'break-all',
+          }}
+        >
+          {r.url}
+        </div>
         <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 30, color: C.sub }}>{r.note}</div>
       </Glass>
     </div>

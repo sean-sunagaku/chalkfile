@@ -12,7 +12,13 @@ type Side = 'l' | 'r' | 't' | 'b';
 export type Box = { x: number; y: number; w: number; h: number };
 
 const anchor = (b: Box, side: Side): Pt =>
-  side === 'l' ? [b.x - b.w / 2, b.y] : side === 'r' ? [b.x + b.w / 2, b.y] : side === 't' ? [b.x, b.y - b.h / 2] : [b.x, b.y + b.h / 2];
+  side === 'l'
+    ? [b.x - b.w / 2, b.y]
+    : side === 'r'
+      ? [b.x + b.w / 2, b.y]
+      : side === 't'
+        ? [b.x, b.y - b.h / 2]
+        : [b.x, b.y + b.h / 2];
 
 const autoSides = (a: Box, b: Box): [Side, Side] => {
   const dx = b.x - a.x;
@@ -47,7 +53,10 @@ export const Edge: React.FC<{
   const start = lineStart(lines, at) - LEAD.draw + stagger;
   const draw = interpolate(frame - start, [0, 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const dot = interpolate(frame - start, [4, 26], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const dotO = interpolate(frame - start, [4, 8, 24, 30], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const dotO = interpolate(frame - start, [4, 8, 24, 30], [0, 1, 1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
   if (draw <= 0) return null;
   const [fs, ts] = autoSides(a, b);
   const p0 = anchor(a, fromSide ?? fs);
@@ -87,7 +96,14 @@ export const Edge: React.FC<{
           style={dashed ? { strokeDasharray: '10 10', opacity: draw } : undefined}
         />
         <polygon points={head.map((p) => p.join(',')).join(' ')} fill={col} opacity={draw >= 0.98 ? 1 : 0} />
-        <circle cx={dp[0]} cy={dp[1]} r={9} fill={col} opacity={dotO} style={{ filter: `drop-shadow(0 0 10px ${col})` }} />
+        <circle
+          cx={dp[0]}
+          cy={dp[1]}
+          r={9}
+          fill={col}
+          opacity={dotO}
+          style={{ filter: `drop-shadow(0 0 10px ${col})` }}
+        />
       </svg>
       {label ? (
         <div

@@ -32,9 +32,39 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
   const height = Math.min(CONTENT_BOTTOM - top, y + 10);
   return (
     <>
-      <div style={{ position: 'absolute', left: PAD, top, width: tw, height, opacity: box, transform: `translateY(${dropY(box)}px)` }}>
-        <div style={{ position: 'absolute', inset: 0, borderRadius: 22, background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`, border: `1.5px solid ${C.line2}`, boxShadow: C.shadow, overflow: 'hidden' }}>
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', borderBottom: `1.5px solid ${C.codeLine}`, background: C.codeBar }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: PAD,
+          top,
+          width: tw,
+          height,
+          opacity: box,
+          transform: `translateY(${dropY(box)}px)`,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 22,
+            background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`,
+            border: `1.5px solid ${C.line2}`,
+            boxShadow: C.shadow,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              height: 56,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '0 24px',
+              borderBottom: `1.5px solid ${C.codeLine}`,
+              background: C.codeBar,
+            }}
+          >
             {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
@@ -43,20 +73,52 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
           {s.entries.map((e, i) => {
             const st = lineStart(lines, e.at) - LEAD.appear;
             const len = e.cmd?.length ?? 0;
-            const typed = e.cmd ? Math.floor(interpolate(frame - st, [0, Math.min(34, len * 0.6)], [0, len], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })) : 0;
-            const outO = interpolate(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), [0, 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+            const typed = e.cmd
+              ? Math.floor(
+                  interpolate(frame - st, [0, Math.min(34, len * 0.6)], [0, len], {
+                    extrapolateLeft: 'clamp',
+                    extrapolateRight: 'clamp',
+                  }),
+                )
+              : 0;
+            const outO = interpolate(frame - st - (e.cmd ? Math.min(34, len * 0.6) : 0), [0, 8], [0, 1], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+            });
             if (frame < st) return null;
             return (
-              <div key={i} style={{ position: 'absolute', left: 30, right: 30, top: pos[i], fontFamily: MONO, fontSize: fs, lineHeight: `${lh}px` }}>
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  left: 30,
+                  right: 30,
+                  top: pos[i],
+                  fontFamily: MONO,
+                  fontSize: fs,
+                  lineHeight: `${lh}px`,
+                }}
+              >
                 {e.cmd ? (
                   <div style={{ whiteSpace: 'pre', color: SYNTAX.plain }}>
                     <span style={{ color: SYNTAX.string }}>$ </span>
                     {e.cmd.slice(0, typed)}
-                    {typed < len || Math.floor(frame / 15) % 2 === 0 ? <span style={{ background: SYNTAX.plain, color: C.code }}> </span> : null}
+                    {typed < len || Math.floor(frame / 15) % 2 === 0 ? (
+                      <span style={{ background: SYNTAX.plain, color: C.code }}> </span>
+                    ) : null}
                   </div>
                 ) : null}
                 {(e.out ?? []).map((o, k) => (
-                  <div key={k} style={{ whiteSpace: 'pre', color: outColor(o), opacity: outO, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div
+                    key={k}
+                    style={{
+                      whiteSpace: 'pre',
+                      color: outColor(o),
+                      opacity: outO,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {terminalText(o)}
                   </div>
                 ))}
@@ -83,7 +145,16 @@ const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> 
   const p = useAppear(at, 10);
   const on = useActiveLine() === at;
   return (
-    <div style={{ position: 'absolute', left, right: PAD, top: y, opacity: p * (on ? 1 : 0.6), transform: `translateX(${(1 - p) * -16}px)` }}>
+    <div
+      style={{
+        position: 'absolute',
+        left,
+        right: PAD,
+        top: y,
+        opacity: p * (on ? 1 : 0.6),
+        transform: `translateX(${(1 - p) * -16}px)`,
+      }}
+    >
       <Glass t="mint" active={on ? 1 : 0} style={{ padding: '18px 22px' }}>
         <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 25, color: C.ink, lineHeight: 1.4 }}>
           <Smart text={text} t="mint" />
