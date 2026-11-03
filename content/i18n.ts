@@ -86,8 +86,8 @@ export type CourseL10n = {
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 /** 丸ごと置き換える配列（数が変わってよい） */
 const REPLACE = new Set(['lines', 'takeaways']);
-/** 台詞の番号（何番目の台詞の頭で出すか） */
-const AT_KEYS = ['at', 'textAt', 'subAt', 'revealAt', 'showAt'];
+/** 台詞の番号（何番目の台詞の頭で出すか）を書く項目。台本の検証（engine/core/validate.ts）も、この一覧で at の範囲を見る */
+export const AT_KEYS: readonly string[] = ['at', 'textAt', 'subAt', 'revealAt', 'showAt'];
 
 const merge = (base: unknown, over: unknown, where: string, key = ''): unknown => {
   if (over === undefined) return base;

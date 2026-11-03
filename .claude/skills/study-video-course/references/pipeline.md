@@ -56,6 +56,7 @@ VOICEVOX の出力（台詞の声）と BGM・効果音は、生成物でも作�
 
 ## 確かめ方
 
+- 台本: `bun scripts/validate.ts`（矢印の行き先・at の範囲・表の幅・注の位置・テーマ・効果音・声・派生データの食い違い。誤りがあれば 1 で終わる。注意の一覧は `--warnings`、機械で読むなら `--json`）。synth の最初と Studio でも同じ検証が動き、誤りのある動画は止まる
 - 読み: `.work/kana/<id>.txt`
 - 見た目: `node scripts/stills.ts L04:3,6 --mid` → `out/stills/` を全部見る。場面の中ほど（要素が出ている途中）と終わり（出そろった状態）の両方
 - 長さ: `ffprobe -v error -show_entries format=duration -of csv=p=0 site/media/L04.mp4` が `timeline.json` の `durationInFrames / 30` と合う
@@ -89,3 +90,16 @@ JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4�
 手元は `npm run dev:worker` でroot/CSP/scopeを確認。初回試験公開は `wrangler deploy --env preview`、本番は `wrangler deploy --env=""`。Workers Freeを維持する。静的assetsはMP4なし・2万files/25MiB以内。`no-transform` で本文hashとCSPを保つ。
 
 `deploy_pages.sh` は旧Pagesを移行案内だけへ置き換える専用手順。最新mainとcleanなcheckout、公開先のRange/CSP検証に通った後、明示した旧SHAに対するforce-with-leaseで置き換える。旧保存cacheは移行SWが保持する。公開と旧Pages切替は本人が依頼した範囲で実行し、許可済み操作を繰り返し確認しない。
+
+## 見た目が変わっていないかを見る（静止画の比較）
+
+見た目を変えないはずの整理の PR（エンジンの部品やテーマの作り方の整理など）では必ず流し、結果（`.work/stills-compare/report.md` の表）を PR に貼る。
+
+```bash
+git fetch origin
+bun scripts/stills-compare.ts --base origin/main     # 場面の種類ごとに 1 つ（20 場面）× 5 テーマ。1 分ほど
+bun scripts/stills-compare.ts L04:3,6 --theme night  # 場面とテーマを絞る（--captions で字幕つきの版を比べる）
+```
+
+- 基準の版を一時の worktree に作って同じ静止画（場面の終わり）を書き出し、ffmpeg の PSNR で比べる。同じ絵は inf。45dB（`--threshold`）より低いと「差あり」になり、`.work/stills-compare/diff/` に「基準・今・差を強めた絵」を並べた画像を出して 1 で終わる
+- 画像はコミットしない（`.work/` の下）。書体を Google Fonts から読むのでネットが要る。書体・Chrome・ネットに左右されるので、CI では流さなくてよい

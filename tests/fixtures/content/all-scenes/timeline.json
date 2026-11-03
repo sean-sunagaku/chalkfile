@@ -1,0 +1,28 @@
+{
+  "X01": {
+    "fps": 30,
+    "durationInFrames": 4374,
+    "scenes": [
+      { "start": 0, "duration": 222, "lines": [{ "start": 61, "end": 121 }, { "start": 139, "end": 199 }] },
+      { "start": 222, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 457, "duration": 234, "lines": [{ "start": 13, "end": 73 }, { "start": 82, "end": 142 }, { "start": 151, "end": 211 }] },
+      { "start": 691, "duration": 166, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }] },
+      { "start": 857, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 1092, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 1327, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 1562, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 1797, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 2032, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 2267, "duration": 166, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }] },
+      { "start": 2433, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 2668, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 2903, "duration": 241, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }] },
+      { "start": 3144, "duration": 166, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }] },
+      { "start": 3310, "duration": 166, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }] },
+      { "start": 3476, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 3711, "duration": 235, "lines": [{ "start": 14, "end": 74 }, { "start": 83, "end": 143 }, { "start": 152, "end": 212 }] },
+      { "start": 3946, "duration": 234, "lines": [{ "start": 13, "end": 73 }, { "start": 82, "end": 142 }, { "start": 151, "end": 211 }] },
+      { "start": 4180, "duration": 194, "lines": [{ "start": 14, "end": 74 }] }
+    ]
+  }
+}

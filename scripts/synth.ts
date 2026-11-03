@@ -14,6 +14,7 @@ import path from 'node:path';
 import { VIDEOS, type Video } from '../content';
 import type { Lang } from '../content/i18n';
 import type { Lecture, Scene, VoiceId } from '../content/types';
+import { formatIssues, validateLecture } from '../engine/core/validate';
 import { creditsIn, KOKORO, SITE_CREDITS, speechIn, ttsKeyIn, VOICES } from './voices';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -174,6 +175,12 @@ const pick = (w: string, v: Video) => w === v.key || w === `${v.lecture.id}.*` |
 for (const w of wanted) if (!VIDEOS.some((v) => pick(w, v))) throw new Error(`動画が無い: ${w}（例: L01、P01.en、'P01.*'、'*.zh'）`);
 const published = JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')).publishLangs as string[];
 const targets = wanted.length ? VIDEOS.filter((v) => wanted.some((w) => pick(w, v))) : VIDEOS.filter((v) => published.includes(v.lang));
+// 声を作る前に、対象の動画の台本を確かめる（矢印の行き先・at の範囲など。全部の講座は bun scripts/validate.ts）
+const invalid = targets.flatMap((v) => validateLecture(v.lecture, v.course)).filter((x) => x.level === 'error');
+if (invalid.length) {
+  console.error(formatIssues(invalid));
+  throw new Error(`台本に誤りが ${invalid.length} 件ある。直してから合成する（全部の講座の一覧は bun scripts/validate.ts）`);
+}
 if (!CACHE_ONLY) kokoroAll(targets);
 
 const timelinePath = path.join(GEN_DIR, 'timeline.json');
