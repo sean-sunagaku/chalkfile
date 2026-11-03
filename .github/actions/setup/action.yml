@@ -1,0 +1,19 @@
+# Node・bun・npm の依存を、版のファイル（.node-version・.bun-version）と package-lock.json のとおりに入れる。
+# npm のキャッシュ（~/.npm。鍵は package-lock.json。npm ci が lock の integrity で中身を確かめる）と、bun の実行ファイルのキャッシュを使う。
+# 依存のインストール時スクリプトは動かさない。secret を持つジョブ（ci.yml の deploy）では使わない（キャッシュを戻さないので、同じ手順を直に書く）
+name: setup
+description: Node・bun・npm の依存を入れる（キャッシュあり・インストール時スクリプトなし）
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: .node-version
+        cache: npm
+        cache-dependency-path: package-lock.json
+    - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      with:
+        bun-version-file: .bun-version
+    - name: 依存を入れる（インストール時スクリプトは動かさない）
+      shell: bash
+      run: npm ci --ignore-scripts
