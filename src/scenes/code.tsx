@@ -1,10 +1,11 @@
 // 場面「code」: コード（光らせる行と、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { CodeScene } from '../../content/types';
-import { Glass, Smart } from '../components/ui';
-import { alpha, C, CONTENT_BOTTOM, CONTENT_TOP, H, mix, MONO, PAD, SANS, SYNTAX, tone, W } from '../theme';
-import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
+import type { CodeScene, Theme } from '../../content/types';
+import { WINDOW_LIGHTS } from '../components/app-colors';
+import { NoteCard } from '../components/ui';
+import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';
+import { dropY, lineStart, ramp, useAppear, useCurrentIndex, useScene } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
@@ -14,7 +15,7 @@ const RX =
 // JSON はキー（: が続く文字列）・値の文字列・true/false/null・数値を塗り分ける
 const RX_JSON = /("(?:[^"\\]|\\.)*"(?=\s*:))|("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm;
 
-const highlight = (line: string, lang: CodeScene['lang']): React.ReactNode[] => {
+const highlight = (line: string, lang: CodeScene['lang'], SYNTAX: Theme['syntax']): React.ReactNode[] => {
   const out: React.ReactNode[] = [];
   let last = 0;
   const json = lang === 'json';
@@ -52,9 +53,10 @@ const highlight = (line: string, lang: CodeScene['lang']): React.ReactNode[] => 
 };
 
 const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
+  const { C, MONO, SYNTAX, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
-  const active = useActiveLine();
+  const activeMark = useCurrentIndex(s.marks);
   const codeLines = s.code.split('\n');
   const edTop = CONTENT_TOP + 6;
   const codeTop = 72; // タイトルバーの下
@@ -72,8 +74,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   const lh = Math.round(fontSize * 1.52);
   const show = lineStart(lines, s.showAt ?? 0) - LEAD.code;
   const editorH = Math.min(CONTENT_BOTTOM - edTop, codeTop + pad * 2 + lh * codeLines.length);
-  const activeMark = s.marks.reduce<number>((acc, m, i) => (m.at <= active ? i : acc), -1);
-  const enter = interpolate(frame - show, [0, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const enter = ramp(frame - show, 0, 14);
   // 注釈は今の 1 つだけ。光っている行の高さに合わせて出す
   const noteH = 112;
   const linesTop = edTop + codeTop - 16 + pad;
@@ -100,7 +101,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
             width: '100%',
             height: '100%',
             borderRadius: 22,
-            background: `linear-gradient(180deg, ${C.code}, ${mix(C.code, '#000000', 0.18)})`,
+            background: `linear-gradient(180deg, ${C.code}, ${C.codeShade})`,
             border: `1.5px solid ${C.line2}`,
             boxShadow: C.shadow,
             overflow: 'hidden',
@@ -118,7 +119,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               background: C.codeBar,
             }}
           >
-            {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
+            {WINDOW_LIGHTS.editor.map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
             <div
@@ -138,10 +139,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
           <div style={{ position: 'absolute', left: 0, right: 0, top: codeTop - 16 + pad }}>
             {s.marks.map((m, i) => {
               const on = i === activeMark;
-              const p = interpolate(frame - (lineStart(lines, m.at) - LEAD.appear), [0, 8], [0, 1], {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-              });
+              const p = ramp(frame - (lineStart(lines, m.at) - LEAD.appear), 0, 8);
               if (!on) return null;
               const tt = tone(m.tone ?? 'violet');
               return (
@@ -156,17 +154,14 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                     borderRadius: 12,
                     background: alpha(tt.main, 0.22),
                     borderLeft: `5px solid ${tt.main}`,
-                    boxShadow: `0 0 30px ${tt.main}30`,
+                    boxShadow: `0 0 30px ${alpha(tt.main, 0x30 / 255)}`,
                     opacity: p,
                   }}
                 />
               );
             })}
             {codeLines.map((ln, i) => {
-              const o = interpolate(frame - show - i * 1.2, [0, 8], [0, 1], {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-              });
+              const o = ramp(frame - show - i * 1.2, 0, 8);
               const inMark = activeMark >= 0 && i + 1 >= s.marks[activeMark].from && i + 1 <= s.marks[activeMark].to;
               return (
                 <div
@@ -195,7 +190,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
                   >
                     {i + 1}
                   </span>
-                  <span style={{ color: SYNTAX.plain }}>{highlight(ln, s.lang)}</span>
+                  <span style={{ color: SYNTAX.plain }}>{highlight(ln, s.lang, SYNTAX)}</span>
                 </div>
               );
             })}
@@ -224,6 +219,7 @@ const Note: React.FC<{
   out: number | null;
   h: number;
 }> = ({ m, y, center, left, out, h }) => {
+  const { tone } = usePalette();
   const frame = useCurrentFrame();
   const p = useAppear(m.at, 2);
   const o =
@@ -254,15 +250,14 @@ const Note: React.FC<{
           transform: `translateX(${(1 - p) * -18}px)`,
         }}
       >
-        <Glass
+        <NoteCard
+          text={m.note ?? ''}
           t={m.tone}
           active={1}
+          size={30}
+          lineHeight={1.38}
           style={{ height: '100%', boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center' }}
-        >
-          <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 30, color: C.ink, lineHeight: 1.38 }}>
-            <Smart text={m.note!} t={m.tone} />
-          </div>
-        </Glass>
+        />
       </div>
     </>
   );

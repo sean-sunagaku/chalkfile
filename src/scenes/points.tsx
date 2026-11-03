@@ -3,8 +3,8 @@ import React from 'react';
 import type { PointsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Smart } from '../components/ui';
-import { C, MONO, SANS, tone } from '../theme';
-import { dropY, useActiveLine, useAppear } from '../timing';
+import { usePalette } from '../theme';
+import { dropY, useAppear, useCurrentIndex } from '../timing';
 import { defineScene } from './define';
 
 const PointCard: React.FC<{
@@ -14,6 +14,7 @@ const PointCard: React.FC<{
   active: boolean;
   tall: boolean;
 }> = ({ item, index, numbered, active, tall }) => {
+  const { C, MONO, SANS, tone } = usePalette();
   const p = useAppear(item.at);
   const tt = tone(item.tone);
   return (
@@ -63,11 +64,10 @@ const PointCard: React.FC<{
 };
 
 const Points: React.FC<{ s: PointsScene }> = ({ s }) => {
-  const active = useActiveLine();
+  const current = useCurrentIndex(s.items);
   const cols = s.columns ?? Math.min(3, s.items.length);
   const rows: PointsScene['items'][] = [];
   for (let i = 0; i < s.items.length; i += cols) rows.push(s.items.slice(i, i + cols));
-  const current = s.items.reduce((acc, it, i) => (it.at <= active ? i : acc), -1);
   const tall = rows.length === 1;
   return (
     <Content style={{ gap: 32, justifyContent: 'center' }}>

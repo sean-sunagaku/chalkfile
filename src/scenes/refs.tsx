@@ -3,11 +3,12 @@ import React from 'react';
 import type { RefsScene } from '../../content/types';
 import { Content } from '../components/content';
 import { Glass, IconBadge } from '../components/ui';
-import { C, MONO, SANS, TONES } from '../theme';
+import { usePalette } from '../theme';
 import { dropY, useAppear } from '../timing';
 import { defineScene } from './define';
 
 const RefCard: React.FC<{ r: RefsScene['refs'][number]; i: number }> = ({ r, i }) => {
+  const { C, MONO, SANS, TONES } = usePalette();
   const p = useAppear(r.at, i * 8);
   return (
     <div style={{ flex: 1, display: 'flex', opacity: p, transform: `translateY(${dropY(p)}px)` }}>

@@ -2,17 +2,19 @@
 //   validateCourse(course)            講座 1 つ（講座の項目と、全部の動画）
 //   validateLecture(lecture, course)  動画 1 本（訳の動画は、訳を重ねたあとのレクチャーと訳の講座を渡す）
 //   validateTimeline(lecture, course, timeline)  synth が書いた timeline が台本の形と合うか
-//   validateTheme(theme)              テーマの色の形と数
+//   validateTheme(theme)              テーマの色の形（#RRGGBB）と、要る項目（暗い地は面と線の色 dark も）
 // 呼ぶ場所: bun scripts/validate.ts（全講座・全言語）・scripts/synth.ts の最初（対象の動画だけ）・src/Root.tsx（Studio はその動画だけを止める）
 // 結果は { where: '講座/動画 場面 n 項目', message, level, rule } の一覧。
 //   error: 描くと止まるか黙って崩れる誤りと、手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus）の食い違い
-//   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い
+//   warning: 見込み（焼き込み字幕が 3 行・見出しの幅）・style.md の目安・** の対応・意図かもしれない派生データの違い・古い書き方（engine/core/legacy.ts）
 // いずれ core（packages/core）に移す（計画の T4-01）。今は型と一覧を content/ から、根拠の札の言葉を src/i18n.ts から、字幕と見出しの大きさを src/video.config.ts から読む
 import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
-import type { Course, Evidence, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
+import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from '../../content/types';
 import { VIDEO_TEXT } from '../../src/i18n';
 import { assertNever } from './assert';
+import { isHex } from './color';
+import { legacyUses } from './legacy';
 import { CAPTION, CONTENT, HEADING, VIDEO } from '../../src/video.config';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
 
@@ -47,6 +49,7 @@ export const RULES = {
   'heading-width': '見出しの幅（見込み）',
   style: 'style.md の目安（表・コードの大きさ）',
   emphasis: '強調の **',
+  legacy: '古い書き方（明示の項目に書き換えるとよい）',
 } as const;
 export type Rule = keyof typeof RULES;
 
@@ -347,6 +350,7 @@ const checkScene = (s: Scene, i: number, where: string, course: Course, lang: La
   }
   checkBody(s, sw, out);
   checkHeading(s, sw, course, lang, out);
+  for (const u of legacyUses(s)) push(out, 'warning', 'legacy', `${sw} ${u.path}`, u.message);
 };
 
 /* ───────────── 手で書いた派生データ（セクション・クイズの番号・次の動画・syllabus） ───────────── */
@@ -484,26 +488,63 @@ export const validateTimeline = (lecture: Lecture, course: Course, timeline: Tim
   return out;
 };
 
-const HEX = /^#[0-9A-Fa-f]{6}$/;
+/* ───────────── テーマ ───────────── */
 
-/** テーマの色の形（#RRGGBB）と数。#RRGGBB でないと、透明度を付ける所（alpha・mix）で色が壊れる */
+/** テーマの項目（content/types.ts の Theme）。項目を型に足したのに、ここに書き忘れると型で止まる */
+const COLOR_KEYS: Record<keyof Theme['color'], true> = { bg: true, bg2: true, surface: true, surface2: true, ink: true, sub: true, muted: true, line: true, line2: true, accent: true, onAccent: true, code: true };
+const SYNTAX_KEYS: Record<keyof Theme['syntax'], true> = { plain: true, comment: true, string: true, keyword: true, deco: true, number: true, fn: true };
+const DARK_KEYS: Record<keyof DarkSurfaces, true> = { glass: true, glass2: true, overlay: true, edge: true, lane: true, track: true, sheen: true, faint: true, onTone: true };
+const FONT_SET: Record<FontKey, true> = { 'zen-maru': true, noto: true, inter: true, 'noto-sc': true };
+
+/** 暗い地の面と線に書ける rgba()（0〜255 の 3 つと、0〜1 の透明度） */
+const RGBA = /^rgba\((\d{1,3}),(\d{1,3}),(\d{1,3}),(0|1|0?\.\d+)\)$/;
+const isRgba = (v: unknown): boolean => {
+  const m = typeof v === 'string' ? RGBA.exec(v.replace(/\s+/g, '')) : null;
+  return !!m && [m[1], m[2], m[3]].every((x) => Number(x) <= 255);
+};
+
+/**
+ * テーマの形。色は #RRGGBB（透明度を付ける所・混ぜる所で壊れないように）、要る項目がそろっているか。
+ * 暗い地のテーマは、面と線の色（dark）も要る。dark の色は #RRGGBB か rgba()（図の色の上の文字 onTone は、コントラスト比を数えるので #RRGGBB）
+ */
 export const validateTheme = (theme: Theme, where = `テーマ ${theme?.id}`): Issue[] => {
   const out: Issue[] = [];
+  const error = (path: string, message: string) => push(out, 'error', 'theme', `${where} ${path}`, message);
   const color = (v: unknown, path: string) => {
-    if (typeof v !== 'string' || !HEX.test(v)) push(out, 'error', 'theme', `${where} ${path}`, `色が #RRGGBB でない: ${String(v)}`);
+    if (!isHex(v)) error(path, v === undefined ? '色が無い（#RRGGBB で書く）' : `色が #RRGGBB でない: ${String(v)}`);
   };
-  for (const [k, v] of Object.entries(theme.color ?? {})) color(v, `color.${k}`);
-  for (const t of Object.keys(TONE_SET)) color(theme.tones?.[t as Tone], `tones.${t}`);
-  for (const [k, v] of Object.entries(theme.syntax ?? {})) color(v, `syntax.${k}`);
+  for (const key of ['id', 'label', 'summary'] as const) {
+    if (typeof theme[key] !== 'string' || !theme[key].trim()) error(key, `${key} が無い`);
+  }
+  for (const k of Object.keys(COLOR_KEYS) as (keyof Theme['color'])[]) color(theme.color?.[k], `color.${k}`);
+  for (const t of Object.keys(TONE_SET) as Tone[]) color(theme.tones?.[t], `tones.${t}`);
+  for (const k of Object.keys(SYNTAX_KEYS) as (keyof Theme['syntax'])[]) color(theme.syntax?.[k], `syntax.${k}`);
   for (const key of ['gradient', 'display', 'mesh'] as const) list(theme[key]).forEach((v, i) => { color(v, `${key}[${i}]`); });
-  if (list(theme.gradient).length < 2) push(out, 'error', 'theme', `${where} gradient`, 'gradient は 2 色以上');
-  if (list(theme.display).length < 2) push(out, 'error', 'theme', `${where} display`, 'display は 2 色以上');
+  if (list(theme.gradient).length < 2) error('gradient', 'gradient は 2 色以上');
+  if (list(theme.display).length < 2) error('display', 'display は 2 色以上');
   // 背景の飾り（src/components/chrome.tsx）: chalk と stars は mesh の 4 色目まで使う
   const meshMin = theme.decor === 'band' ? 2 : 4;
-  if (list(theme.mesh).length < meshMin) push(out, 'error', 'theme', `${where} mesh`, `decor が ${theme.decor} のときの mesh は ${meshMin} 色以上`);
-  if (!['chalk', 'band', 'stars'].includes(theme.decor)) push(out, 'error', 'theme', `${where} decor`, `decor は chalk・band・stars のどれか（書いたのは ${String(theme.decor)}）`);
-  if (theme.scheme !== 'light' && theme.scheme !== 'dark') push(out, 'error', 'theme', `${where} scheme`, 'scheme は light か dark');
-  if (!list(theme.fonts).length) push(out, 'error', 'theme', `${where} fonts`, '書体（fonts）が無い');
+  if (list(theme.mesh).length < meshMin) error('mesh', `decor が ${theme.decor} のときの mesh は ${meshMin} 色以上`);
+  if (!['chalk', 'band', 'stars'].includes(theme.decor)) error('decor', `decor は chalk・band・stars のどれか（書いたのは ${String(theme.decor)}）`);
+  if (theme.scheme !== 'light' && theme.scheme !== 'dark') error('scheme', 'scheme は light か dark');
+  if (!list(theme.fonts).length) error('fonts', '書体（fonts）が無い');
+  list(theme.fonts).forEach((f, i) => {
+    if (!has(FONT_SET, f)) error(`fonts[${i}]`, `書体「${String(f)}」が無い（あるのは ${names(FONT_SET)}）`);
+  });
+  if (typeof theme.shadow !== 'string' || !theme.shadow.trim()) error('shadow', 'カードの影（shadow）が無い（CSS の box-shadow で書く）');
+  if (!(typeof theme.radius === 'number' && theme.radius >= 0)) error('radius', `角の丸み（radius）は 0 以上の数（書いたのは ${String(theme.radius)}）`);
+  if (theme.scheme === 'dark') {
+    if (!theme.dark) error('dark', '暗い地のテーマは、面と線の色（dark）を書く（content/themes.ts の NIGHT を見本にする）');
+    else {
+      for (const k of Object.keys(DARK_KEYS) as (keyof DarkSurfaces)[]) {
+        const v: unknown = theme.dark[k];
+        if (k === 'onTone') color(v, 'dark.onTone');
+        else if (!isHex(v) && !isRgba(v)) error(`dark.${k}`, v === undefined ? '色が無い（#RRGGBB か rgba() で書く）' : `色が #RRGGBB か rgba() でない: ${String(v)}`);
+      }
+    }
+  } else if (theme.dark !== undefined) {
+    push(out, 'warning', 'theme', `${where} dark`, '明るい地のテーマは dark を使わない（明るい地の面と線は color から作る）');
+  }
   return out;
 };
 

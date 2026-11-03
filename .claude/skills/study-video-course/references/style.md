@@ -2,13 +2,25 @@
 
 ## 画面
 
-- 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う
+- 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`usePalette()` の `C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う（[theme.md](theme.md) の「部品で色を使う」）
 - 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・焼き込み字幕と見出しの文字の大きさ）は `src/video.config.ts` に 1 か所で持つ。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
 - コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
 - 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）
-- アイコンは `content/types.ts` の `IconName`（lucide-react）から選ぶ。絵文字は使わない
+- アイコンは `src/components/icons.ts` の `ICONS` の名前（型は `IconName`）から選ぶ。名前は lucide-react の名前ではなく、短い独自の名前（`card`・`idea` など）。足すときは `ICONS` に 1 行足す。絵文字は使わない
 - エンジンは講座の中身を知らない。スマホの画面（`phone`）は架空のアプリの名前を `brand`（と `brandSub`）に必ず書き、端末（`terminal`）の出力の行に色を付けるときは `{ text, tone: 'ok' }`（成功の行）・`{ text, tone: 'info' }`（目を向けてほしい行）と書く。文字だけの行は薄い色で出る
+
+### 見た目は明示の項目で書く
+
+中身の文字（全角の空白・`/`・`?`・key の名前）を見て描き分ける、古い書き方がある。古い書き方も今までどおりに描けるが、台本の検証が「明示の項目に書き換えるとよい」の注意を出す。新しく書く台本は、右の列で書く（読み替えは `engine/core/legacy.ts`）。
+
+| 場面 | 古い書き方 | 明示の項目 |
+|---|---|---|
+| `opening` | `title` を全角の空白か改行で行に分ける | `titleLines: ['…', '…']`（`title` は 1 行の題のまま） |
+| `states` | `key: 'start'` の箱を、始まりの見た目（点線・薄い面）にする | `variant: 'start'` |
+| `sequence` | `actors` の `sub` に `/` があれば等幅にする | `subMono: true`（等幅にしないなら `subMono: false`） |
+| `phone` | `lead` が `?` で始まれば等幅にする | `leadMono: true` |
+| `timeline` | `title` を全角の空白で、札（小さな見出し）と題に分ける | `kicker: 'STEP 1'`・`title: '書く'` |
 
 ### 台詞に合わせて出す
 

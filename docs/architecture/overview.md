@@ -83,8 +83,8 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `content/index.ts` | 講座の一覧（`COURSES`）と訳の一覧（`TRANSLATIONS`）。Stripe 講座の定義もここにある |
 | `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・講座の定義（`course.ts`）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・訳（`<言語>/`）。Stripe 講座のフォルダは台本だけ |
 | `content/types.ts`・`themes.ts`・`i18n.ts`・`reading.ts` | 台本の型（場面の種類と、台詞に合わせて出す要素）・テーマ・訳の重ね方・読み上げの読み |
-| `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` がテーマの色と書体を差し込む。`src/generated/` は synth が書く生成物 |
-| `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・色のコントラスト） |
+| `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体を部品に渡す（部品は `usePalette()` で読む）。`src/generated/` は synth が書く生成物 |
+| `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・テーマのパレット `theme.ts` と色の計算 `color.ts`・色のコントラスト） |
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・動画の一覧（`media-manifest.json`）・ポスター（`posters/`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | `/media/` の中継と、Workers の assets・Custom Domain の設定 |

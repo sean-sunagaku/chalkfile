@@ -2,13 +2,14 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { QuizScene } from '../../content/types';
-import { Glass, Pill, Smart } from '../components/ui';
-import { C, CONTENT_TOP, DISPLAY, MONO, PAD, SANS, TONES } from '../theme';
+import { Glass, gradientText, Pill, Smart } from '../components/ui';
+import { alpha, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineEnd, lineStart, useAppear, useScene, useText } from '../timing';
 import { LEAD } from '../video.config';
 import { defineScene } from './define';
 
 const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
+  const { C, DISPLAY, MONO, SANS, TONES } = usePalette();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { lines, lecture, course } = useScene();
@@ -50,13 +51,10 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
             fontWeight: 900,
             fontSize: 150,
             lineHeight: 1,
-            background: DISPLAY,
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
+            ...gradientText(DISPLAY),
           }}
         >
-          Q{s.no}
+          {text.quiz}{s.no}
         </div>
         {course.standalone ? null : (
           <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 26, color: C.muted, letterSpacing: 4 }}>
@@ -151,7 +149,7 @@ const Quiz: React.FC<{ s: QuizScene }> = ({ s }) => {
                   fontSize: 150,
                   color: tt.main,
                   background: C.overlay,
-                  boxShadow: `0 0 60px ${tt.main}88`,
+                  boxShadow: `0 0 60px ${alpha(tt.main, 0x88 / 255)}`,
                   lineHeight: 1,
                 }}
               >
