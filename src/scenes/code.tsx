@@ -2,6 +2,7 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { CodeScene, Theme } from '../../content/types';
+import { WINDOW_LIGHTS } from '../components/app-colors';
 import { Glass, Smart } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
@@ -119,7 +120,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
               background: C.codeBar,
             }}
           >
-            {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
+            {WINDOW_LIGHTS.editor.map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
             <div

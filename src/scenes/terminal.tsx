@@ -3,6 +3,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { TerminalOut, TerminalScene, Theme } from '../../content/types';
 import { terminalText } from '../../engine/core/scenes';
+import { WINDOW_LIGHTS } from '../components/app-colors';
 import { Glass, Smart } from '../components/ui';
 import { CONTENT_BOTTOM, CONTENT_TOP, PAD, usePalette } from '../theme';
 import { dropY, lineStart, useActiveLine, useAppear, useScene } from '../timing';
@@ -66,7 +67,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
               background: C.codeBar,
             }}
           >
-            {['#FF6F7D', '#FFC260', '#4CE2B2'].map((c) => (
+            {WINDOW_LIGHTS.editor.map((c) => (
               <div key={c} style={{ width: 14, height: 14, borderRadius: 99, background: c, opacity: 0.85 }} />
             ))}
             <div style={{ marginLeft: 14, fontFamily: MONO, fontSize: 20, color: C.codeMuted }}>{s.title}</div>
