@@ -12,6 +12,7 @@ import { AT_KEYS, videoKey, type Lang } from '../../content/i18n';
 import { THEMES } from '../../content/themes';
 import type { Course, Evidence, Lecture, Line, Scene, SfxId, Theme, Tone, VoiceId } from '../../content/types';
 import { VIDEO_TEXT } from '../../src/i18n';
+import { SCENE_INFO, SCENE_KINDS } from './scenes';
 
 export type Level = 'error' | 'warning';
 
@@ -50,31 +51,7 @@ export type Rule = keyof typeof RULES;
 export type Issue = { where: string; message: string; level: Level; rule: Rule };
 
 /* ───────────── 名前の一覧（型と同じものを、実行時に確かめる用に持つ。足し忘れると型で止まる） ───────────── */
-
-const SCENE_KIND_SET: Record<Scene['kind'], true> = {
-  opening: true,
-  goals: true,
-  points: true,
-  concepts: true,
-  sequence: true,
-  flow: true,
-  states: true,
-  code: true,
-  table: true,
-  compare: true,
-  big: true,
-  numbers: true,
-  timeline: true,
-  quiz: true,
-  recap: true,
-  refs: true,
-  phone: true,
-  screens: true,
-  terminal: true,
-  ending: true,
-};
-/** 場面の種類（20 種類） */
-export const SCENE_KINDS = Object.keys(SCENE_KIND_SET) as Scene['kind'][];
+// 場面の種類の一覧は engine/core/scenes.ts の SCENE_INFO（教材の絵コンテと同じ一覧）
 
 /** 効果音（scripts/mix.py の SFX_DB と public/audio/sfx/<名前>.wav） */
 const SFX_SET: Record<SfxId, true> = { pop: true, whoosh: true, chime: true, tick: true, reveal: true, correct: true, type: true, harisen: true, chin: true, drumroll: true, deden: true, zuko: true };
@@ -333,7 +310,7 @@ const checkBody = (s: Scene, sw: string, out: Issue[]) => {
 const checkScene = (s: Scene, i: number, where: string, course: Course, lang: Lang, out: Issue[]) => {
   const sw = `${where} 場面 ${i + 1}`;
   if (!s || typeof s !== 'object') return push(out, 'error', 'kind', sw, '場面が空');
-  if (!has(SCENE_KIND_SET, s.kind)) {
+  if (!Object.hasOwn(SCENE_INFO, s.kind)) {
     push(out, 'error', 'kind', sw, `場面の種類「${String((s as { kind?: unknown }).kind)}」が無い（あるのは ${SCENE_KINDS.join('・')}）`);
     return;
   }

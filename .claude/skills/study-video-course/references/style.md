@@ -57,3 +57,14 @@ synth が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。
 | 一行 | イッコウ | いちぎょう |
 
 人を指す「方」（かた／ほう）、「角」「行」なども疑う。語句は長いものから順に置き換わるので、短い語を足すと別の語を壊すことがある。足したら、変わった台詞の読みをもう一度見る。
+
+## 場面の種類を足すとき（エンジン）
+
+今の 20 種類で描けないときだけ足す。場面の種類は、描く側と描かない側の 2 つの一覧で持つ（教材を作る `scripts/build_materials.ts` と台本の検証 `engine/core/` は、描く部品の React・Remotion を読まないので、同じファイルには置かない）。どちらの一覧も全部の種類を型で網羅するので、足し忘れると型で止まる。
+
+1. 型: `content/types.ts` に `XxxScene` を書き、`Scene` の union に足す
+2. 描かない側: `engine/core/scenes.ts` の `SCENE_INFO` に 1 つ足す（`label` は教材の絵コンテの「図解の種類」、`describe` は絵コンテの表示内容）
+3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の大きさ `fit.ts`・箱から箱への矢印 `edge.tsx` など）
+4. 登録: `src/scenes/index.ts` の `SCENES` に 1 行（と、その import）を足す。`src/Lecture.tsx` は場面の `kind` でここを引いて描く
+
+あわせて、台本の検証（`engine/core/validate.ts` の `checkBody`。その種類の参照と範囲。書かないと型で止まる）と、全場面の見本（`tests/fixtures/content/all-scenes/X01.ts`。足さないとテストで止まる）にも足し、静止画で確かめる。

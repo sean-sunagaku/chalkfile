@@ -6,59 +6,18 @@ import { themeOf } from '../content/themes';
 import type { Scene, Tone } from '../content/types';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import timelineJson from './generated/timeline.json';
-import { Big, Concepts, Ending, Goals, Opening, Points, Recap, Refs } from './scenes/opening';
-import { CodeView, Compare, Numbers, Phone, Quiz, Table, Terminal, Timeline } from './scenes/code';
-import { Flow, Sequence as SequenceDiagram, States } from './scenes/flow';
-import { Screens } from './scenes/screens';
+import { SCENES } from './scenes';
 import { alpha, applyTheme, C, H, SANS, tone } from './theme';
 import { fadeInOut, SceneProvider, type SceneTiming } from './timing';
 
 export type LectureTimeline = { fps: number; durationInFrames: number; scenes: SceneTiming[] };
 export const TIMELINE = timelineJson as unknown as Record<string, LectureTimeline>;
 
+/** 場面の kind で登録表（src/scenes/index.ts）を引いて描く */
 const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
-  switch (s.kind) {
-    case 'opening':
-      return <Opening s={s} />;
-    case 'goals':
-      return <Goals s={s} />;
-    case 'points':
-      return <Points s={s} />;
-    case 'concepts':
-      return <Concepts s={s} />;
-    case 'sequence':
-      return <SequenceDiagram s={s} />;
-    case 'flow':
-      return <Flow s={s} />;
-    case 'states':
-      return <States s={s} />;
-    case 'code':
-      return <CodeView s={s} />;
-    case 'table':
-      return <Table s={s} />;
-    case 'compare':
-      return <Compare s={s} />;
-    case 'big':
-      return <Big s={s} />;
-    case 'numbers':
-      return <Numbers s={s} />;
-    case 'timeline':
-      return <Timeline s={s} />;
-    case 'quiz':
-      return <Quiz s={s} />;
-    case 'recap':
-      return <Recap s={s} />;
-    case 'refs':
-      return <Refs s={s} />;
-    case 'phone':
-      return <Phone s={s} />;
-    case 'screens':
-      return <Screens s={s} />;
-    case 'terminal':
-      return <Terminal s={s} />;
-    case 'ending':
-      return <Ending s={s} />;
-  }
+  // kind で引いた部品なので、s はその部品が受け取る形と合う（部品の型は種類ごとに違うので、ここだけ Scene に広げる）
+  const Body = SCENES[s.kind].Component as React.FC<{ s: Scene }>;
+  return <Body s={s} />;
 };
 
 const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = ({ s, duration, caution }) => {
