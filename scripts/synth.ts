@@ -31,7 +31,7 @@ import { VIDEOS, type Video } from '../content';
 import { speechIn } from '../content/voices';
 import { timelineFile } from '../engine/core/generated';
 import { formatIssues, validateLecture } from '../engine/core/validate';
-import { VIDEO } from '../src/video.config';
+import { VIDEO } from '../engine/core/video-config';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { readSiteConfig } from './lib/config';
 import { ROOT, TTS_REL, ttsDirs } from './lib/paths';

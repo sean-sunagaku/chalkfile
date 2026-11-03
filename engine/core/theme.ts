@@ -3,10 +3,10 @@
 // 動画は src/theme.ts の ThemeProvider が、これに読み込んだ書体の名前（SANS・MONO）を足して部品に渡す（部品は usePalette() で読む）。
 // 講座サイト（scripts/site_theme.ts）も、図の文字色をここから取る（動画とサイトで作り方が違う。下の TONE_TEXT_MIX）。
 // 名前は、部品が読んでいた前の src/theme.ts の変数と同じにしてある（C.ink・TONES.mint・tone('mint')・GRAD など）
-import type { Lang } from '../../content/i18n';
-import { fontsFor } from '../../content/themes';
-import type { DarkSurfaces, FontKey, Theme, Tone } from '../../content/types';
 import { alpha, BLACK, mix, WHITE } from './color';
+import { fontsFor } from './fonts';
+import type { Lang } from './i18n';
+import type { DarkSurfaces, FontKey, Theme, Tone } from './schema';
 
 /** 図の色 1 つから作る色の組。main は図の色そのもの、soft と deep は薄い面、text は文字に使う濃さ */
 export type ToneSet = { main: string; soft: string; deep: string; text: string };
@@ -65,7 +65,7 @@ export type Palette = {
   DISPLAY: string;
   SYNTAX: Theme['syntax'];
   MESH: string[];
-  /** 本文の書体の並び（言語に合わせる。中国語は Noto Sans SC。content/themes.ts の fontsFor） */
+  /** 本文の書体の並び（言語に合わせる。中国語は Noto Sans SC。engine/core/fonts.ts の fontsFor） */
   fonts: FontKey[];
   /** 図の色の組。省くと violet */
   tone: (t?: Tone) => ToneSet;

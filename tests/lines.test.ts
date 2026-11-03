@@ -6,9 +6,13 @@ import { localizeCourse, type LectureL10n } from '../content/i18n';
 import { AT_KEYS, resolveCourse, resolveLecture } from '../content/lines';
 import type { At, AuthoredLecture, AuthoredScene, Lecture, Line, Scene } from '../content/types';
 import { validateCourse, validateLecture } from '../engine/core/validate';
+import { THEMES } from '../content/themes';
 import { ALL_SCENES } from './fixtures/content/all-scenes/course';
 import { LINE_IDS, LINE_IDS_EN, X10_EN } from './fixtures/content/line-ids/course';
 import { X10 } from './fixtures/content/line-ids/X10';
+
+/** 講座の theme が指してよいテーマ（台本の検証に渡す、台本の外の一覧） */
+const CTX = { themes: Object.keys(THEMES) };
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -93,7 +97,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
 
   test('id で書いた見本（tests/fixtures/content/line-ids）は番号に直り、検証の誤りも注意も 0 件', () => {
     const course = resolveCourse(LINE_IDS);
-    expect(validateCourse(course)).toEqual([]);
+    expect(validateCourse(course, CTX)).toEqual([]);
     const [lec] = course.lectures;
     expect(Object.fromEntries(lec.scenes.flatMap((s, i) => atsOf(s).map(([p, at]) => [`${i + 1}${p}`, at])))).toEqual({
       '1.items[0].at': 1,
@@ -178,7 +182,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
       '場面 3.left.notes[1].at → The title and the button are faint and hard to read.',
     ]);
     expect(shownAt(en)[3]).toEqual(['場面 4.revealAt → The answer is true.']);
-    expect(validateCourse(enCourse).filter((x) => x.level === 'error')).toEqual([]);
+    expect(validateCourse(enCourse, CTX).filter((x) => x.level === 'error')).toEqual([]);
   });
 
   test('訳の台詞に、日本語の at の id が無いと、その動画の誤りになる（どの id が無いかを出す）', () => {
@@ -189,7 +193,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
       scenes: [{ ...goals, lines: goals.lines.map((l) => (l.id === 'second' ? { t: l.t } : l)) }, ...rest],
     };
     const enCourse = localizeCourse(LINE_IDS, { ...LINE_IDS_EN, lectures: { X10: tr } }, 'en');
-    const errors = validateCourse(enCourse).filter((x) => x.level === 'error');
+    const errors = validateCourse(enCourse, CTX).filter((x) => x.level === 'error');
     expect(errors.map((x) => `${x.rule} ${x.where}`)).toEqual(['at line-ids/X10.en 場面 1 goals.items[1].at']);
     expect(errors[0].message).toContain('台詞の id「second」が、この場面の台詞に無い（あるのは first）');
   });

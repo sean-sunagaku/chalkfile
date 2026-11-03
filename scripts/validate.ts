@@ -256,10 +256,12 @@ export const validateAll = async (): Promise<Report> => {
     // 講座をまたいだもの（頭文字・並び・講座 ID の重なり）。並行の PR が講座を足すと、マージするまで気づけない
     issues.push(...validateCourses(COURSES), ...registryProblems(COURSES));
     const keys = new Set<string>();
+    // 講座の theme が指してよいテーマ（台本の外の一覧なので、台本の検証に渡す）
+    const ctx = { themes: Object.keys(THEMES) };
     for (const lang of LANGS) {
       for (const course of coursesIn(lang)) {
         courses++;
-        issues.push(...validateCourse(course));
+        issues.push(...validateCourse(course, ctx));
         for (const lec of course.lectures) {
           videos++;
           const key = videoKey(lec.id, lang);
@@ -284,7 +286,7 @@ export const validateAll = async (): Promise<Report> => {
         issues.push({ level: 'error', rule: 'inputs', where: 'content/<講座>/generated/media.<言語>.json', message: messageOf(e) });
     }
   } catch (e) {
-    // 台本の読み込みで止まったとき（訳の重ね方の誤りは止まらずに、その動画の誤りになる。content/i18n.ts の l10nProblems）
+    // 台本の読み込みで止まったとき（訳の重ね方の誤りは止まらずに、その動画の誤りになる。engine/core/i18n.ts の l10nProblems）
     issues.push({ level: 'error', rule: 'scenes', where: 'content/（読み込み）', message: messageOf(e) });
   }
   const errors = issues.filter((x) => x.level === 'error').length;

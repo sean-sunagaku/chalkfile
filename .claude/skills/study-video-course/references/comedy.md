@@ -57,7 +57,7 @@
 
 講座の `cast` に、声ごとの名前と色を書く。字幕の焼き込みの帯に名前の札が出て、サイトの台本と字幕は「ずんだもん：…」になる。
 
-声のクレジットは、レクチャーで使った声だけが動画のエンディングに出る（台詞の声から作る。`content/voices.ts` の `lectureCredits`）。納品物の README（`npm run chalk -- export`）と読む教材にも、台詞の声から作ったクレジットが全部出る。講座サイトのクレジットの行（講座のページと一覧のページ）も、台詞の声から作る（`scripts/site/model.ts` の `courseCredits`・`homeCredits`）。講座の `sourceNote` に声を書かなくてよい。サイトのクレジットから使った声が抜けると、`npm run validate` が誤り（声のクレジット）で止める。
+声のクレジットは、レクチャーで使った声だけが動画のエンディングに出る（台詞の声から作る。`engine/core/voices.ts` の `lectureCredits`）。納品物の README（`npm run chalk -- export`）と読む教材にも、台詞の声から作ったクレジットが全部出る。講座サイトのクレジットの行（講座のページと一覧のページ）も、台詞の声から作る（`scripts/site/model.ts` の `courseCredits`・`homeCredits`）。講座の `sourceNote` に声を書かなくてよい。サイトのクレジットから使った声が抜けると、`npm run validate` が誤り（声のクレジット）で止める。
 
 ## 字幕
 
@@ -76,7 +76,7 @@
 | `sfxAfter: 'zuko'` | ずっこけの「ヒューン」。予想外の告白（「……私です」）の後に |
 | `bgm: 'cut'` / `bgm: 'back'` | BGM を止めて急に真面目にし、一番大事な一文を言う。`back` が無ければ場面の終わりで戻る |
 
-効果音の名前と音量の一覧は `content/sfx.ts`（足し方も、そこの頭書き）。音は `scripts/audio/music/sfx.py` がコードで合成する（外の音源を使わない。入口は `scripts/build_music.py`）。足したら `npm run build:music -- --only <名前>` で、その効果音だけを書き出せる。笑い声の効果音は入れない（合成だと不自然で、「ここで笑って」の押しつけに見える）。
+効果音の名前と音量の一覧は `engine/core/sfx.ts`（台本の型の `SfxId` もここから作る。足し方も、そこの頭書き）。音は `scripts/audio/music/sfx.py` がコードで合成する（外の音源を使わない。入口は `scripts/build_music.py`）。足したら `npm run build:music -- --only <名前>` で、その効果音だけを書き出せる。笑い声の効果音は入れない（合成だと不自然で、「ここで笑って」の押しつけに見える）。
 
 ## 笑いの型
 

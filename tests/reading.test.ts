@@ -74,7 +74,8 @@ describe('読みの辞書を講座ごとに分ける', () => {
 
   test('講座の辞書に、共通の辞書と同じ語・同じ読みを書いていない（書くなら、読みを変えるときだけ）', () => {
     const common = { words: new Map<string, string>(), phrases: new Map<string, string>() };
-    const src = readFileSync(path.join(ROOT, 'content/reading.ts'), 'utf8');
+    // 共通の辞書は engine/core/reading.ts（content/reading.ts は再 export だけ）
+    const src = readFileSync(path.join(ROOT, 'engine/core/reading.ts'), 'utf8');
     for (const m of src.matchAll(/^ {2}\['([^']+)', '([^']+)'\],$/gm)) common.phrases.set(m[1], m[2]);
     for (const m of src.matchAll(/^ {2}([a-z0-9]+): '([^']+)',$/gm)) common.words.set(m[1], m[2]);
     expect(common.phrases.size).toBeGreaterThan(10);

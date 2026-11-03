@@ -1,7 +1,7 @@
 // 場面「big」: 大きな一文
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import type { BigScene } from '../../content/types';
+import type { BigScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { textWidth } from '../components/fit';
 import { IconBadge, Rich, Smart } from '../components/ui';

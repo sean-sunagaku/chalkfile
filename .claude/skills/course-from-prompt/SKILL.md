@@ -69,7 +69,7 @@ bun scripts/export_deliverables.ts <ID> …          # out/deliverables/（完�
 
 書き出した動画は、`ffprobe` の長さを timeline（`content/<講座>/generated/timeline/<ID>.json`）の `durationInFrames / 30` と比べ（サイト用と字幕つきの両方）、改善前・改善後の画面の場面から静止画を抜いて見る（モックの色・日付。担当の静止画の確認の後に直した共有の部品は、ここでしか確かめられない）。
 
-書き出す前に `npm run materials:check` で、台本の全部の台詞の声が手元にあるかを見る（`reading.ts` を直した後に合成し直していない章が見つかる）。講座の語は講座の辞書 `content/<講座>/reading.ts` に足す（ほかの講座の読みは変わらない）。共通の `content/reading.ts` を直したときは全講座の読みが変わりうるので、`npm run reading:diff` で変わった章（ほかの講座も）を見て、合成・書き出し直す。
+書き出す前に `npm run materials:check` で、台本の全部の台詞の声が手元にあるかを見る（`reading.ts` を直した後に合成し直していない章が見つかる）。講座の語は講座の辞書 `content/<講座>/reading.ts` に足す（ほかの講座の読みは変わらない）。共通の `engine/core/reading.ts` を直したときは全講座の読みが変わりうるので、`npm run reading:diff` で変わった章（ほかの講座も）を見て、合成・書き出し直す。
 
 `syllabus.ts` の `status` を `produced` に直し、各章の `ending.next` をつなぐ。コミットして push し、PR を作る（テンプレート `.github/pull_request_template.md` の見出しに沿う。新しい講座で書くことは [new-course.md](../../../docs/guide/new-course.md) の「PR に書くこと」）。作業が長くなったら、PR を更新する前に `origin/main` を取り込む（別の PR がマージされていることがある）。
 

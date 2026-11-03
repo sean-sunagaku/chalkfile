@@ -6,7 +6,7 @@ import * as REGISTRY from './courses';
 import { LANGS, localizeCourse, parseVideoKey, videoKey, type CourseL10n, type Lang, type TranslatedLang } from './i18n';
 import { resolveCourse } from './lines';
 import { useReading } from './reading';
-import type { AuthoredCourse, Course, Lecture } from './types';
+import type { AuthoredCourse, Course, Lecture, Video } from './types';
 
 /** 登録した講座（order の順。同じ order なら講座 ID の順。order の重なりは npm run validate が止める） */
 const MODULES: CourseModule[] = (Object.values(REGISTRY) as CourseModule[]).sort((a, b) => a.course.order - b.course.order || (a.course.id < b.course.id ? -1 : a.course.id > b.course.id ? 1 : 0));
@@ -64,8 +64,8 @@ export const coursesIn = (lang: Lang): Course[] => {
   return list;
 };
 
-/** 動画 1 本（レクチャー × 言語）。key は日本語なら S01、ほかは S01.en（content/i18n.ts の videoKey） */
-export type Video = { key: string; lang: Lang; lecture: Lecture; course: Course };
+/** 動画 1 本（レクチャー × 言語）。型は engine/core/schema.ts の Video */
+export type { Video };
 export const VIDEOS: Video[] = LANGS.flatMap((lang) => coursesIn(lang).flatMap((course) => course.lectures.map((lecture) => ({ key: videoKey(lecture.id, lang), lang, lecture, course }))));
 
 export const videoOf = (key: string): Video => {

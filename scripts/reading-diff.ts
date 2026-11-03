@@ -7,7 +7,8 @@
 // その動画を作り直していないとき（講座の動画の一覧 content/<講座>/generated/media.<言語>.json の項目が、比べる相手と同じ）。
 // 公開中の動画は古い読みのままなので、合成し直し → mix → render → media push が要る、という合図（docs/operations/publish.md の順番）。
 // まだ公開しない言語の動画・まだ公開していない動画・作り直した動画は、知らせるだけ。止めたら 1 で終える。
-// 比べる相手の台本は git archive で一時フォルダに取り出して読む（content/ と scripts/voices.ts だけ。content/ は content/ の外を実行時に import しない）
+// 比べる相手の台本は git archive で一時フォルダに取り出して読む（content/ と engine/core/ と scripts/voices.ts だけ。content/ が実行時に読むのは
+// content/ と engine/core/ だけで、engine/core/ はその外を読まない。Biome の noRestrictedImports が止める。engine/core/ を読む前の版は content/ だけで読める）
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -128,13 +129,19 @@ const resolveBase = (ref: string): string => {
   return r.stdout.trim();
 };
 
+/** paths のうち、その commit にあるもの（git archive は、無いパスを渡すと止まる） */
+const archivePaths = (commit: string, paths: string[]): string[] =>
+  paths.filter((p) => git(['cat-file', '-e', `${commit}:${p}`]).status === 0);
+
 /** 比べる相手の台本を一時フォルダに取り出し、全部の動画の読みと、動画の一覧の項目を作る */
 const baseReadings = async (commit: string): Promise<{ readings: VideoReading[]; media: MediaHashes }> => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-reading-diff-'));
   try {
+    // 台本の型と読み込み（多言語の重ね方・読み・声）は engine/core/ にある。まだ engine/core/ が無い版は取り出さない
+    const paths = ['content', 'scripts/voices.ts', ...archivePaths(commit, ['engine/core'])];
     const r = spawnSync(
       'bash',
-      ['-c', 'set -eo pipefail; git archive "$1" -- content scripts/voices.ts | tar -x -C "$2"', 'bash', commit, dir],
+      ['-c', 'set -eo pipefail; ref=$1; dest=$2; shift 2; git archive "$ref" -- "$@" | tar -x -C "$dest"', 'bash', commit, dir, ...paths],
       { cwd: ROOT, encoding: 'utf8' },
     );
     if (r.status !== 0)

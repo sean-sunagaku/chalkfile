@@ -1,5 +1,5 @@
 import React from 'react';
-import type { IconName, Tone } from '../../content/types';
+import type { IconName, Tone } from '../../engine/core/schema';
 import { alpha, usePalette, WHITE, type VideoPalette } from '../theme';
 import { ICONS } from './icons';
 

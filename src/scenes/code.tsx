@@ -1,7 +1,7 @@
 // 場面「code」: コード（光らせる行と、横の注）
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { CodeScene, Theme } from '../../content/types';
+import type { CodeScene, Theme } from '../../engine/core/schema';
 import { WINDOW_LIGHTS } from '../components/app-colors';
 import { NoteCard } from '../components/ui';
 import { alpha, CONTENT_BOTTOM, CONTENT_TOP, H, PAD, usePalette, W } from '../theme';

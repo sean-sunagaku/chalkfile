@@ -1,7 +1,7 @@
 // 箱から箱への矢印（流れの図と状態の図）
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
-import type { Tone } from '../../content/types';
+import type { Tone } from '../../engine/core/schema';
 import { alpha, H, usePalette, W } from '../theme';
 import { lineStart, useScene } from '../timing';
 import { LEAD } from '../video.config';

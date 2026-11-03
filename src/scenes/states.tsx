@@ -1,6 +1,6 @@
 // 場面「states」: 状態の図
 import React from 'react';
-import type { StatesScene } from '../../content/types';
+import type { StatesScene } from '../../engine/core/schema';
 import { Edge, type Box } from '../components/edge';
 import { Pill } from '../components/ui';
 import { alpha, usePalette } from '../theme';

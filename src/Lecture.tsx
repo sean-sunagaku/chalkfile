@@ -1,16 +1,14 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
-import { videoOf } from '../content';
-import { LANG_INFO, type Lang } from '../content/i18n';
-import { themeOf } from '../content/themes';
+import { LANG_INFO, type Lang } from '../engine/core/i18n';
 import { upgradeLecture } from '../engine/core/legacy';
-import type { Scene, Tone } from '../content/types';
+import type { Scene, Tone } from '../engine/core/schema';
 import { Background, Caution, Cite, Header, Progress } from './components/chrome';
 import { SCENES } from './scenes';
 import { alpha, H, ThemeProvider, usePalette, videoPalette } from './theme';
-import { TIMELINE } from './timelines';
 import { fadeInOut, SceneProvider } from './timing';
 import { CAPTION, frames, LEAD } from './video.config';
+import { useProject } from './video-project';
 
 /** 場面の kind で登録表（src/scenes/index.ts）を引いて描く */
 const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
@@ -115,19 +113,26 @@ const WRAP: Record<Lang, React.CSSProperties> = {
   zh: { wordBreak: 'normal', lineBreak: 'strict' },
 };
 
+type LectureProps = { id: string; audio?: boolean; theme?: string; captions?: boolean };
+
 /**
- * id は動画の名前（日本語は S01、訳は S01.en。content/i18n.ts の videoKey）。
+ * id は動画の名前（日本語は S01、訳は S01.en。engine/core/i18n.ts の videoKey）。
  * theme を渡すと、講座のテーマの代わりにそのテーマで描く（stills.ts --theme=… でテーマを試すとき）。
  * captions を true にすると、台詞の字幕を焼き込む（音を出せない場所でも要点が分かる動画）。
  */
-export const LectureVideo: React.FC<{ id: string; audio?: boolean; theme?: string; captions?: boolean }> = ({ id, audio = false, theme, captions = false }) => {
-  const video = videoOf(id);
+export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme, captions = false }) => {
+  // 描くものの一式（動画・テーマ・timeline）は、src/Root.tsx の ProjectProvider から受け取る（content/ は読まない）
+  const project = useProject();
+  const video = project.videoOf(id);
   const { course, lang } = video;
   // 台本の古い書き方（中身の文字を見て描き分けていた決まり）を、明示の項目に読み替えてから描く（engine/core/legacy.ts）
   const lecture = upgradeLecture(video.lecture);
-  const tl = TIMELINE[id];
+  // 置いてある timeline が 1 つだけで、読めたもの（台本と合うかは、描く前に src/Root.tsx の calculateMetadata が確かめる）
+  const entries = project.timelines.get(id);
+  const tl = entries?.length === 1 ? entries[0].timeline : undefined;
+  if (!tl) throw new Error(`${id} の timeline が無いか、読めない（bun scripts/synth.ts ${id} で作る）`);
   // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
-  const th = themeOf(theme || course.theme);
+  const th = project.themeOf(theme || course.theme);
   const { SANS } = videoPalette(th, lang);
   const scenes = lecture.scenes.map((s, i) => {
     const st = tl.scenes[i];

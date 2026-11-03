@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
-import type { Lang } from '../content/i18n';
-import type { Course, Lecture, Scene } from '../content/types';
+import type { Lang } from '../engine/core/i18n';
+import type { Course, Lecture, Scene } from '../engine/core/schema';
 import { VIDEO_TEXT, type VideoText } from './i18n';
 import { LEAD } from './video.config';
 
