@@ -1,0 +1,23 @@
+# 持ち主のレビューに回すところ。外からの Pull Request で、clone した人の手元・AI エージェント・CI・公開と配信・依存に効く変更
+# （GitHub のルールセットで「Require review from Code Owners」をオンにすると、持ち主が承認するまで merge できない）
+
+# AI への指示と Claude Code の設定（どの階層のものも。スキル・launch.json を含む）
+.claude/            @sean-sunagaku
+CLAUDE.md           @sean-sunagaku
+AGENTS.md           @sean-sunagaku
+
+# 作るためのスクリプトと点検（点検の許可の一覧 scripts/content-allow.json も）
+/scripts/           @sean-sunagaku
+
+# CI・Dependabot・この CODEOWNERS
+/.github/           @sean-sunagaku
+
+# 配信（Workers）
+/wrangler.jsonc     @sean-sunagaku
+/worker/            @sean-sunagaku
+
+# 依存（入れて動かすものが変わる）と、置いてよいが中身を点検している道具の設定
+/package.json       @sean-sunagaku
+/package-lock.json  @sean-sunagaku
+bunfig.toml         @sean-sunagaku
+.vscode/            @sean-sunagaku
