@@ -1,22 +1,26 @@
-import { test, expect, chromium, type Page, type APIRequestContext } from '@playwright/test';
+import { chromium, type Page, type APIRequestContext } from '@playwright/test';
 import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { CourseManifest, CourseStatus } from '../../site/offline-shared';
+import type { CourseStatus } from '../../site/offline-shared';
+import type { Control, SiteSession } from '../e2e/site';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
 
-const route = '/stripe-billing/';
-const manifest = JSON.parse(readFileSync('site/dist/stripe-billing/offline-manifest.json', 'utf8')) as CourseManifest;
-// 一覧の「講座ごとの保存状態」は、build した講座の数だけ並ぶ。テストは Stripe 講座のリンクを選ぶ
-const courseCount = readdirSync('site/dist', { withFileTypes: true }).filter((d) => d.isDirectory() && existsSync(path.join('site/dist', d.name, 'offline-manifest.json'))).length;
-const savedLink = (page: Page) => page.locator(`#savedCourses a[href$="${route}"]`);
-const evidence = process.env.CHALKFILE_EVIDENCE_DIR ?? '/tmp/chalkfile-pwa-evidence';
-mkdirSync(evidence, { recursive: true });
+// 保存と再生を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座。tests/e2e/sites.ts）
+/** 一覧の「講座ごとの保存状態」は、組み立てた講座の数だけ並ぶ */
+const courseCount = (site: SiteSession) => readdirSync(site.dist, { withFileTypes: true }).filter((d) => d.isDirectory() && existsSync(path.join(site.dist, d.name, 'offline-manifest.json'))).length;
+const savedLink = (page: Page, site: SiteSession) => page.locator(`#savedCourses a[href$="${site.course.route}"]`);
+const evidence = () => {
+  const dir = evidenceDir();
+  mkdirSync(dir, { recursive: true });
+  return dir;
+};
 
-async function control(request: APIRequestContext, state: Record<string, unknown> = {}) {
+async function control(request: APIRequestContext, state: Partial<Control> = {}) {
   expect((await request.post('/__test/control', { data: state })).ok()).toBeTruthy();
 }
-async function ready(page: Page) {
-  await page.goto(route);
+async function ready(page: Page, site: SiteSession) {
+  await page.goto(site.course.route);
   await expect(page.locator('#offlineSave')).toBeEnabled();
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
 }
@@ -25,14 +29,14 @@ async function save(page: Page) {
   await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
   await expect(page.locator('#offlineProgress')).toBeHidden();
 }
-async function status(page: Page): Promise<CourseStatus> {
-  return page.evaluate(async () => {
+async function status(page: Page, site: SiteSession): Promise<CourseStatus> {
+  return page.evaluate(async (id) => {
     const reply = await new Promise<{ courses: CourseStatus[] }>((resolve) => {
       const c = new MessageChannel(); c.port1.onmessage = (e) => { c.port1.close(); resolve(e.data); };
       navigator.serviceWorker.controller!.postMessage({ protocol: 1, type: 'STATUS' }, [c.port2]);
     });
-    return reply.courses.find((s) => s.id === 'stripe-billing')!;
-  });
+    return reply.courses.find((s) => s.id === id)!;
+  }, site.course.id);
 }
 async function playAndPause(page: Page, at = 0) {
   const video = page.locator('video');
@@ -48,12 +52,12 @@ async function playAndPause(page: Page, at = 0) {
 
 test.beforeEach(async ({ request }) => { await control(request); });
 
-test('一覧ページの375px表示から保存状態とインストール案内へ進める', async ({ page }) => {
+test('一覧ページの375px表示から保存状態とインストール案内へ進める', async ({ page, site }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  await expect(page.locator('#savedCourses a')).toHaveCount(courseCount);
+  await expect(page.locator('#savedCourses a')).toHaveCount(courseCount(site));
   await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
   await expect(page.locator('h1')).toHaveText('Chalkfile');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
@@ -62,31 +66,31 @@ test('一覧ページの375px表示から保存状態とインストール案内
   await expect(page.locator('#savedCourses')).toContainText('未保存・オンラインで開く');
   await page.locator('#installHelp summary').click();
   await expect(page.locator('#installHelp')).toContainText('ホーム画面に追加');
-  await page.screenshot({ path: path.join(evidence, 'home-mobile-375.png'), fullPage: false });
-  await savedLink(page).click();
+  await page.screenshot({ path: path.join(evidence(), 'home-mobile-375.png'), fullPage: false });
+  await savedLink(page, site).click();
   await expect(page.locator('#offlineSave')).toBeEnabled();
   expect(errors).toEqual([]);
 });
 
-test('オンライン再生、単体ファイル保存、学習UI、PWA情報と375pxの導線', async ({ page, context, request }) => {
+test('オンライン再生、単体ファイル保存、学習UI、PWA情報と375pxの導線', async ({ page, context, request, site }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await ready(page);
-  expect(await page.title()).toContain('Stripe サブスク課金 基礎講座');
+  await ready(page, site);
+  expect(await page.title()).toContain(site.course.title);
   await expect(page.locator('h1')).not.toBeEmpty();
   await expect(page.locator('#playbackStatus')).toContainText('オンライン再生');
-  await playAndPause(page, 5);
+  await playAndPause(page, seek(site, 5));
   expect((await (await request.get('/__test/stats')).json()).fullVideoDownloads).toBe(0);
   const download = page.waitForEvent('download');
   await page.locator('#fileDownload').click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe('L01.mp4');
+  expect(file.suggestedFilename()).toBe(`${site.course.lectures[0].id}.mp4`);
   expect(await file.failure()).toBeNull();
-  expect((await status(page)).saved).toBeNull();
+  expect((await status(page, site)).saved).toBeNull();
   await page.getByRole('tab', { name: '台本', exact: true }).click();
-  await page.locator('#q').fill('サブスク');
-  await expect(page.locator('#transcript')).toContainText('サブスク');
+  await page.locator('#q').fill(site.course.searchTerm);
+  await expect(page.locator('#transcript')).toContainText(site.course.searchTerm);
   await page.getByRole('tab', { name: 'ノート', exact: true }).click();
   await page.locator('#noteText').fill('オフライン回帰テストのノート');
   await page.locator('#noteAdd').click();
@@ -108,36 +112,39 @@ test('オンライン再生、単体ファイル保存、学習UI、PWA情報と
   await page.locator('#offlinePersist').click();
   await expect(page.locator('#offlineMessage')).toContainText('ブラウザ');
   await page.evaluate(() => scrollTo(0, 0));
-  await page.screenshot({ path: path.join(evidence, 'online-desktop.png'), fullPage: false });
+  await page.screenshot({ path: path.join(evidence(), 'online-desktop.png'), fullPage: false });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.evaluate(() => scrollTo(0, 0));
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   await expect(page.locator('#offlineSave')).toBeVisible();
-  await page.screenshot({ path: path.join(evidence, 'mobile-375.png'), fullPage: false });
+  await page.screenshot({ path: path.join(evidence(), 'mobile-375.png'), fullPage: false });
   expect(errors).toEqual([]);
 });
 
-test('全講座を保存し、オフライン起動・再生・Range・シーク・繰り返し・削除を確認する', async ({ page, context }) => {
+test('全講座を保存し、オフライン起動・再生・Range・シーク・繰り返し・削除を確認する', async ({ page, context, site }) => {
   const runtimeErrors: string[] = [];
   page.on('pageerror', (e) => runtimeErrors.push(e.message));
-  await ready(page);
+  const manifest = manifestOf(site);
+  const [first, second] = site.course.lectures;
+  const notesKey = `chalkfile:${site.course.id}:notes`;
+  await ready(page, site);
   // 同一 origin の別アプリの保存を保持する。
   await page.evaluate(async () => { await (await caches.open('neighbor-app')).put('/neighbor/data', new Response('keep')); });
   await page.getByRole('tab', { name: 'ノート', exact: true }).click();
   await page.locator('#noteText').fill('保存を削除しても残すノート');
   await page.locator('#noteAdd').click();
-  const notesBefore = await page.evaluate(() => localStorage.getItem('chalkfile:stripe-billing:notes'));
+  const notesBefore = await page.evaluate((key) => localStorage.getItem(key), notesKey);
   await save(page);
-  const saved = (await status(page)).saved!;
-  expect(saved.manifest.files).toHaveLength(27);
+  const saved = (await status(page, site)).saved!;
+  expect(saved.manifest.files).toHaveLength(manifest.files.length);
   expect(saved.manifest.revision).toBe(manifest.revision);
   await context.setOffline(true);
   await page.reload();
   await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
   await expect(page.locator('#networkState')).toContainText('オフライン');
   await playAndPause(page, 0);
-  const mp4 = manifest.files.find((f) => f.url.includes('/L01.'))!;
-  const source = readFileSync('site/media/L01.mp4');
+  const mp4 = manifest.files.find((f) => f.url.includes(`/${first.id}.`))!;
+  const source = readFileSync(first.video);
   for (const [range, start, end, code] of [
     ['bytes=0-127', 0, 127, 206], ['bytes=1000-1127', 1000, 1127, 206],
     ['bytes=-128', source.length - 128, source.length - 1, 206],
@@ -169,29 +176,30 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
     }, { url: mp4.url, etag });
     expect(conditional).toEqual({ status: code, bytes });
   }
-  await playAndPause(page, 90);
+  await playAndPause(page, seek(site, 90));
   await page.getByRole('button', { name: 'この動画を繰り返す', exact: true }).click();
-  await page.locator('video').evaluate(async (v: HTMLVideoElement) => { v.currentTime = v.duration - 0.3; await v.play(); });
-  await expect.poll(() => page.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeLessThan(5);
+  const loopFrom = await page.locator('video').evaluate(async (v: HTMLVideoElement) => { v.currentTime = v.duration - 0.3; await v.play(); return v.duration - 0.3; });
+  // 終わりの手前から再生し、頭に戻るのを見る（短い動画では、戻る前の時刻より前になったら戻ったとみなす）
+  await expect.poll(() => page.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeLessThan(Math.min(5, loopFrom));
   await page.locator('video').evaluate((v: HTMLVideoElement) => v.pause());
   await expect(page.locator('#nextup')).toBeHidden();
   // 別レクチャー・チャプター・字幕も保存ページから動作する。
-  await page.locator('.lec[data-i="2"]').click();
+  await page.locator(`.lec[data-i="${Math.min(2, site.course.lectures.length - 1)}"]`).click();
   await page.locator('.lec[data-i="0"]').click();
   await page.locator('.lec[data-i="1"]').click();
-  await playAndPause(page, 20);
-  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => v.currentSrc)).toMatch(/L02\.[a-f0-9]{64}\.mp4$/);
+  await playAndPause(page, seek(site, 20));
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => v.currentSrc)).toMatch(new RegExp(`${second.id}\\.[a-f0-9]{64}\\.mp4$`));
   await page.getByRole('tab', { name: '概要', exact: true }).click();
   await page.locator('#chapters button').nth(1).click();
   await expect(page.locator('#cc')).not.toBeEmpty();
-  await page.screenshot({ path: path.join(evidence, 'offline-playback.png'), fullPage: false });
+  await page.screenshot({ path: path.join(evidence(), 'offline-playback.png'), fullPage: false });
   await page.goto('/');
   await expect(page.locator('#savedCourses')).toContainText('保存済み');
-  await savedLink(page).click();
+  await savedLink(page, site).click();
   await expect(page.locator('#savedState')).toContainText('保存済み');
   await page.locator('#offlineDelete').click();
   await expect(page.locator('#savedState')).toContainText('未保存');
-  expect(await page.evaluate(() => localStorage.getItem('chalkfile:stripe-billing:notes'))).toBe(notesBefore);
+  expect(await page.evaluate((key) => localStorage.getItem(key), notesKey)).toBe(notesBefore);
   expect(await page.evaluate(() => caches.has('neighbor-app'))).toBeTruthy();
   const response = await page.reload();
   expect(response!.status()).toBe(503);
@@ -201,22 +209,22 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   expect(runtimeErrors).toEqual([]);
 });
 
-for (const mode of ['fail', 'partial', 'corrupt', 'truncated', 'redirect']) test(`${mode}：不完全な保存を成功扱いせず、再試行できる`, async ({ page, request }) => {
-  await ready(page);
+for (const mode of ['fail', 'partial', 'corrupt', 'truncated', 'redirect'] as const) test(`${mode}：不完全な保存を成功扱いせず、再試行できる`, async ({ page, request, site }) => {
+  await ready(page, site);
   await control(request, { mode });
   await page.locator('#offlineSave').click();
   await expect(page.locator('#offlineMessage')).toContainText('再試行');
   await expect(page.locator('#offlineProgress')).toBeHidden();
-  expect((await status(page)).saved).toBeNull();
-  const staging = await page.evaluate(async () => (await caches.keys()).filter((n) => n.includes(':course:stripe-billing:')));
+  expect((await status(page, site)).saved).toBeNull();
+  const staging = await page.evaluate(async (id) => (await caches.keys()).filter((n) => n.includes(`:course:${id}:`)), site.course.id);
   expect(staging).toEqual([]);
   await control(request);
   await page.locator('#offlineCheck').click();
   await save(page);
 });
 
-test('容量不足の保存例外を表示し、未保存として再試行できる', async ({ page, context }) => {
-  await ready(page);
+test('容量不足の保存例外を表示し、未保存として再試行できる', async ({ page, context, site }) => {
+  await ready(page, site);
   const worker = context.serviceWorkers()[0];
   await worker.evaluate(() => {
     const original = Cache.prototype.put;
@@ -230,18 +238,18 @@ test('容量不足の保存例外を表示し、未保存として再試行で�
   await page.locator('#offlineSave').click();
   await expect(page.locator('#offlineMessage')).toContainText('空き容量が不足');
   await expect(page.locator('#offlineProgress')).toBeHidden();
-  expect((await status(page)).saved).toBeNull();
+  expect((await status(page, site)).saved).toBeNull();
   await worker.evaluate(() => { Cache.prototype.put = (globalThis as any).originalPut; });
   await save(page);
 });
 
-test('キャンセル・別タブからの重複保存を処理し、再試行できる', async ({ page, context, request }) => {
-  await ready(page);
+test('キャンセル・別タブからの重複保存を処理し、再試行できる', async ({ page, context, request, site }) => {
+  await ready(page, site);
   await control(request, { mode: 'delay' });
   await page.locator('#offlineSave').click();
-  await expect(page.locator('#offlineMessage')).toContainText('6 / 27');
+  await expect(page.locator('#offlineMessage')).toContainText(delayedProgress(site, manifestOf(site)));
   const other = await context.newPage();
-  await other.goto(route);
+  await other.goto(site.course.route);
   await expect(other.locator('#offlineProgress')).toBeVisible();
   await expect(other.locator('#offlineSave')).toBeDisabled();
   await other.locator('#offlineCancel').click();
@@ -249,15 +257,15 @@ test('キャンセル・別タブからの重複保存を処理し、再試行�
   await expect(page.locator('#offlineProgress')).toBeHidden();
   await expect(other.locator('#offlineProgress')).toBeHidden();
   await expect(other.locator('#offlineMessage')).not.toContainText('保存中');
-  expect((await status(page)).saved).toBeNull();
+  expect((await status(page, site)).saved).toBeNull();
   await other.close();
   await control(request);
   await save(page);
 });
 
-test('教材更新：旧版の教材と動画を維持し、失敗後に再試行して完全な新版へ切り替える', async ({ page, context, request }) => {
-  await ready(page); await save(page);
-  const original = (await status(page)).saved!;
+test('教材更新：旧版の教材と動画を維持し、失敗後に再試行して完全な新版へ切り替える', async ({ page, context, request, site }) => {
+  await ready(page, site); await save(page);
+  const original = (await status(page, site)).saved!;
   await control(request, { mode: 'fail', update: true });
   await page.reload();
   expect(await page.title()).not.toContain('更新テスト');
@@ -265,55 +273,55 @@ test('教材更新：旧版の教材と動画を維持し、失敗後に再試�
   await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
   await page.locator('#offlineSave').click();
   await expect(page.locator('#offlineMessage')).toContainText('再試行');
-  expect((await status(page)).saved!.manifest.revision).toBe(original.manifest.revision);
-  await context.setOffline(true); await page.reload(); await playAndPause(page, 30);
+  expect((await status(page, site)).saved!.manifest.revision).toBe(original.manifest.revision);
+  await context.setOffline(true); await page.reload(); await playAndPause(page, seek(site, 30));
   await context.setOffline(false);
   await control(request, { update: true });
   await page.locator('#offlineCheck').click();
   await page.locator('#offlineSave').click();
   await expect(page.locator('#offlineReload')).toBeVisible();
-  expect((await status(page)).saved!.manifest.revision).not.toBe(original.manifest.revision);
+  expect((await status(page, site)).saved!.manifest.revision).not.toBe(original.manifest.revision);
   // 更新後も直前の版の MP4 を混ぜずに返せる。
-  const oldFile = original.manifest.files.find((f) => f.url.includes('/L01.'))!;
+  const oldFile = original.manifest.files.find((f) => f.url.includes(`/${site.course.lectures[0].id}.`))!;
   const oldRange = await page.evaluate(async (url) => (await fetch(new URL(url, location.origin + '/'), { headers: { Range: 'bytes=0-127' } })).status, oldFile.url);
   expect(oldRange).toBe(206);
   await page.locator('#offlineReload').click();
   await expect(page).toHaveTitle(/更新テスト/);
   await context.setOffline(true); await page.reload();
   await expect(page).toHaveTitle(/更新テスト/);
-  await playAndPause(page, 60);
-  expect(await page.evaluate(async () => (await caches.keys()).filter((n) => n.includes(':course:stripe-billing:')).length)).toBe(2);
+  await playAndPause(page, seek(site, 60));
+  expect(await page.evaluate(async (id) => (await caches.keys()).filter((n) => n.includes(`:course:${id}:`)).length, site.course.id)).toBe(2);
 });
 
-test('保存ファイルの欠損を検出し、保存済み表示と再生を止めて再保存できる', async ({ page, context }) => {
-  await ready(page); await save(page);
-  const stored = (await status(page)).saved!;
+test('保存ファイルの欠損を検出し、保存済み表示と再生を止めて再保存できる', async ({ page, context, site }) => {
+  await ready(page, site); await save(page);
+  const stored = (await status(page, site)).saved!;
   await page.evaluate(async ({ cache, url }) => { await (await caches.open(cache)).delete(new URL(url, location.origin + '/').href); },
-    { cache: stored.cache, url: stored.manifest.files.find((f) => f.url.includes('/L02.'))!.url });
+    { cache: stored.cache, url: stored.manifest.files.find((f) => f.url.includes(`/${site.course.lectures[1].id}.`))!.url });
   await page.reload();
   await expect(page.locator('#savedState')).toContainText('保存が不完全');
-  expect((await status(page)).saved).toBeNull();
+  expect((await status(page, site)).saved).toBeNull();
   await context.setOffline(true);
   const response = await page.reload();
   expect(response!.status()).toBe(503);
   await expect(page.getByRole('heading', { name: 'この教材は保存されていません' })).toBeVisible();
-  await context.setOffline(false); await page.goto(route);
+  await context.setOffline(false); await page.goto(site.course.route);
   await expect(page.locator('#offlineSave')).toBeEnabled(); await save(page);
 });
 
-test('読めない保存の記録は、動画を消さずに隔離して保存し直しを案内する。読めるように戻れば保存版に戻り、30日たった隔離だけを消す', async ({ page }) => {
-  await ready(page); await save(page);
-  const saved = (await status(page)).saved!;
+test('読めない保存の記録は、動画を消さずに隔離して保存し直しを案内する。読めるように戻れば保存版に戻り、30日たった隔離だけを消す', async ({ page, site }) => {
+  await ready(page, site); await save(page);
+  const saved = (await status(page, site)).saved!;
   // 検証を厳しくした版を真似て、記録を今の検証に通らない形にする（break）。text を渡すと、その本文に戻す
-  const record = (text?: string) => page.evaluate(async (text) => {
+  const record = (text?: string) => page.evaluate(async ({ text, id }) => {
     const registry = await caches.open('chalkfile:/:offline-v1:registry');
-    const key = new URL('.offline-records/stripe-billing', location.origin + '/').href;
+    const key = new URL(`.offline-records/${id}`, location.origin + '/').href;
     const before = await (await registry.match(key))!.text();
     const r = JSON.parse(before);
     r.versions[0].manifest.pageVersion = 'stricter';
     await registry.put(key, text ? new Response(text, { headers: { 'Content-Type': 'application/json' } }) : Response.json(r));
     return before;
-  }, text);
+  }, { text, id: site.course.id });
   const marks = () => page.evaluate(async () => (await caches.keys()).filter((n) => n.startsWith('quarantine:')));
   const original = await record();
   await page.reload();
@@ -326,7 +334,7 @@ test('読めない保存の記録は、動画を消さずに隔離して保存�
   await record(original);
   await page.reload();
   await expect(page.locator('#savedState')).toContainText('保存済み・教材と全動画');
-  expect((await status(page)).saved!.cache).toBe(saved.cache);
+  expect((await status(page, site)).saved!.cache).toBe(saved.cache);
   expect(await marks()).toEqual([]);
   // 隔離から30日たつと、中身の Cache と印を消す（記録は読めないまま残るので、保存し直しの案内は続く）
   await record();
@@ -339,13 +347,13 @@ test('読めない保存の記録は、動画を消さずに隔離して保存�
   }, { mark, cache: saved.cache });
   await page.reload();
   await expect(page.locator('#savedState')).toContainText('保存が不完全');
-  expect(await page.evaluate(async () => (await caches.keys()).filter((n) => n.includes(':course:stripe-billing:')))).toEqual([]);
+  expect(await page.evaluate(async (id) => (await caches.keys()).filter((n) => n.includes(`:course:${id}:`)), site.course.id)).toEqual([]);
   await save(page);
   expect(await marks()).toEqual([]);
 });
 
-test('オンラインで存在しない URL を開くと、保存されていないとは言わずに 404 のページを返す。オフラインは今までどおり', async ({ page, context }) => {
-  await ready(page);
+test('オンラインで存在しない URL を開くと、保存されていないとは言わずに 404 のページを返す。オフラインは今までどおり', async ({ page, context, site }) => {
+  await ready(page, site);
   const online = await page.goto('/no-such-course/');
   expect(online!.fromServiceWorker()).toBeTruthy();
   expect(online!.status()).toBe(404);
@@ -358,57 +366,57 @@ test('オンラインで存在しない URL を開くと、保存されていな
   await context.setOffline(false);
 });
 
-test('外部動画を指す教材情報は拒否し、取得しない', async ({ page, request }) => {
+test('外部動画を指す教材情報は拒否し、取得しない', async ({ page, request, site }) => {
   const requests: string[] = [];
   page.context().on('request', (r) => { if (r.url().includes('example.com')) requests.push(r.url()); });
-  await ready(page); await control(request, { mode: 'external' });
+  await ready(page, site); await control(request, { mode: 'external' });
   await page.locator('#offlineCheck').click();
   await expect(page.locator('#offlineMessage')).toContainText('公開教材だけ');
   await expect(page.locator('#offlineSave')).toBeDisabled();
   expect(requests).toEqual([]);
 });
 
-test('ブラウザ完全終了後のオフライン起動とworker更新後にも保存を維持する', async ({ request }) => {
+test('ブラウザ完全終了後のオフライン起動とworker更新後にも保存を維持する', async ({ request, site, baseURL }) => {
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-restart-'));
-  let context = await chromium.launchPersistentContext(profile, { channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, baseURL: 'http://127.0.0.1:8877' });
+  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
   try {
-    let page = await context.newPage(); await ready(page);
+    let page = await context.newPage(); await ready(page, site);
     const cdp = await context.newCDPSession(page);
     const installability = await cdp.send('Page.getInstallabilityErrors');
     expect(installability.installabilityErrors).toEqual([]);
     await page.locator('#installHelp summary').click();
     await expect(page.locator('#pwaInstall')).toBeVisible();
-    await page.screenshot({ path: path.join(evidence, 'install-eligible.png'), fullPage: false });
+    await page.screenshot({ path: path.join(evidence(), 'install-eligible.png'), fullPage: false });
     await save(page);
     await control(request, { workerUpdate: true });
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
     await expect(page.locator('#appUpdate')).toBeVisible();
-    expect((await status(page)).saved).not.toBeNull();
+    expect((await status(page, site)).saved).not.toBeNull();
     await context.close();
-    context = await chromium.launchPersistentContext(profile, { channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, baseURL: 'http://127.0.0.1:8877' });
+    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
     await context.setOffline(true);
     page = await context.newPage(); await page.goto('/');
     await expect(page.locator('#savedCourses')).toContainText('保存済み');
-    await savedLink(page).click();
+    await savedLink(page, site).click();
     await expect(page.locator('#savedState')).toContainText('保存済み');
-    await playAndPause(page, 90);
+    await playAndPause(page, seek(site, 90));
   } finally { await context.close(); rmSync(profile, { recursive: true, force: true }); }
 });
 
-test('保存中にブラウザを終了しても、途中の講座を保存済みにせず再試行できる', async ({ request }) => {
+test('保存中にブラウザを終了しても、途中の講座を保存済みにせず再試行できる', async ({ request, site, baseURL }) => {
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-interrupt-'));
-  let context = await chromium.launchPersistentContext(profile, { channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, baseURL: 'http://127.0.0.1:8877' });
+  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
   try {
-    let page = await context.newPage(); await ready(page);
+    let page = await context.newPage(); await ready(page, site);
     await control(request, { mode: 'delay' });
     await page.locator('#offlineSave').click();
-    await expect(page.locator('#offlineMessage')).toContainText('6 / 27');
+    await expect(page.locator('#offlineMessage')).toContainText(delayedProgress(site, manifestOf(site)));
     await context.close();
     await control(request);
-    context = await chromium.launchPersistentContext(profile, { channel: process.env.PW_CHANNEL ?? 'chrome', headless: true, baseURL: 'http://127.0.0.1:8877' });
-    page = await context.newPage(); await ready(page);
-    expect((await status(page)).saved).toBeNull();
-    expect(await page.evaluate(async () => (await caches.keys()).filter((n) => n.includes(':course:stripe-billing:')))).toEqual([]);
+    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+    page = await context.newPage(); await ready(page, site);
+    expect((await status(page, site)).saved).toBeNull();
+    expect(await page.evaluate(async (id) => (await caches.keys()).filter((n) => n.includes(`:course:${id}:`)), site.course.id)).toEqual([]);
     await save(page);
   } finally { await context.close(); rmSync(profile, { recursive: true, force: true }); }
 });

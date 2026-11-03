@@ -1,0 +1,17 @@
+[
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#networkState"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": "#savedCourses > li > span"
+  },
+  {
+    "rule": "color-contrast",
+    "impact": "serious",
+    "target": ".is-theme"
+  }
+]

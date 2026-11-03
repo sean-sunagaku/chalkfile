@@ -112,6 +112,13 @@
       "assist": { "enabled": false }
     },
     {
+      // 旧 Pages の移行のコード。期限に消すまで凍結する（変えない。docs/adr/2026-11-02-legacy-pages-end-date.md・tests/legacy-freeze.test.ts）。
+      // 全体の整形の日にも整形しない
+      "includes": ["site/legacy-sw.ts", "scripts/build_migration.ts"],
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    },
+    {
       // 別の PR（#30）が直している最中なので、ここでは直さない。#30 が入ったあとに直すか、理由を書いて抑止する
       // CONTROL の正規表現は、制御文字を見つけるための意図した書き方
       "includes": ["scripts/check_content.ts"],

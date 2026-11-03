@@ -1,8 +1,9 @@
-// 組み立てたサイト（site/dist）が守る決まりを、組み立ての最後に確かめる（scripts/build_site.ts が呼び、破れていれば止める）。
-// これまでは、破れていても公開して、利用者が「保存」を押したときや、新しい SW の install のときに初めて分かっていた（W-04・W-30）。
+// 組み立てたサイト（site/dist）が守る決まりを、組み立ての最後に確かめる（scripts/site/build.ts の buildSite が呼び、破れていれば止める）。
+// これまでは、破れていても公開して、利用者が「保存」を押したときや、新しい SW の install のときに初めて分かっていた。
 //   1. Workers の静的 assets の上限（ファイルの数・1 ファイルの大きさ。site/limits.ts）に収まり、MP4 が入っていない
 //   2. HTML に置き換えの印（__X__・{{x}}・版の印）が残っていない。JSON のデータ（<script type="application/json">）は JSON として読める
-//   3. CSP の script-src のハッシュの数と、ページで実際に動く script の数が合い、どの script のハッシュも CSP にある（T3C-03 でもっと厳しくする）
+//   3. CSP の script-src のハッシュの数と、ページで実際に動く script の数が合い、どの script のハッシュも CSP にある。
+//      動く script は、組み立てが入れた信頼できるもの（scripts に渡したもの）のどれか（エスケープし忘れて紛れ込んだ script は、CSP に入っていても止める）
 //   4. 全部の offline-manifest.json が、SW と同じ validateManifest を通る。revision と、ページ・ポスターの大きさと SHA-256 が、置いたファイルと
 //      合う。動画は動画の一覧（Worker の許可リスト）にあり、大きさと SHA-256 が合う。sw.js に入れた講座には、どれも manifest がある
 //   5. sw.js が install のときに取る起動用ファイルが置いてあり、大きさと SHA-256 が合い、型が拡張子の対応表（site/mime.ts）と合う
@@ -30,6 +31,8 @@ export type SiteInvariantInput = {
   shell?: Asset[];
   /** sw.js に入れた、保存できる講座の ID（buildPwa に渡したもの） */
   courses?: string[];
+  /** ページで動いてよい script の中身（組み立てが入れる信頼できるもの。scripts/site/csp.ts）。渡すと、ほかの script があれば止める */
+  scripts?: readonly string[];
   /** Workers の上限（テストで小さくする。既定は site/limits.ts） */
   maxFiles?: number;
   maxFileBytes?: number;
@@ -68,8 +71,8 @@ const runs = (type: string) =>
   /^(text|application)\/(x-)?(java|ecma)script$/.test(type) ||
   /^text\/(javascript1\.[0-5]|jscript|livescript)$/.test(type);
 
-/** HTML 1 枚の、印の残り・JSON のデータ・CSP と script の数 */
-const checkHtml = (rel: string, html: string, problems: string[]) => {
+/** HTML 1 枚の、印の残り・JSON のデータ・CSP と script の数。trusted は、動いてよい script のハッシュ（base64。無ければ見ない） */
+const checkHtml = (rel: string, html: string, problems: string[], trusted?: ReadonlySet<string>) => {
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
   // 台本の中身は JSON のデータに入る（コードの場面の {{x}} などを印と取り違えない）。データの中は、JSON として読めることと版の印だけを見る
   let outside = '';
@@ -122,8 +125,14 @@ const checkHtml = (rel: string, html: string, problems: string[]) => {
       problems.push(
         `${rel}: ${i + 1} つ目の script が外のファイルを読みます（CSP のハッシュで許していないので動かない）`,
       );
-    } else if (!hashes.includes(createHash('sha256').update(s.body).digest('base64'))) {
-      problems.push(`${rel}: ${i + 1} つ目の script のハッシュが CSP にありません（ブラウザが止める）`);
+    } else {
+      const digest = createHash('sha256').update(s.body).digest('base64');
+      if (trusted && !trusted.has(digest)) {
+        problems.push(
+          `${rel}: ${i + 1} つ目の script は、組み立てが入れる信頼できる script ではありません（エスケープし忘れて紛れ込んでいないか見る）`,
+        );
+      }
+      if (!hashes.includes(digest)) problems.push(`${rel}: ${i + 1} つ目の script のハッシュが CSP にありません（ブラウザが止める）`);
     }
   });
 };
@@ -154,7 +163,8 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
   }
 
   // 2・3. HTML の印・JSON のデータ・CSP
-  for (const f of files) if (/\.html$/i.test(f.rel)) checkHtml(f.rel, read(f.rel).toString('utf8'), problems);
+  const trusted = input.scripts ? new Set(input.scripts.map((s) => createHash('sha256').update(s).digest('base64'))) : undefined;
+  for (const f of files) if (/\.html$/i.test(f.rel)) checkHtml(f.rel, read(f.rel).toString('utf8'), problems, trusted);
 
   // アプリの中の URL（scope からの場所）を、置いたファイルの場所にする。/ で終わるのはページ（index.html）
   const scopePath = new URL(scope).pathname;
@@ -231,7 +241,7 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
   return problems;
 }
 
-/** 組み立てたサイトの決まりが破れていれば、全部の一覧をエラーにして止める（scripts/build_site.ts の最後） */
+/** 組み立てたサイトの決まりが破れていれば、全部の一覧をエラーにして止める（scripts/site/build.ts の buildSite の最後） */
 export function assertSiteInvariants(input: SiteInvariantInput): void {
   const problems = siteInvariantProblems(input);
   if (problems.length) {

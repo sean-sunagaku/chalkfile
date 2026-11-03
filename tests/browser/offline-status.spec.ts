@@ -1,21 +1,22 @@
-import { test, expect, chromium, type Page, type APIRequestContext } from '@playwright/test';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chromium, type Page, type APIRequestContext } from '@playwright/test';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
+import type { Control } from '../e2e/site';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
 
-const course = '/stripe-billing/';
-const evidence = path.join(process.env.CHALKFILE_EVIDENCE_DIR ?? '/tmp/chalkfile-pwa-evidence', 'offline-status');
+// 保存の状態の案内を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座）
 
-async function control(request: APIRequestContext, data: Record<string, unknown> = {}) {
+async function control(request: APIRequestContext, data: Partial<Control> = {}) {
   expect((await request.post('/__test/control', { data })).ok()).toBeTruthy();
 }
-async function state(page: Page): Promise<CourseStatus> {
-  return page.evaluate(() => new Promise((resolve) => {
+async function state(page: Page, id: string): Promise<CourseStatus> {
+  return page.evaluate((id) => new Promise((resolve) => {
     const c = new MessageChannel();
-    c.port1.onmessage = (e) => { c.port1.close(); resolve(e.data.courses.find((s: CourseStatus) => s.id === 'stripe-billing')); };
+    c.port1.onmessage = (e) => { c.port1.close(); resolve(e.data.courses.find((s: CourseStatus) => s.id === id)); };
     navigator.serviceWorker.controller!.postMessage({ protocol: 1, type: 'STATUS' }, [c.port2]);
-  }));
+  }), id);
 }
 async function refresh(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
@@ -23,13 +24,15 @@ async function refresh(page: Page) {
   await page.waitForTimeout(300);
 }
 
-test('保存状態の初期案内と進捗・エラーの保護', async ({ request }, testInfo) => {
+test('保存状態の初期案内と進捗・エラーの保護', async ({ request, site, baseURL }, testInfo) => {
   test.setTimeout(240000);
   await control(request);
+  const course = site.course.route;
+  const manifest = manifestOf(site);
+  const evidence = evidenceDir('offline-status');
   mkdirSync(evidence, { recursive: true });
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-offline-status-'));
-  const options = { channel: process.env.PW_CHANNEL ?? 'chrome', headless: true,
-    baseURL: 'http://127.0.0.1:8877', viewport: { width: 1440, height: 1000 } };
+  const options = { channel, headless: true, baseURL, viewport: { width: 1440, height: 1000 } };
   let context = await chromium.launchPersistentContext(profile, options);
   const browser = context.browser()!.version();
   const observations: { name: string; message: string | null }[] = [];
@@ -71,7 +74,7 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
       await control(request, { mode: 'delay', manifestMode: 'delay-first-fail' });
       await page.locator('#offlineCheck').click();
       await page.locator('#offlineSave').click();
-      await expect(page.locator('#offlineMessage')).toContainText('6 / 27');
+      await expect(page.locator('#offlineMessage')).toContainText(delayedProgress(site, manifest));
       await expect.poll(async () => (await (await request.get('/__test/stats')).json()).manifestFailures).toBe(1);
       await refresh(page);
       await expect(page.locator('#offlineMessage')).toContainText('保存中');
@@ -90,7 +93,7 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
       const completed = await page.locator('#offlineMessage').textContent();
       await refresh(page);
       await expect(page.locator('#offlineMessage')).toHaveText(completed!);
-      expect((await state(page)).saved!.manifest.files).toHaveLength(27);
+      expect((await state(page, site.course.id)).saved!.manifest.files).toHaveLength(manifest.files.length);
       completeDownloads++;
       await control(request);
     });
@@ -106,8 +109,9 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
       await expect(page.locator('#networkState')).toContainText('オフライン');
       await refresh(page);
       await expect(page.locator('#offlineMessage')).not.toContainText('準備しています');
-      await page.locator('video').evaluate(async (v: HTMLVideoElement) => { v.muted = true; v.currentTime = 20; await v.play(); });
-      await expect.poll(() => page.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(20.2);
+      const at = seek(site, 20);
+      await page.locator('video').evaluate(async (v: HTMLVideoElement, at) => { v.muted = true; v.currentTime = at; await v.play(); }, at);
+      await expect.poll(() => page.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(at + 0.2);
       expect(await page.locator('video').evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
       await page.locator('video').evaluate((v: HTMLVideoElement) => v.pause());
       await page.evaluate(() => scrollTo(0, 0));
@@ -116,14 +120,14 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
     });
     await test.step('一部欠損でも旧完全版が使える状態を、再起動後に正しく案内', async () => {
       // 追加の全動画取得を避け、最新保存領域の消去に相当する状態を Cache API で注入する。
-      await page.evaluate(async () => {
+      await page.evaluate(async (id) => {
         const name = (await caches.keys()).find((n) => n.endsWith(':registry'))!;
         const registry = await caches.open(name);
-        const key = (await registry.keys()).find((r) => r.url.endsWith('/stripe-billing'))!;
+        const key = (await registry.keys()).find((r) => r.url.endsWith(`/${id}`))!;
         const record = await (await registry.match(key))!.json();
         record.versions.unshift({ ...record.versions[0], cache: record.versions[0].cache + ':missing' });
         await registry.put(key, Response.json(record));
-      });
+      }, site.course.id);
       incompleteStateInjected = true;
       await context.close();
       context = await chromium.launchPersistentContext(profile, { ...options, offline: true });
@@ -131,12 +135,12 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
       await page.goto(course);
       await expect(page.locator('#offlineMessage')).toContainText('一部の保存が不完全');
       await expect(page.locator('#offlineMessage')).toContainText('前の完全な保存版を利用できます');
-      expect((await state(page)).incomplete).toBeTruthy();
+      expect((await state(page, site.course.id)).incomplete).toBeTruthy();
       await record(page, '完全再起動・不完全だが旧版あり');
       await page.screenshot({ path: path.join(evidence, 'incomplete-with-previous.png') });
     });
     await test.step('完全版が残っていない欠損と、削除後の未保存を案内', async () => {
-      const saved = (await state(page)).saved!;
+      const saved = (await state(page, site.course.id)).saved!;
       await page.evaluate(async (name) => { await caches.delete(name); }, saved.cache);
       await context.setOffline(false);
       await page.reload();
@@ -159,18 +163,20 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
   } finally {
     await context.close(); rmSync(profile, { recursive: true, force: true });
     const result = { passed, browser, observations, pageErrors: errors,
-      sourceManifestRevision: JSON.parse(readFileSync('site/dist/stripe-billing/offline-manifest.json', 'utf8')).revision,
+      sourceManifestRevision: manifest.revision,
       completeDownloads, incompleteState: incompleteStateInjected ? 'CacheStorage参照先の欠損を注入' : '未実施', publicSiteTested: false };
     writeFileSync(path.join(evidence, 'result.json'), JSON.stringify(result, null, 2));
     await testInfo.attach('保存状態の回帰証跡', { body: Buffer.from(JSON.stringify(result, null, 2)), contentType: 'application/json' });
   }
 });
 
-test('375pxで未保存の案内がはみ出さない', async ({ page, request }) => {
+test('375pxで未保存の案内がはみ出さない', async ({ page, request, site }) => {
   await control(request);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(course);
+  await page.goto(site.course.route);
   await expect(page.locator('#offlineMessage')).toContainText('この講座は未保存');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  const evidence = evidenceDir('offline-status');
+  mkdirSync(evidence, { recursive: true });
   await page.screenshot({ path: path.join(evidence, 'unsaved-mobile-375.png') });
 });
