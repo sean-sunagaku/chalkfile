@@ -133,7 +133,7 @@ const publishedVideos = (config: SiteConfig, coursesIn: (lang: Lang) => Course[]
 export const posterProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], hasPoster = (file: string) => existsSync(path.join(ROOT, file))): PublishIssue[] =>
   publishedVideos(config, coursesIn)
     .filter((v) => !hasPoster(posterFile(v.course.id, v.key)))
-    .map((v) => ({ level: 'error', rule: 'poster', where: `${v.course.id}/${v.key}`, message: `ポスター ${posterFile(v.course.id, v.key)} が無い（bash scripts/render.sh ${v.key} が作る。Git に入れる）` }));
+    .map((v) => ({ level: 'error', rule: 'poster', where: `${v.course.id}/${v.key}`, message: `ポスター ${posterFile(v.course.id, v.key)} が無い（npm run render -- ${v.key} が作る。Git に入れる）` }));
 
 /**
  * 動画の一覧（講座ごとの content/<講座>/generated/media.<言語>.json をつないだもの）に、公開する言語の全部の動画があるか。通常版は全部（無いと build_site が止まる）。

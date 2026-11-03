@@ -2,7 +2,7 @@
 //   bun scripts/media.ts push --course <講座 ID> [--course <講座 ID>…] [--lang ja]
 //       選んだ講座の動画だけを、手元のファイル（site/media/）から Releases に置き、その講座の一覧（content/<講座>/generated/media.<言語>.json）
 //       だけを書き直す。ほかの講座の一覧には触らない（手元の動画が一覧と違えば、知らせるだけ）。前のハッシュの動画は消さず retained に回す。
-//       書き出しの記録（.work/state/render/<key>.json。render.sh が書く）のある動画は、項目に inputs（書き出したときの台本と描き方の指紋）を
+//       書き出しの記録（.work/state/render/<key>.json。書き出しの scripts/stages/video/render.ts が書く）のある動画は、項目に inputs（書き出したときの台本と描き方の指紋）を
 //       書く（一覧の版 2。scripts/media-lists.ts）。同じ動画をもう一度置くときは、前の一覧の inputs を引き継ぐ。書き出したあとで台本が
 //       変わった動画（記録の台本の指紋が今と違う）があれば、Releases に置く前に止める。描き方のコードだけが違うときは、知らせるだけ
 //   bun scripts/media.ts check            # 全講座の一覧の動画が Releases にあり、大きさと SHA-256 が合うか（手元にあれば手元の動画も）
@@ -251,7 +251,7 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
   const updates: { file: string; manifest: MediaManifest; inputs: Map<string, MediaInputs> }[] = [];
   const stale: string[] = [];
   for (const course of list.filter((c) => chosen.has(c.id))) {
-    // ポスターは render.sh が講座のフォルダに書く。前の手順で site/media/<key>.jpg にだけあるものは写す
+    // ポスターは書き出し（npm run render）が講座のフォルダに書く。前の手順で site/media/<key>.jpg にだけあるものは写す
     for (const l of course.lectures) {
       const key = videoKey(l.id, lang);
       const from = path.join(root, 'site/media', `${key}.jpg`);
@@ -277,7 +277,7 @@ export async function pushMedia({ courses, lang, root = ROOT, gh = realGh, today
       console.warn(`注意: 書き出したあとで、描き方のコード（src など）が変わった動画: ${found.src.join(' ')}（見た目が変わる直しなら、書き出し直す）`);
     if (found.unknown.length) console.warn(`注意: timeline が無いので、台本と比べられない動画: ${found.unknown.join(' ')}`);
     if (found.none.length)
-      console.warn(`注意: 書き出しの記録が無いので、inputs を書かない動画: ${found.none.join(' ')}（npm run chalk -- render か bash scripts/render.sh で書き出すと記録する）`);
+      console.warn(`注意: 書き出しの記録が無いので、inputs を書かない動画: ${found.none.join(' ')}（npm run render か npm run chalk -- render で書き出すと記録する）`);
     updates.push({ file: mediaListFile(course.id, lang), manifest: validateMediaManifest({ schema: 1, entries, ...(retained.length ? { retained } : {}) }), inputs });
   }
   if (stale.length)

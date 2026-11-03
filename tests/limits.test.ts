@@ -34,7 +34,7 @@ describe('上限の値', () => {
       WORKERS_MAX_ASSETS: 20000,
     });
   });
-  test('site/limits.ts は、ほかのファイルを読まない（render.sh が bun -e でこのファイルだけを読む。sw.js と Worker にも入る）', () => {
+  test('site/limits.ts は、ほかのファイルを読まない（sw.js と Worker にも入る）', () => {
     expect(readFileSync(path.join(import.meta.dir, '../site/limits.ts'), 'utf8')).not.toMatch(
       /^\s*(import|export\s.*\sfrom)\b/m,
     );

@@ -57,7 +57,6 @@ const CLI: Case[] = [
     argv: [process.execPath, 'scripts/stages/video/render.ts'],
     file: 'scripts/stages/video/render.ts',
   },
-  { name: 'render.sh', argv: ['bash', 'scripts/render.sh'], file: 'scripts/render.sh' },
 ];
 const python = Bun.which('python3');
 const PY: Case[] = ['mix', 'tts_kokoro', 'check_speech'].map((n) => ({
@@ -160,7 +159,6 @@ describe('知らない引数は、何もせずに「使い方の誤り」（終�
     ['stills.ts（形の違う動画の名前）', [...NODE, 'scripts/stills.ts', 'L01@abc']],
     ['stills.ts（無い場面）', [...NODE, 'scripts/stills.ts', 'L01:99']],
     ['stills.ts（形の違うテーマ）', [...NODE, 'scripts/stills.ts', 'L01', '--theme=../x']],
-    ['render.sh', ['bash', 'scripts/render.sh', '--nope']],
     ['render.ts', [process.execPath, 'scripts/stages/video/render.ts', '--nope']],
     ['render.ts（無い動画）', [process.execPath, 'scripts/stages/video/render.ts', 'ZZ99']],
     ['render.ts（形の違う動画の名前）', [process.execPath, 'scripts/stages/video/render.ts', '../L01']],
