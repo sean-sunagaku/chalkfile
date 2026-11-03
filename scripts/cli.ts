@@ -70,6 +70,8 @@ const node = (file: string, ...args: string[]): Step => {
   const argv = ['node', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', file, ...args];
   return { argv, show: ['node', file, ...args].join(' ') };
 };
+/** 段の記録（scripts/pipeline.ts record）。記録できなくても 0 で終わるので、道具を止めない */
+const record = (stage: string, args: string[]): Step => bun('scripts/pipeline.ts', 'record', stage, ...args);
 /** 真偽の引数を、道具の引数に写す */
 const flag = (values: Values, name: string, as = `--${name}`) => (values[name] ? [as] : []);
 /** 値の引数を、道具の引数に写す（くり返しも） */
@@ -79,6 +81,13 @@ const opt = (values: Values, name: string, as = `--${name}`) => {
 };
 const strings = (v: Values[string]): string[] =>
   v === undefined || typeof v === 'boolean' ? [] : Array.isArray(v) ? v : [v];
+/** 対象の選び方（--course・--video・--lang と名前の無い引数）を、そのまま道具に渡す（道具が pickVideos で選ぶ） */
+const targetArgs = (values: Values, positionals: string[]) => [
+  ...opt(values, 'course'),
+  ...opt(values, 'video'),
+  ...opt(values, 'lang'),
+  ...positionals,
+];
 
 /* ───────────── 対象（--course・--video・--lang） ───────────── */
 
@@ -182,6 +191,59 @@ export const COMMANDS: Command[] = [
       values.json
         ? [bun('scripts/validate.ts', '--json')]
         : [bun('scripts/validate.ts', ...flag(values, 'warnings')), bun('scripts/check_content.ts')],
+  },
+  {
+    name: 'status',
+    usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--json]',
+    summary:
+      '段（voice・mix・render・docs・site）ごとに、記録（.work/state/）と今の入力の指紋を比べ、古くなった単位と次に流す段を出す（何も作らない）。公開した動画が今の台本と合うかも出す',
+    old: [],
+    file: 'scripts/pipeline.ts',
+    options: { ...TARGET, json: { type: 'boolean' } },
+    positionals: true,
+    steps: ({ values, positionals }) => [
+      bun(
+        'scripts/pipeline.ts',
+        'status',
+        ...targetArgs(values, positionals),
+        ...flag(values, 'json'),
+        ...flag(values, 'verbose'),
+      ),
+    ],
+  },
+  {
+    name: 'build',
+    usage:
+      '--to <voice|mix|render|docs|site> [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--force] [--src] [--cached-only] [--jobs <数>]',
+    summary:
+      'その段まで、前の段から順に、古くなった単位だけを流して記録する（何も変えていなければ、何も流さない）。--force は全部、--src は描き方のコードだけが変わった動画も書き出す。--dry-run は流すものを出すだけ',
+    old: [],
+    file: 'scripts/pipeline.ts',
+    options: {
+      ...TARGET,
+      to: { type: 'string' },
+      force: { type: 'boolean' },
+      src: { type: 'boolean' },
+      'cached-only': { type: 'boolean' },
+      jobs: { type: 'string' },
+      ...DRY,
+    },
+    positionals: true,
+    dry: 'pass',
+    steps: ({ values, positionals }) => [
+      bun(
+        'scripts/pipeline.ts',
+        'build',
+        ...opt(values, 'to'),
+        ...targetArgs(values, positionals),
+        ...flag(values, 'force'),
+        ...flag(values, 'src'),
+        ...flag(values, 'cached-only'),
+        ...opt(values, 'jobs'),
+        ...flag(values, 'dry-run'),
+        ...flag(values, 'verbose'),
+      ),
+    ],
   },
   {
     name: 'voice synth',
@@ -298,13 +360,16 @@ export const COMMANDS: Command[] = [
   {
     name: 'mix',
     usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>]',
-    summary: '音のミックス（public/audio/mix/）。先に voice synth',
+    summary: '音のミックス（public/audio/mix/）。先に voice synth。ミックスの前後に、段の記録（.work/state/mix/）も書く',
     old: ['npm run mix'],
     file: 'scripts/mix.py',
     options: { ...TARGET, ...DRY },
     positionals: true,
     dry: 'plan',
-    steps: ({ values, positionals }) => [uvAudio('scripts/mix.py', ...pickVideos(values, positionals))],
+    steps: ({ values, positionals }) => {
+      const keys = pickVideos(values, positionals);
+      return [record('mix', ['--begin', ...keys]), uvAudio('scripts/mix.py', ...keys), record('mix', keys)];
+    },
   },
   {
     name: 'render',

@@ -20,6 +20,8 @@ describe('コマンドの一覧', () => {
     for (const name of [
       'doctor',
       'validate',
+      'status',
+      'build',
       'voice synth',
       'voice speech-check',
       'i18n status',
@@ -130,10 +132,35 @@ describe('流すコマンド（--dry-run は出すだけ）', () => {
     expect(chalk('mix', '--course', 'ga4-comedy', '--dry-run').stdout).toContain(
       'uv run --locked --group audio python scripts/mix.py G01 G02 G03',
     );
+    // ミックスの前後に、段の記録を書く（記録できなくても 0 で終わる道具）
+    expect(COMMANDS.find((c) => c.name === 'mix')?.steps({ values: { course: ['ga4-comedy'] }, positionals: [] }).map((s) => s.show)).toEqual([
+      'bun scripts/pipeline.ts record mix --begin G01 G02 G03',
+      'uv run --locked --group audio python scripts/mix.py G01 G02 G03',
+      'bun scripts/pipeline.ts record mix G01 G02 G03',
+    ]);
     const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as {
       scripts: Record<string, string>;
     };
     expect(pkg.scripts.mix).toBe('bun scripts/cli.ts mix');
+  });
+  test('status と build は、対象の選び方をそのまま scripts/pipeline.ts に渡す（build の --dry-run も道具に渡す）', () => {
+    const status = COMMANDS.find((c) => c.name === 'status');
+    expect(status?.steps({ values: { course: ['ga4-comedy'], json: true }, positionals: [] }).map((s) => s.show)).toEqual([
+      'bun scripts/pipeline.ts status --course ga4-comedy --json',
+    ]);
+    const b = COMMANDS.find((c) => c.name === 'build');
+    expect(b?.dry).toBe('pass');
+    expect(
+      b?.steps({ values: { to: 'site', video: ['G0?'], 'cached-only': true, 'dry-run': true }, positionals: [] }).map((s) => s.show),
+    ).toEqual(['bun scripts/pipeline.ts build --to site --video G0? --cached-only --dry-run']);
+    // 使い方の誤りは、道具が 2 で止める（段が無い・--to が無い）
+    expect(chalk('build', '--to', 'nope', '--dry-run').code).toBe(2);
+    expect(chalk('build', '--dry-run').code).toBe(2);
+    const dry = chalk('build', '--to', 'docs', '--course', 'ga4-comedy', '--dry-run');
+    expect(dry.code).toBe(0);
+    expect(dry.stdout).toContain('流すもの（--dry-run なので、何もしない）');
+    expect(dry.stdout).toContain('voice:');
+    expect(dry.stdout).toContain('docs:');
   });
   test('道具に --dry-run があるもの（materials push）は、道具に渡す', () => {
     const push = COMMANDS.find((c) => c.name === 'materials push');
