@@ -67,6 +67,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 
 | ファイル | branch | すること | 書いた日 |
 |---|---|---|---|
+| `package.json`・`.github/workflows/`・`AGENTS.md`・`content/courses.ts`・`content/index.ts` | `refactor/generated-per-course` のあと、リファクタの一連の branch（1 本ずつ順に merge する） | 生成物を講座のフォルダへ・講座の登録を 1 講座 1 行に・CLI と CI の組み直し | 2026-11-03 |
 
 ### 凍結中
 
