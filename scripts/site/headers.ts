@@ -16,9 +16,13 @@ export type HeaderRule = { path: string; detach?: readonly string[]; set: Readon
  *   ほかのサイトの枠に入れさせない（frame-ancestors は meta の CSP では効かないので、ヘッダーで送る）。使わない機能を止める。
  *   別のサイトの窓と同じ閲覧の単位に入らない（COOP）。HSTS は、ゾーンの設定を確かめてから決める（ここでは送らない）
  * - Service Worker: 毎回確かめ直す（no-cache）
- * ?v= の付いたポスターは、同じパスを一覧のページ・og:image・SW の起動用ファイルが ?v= 無しで読む。規則はパスでしか当たらないので、
- * 長くキャッシュさせない（描き直したあと、一覧のページの縮小画像が古いまま残る）
+ * - ?v= の付いた資源（講座のポスター <講座>/media/*・<言語>/<講座>/media/*）: 1 年キャッシュさせ、確かめ直させない（immutable）。
+ *   講座のページ・一覧のページの縮小画像・og:image・保存の manifest・SW の起動用ファイルは、どれもポスターを ?v=（その講座のページの版）を
+ *   付けて読み、ポスターが変われば ?v= も変わる。規則はパスでしか当たらない（query を見ない）ので、?v= 無しで読む所を作らない
+ *   （組み立ての最後の scripts/site-invariants.ts が、immutable のパスを ?v= 無しで指していないかを確かめる）
  */
+/** ?v= の付いた資源に付ける Cache-Control（no-transform は、ほかの静的な応答と同じく外さない） */
+export const IMMUTABLE = 'public, max-age=31536000, immutable, no-transform';
 export const HEADER_RULES: readonly HeaderRule[] = [
   {
     path: '/*',
@@ -33,6 +37,8 @@ export const HEADER_RULES: readonly HeaderRule[] = [
     },
   },
   { path: '/sw.js', detach: ['Cache-Control'], set: { 'Cache-Control': 'no-cache, no-transform' } },
+  { path: '/:course/media/*', detach: ['Cache-Control'], set: { 'Cache-Control': IMMUTABLE } },
+  { path: '/:lang/:course/media/*', detach: ['Cache-Control'], set: { 'Cache-Control': IMMUTABLE } },
 ];
 
 /** 規則を _headers の書き方にする（規則ごとに、パスの行と、字下げした「! 名前」「名前: 値」の行） */

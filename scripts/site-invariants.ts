@@ -9,6 +9,8 @@
 //   5. sw.js が install のときに取る起動用ファイルが置いてあり、大きさと SHA-256 が合い、型が拡張子の対応表（site/mime.ts）と合う
 //   6. _headers（scripts/site/headers.ts）の規則で、どの静的な応答にも Cache-Control の no-transform が付き、同じヘッダーを付ける規則が
 //      2 つ当たって値がつながっていない（Workers の静的 assets は、当たる規則のヘッダーをカンマでつなぐ）
+//   7. 長くキャッシュさせるパス（immutable。?v= の付いた資源）を、ページ（属性と JSON のデータ）・保存の manifest・起動用ファイルが
+//      ?v= 無しで指していない（規則はパスでしか当たらないので、?v= 無しで読むと、描き直したあとも古いまま 1 年残る）
 // 使い方: import { assertSiteInvariants } from './site-invariants' で呼ぶ（手で流す入口は無い。テストは tests/site-invariants.test.ts）
 import { createHash } from 'node:crypto';
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
@@ -272,6 +274,39 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
         problems.push(`_headers: ${p} の Cache-Control に no-transform がありません（Cloudflare が書き換えると、CSP と保存の SHA-256 が合わない）`);
       }
     }
+
+    // 7. 長くキャッシュさせるパスを、?v= 無しで指していないか
+    const origin = new URL(scope).origin;
+    const pinned = (where: string, url: string, base: string) => {
+      let u: URL;
+      try {
+        u = new URL(url, base);
+      } catch {
+        return;
+      }
+      if (u.origin !== origin || u.searchParams.has('v')) return;
+      if (headersFor(u.pathname, rules).headers.get('cache-control')?.includes('immutable')) {
+        problems.push(`${where}: ${url} は長くキャッシュさせるパス（_headers の immutable）なのに ?v= がありません（描き直したあとも古いまま残る）`);
+      }
+    };
+    for (const f of files) {
+      if (!/\.html$/i.test(f.rel)) continue;
+      const page = new URL(f.rel.replace(/(^|\/)index\.html$/, '$1'), scope).href;
+      const text = read(f.rel).toString('utf8');
+      for (const m of text.matchAll(/\b(?:src|href|poster)="([^"]+)"|<meta property="og:image" content="([^"]+)"/g)) {
+        pinned(f.rel, (m[1] ?? m[2]).replace(/&amp;/g, '&'), page);
+      }
+      for (const m of text.matchAll(/"poster":"([^"]+)"/g)) pinned(`${f.rel} の JSON のデータ`, m[1], page);
+    }
+    for (const rel of manifests) {
+      try {
+        const m = JSON.parse(read(rel).toString('utf8')) as CourseManifest;
+        for (const f of m.files) pinned(rel, f.url, scope);
+      } catch {
+        // 読めない manifest は、4. が知らせる
+      }
+    }
+    for (const a of input.shell ?? []) pinned('起動用ファイル', a.url, scope);
   }
   return problems;
 }

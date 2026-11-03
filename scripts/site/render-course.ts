@@ -6,10 +6,11 @@ import type { CourseText, CourseTextBase } from '../../site/i18n';
 import { texts } from '../../site/lib/text';
 import { clock } from '../../site/page/format';
 import { type CourseTexts, courseCounts, eyebrowOf } from '../../site/page/summary';
+import { PAGE_VERSION_MARK } from '../site-version';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
 import { cspHead } from './csp';
-import { fillTemplate, type Html, html, inlineScript, joinHtml, raw, styleText } from './html';
+import { esc, fillTemplate, type Html, html, inlineScript, joinHtml, raw, styleText } from './html';
 import { courseCredits, courseMeta, type LectureModel, plain } from './model';
 import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } from './parts';
 
@@ -140,7 +141,8 @@ export const renderCoursePage = (p: CoursePageInput): string => {
   const { tt } = text;
   const cid = `${info.path}${p.course.id}`;
   const url = `${p.base}${cid}/`;
-  const firstPoster = `${url}media/${p.lectures[0].key}.jpg`;
+  // SNS の共有の画像は、最初のレクチャーのポスター。ページと同じく ?v= に版を付ける（版の印は、版が決まってから組み立てが置き換える）
+  const firstPoster = raw(`${esc(`${url}media/${p.lectures[0].key}.jpg`)}?v=${PAGE_VERSION_MARK}`);
   const marks = {
     // CSP の script-src は、このページに入れる script（文書の順に、画面・offline-client）のハッシュ
     CSP: cspHead([p.pageScript, p.offlineClient]),

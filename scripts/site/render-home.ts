@@ -13,11 +13,14 @@ import { cssColor, esc, fillTemplate, type Html, html, joinHtml, raw, styleText 
 import { plain } from './model';
 import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } from './parts';
 
-/** 一覧ページから見た、講座の最初の動画のポスター（root はその一覧ページから見たサイトの最上位） */
-export const homePosterOf = (c: Course, root: string) => {
+/**
+ * 一覧ページから見た、講座の最初の動画のポスター（root はその一覧ページから見たサイトの最上位、version は ?v= に付ける版。
+ * ポスターは ?v= の付いた資源として長くキャッシュさせるので、いつも版を付けて読む。scripts/site/headers.ts）
+ */
+export const homePosterOf = (c: Course, root: string, version: string) => {
   const l = (c.lang ?? 'ja') as Lang;
   const key = videoKey(c.lectures[0].id, l);
-  return `${root}${LANG_INFO[l].path}${c.id}/media/${key}.jpg`;
+  return `${root}${LANG_INFO[l].path}${c.id}/media/${key}.jpg?v=${version}`;
 };
 
 /** 文字列・キー・数・省略記号を 1 回の走査で塗る（エスケープした行を塗る。塗った span の中をもう一度塗らない） */
@@ -55,6 +58,8 @@ export type HomePageInput = {
   minutesOf: (course: Course) => number;
   /** 一覧のページのクレジット（model.ts の homeCredits） */
   credits: readonly string[];
+  /** 講座の縮小画像の ?v=（その講座のページの版。build.ts の posterVersion） */
+  posterVersion: (course: Course) => string;
   hero: HeroSnippet;
   /** 保存機能の部品（parts.ts の appParts） */
   app: AppParts;
@@ -144,7 +149,7 @@ export const renderHomePage = (p: HomePageInput): string => {
         : [];
     return courseCard(p, c, p.themeOf(c.theme), {
       href: `${c.id}/`,
-      poster: homePosterOf(c, root),
+      poster: homePosterOf(c, root, p.posterVersion(c)),
       tags: tags.length ? [tags.join('・')] : [],
     });
   });
@@ -161,7 +166,7 @@ export const renderHomePage = (p: HomePageInput): string => {
             others.map((c) =>
               courseCard(p, c, p.themeOf(c.theme), {
                 href: `${root}${c.id}/`,
-                poster: homePosterOf(c, root),
+                poster: homePosterOf(c, root, p.posterVersion(c)),
                 tags: [T.cardLang],
               }),
             ),

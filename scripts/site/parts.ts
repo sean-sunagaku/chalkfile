@@ -37,7 +37,8 @@ export const headMeta = (h: {
   title: string;
   description: string;
   url: string;
-  image?: string;
+  /** SNS の共有の画像（ページの版の印を入れたいときは Html にする。文字はエスケープする） */
+  image?: string | Html;
   icon: string;
   lang: Lang;
   alternates: { lang: Lang; url: string }[];

@@ -14,7 +14,7 @@ import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-
 import { mimeOf } from '../../site/mime';
 import { SITE_NEWS, type SiteNews } from '../../site/news';
 import type { Asset, CourseManifest } from '../../site/offline-shared';
-import { asset, buildPwa, bundle } from '../pwa';
+import { asset, buildPwa, bundle, hash } from '../pwa';
 import { assertSiteInvariants } from '../site-invariants';
 import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version';
 import { readSiteConfig, type SiteConfig, siteProblems } from '../validate';
@@ -204,6 +204,20 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   /* ───────────── 一覧のページ（言語ごと） ───────────── */
   const brand = themeOf();
   mkdirSync(dist, { recursive: true });
+  /**
+   * 一覧のページの縮小画像と SW の起動用ファイルの ?v=（その講座のページの版。講座のページの最初のポスターと同じ URL になり、
+   * ブラウザのキャッシュを分け合う）。この組み立てで作った講座と、講座を指定して組み立てたときの前に組んだ講座は、保存の manifest から。
+   * manifest の無い講座（ポスターがそろっていない）は、縮小画像の中身の sha256
+   */
+  const posterVersion = (c: Course): string => {
+    const cid = `${LANG_INFO[(c.lang ?? 'ja') as Lang].path}${c.id}`;
+    const built = manifests.find((m) => m.id === cid);
+    if (built) return built.pageVersion;
+    const saved = path.join(dist, cid, 'offline-manifest.json');
+    if (existsSync(saved)) return (JSON.parse(readFileSync(saved, 'utf8')) as CourseManifest).pageVersion;
+    const poster = path.join(dist, homePosterOf(c, '', '').split('?')[0]);
+    return existsSync(poster) ? hash(readFileSync(poster)) : '';
+  };
   for (const lang of langs) {
     const info = LANG_INFO[lang];
     const root = lang === 'ja' ? './' : '../';
@@ -222,6 +236,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       themeSummary: (t) => textOf(LOCALES[lang].themes)(t.id) ?? t.summary,
       minutesOf: (c) => minutesOf(c, (c.lang ?? 'ja') as Lang, readData),
       credits: homeCredits(coursesIn(lang), lang),
+      posterVersion,
       hero: o.hero,
       app: appParts(app, lang, root),
       offlineClient: app.offlineClient,
@@ -240,7 +255,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   shell.push(
     ...thumbnailAssets(
       dist,
-      coursesIn('ja').map((c) => homePosterOf(c, '')),
+      coursesIn('ja').map((c) => homePosterOf(c, '', posterVersion(c))),
     ),
   );
   // sw.js に入れる講座（保存できる講座）は、出す言語の全部の講座から、組み立てたサイトに保存の manifest があるものを選ぶ。
