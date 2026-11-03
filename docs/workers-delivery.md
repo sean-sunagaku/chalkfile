@@ -103,6 +103,10 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 
 HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る。ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 を見る。CI にはまだ入れていない。
 
+## 古いハッシュの動画（retained）の期限
+
+`media.ts push` で一覧から外れた旧ハッシュの動画は、`retained` に `retainedUntil`（UTC の日付。その日まで）を付けて残す。期限は retained に入れた日から 90 日で、すでに retained にあるものの期限は変えない（期限の無い古い項目には、次の push で付ける）。期限を過ぎたものが残っていると、`media.ts check`（`build_site.ts --strict` の中でも流れる）と `check_delivery.ts` が警告する。Actions では注釈にし、公開は止めない。外すと Worker はその URL に 404 を返すので、開いたままの旧ページが無くなった頃に持ち主が外す。延ばすときは `retainedUntil` を書き換える。Release の asset は消さない。
+
 ## 旧 GitHub Pages の切替
 
 `bash scripts/deploy_pages.sh` は移行案内だけを出す。最新main・cleanなcheckout・公開先の全動画Range・ブラウザのCSP/SW確認に通らないと止まる。見ていた旧gh-pages SHAを指定したforce-with-leaseを使い、ローカルの `refs/chalkfile-backups/gh-pages-<main SHA>` に復旧参照を残す。通常のサイトとMP4をgh-pagesへ公開し直す用途には使わない。
