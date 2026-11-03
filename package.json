@@ -11,6 +11,8 @@
   "scripts": {
     "check": "npm run lint && npm run typecheck && npm test && npm run check:content",
     "lint": "biome ci --formatter-enabled=false --assist-enabled=false",
+    "lint:py": "uvx ruff@0.17.3 check scripts",
+    "lint:sh": "shellcheck --exclude=SC2086 scripts/render.sh && git ls-files -z '*.sh' ':!scripts/render.sh' | xargs -0 shellcheck",
     "format": "biome check --write",
     "format:new": "bun scripts/format_new.ts --write",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",

@@ -28,6 +28,7 @@ npm run check    # lint・型・単体テスト・台本とファイルの点検
 ```
 
 - 新しく足した TS・JSON は `npm run format:new` で整える（CI は、足したファイルの整形を見る）。全体の整形（`npm run format`）は、開いている講座の PR が 0 の日に 1 回だけ行うので、それまで流さない
+- Python（`scripts/*.py`）を変えたら `npm run lint:py`（ruff。uv が要る）、シェル（`*.sh`）を変えたら `npm run lint:sh`（shellcheck が要る）。どちらも CI で流す。`ruff format` は TS の全体の整形と同じ日まで流さない
 - 動画の見た目を変えたら `npm run stills -- <ID>` で静止画を見る
 - 台詞を変えたら synth → mix → render の順に作り直し、`.work/kana/<id>.txt` の読みを見る
 - 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
