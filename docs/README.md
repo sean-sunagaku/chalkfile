@@ -14,6 +14,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 配信の設計（Workers・Releases・旧 Pages の移行） | [architecture/delivery.md](architecture/delivery.md) | 手順は書かない。手順は下の「公開の順番」ほか |
 | 始め方（3 通りの作り直し・前提の道具） | [guide/quickstart.md](guide/quickstart.md) | |
 | 講座の作り方 | スキル [study-video-course](../.claude/skills/study-video-course/SKILL.md) | 共通プロンプトから講座を丸ごと作るときは [course-from-prompt](../.claude/skills/course-from-prompt/SKILL.md) |
+| 講座の型ごとの長さと本数 | [course-design.md](../.claude/skills/study-video-course/references/course-design.md) の「講座の型と大きさ」 | ほかの文書は、この表へリンクする |
 | 講座を足す（チェックリスト・頭文字の表・PR に書くこと） | [guide/new-course.md](guide/new-course.md) | 中身の作り方はスキル |
 | 画面と話し方 | [style.md](../.claude/skills/study-video-course/references/style.md) | |
 | テーマ（色・書体・背景） | 値は `content/themes.ts`、仕様は [theme.md](../.claude/skills/study-video-course/references/theme.md) | |
