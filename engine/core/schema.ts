@@ -4,6 +4,7 @@
 // 読み込むとき（content/index.ts。直し方は engine/core/lines.ts）に id を番号に直すので、描く側・声を作る側が受け取るのは、at が番号の Lecture・Course だけ
 import type { Lang } from './i18n';
 import type { IconName } from './icons';
+import type { SfxId } from './sfx';
 
 /**
  * 画面の要素を出す台詞。その場面の何番目の台詞の頭で出すか（0 始まり）か、同じ場面の台詞の id（Line の id）。
@@ -21,8 +22,8 @@ export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'sl
  */
 export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | 'tsukkomi' | 'tennokoe';
 
-/** 効果音。harisen 以降はお笑い版の掛け合い用（ツッコミ・スベり・溜め・衝撃・ずっこけ） */
-export type SfxId = 'pop' | 'whoosh' | 'chime' | 'tick' | 'reveal' | 'correct' | 'type' | 'harisen' | 'chin' | 'drumroll' | 'deden' | 'zuko';
+/** 効果音の名前。一覧（名前・ミックスの音量・何の音か）は engine/core/sfx.ts の SFX で、型はそこから作る */
+export type { SfxId };
 
 /** 台本の icon に書ける名前。一覧は engine/core/icons.ts の ICON_NAMES（名前は lucide-react の名前ではなく、短い独自の名前。描くアイコンとの対応は src/components/icons.ts の ICONS） */
 export type { IconName };

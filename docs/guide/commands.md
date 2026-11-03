@@ -105,7 +105,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
 | `npm run build:materials` | 読む教材・絵コンテ・AI チャット用のチャンク（`docs/courses/`）。時刻は Git に入れている timeline から読む。消した章の古いファイルも消す |
 | `npm run build:site` | 講座サイト（`site/dist`）。`-- --strict` で公開と同じ確かめ方（gh の認証が要る） |
-| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表・Python の道具が読む JSON（効果音の一覧 `scripts/audio/sfx.json` は `content/sfx.ts` から、動画の値 `scripts/audio/video_config.json` は `src/video.config.ts` から。どちらも Git に入れる）。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
+| `npm run gen` | 講座のフォルダから全体の生成物を作る: Worker の許可リスト（`worker/src/generated/media-manifest.json`。Git に入れない）・README の講座の表・[new-course.md](new-course.md) の頭文字の表・Python の道具が読む JSON（効果音の一覧 `scripts/audio/sfx.json` は `engine/core/sfx.ts` から、動画の値 `scripts/audio/video_config.json` は `engine/core/video-config.ts` から。どちらも Git に入れる）。`-- --check` でずれだけを見る、`-- --media` で Worker の許可リストだけ |
 
 ### 見る
 

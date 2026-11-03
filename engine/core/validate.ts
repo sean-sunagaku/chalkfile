@@ -17,6 +17,7 @@ import { AT_KEYS, l10nProblems, videoKey, type Lang } from './i18n';
 import { legacyUses } from './legacy';
 import { COURSE_SCHEMA_VERSION, isKnownSchemaVersion, schemaVersionOf } from './migrate';
 import { SCENE_INFO, SCENE_KINDS } from './scenes';
+import { SFX } from './sfx';
 import type { Course, DarkSurfaces, Evidence, FontKey, Lecture, Line, Scene, SfxId, TerminalTone, Theme, Tone, VoiceId } from './schema';
 import { timelineFingerprint, type TimelineEntry } from './timeline';
 import { CAPTION, CONTENT, HEADING, VIDEO } from './video-config';
@@ -68,8 +69,8 @@ export type Issue = { where: string; message: string; level: Level; rule: Rule }
 /* ───────────── 名前の一覧（型と同じものを、実行時に確かめる用に持つ。足し忘れると型で止まる） ───────────── */
 // 場面の種類の一覧は engine/core/scenes.ts の SCENE_INFO（教材の絵コンテと同じ一覧）
 
-/** 効果音（content/sfx.ts の一覧と public/audio/sfx/<名前>.wav） */
-const SFX_SET: Record<SfxId, true> = { pop: true, whoosh: true, chime: true, tick: true, reveal: true, correct: true, type: true, harisen: true, chin: true, drumroll: true, deden: true, zuko: true };
+/** 効果音（engine/core/sfx.ts の一覧から作る。音は public/audio/sfx/<名前>.wav） */
+const SFX_SET = Object.fromEntries(Object.keys(SFX).map((k) => [k, true])) as Record<SfxId, true>;
 export const SFX_IDS = Object.keys(SFX_SET) as SfxId[];
 
 /** 声（engine/core/voices.ts の VOICES と KOKORO） */

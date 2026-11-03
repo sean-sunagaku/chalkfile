@@ -30,7 +30,7 @@ curl -s http://127.0.0.1:50021/version
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bun scripts/media.ts push --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
 | `bun scripts/media.ts pull [講座 ID…]` | 動画の一覧、Releases | `site/media/`（SHA-256 を確かめる。手元の違う動画は上書きしない） |
-| `bun scripts/gen.ts`（`npm run gen`） | 講座の登録と、講座のフォルダの動画の一覧・timeline、`content/sfx.ts`、`src/video.config.ts` | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表、Python の道具が読む `scripts/audio/sfx.json` と `video_config.json`（コミットする） |
+| `bun scripts/gen.ts`（`npm run gen`） | 講座の登録と、講座のフォルダの動画の一覧・timeline、`engine/core/sfx.ts`、`engine/core/video-config.ts` | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表、Python の道具が読む `scripts/audio/sfx.json` と `video_config.json`（コミットする） |
 | `bash scripts/legacy/deploy_pages.sh`（持ち主だけ。旧 Pages の移行の案内のときだけ） | `site/migration-dist/`（`scripts/build_migration.ts` が作る） | 旧 Pages の `gh-pages` ブランチ（新しいサイトへの案内だけ） |
 | `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は Releases の動画も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
 | `bun scripts/materials.ts push [--dry-run]` | 台本、`.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（リモートの素材に足すだけ。前の版を親にしたコミット） |
