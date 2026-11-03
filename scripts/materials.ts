@@ -298,7 +298,7 @@ const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, prev
 - \`bun scripts/materials.ts push\` は足すだけです。手元の素材を足すか上書きし、手元の台本に無い講座や台詞の素材は消さずに残します。コミットは前の版を親にするので、送るのは新しい素材だけで、前の版にも戻せます
 - 消すのは \`bun scripts/materials.ts gc\` だけです。\`--keep\` の ref（既定 origin/main）の台本が使わない素材を一覧にし、\`--confirm\` を付けたときだけ消します。gc は親の無い 1 コミットで置き換え、それまでの履歴を切ります
 
-素材があれば、台詞を変えていない章は VOICEVOX なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せます。手順はリポジトリの README の「素材から作り直す」です。
+素材があれば、台詞を変えていない章は VOICEVOX なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せます。手順はリポジトリの docs/guide/quickstart.md の「B. 素材から作る」です。
 
 全部で ${mb(total)}（音声は FLAC。取り出すと WAV に戻り、\`SHA256SUMS\` と同じ中身になる）。どの台本から足したかは、このブランチのコミットのメッセージ（\`git log\`）にあります。
 

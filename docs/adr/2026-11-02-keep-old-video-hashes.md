@@ -34,4 +34,4 @@
 
 - Releases に古い動画がたまっていく。1 つの Release に置ける asset は 1000 までで、超える前に `media.ts push` が止まる
 - `retained` に期限を付け、期限を過ぎたものを一覧と Releases から片付ける仕組みと手順を足す予定。片付けるときは、`retained` を見てから消す
-- 公開の手順の正本は [workers-delivery.md](../workers-delivery.md) の「公開する順番」。言葉の意味は [用語集](../architecture/glossary.md)
+- 公開の手順の正本は [公開の順番](../operations/publish.md)。片付けの手順は [戻し方](../operations/recovery.md) の「古いハッシュの動画を片付ける」。言葉の意味は [用語集](../architecture/glossary.md)

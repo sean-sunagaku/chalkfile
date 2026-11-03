@@ -42,4 +42,4 @@
 - CI は `npm ci --ignore-scripts` で入れる（`.github/workflows/`）
 - 同じ考えで、開いたり道具を使ったりしただけで動きうる設定（`bunfig.toml` の preload・`.npmrc`・`.mcp.json`・`.vscode/tasks.json`・`.devcontainer/`・`.envrc`・`.husky/`）も置かない。点検に足す予定
 - `.claude/launch.json` は入れてよい。手元のプレビューを、人が起動したときだけ動く。中の起動コマンドを点検に足す予定
-- 決まりの正本は [CLAUDE.md](../../CLAUDE.md) の「安全のきまり」と、スキルの [safety.md](../../.claude/skills/study-video-course/references/safety.md) の「clone した人の手元で勝手に動くものを置かない」
+- 決まりの正本は [AGENTS.md](../../AGENTS.md) の「安全のきまり」と、スキルの [safety.md](../../.claude/skills/study-video-course/references/safety.md) の「clone した人の手元で勝手に動くものを置かない」

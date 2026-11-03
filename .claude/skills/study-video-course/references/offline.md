@@ -26,7 +26,7 @@ SWは `/media/` をページのURLより先に判定して講座を決める。�
 
 旧scope `/chalkfile/` の移行は `site/legacy-sw.ts`。install/activateで旧registry/course/shell cacheを削除しない。オンラインの次のページ移動で新サイトへ案内し、オフラインは完全な旧保存版からRange/シークを返して、保存し直しの案内を付ける。新originへの保存・メモ・進捗の自動転送はしない。旧UIの明示削除だけを受け付け、新規保存は新サイトで案内する。
 
-`tests/browser/migration.spec.ts` は本物の旧公開HTML/SWを使い、保存・記録・隣のアプリのcacheが残ることと、query/hashの移動を確認する。旧fixtureの出典は `site/legacy-config.json` と `docs/workers-delivery.md`。
+`tests/browser/migration.spec.ts` は本物の旧公開HTML/SWを使い、保存・記録・隣のアプリのcacheが残ることと、query/hashの移動を確認する。旧fixtureの出典は `site/legacy-config.json` と `docs/architecture/delivery.md`。
 
 ## 保存と更新の約束
 
@@ -80,7 +80,7 @@ iOSもCache APIのブラウザ保存であり、「ファイル」アプリへ�
 
 ## 本番を再確認するとき
 
-`bun tests/verify-production.ts offline` で認証情報のない専用profileへ保存し、別プロセスの `offline-restart` で通信を切った再起動・再生・シーク・字幕切替・単体DLのSHA-256を確認する。要求数は `bun tests/measure-production.ts` で自分の検証用ヘッダーだけをCloudflare側で抽出して数える。profileと生ログはpushしない。結果・実機の手順は [公開確認の記録](../../../../docs/workers-verification.md) に残す。Chrome/自動試験の成功をSafariやiPhone実機の成功と混同しない。
+`bun tests/verify-production.ts offline` で認証情報のない専用profileへ保存し、別プロセスの `offline-restart` で通信を切った再起動・再生・シーク・字幕切替・単体DLのSHA-256を確認する。要求数は `bun tests/measure-production.ts` で自分の検証用ヘッダーだけをCloudflare側で抽出して数える。profileと生ログはpushしない。結果・実機の手順は [公開確認の記録](../../../../docs/history/2026-11-03-workers-verification.md) に残す。Chrome/自動試験の成功をSafariやiPhone実機の成功と混同しない。
 
 ## 一次資料（2026-10-31確認）
 

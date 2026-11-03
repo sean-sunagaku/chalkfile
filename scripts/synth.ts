@@ -128,7 +128,7 @@ const kokoroAll = (videos: Video[]) => {
   const r = spawnSync('uv', ['run', '--quiet', '--locked', '--script', path.join(ROOT, 'scripts/tts_kokoro.py'), file, TTS_DIR], { cwd: ROOT, stdio: 'inherit' });
   rmSync(file, { force: true });
   if (r.error || r.status !== 0) {
-    throw new Error('Kokoro の読み上げに失敗した。uv が要る（README の「作り直す」）。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）', { cause: r.error });
+    throw new Error('Kokoro の読み上げに失敗した。uv が要る（docs/guide/quickstart.md の「前提の道具」）。台詞を変えていないなら、先に素材を取り出す（bun scripts/materials.ts pull）', { cause: r.error });
   }
 };
 
