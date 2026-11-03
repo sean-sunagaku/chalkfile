@@ -1,0 +1,54 @@
+name: 講座の提案
+description: あるとうれしい講座・章・題材を提案する
+title: "[講座の提案] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提案をありがとうございます。講座は、公式ドキュメントなどの一次情報で事実を確かめて作り、どの講座にも掛け合いのお笑いを入れます。作るかどうかと時期は、持ち主が決めます。
+  - type: input
+    id: theme
+    attributes:
+      label: テーマ
+      description: 何を学ぶ講座か
+      placeholder: "例: Web のアクセシビリティの基本"
+    validations:
+      required: true
+  - type: textarea
+    id: who
+    attributes:
+      label: 学ぶ人
+      description: 誰が、何に困っていて、見終えたら何ができるようになるとよいか
+    validations:
+      required: true
+  - type: textarea
+    id: outline
+    attributes:
+      label: 中身の案
+      description: 扱いたい話題・章の分け方など。分かる範囲で
+  - type: dropdown
+    id: size
+    attributes:
+      label: 長さ
+      options:
+        - 短く（1 本）
+        - 章に分けて（何本か）
+        - どちらでもよい
+  - type: textarea
+    id: sources
+    attributes:
+      label: 一次情報
+      description: 事実を確かめられる公式ドキュメント・法令・規格・論文など。分かれば
+  - type: textarea
+    id: related
+    attributes:
+      label: 今ある講座とのつながり
+      description: 近い講座があれば、その違い。今ある講座に章を足す提案でもよい
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 書く前に
+      options:
+        - label: 実在の会社やサービスの内部の情報・個人の情報・秘密情報を書いていない
+          required: true

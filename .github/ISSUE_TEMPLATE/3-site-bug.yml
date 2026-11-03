@@ -1,0 +1,86 @@
+name: サイトの不具合
+description: 講座サイト（chalkfile.com）の再生・保存・表示・アクセシビリティの不具合を知らせる
+title: "[サイトの不具合] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        不具合を知らせてくださって、ありがとうございます。保存・オフライン・アプリとして入れる方法は、[学ぶ人向けの説明](https://github.com/sean-sunagaku/chalkfile/blob/main/docs/guide/learner-offline.md)にあります。
+
+        脆弱性（ほかの人の記録が見える・意図しないスクリプトが動く など）は、ここに書かず、[非公開の報告](https://github.com/sean-sunagaku/chalkfile/security/advisories/new)から知らせてください。
+  - type: input
+    id: url
+    attributes:
+      label: 起きたページの URL
+      placeholder: "例: https://chalkfile.com/uiux-engineers/"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: どこの不具合か
+      options:
+        - 動画の再生・途中への移動
+        - 講座の保存・オフライン・新しい版への更新
+        - アプリとして入れる（インストール）
+        - 字幕・台本・チャプター
+        - 確認クイズ・メモ・進み具合
+        - 表示の崩れ・文字・色
+        - アクセシビリティ（キーボード・読み上げ・色の見分け）
+        - そのほか
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: したこと
+      description: 起きるまでの手順を、順に書いてください
+      placeholder: |
+        1. 講座を開く
+        2. 「この講座をアプリ内に保存」を選ぶ
+        3. 通信を切って、開き直す
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 起きてほしかったこと
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際に起きたこと
+      description: 出た文（エラーの文など）と、画面の様子。画面の写しも貼れます（メモの中身など、個人の情報が写っていないかを確かめてください）
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 端末とブラウザ
+      description: 端末・OS・ブラウザと、その版。ホーム画面のアプリで開いたかどうかも
+      placeholder: "例: iPhone・iOS 26・Safari（ホーム画面のアプリ）"
+    validations:
+      required: true
+  - type: dropdown
+    id: network
+    attributes:
+      label: 通信
+      options:
+        - つながっていた
+        - 切っていた（機内モードなど）
+        - 分からない
+  - type: textarea
+    id: console
+    attributes:
+      label: ブラウザのコンソールの出力
+      description: 分かれば。開発者の道具のコンソールに出た文を、そのまま貼ってください
+      render: text
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 書く前に
+      options:
+        - label: 公開の場に書いてよいことだけを書いた（個人の情報・メモの中身・秘密情報を書いていない）
+          required: true
