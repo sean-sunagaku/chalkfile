@@ -32,7 +32,7 @@ export type VideoText = {
 
 /**
  * 決まった英字（動画の呼び名・NEXT・Q）。今は全部の言語で、前の部品に書いてあった英字のまま。
- * 言語ごとに訳すと、その言語の動画の見た目が変わるので、見た目の更新（計画の T3A-14）でまとめて訳す
+ * 言語ごとに訳すと、その言語の動画の見た目が変わるので、動画の見た目を変える直しとまとめて訳す
  */
 const LATIN = { unit: { LECTURE: 'LECTURE', CHAPTER: 'CHAPTER' }, next: 'NEXT', quiz: 'Q' } as const;
 

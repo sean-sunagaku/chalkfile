@@ -3,11 +3,11 @@
 ## 画面
 
 - 1920×1080・30fps。地の色・文字・強調・書体・背景の飾りは講座のテーマで決まる（[theme.md](theme.md)）。部品に色を直接書かず、`usePalette()` の `C`・`tone()`・`GRAD`・`DISPLAY` などテーマの値を使う（[theme.md](theme.md) の「部品で色を使う」）
-- 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・焼き込み字幕と見出しの文字の大きさ）は `src/video.config.ts` に 1 か所で持つ。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
+- 動画の決まった値（大きさ・fps・内容の枠・ジングルの「ドン」の秒・台詞より先に動くフレーム数・焼き込み字幕と見出しの文字の大きさ）は `engine/core/video-config.ts` に 1 か所で持つ（部品は `src/video.config.ts` から読む）。部品・台本の検証・synth はここを読み、部品に寸法やフレーム数を直接書かない（秒は `frames()` でフレームにする）。Python（mix.py・build_music.py）は `npm run gen:video-config` で書き出した `scripts/audio/video_config.json` を読む（JSON もコミットする。ずれるとテストが止める）。値を変えると全部の動画が変わるので、見た目の更新とまとめて出す
 - コード・ID・数字は JetBrains Mono。本文の書体はテーマの `fonts`
 - 右上に講座名、左上にレクチャー番号と場面の見出し（`heading`）
 - 色（`tone`）は意味でそろえる。例: 成功・OK は `mint`、失敗・注意は `coral`、お金・商品は `amber`、通知・アプリは `cyan`、主役は `pink`、補足は `violet`、控えめは `slate`（実際の色はテーマの `tones`）
-- アイコンは `src/components/icons.ts` の `ICONS` の名前（型は `IconName`）から選ぶ。名前は lucide-react の名前ではなく、短い独自の名前（`card`・`idea` など）。足すときは `ICONS` に 1 行足す。絵文字は使わない
+- アイコンは `engine/core/icons.ts` の `ICON_NAMES` の名前（型は `IconName`）から選ぶ。名前は lucide-react の名前ではなく、短い独自の名前（`card`・`idea` など）。足すときは、`ICON_NAMES` と、描くアイコンとの対応 `src/components/icons.ts` の `ICONS` に 1 行ずつ足す（片方だけだと型で止まる）。絵文字は使わない
 - エンジンは講座の中身を知らない。スマホの画面（`phone`）は架空のアプリの名前を `brand`（と `brandSub`）に必ず書き、端末（`terminal`）の出力の行に色を付けるときは `{ text, tone: 'ok' }`（成功の行）・`{ text, tone: 'info' }`（目を向けてほしい行）と書く。文字だけの行は薄い色で出る
 
 ### 見た目は明示の項目で書く
@@ -26,7 +26,7 @@
 
 - 要素の `at` は「その場面の何番目の台詞の頭で出すか」（0 始まり）。1 つの台詞で出す要素は 1 つにする
 - `at` は、同じ場面の台詞の `id` でも書ける。台詞に `id: 'price'` を付け、要素に `at: 'price'` と書く。id で書くと、台詞を足したり並べ替えたりしても、要素は同じ台詞に付いたまま動く（番号を数え直さなくてよい）。`textAt`・`subAt`・`revealAt`・`showAt`・`focus` の `at` も同じ
-  - id で at を書く動画は、型を `AuthoredLecture`、その講座を `AuthoredCourse` にする（`content/types.ts`）。見本は `tests/fixtures/content/line-ids/`
+  - id で at を書く動画は、型を `AuthoredLecture`、その講座を `AuthoredCourse` にする（`engine/core/schema.ts`。台本は `content/types.ts` から読む）。見本は `tests/fixtures/content/line-ids/`
   - 画面の図（`screens`）の注は、部品の番号（`block`）の代わりに、部品の `id` を `blockId` で指せる
   - 読み込むとき（`content/index.ts`）に番号に直す。場面に無い id・重なった id は、`npm run validate` が止める（Studio はその動画だけを止める）
   - 番号で書いた今までの台本は、そのまま動く
@@ -59,7 +59,7 @@
 | 呼び込み | VOICEVOX 青山龍星（ノーマル）、抑揚 1.25 |
 | お笑い版の掛け合い | ボケ: ずんだもん（ノーマル・なみだめ）、ツッコミ: No.7 を話速 1.14・抑揚 1.3、天の声: 玄野武宏（ノーマル）。使い方は [comedy.md](comedy.md) |
 | 間 | 台詞の前 0.45 秒、台詞の間 0.3 秒、場面の終わり 0.75 秒、エンディングの後 4 秒 |
-| 冒頭 | ジングルの「ドン」（2.0 秒。`src/video.config.ts` の `STING`）の 0.05 秒あとに呼び込む |
+| 冒頭 | ジングルの「ドン」（2.0 秒。`engine/core/video-config.ts` の `STING`）の 0.05 秒あとに呼び込む |
 | BGM | 話している間は -17 dB、話していない間は -7 dB |
 | 仕上がり | -16 LUFS、true peak -1.5 dB |
 
@@ -71,7 +71,7 @@ synth が `.work/kana/<id>.txt` に台詞ごとの読み（カナ）を書く。
 |---|---|---|
 | 台詞の `s` | その台詞だけ | 読み上げる文（その章だけの読み） |
 | 講座の辞書 `content/<講座>/reading.ts` | その講座の日本語の台詞（ほかの講座は変わらない） | その講座の用語・固有名詞・その講座だけの読みの直し。`phrases`（語句）と `words`（英単語。小文字）。講座の `index.ts` の `reading` に登録する |
-| 共通の辞書 `content/reading.ts` | 全講座の日本語の台詞 | どの講座でも同じ読みにしたい語（一般の語・IT の用語・VOICEVOX がよく読み違える日本語） |
+| 共通の辞書 `engine/core/reading.ts` | 全講座の日本語の台詞 | どの講座でも同じ読みにしたい語（一般の語・IT の用語・VOICEVOX がよく読み違える日本語） |
 
 - 講座の辞書は、共通の辞書より優先する（同じ語は講座の読み。語句は長いものから当て、長さが同じなら講座の語句が先）
 - 直したら `npm test`（音声の鍵と読みのスナップショット）で変わった台詞を見て、`bun scripts/snapshots.ts --update` で作り直し、変わった動画を synth し直す。共通の辞書を直すと、ほかの講座の公開中の動画の読みも変わりうる。`npm run reading:diff` が main と比べ、公開する言語の公開中の動画で読みが変わったのに作り直していなければ止める
@@ -92,7 +92,7 @@ VOICEVOX が文脈で間違えやすいもの（Stripe 講座で実際にあっ�
 
 今の 20 種類で描けないときだけ足す。場面の種類は、描く側と描かない側の 2 つの一覧で持つ（教材を作る `scripts/build_materials.ts` と台本の検証 `engine/core/` は、描く部品の React・Remotion を読まないので、同じファイルには置かない）。どちらの一覧も全部の種類を型で網羅するので、足し忘れると型で止まる。
 
-1. 型: `content/types.ts` に `XxxScene` を書き、`Scene` の union に足す
+1. 型: `engine/core/schema.ts` に `XxxScene` を書き、`Scene` の union に足す。項目の役目（訳す文字・`at`・`key`・訳さない値）を `engine/core/fields.ts` の `SCENE_FIELDS` に書く（書かないと型で止まる）
 2. 描かない側: `engine/core/scenes.ts` の `SCENE_INFO` に 1 つ足す（`label` は教材の絵コンテの「図解の種類」、`describe` は絵コンテの表示内容）
 3. 描く側: `src/scenes/<kind>.tsx` を 1 つ作り、最後に `export const <kind> = defineScene({ kind: '<kind>', Component: Xxx })` と書く。ほかの場面と共有する部品は `src/components/`（内容の枠 `content.tsx`・文字の大きさ `fit.ts`・箱から箱への矢印 `edge.tsx` など）
 4. 登録: `src/scenes/index.ts` の `SCENES` に 1 行（と、その import）を足す。`src/Lecture.tsx` は場面の `kind` でここを引いて描く
