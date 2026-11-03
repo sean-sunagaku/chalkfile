@@ -2,14 +2,14 @@
 //   npm run test:e2e:ci     合成の講座（project ci）。本物の講座も動画も要らない（ffmpeg が要る）。CI は PW_CHANNEL=chromium
 //   npm run test:e2e:real   本物の講座と、入れてある Chrome（project real。先に npm run build:site -- --strict と、手元の動画）
 //   npm run test:e2e        両方
-// 番号: テストのサーバーは 8877。テストごとのサイトは空いている番号
-// 証跡: CHALKFILE_EVIDENCE_DIR（既定は /tmp/chalkfile-pwa-evidence）
+// 番号: テストのサーバーは PW_PORT（既定は 0 = 空いている番号。テストごとのサイトも空いている番号）。作業フォルダが違えば、同時に流せる
+// 証跡: CHALKFILE_EVIDENCE_DIR（既定は作業フォルダの .work/evidence/browser）。同じ作業フォルダで同時に流すときは、別の場所にする
 // workers: PW_WORKERS（既定は 2）
 import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 import type { SiteMode } from './tests/e2e/site';
 
-process.env.CHALKFILE_EVIDENCE_DIR ??= '/tmp/chalkfile-pwa-evidence';
+process.env.CHALKFILE_EVIDENCE_DIR ??= path.join(__dirname, '.work/evidence/browser');
 const evidence = process.env.CHALKFILE_EVIDENCE_DIR;
 
 export default defineConfig<{ siteMode: SiteMode }>({
@@ -33,6 +33,7 @@ export default defineConfig<{ siteMode: SiteMode }>({
   ],
   webServer: {
     command: 'bun tests/browser-server.ts',
+    env: { PW_PORT: process.env.PW_PORT ?? '0' },
     // 「chalkfile-e2e: <URL>」の URL を、テストの側の process.env.CHALKFILE_E2E_HUB にする（tests/browser/fixtures.ts）
     wait: { stdout: /chalkfile-e2e: (?<chalkfile_e2e_hub>http:\/\/127\.0\.0\.1:\d+)\// },
     stdout: 'pipe',

@@ -144,7 +144,7 @@ npm run test:e2e:real              # 本物の講座と、入れてある Chrome
 - ブラウザのテストは、テストのサーバー（`tests/browser-server.ts`）が、テストごとに別の番号で講座サイトを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け、旧 Pages からの移行。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る（`tests/e2e/session.ts`。状態はテストごとなので、workers を 2 以上にできる）。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
 - `test:e2e:ci` は、合成の講座（`tests/fixtures/content/site-sample`。2 本）を `buildSite` で一時のフォルダに組み、4 秒の動画を ffmpeg の testsrc で作って配る。アクセシビリティ（axe-core）も見る。今ある違反は `tests/fixtures/a11y-known/` に並べて許し、新しい違反で落ちる
 - ブラウザは、入れてある Chrome を一時の profile で使う。`PW_CHANNEL=chromium npm run test:e2e:ci` で、Playwright の Chromium も選べる（CI と同じ。`npx playwright install chromium` で別に入れる）
-- 証跡の既定の置き場所は `/tmp/chalkfile-pwa-evidence/<project>/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない
+- 証跡の既定の置き場所は、作業フォルダの `.work/evidence/browser/<project>/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない
 - 案内（保存の状態・進み具合・通信のエラー）の表示を変えたら、`npm run test:e2e:ci -- tests/browser/offline-status.spec.ts` も流す
 - ふだんの手元の確かめは、ルート `/` の `npm run serve` か `npm run dev:worker`。旧サイトの scope の互換は、移行のテスト（`tests/browser/migration.spec.ts`）で確かめる。localhost のほかは HTTPS が要る
 

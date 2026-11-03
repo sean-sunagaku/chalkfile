@@ -123,10 +123,10 @@ bun scripts/i18n.ts status                         # 訳の表（訳あり・日
 
 | 何 | 番号 | 変え方 |
 |---|---|---|
-| 講座サイト（`npm run serve`） | 8765 | `PORT=9000 npm run serve` |
+| 講座サイト（`npm run serve`） | 8765（使っていれば、空いている番号にして URL を出す） | `PORT=9000 npm run serve` |
 | Remotion Studio（`npm run studio`） | 3000 | `npm run studio -- --port 3001` |
 | Worker（`npm run dev:worker`） | 8787 | `npm run dev:worker -- --port 8788` |
-| ブラウザのテスト（`npm run test:e2e:ci` など） | 8877（テストのサーバー。テストごとのサイトは空いている番号） | `playwright.config.ts` と `tests/browser-server.ts` で決めている。作業フォルダが違っても、同時に 2 つ流さない |
+| ブラウザのテスト（`npm run test:e2e:ci` など） | 空いている番号（テストのサーバーと、テストごとのサイト。URL を出す） | `PW_PORT=9100 npm run test:e2e:ci`（テストのサーバーの番号）。作業フォルダが違えば、同時に流せる |
 
 - Claude Code のプレビュー（`.claude/launch.json`）は、`site`（8765）・`studio`（3000）・`worker`（8787）を起動できる。`worker` は `site/dist` を配るので、先に `npm run build:site` を流す。起動してよいコマンドは `scripts/check_content.ts` の一覧で決めている（[safety.md](../../.claude/skills/study-video-course/references/safety.md) の 6）
-- 証跡: ブラウザのテストは `/tmp/chalkfile-pwa-evidence/<project>/` に書く（`CHALKFILE_EVIDENCE_DIR` で変える）。本番の確かめは `.work/evidence/` に書く。どちらも Git に入れない
+- 証跡: ブラウザのテストは、作業フォルダの `.work/evidence/browser/<project>/` に書く（`CHALKFILE_EVIDENCE_DIR` で変える。同じ作業フォルダで 2 つ同時に流すときは、別の場所にする）。本番の確かめは `.work/evidence/` に書く。どちらも Git に入れない

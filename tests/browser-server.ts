@@ -1,5 +1,5 @@
 // ブラウザのテストのサーバー（127.0.0.1 だけで待ち受ける。公開サイト・元の動画・ほかの作業フォルダには触らない）。
-//   bun tests/browser-server.ts   # 127.0.0.1:8877 で待ち受け、「chalkfile-e2e: <URL>」を出す（playwright.config.ts が読む）
+//   bun tests/browser-server.ts   # PW_PORT（既定は 0 = 空いている番号）で待ち受け、「chalkfile-e2e: <URL>」を出す（playwright.config.ts が読む）
 // テストごとに「セッション」を作る: POST /__test/session（{"site":"ci"|"real"}）が、別の番号で講座サイトを配るサーバーを立て、
 // その URL と講座の情報（tests/e2e/site.ts の SiteSession）を返す。障害の差し込みの状態（/__test/control）はセッションごとなので、
 // workers を 2 以上にしても混ざらない。DELETE /__test/session/<id> で閉じる。
@@ -58,7 +58,7 @@ const ownSession = async () => {
 
 const hub = Bun.serve({
   hostname: '127.0.0.1',
-  port: 8877,
+  port: Number(process.env.PW_PORT ?? 0),
   async fetch(req) {
     const u = new URL(req.url);
     if (u.pathname === '/__test/health') return new Response('ok');

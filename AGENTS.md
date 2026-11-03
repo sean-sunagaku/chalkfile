@@ -65,7 +65,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
   - ポスター（`content/<講座>/generated/posters/`）: 作り直した動画だけ `npm run render -- <ID>`
   - 動画の一覧（`content/<講座>/generated/media.<言語>.json`）: 講座ごとなので、ほかの講座とはぶつからない。同じ講座を 2 本の branch で push したときは、[公開の順番](docs/operations/publish.md) の「ぶつかったとき」
 - 素材（`materials push`）と動画（`media push --course <講座 ID>`）は、main を取り込んだ branch から出す。どちらも足すだけにする（動画の push は選んだ講座の一覧だけを書き換える）。消すのは、持ち主が明示したときだけ（`materials.ts gc`・`retained` から外す）
-- ポートと証跡: 番号と変え方は [commands.md](docs/guide/commands.md) の「ポート」。ブラウザのテスト（8877）は、作業フォルダが違っても同時に 2 つ流さない。証跡は `CHALKFILE_EVIDENCE_DIR` で作業フォルダごとに分けられる。証跡も動画も Git に入れない
+- ポートと証跡: 番号と変え方は [commands.md](docs/guide/commands.md) の「ポート」。ブラウザのテストは空いている番号を使い、証跡を作業フォルダの `.work/evidence/` に書くので、作業フォルダが違えば同時に流せる（`CHALKFILE_EVIDENCE_DIR` で変える）。証跡も動画も Git に入れない
 - 作業の前に、下の 2 つの欄を見る
 
 ### いま触っている共有ファイル

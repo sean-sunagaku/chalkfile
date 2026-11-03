@@ -36,9 +36,9 @@ export { expect };
 /** 使うブラウザ（既定は入れてある Chrome。CI は PW_CHANNEL=chromium で Playwright の Chromium） */
 export const channel = process.env.PW_CHANNEL ?? 'chrome';
 
-/** 証跡（スクリーンショット・結果の JSON）の置き場所。project ごとに分ける（既定は playwright.config.ts が決める） */
+/** 証跡（スクリーンショット・結果の JSON）の置き場所。project ごとに分ける（既定は作業フォルダの .work/evidence/browser。playwright.config.ts） */
 export const evidenceDir = (sub = '') =>
-  path.join(process.env.CHALKFILE_EVIDENCE_DIR ?? '/tmp/chalkfile-pwa-evidence', test.info().project.name, sub);
+  path.join(process.env.CHALKFILE_EVIDENCE_DIR ?? '.work/evidence/browser', test.info().project.name, sub);
 
 /** 講座の保存の manifest（組み立てたサイトの <講座>/offline-manifest.json） */
 export const manifestOf = (site: SiteSession): CourseManifest =>
