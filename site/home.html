@@ -28,6 +28,10 @@ body {
 }
 a { color: var(--cyan); }
 :focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 8px; }
+/* 本文へ飛ぶリンク（キーボードで選んだときだけ見える）。飛んだ先の main は枠を出さない */
+.skip { position: absolute; left: 12px; top: -80px; z-index: 50; padding: 8px 14px; border-radius: 10px; background: var(--panel); color: var(--fg); font-weight: 700; box-shadow: var(--shadow); }
+.skip:focus { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+main:focus { outline: none; }
 img { max-width: 100%; }
 
 .shell { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
@@ -135,6 +139,7 @@ footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(-
 </style>
 </head>
 <body>
+<a class="skip" href="#main">{{skipToMain}}</a>
 <div class="decor" aria-hidden="true"></div>
 <div class="shell">
   <header class="top">
@@ -148,7 +153,7 @@ footer { margin-top: 32px; padding-block: 22px 40px; border-top: 2px solid var(-
     __LANG_NAV__
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <section class="hero" aria-labelledby="hero-title">
       <div>
         <h1 id="hero-title">__SERIES__</h1>
@@ -209,6 +214,8 @@ export const STRIPE_BILLING: Course = {
         <a class="btn" href="__REPO__/tree/main/.claude/skills/study-video-course" target="_blank" rel="noopener noreferrer">{{homeSkill}}</a>
       </div>
     </section>
+
+    __OFFLINE_PANEL__
   </main>
 
   <footer>
@@ -216,7 +223,6 @@ export const STRIPE_BILLING: Course = {
     <div>{{homeFoot}}</div>
   </footer>
 </div>
-<div class="shell">__OFFLINE_PANEL__</div>
 __PWA_SCRIPT__
 </body>
 </html>

@@ -81,10 +81,25 @@ function request(type: OfflineOperation, id?: string, progress?: (p: DownloadPro
   });
 }
 
-function network() {
-  $('networkState').textContent = navigator.onLine ? T.ocOnline : T.ocOffline;
+/** 文字が変わったときだけ書く（読み上げの欄は、同じ文を書き直すと読み直すことがある） */
+function setText(id: string, text: string) {
+  const el = $(id);
+  if (el.textContent !== text) el.textContent = text;
 }
-function message(text: string) { messageRevision++; $('offlineMessage').textContent = text; }
+function network() {
+  setText('networkState', navigator.onLine ? T.ocOnline : T.ocOffline);
+}
+/**
+ * 案内の文（画面の #offlineMessage）。読み上げの欄（#offlineLive）にも書く。保存の進み具合（step は 10% ごとの段）は、
+ * 段が変わったときだけ読み上げの欄に書く（画面の文は毎回書く。読み上げの欄に毎回書くと、1 秒に何度も読み上げが割り込む）
+ */
+let spokenStep: number | null = null;
+function message(text: string, step: number | null = null) {
+  messageRevision++;
+  $('offlineMessage').textContent = text;
+  if (step === null || step !== spokenStep) setText('offlineLive', text);
+  spokenStep = step;
+}
 function storageMessage() {
   if (!app.course) return T.ocStatusHome;
   const status = states.find((s) => s.id === app.course!.id);
@@ -98,7 +113,9 @@ function drawProgress(p?: DownloadProgress | null) {
   if (!p) return;
   bar.max = p.total || 1;
   bar.value = p.loaded;
-  message(p.total ? tt('ocProgress', { pct: Math.floor(p.loaded / p.total * 100), loaded: mb(p.loaded), total: mb(p.total), file: p.file, count: p.count }) : T.ocProgressStart);
+  const pct = p.total ? Math.floor(p.loaded / p.total * 100) : 0;
+  // 読み上げの段: 始め（教材情報の確認）が -1、保存中は 10% ごとに 0〜10
+  message(p.total ? tt('ocProgress', { pct, loaded: mb(p.loaded), total: mb(p.total), file: p.file, count: p.count }) : T.ocProgressStart, p.total ? Math.floor(pct / 10) : -1);
 }
 
 function render() {

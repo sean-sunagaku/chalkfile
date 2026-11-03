@@ -39,6 +39,10 @@ body::before {
 a { color: var(--cyan); }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+/* 本文へ飛ぶリンク（キーボードで選んだときだけ見える）。飛んだ先の main は枠を出さない */
+.skip { position: absolute; left: 12px; top: -80px; z-index: 50; padding: 8px 14px; border-radius: 10px; background: var(--panel); color: var(--fg); font-weight: 700; box-shadow: var(--shadow); }
+.skip:focus { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+main:focus { outline: none; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* ── 上の帯 ── */
@@ -98,6 +102,8 @@ button { font: inherit; color: inherit; }
 .theater { background: var(--stage); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); container-type: inline-size; }
 .player { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--stage); font-size: clamp(12px, 2.1cqw, 26px); --ccband: max(13%, 2.9em); }
 .player video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--stage); }
+/* 動画を選んだ枠は、プレーヤーの角で切れないように内側に描く（ショートカットは動画を選んでいるときだけ効く） */
+.player video:focus-visible { outline-offset: -3px; }
 .player.cc-on video { height: calc(100% - var(--ccband)); }
 .ccbar {
   position: absolute;
@@ -221,8 +227,8 @@ button { font: inherit; color: inherit; }
 .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); }
 .check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg-2); cursor: pointer; }
 .transcript { max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 8px; scroll-behavior: smooth; }
-.transcript h4 { margin: 14px 10px 4px; font-size: 13px; letter-spacing: 0.06em; color: var(--muted); }
-.transcript h4:first-child { margin-top: 6px; }
+.transcript h3 { margin: 14px 10px 4px; font-size: 13px; letter-spacing: 0.06em; color: var(--muted); }
+.transcript h3:first-child { margin-top: 6px; }
 .cue {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr);
@@ -405,9 +411,10 @@ button { font: inherit; color: inherit; }
 </style>
 </head>
 <body>
+<a class="skip" href="#main">{{skipToMain}}</a>
 <div class="decor" aria-hidden="true"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <div class="brand">
       <a class="brand-home" href="__HOME__" title="{{homeTitle}}">
@@ -422,9 +429,10 @@ button { font: inherit; color: inherit; }
     </div>
     __LANG_NAV__
   </div>
-</div>
+</header>
 
 <div class="wrap">
+  <main id="main" tabindex="-1">
   <div class="intro">
     <div class="intro-text">
       <h1>__HEADLINE__</h1>
@@ -439,7 +447,7 @@ button { font: inherit; color: inherit; }
     <section aria-label="{{lessonRegion}}">
       <div class="theater" id="theater">
       <div class="player" id="player">
-        <video id="video" playsinline preload="metadata" controls></video>
+        <video id="video" playsinline preload="metadata" controls tabindex="0"></video>
         <div class="ccbar" id="cc" aria-live="off"></div>
         <div class="nextup" id="nextup" hidden>
           <div class="nextup-card">
@@ -500,7 +508,7 @@ button { font: inherit; color: inherit; }
         <button role="tab" type="button" id="tab-ask" aria-controls="p-ask" aria-selected="false" hidden>{{tabAsk}}</button>
       </div>
 
-      <div class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <div class="panel" id="p-overview" role="tabpanel" tabindex="0" aria-labelledby="tab-overview">
         <p id="summary"></p>
         <p class="caution" id="caution" hidden></p>
         <div class="two">
@@ -515,7 +523,7 @@ button { font: inherit; color: inherit; }
         </div>
       </div>
 
-      <div class="panel" id="p-material" role="tabpanel" aria-labelledby="tab-material" hidden>
+      <div class="panel" id="p-material" role="tabpanel" tabindex="0" aria-labelledby="tab-material" hidden>
         <div class="mat-grid">
           <div class="box"><h3>{{matGoals}}</h3><ul class="mat-list" id="matGoals"></ul></div>
           <div class="box"><h3>{{matPre}}</h3><ul class="mat-list" id="matPre"></ul></div>
@@ -528,16 +536,16 @@ button { font: inherit; color: inherit; }
         <div class="box"><h3>{{summary}}</h3><ul class="mat-list" id="matSummary"></ul></div>
       </div>
 
-      <div class="panel" id="p-exercise" role="tabpanel" aria-labelledby="tab-exercise" hidden>
+      <div class="panel" id="p-exercise" role="tabpanel" tabindex="0" aria-labelledby="tab-exercise" hidden>
         <div id="exBody"></div>
       </div>
 
-      <div class="panel" id="p-ask" role="tabpanel" aria-labelledby="tab-ask" hidden>
+      <div class="panel" id="p-ask" role="tabpanel" tabindex="0" aria-labelledby="tab-ask" hidden>
         <p>{{askIntro}}</p>
         <ul class="ask" id="askList"></ul>
       </div>
 
-      <div class="panel" id="p-transcript" role="tabpanel" aria-labelledby="tab-transcript" hidden>
+      <div class="panel" id="p-transcript" role="tabpanel" tabindex="0" aria-labelledby="tab-transcript" hidden>
         <div class="tools">
           <label class="search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
@@ -548,7 +556,7 @@ button { font: inherit; color: inherit; }
         <div class="transcript" id="transcript"></div>
       </div>
 
-      <div class="panel" id="p-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+      <div class="panel" id="p-notes" role="tabpanel" tabindex="0" aria-labelledby="tab-notes" hidden>
         <div class="note-new">
           <textarea id="noteText" placeholder="{{notePh}}"></textarea>
           <div class="tools" style="margin:0">
@@ -566,31 +574,32 @@ button { font: inherit; color: inherit; }
         <ul class="notes" id="notes"></ul>
       </div>
 
-      <div class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+      <div class="panel" id="p-docs" role="tabpanel" tabindex="0" aria-labelledby="tab-docs" hidden>
         <p>__DOCS_NOTE__</p>
         <p>{{docsNet}}</p>
         <ul class="docs" id="docs"></ul>
       </div>
 
-      <div class="panel" id="p-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+      <div class="panel" id="p-quiz" role="tabpanel" tabindex="0" aria-labelledby="tab-quiz" hidden>
         <div class="quiz" id="quiz"></div>
       </div>
     </section>
 
-    <aside class="curriculum" aria-label="{{curriculum}}">
+    <nav class="curriculum" aria-label="{{curriculum}}">
       <div class="cur-head">
         <h2>{{curriculum}}</h2>
         <span class="sum" id="curSum"></span>
       </div>
       <div id="sections"></div>
-    </aside>
+    </nav>
   </div>
+  </main>
 
-  <div class="foot">
+  <footer class="foot">
     <div>{{scLabel}} <span class="kbd">Space</span> {{scPlay}}{{sep}}<span class="kbd">←</span><span class="kbd">→</span> {{sc5}}{{sep}}<span class="kbd">J</span><span class="kbd">L</span> {{sc10}}{{sep}}<span class="kbd">C</span> {{scCc}}{{sep}}<span class="kbd">F</span> {{scFull}}{{sep}}<span class="kbd">N</span> {{scNext}}</div>
     <div id="credits"></div>
     <div>{{footNote}}</div>
-  </div>
+  </footer>
 </div>
 
 <script id="course-data" type="application/json">__COURSE_JSON__</script>

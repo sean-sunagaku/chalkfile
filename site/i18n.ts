@@ -5,6 +5,7 @@ import type { Lang } from '../content/i18n';
 const ja = {
   // 講座ページ: 上の帯・プレーヤー・操作
   homeTitle: '講座の一覧へ',
+  skipToMain: '本文へ移る',
   progressTitle: '完了したレクチャーの数',
   lessonRegion: '講義',
   langNav: '言語',
@@ -49,7 +50,7 @@ const ja = {
   noteHint: 'ノートはこの端末のブラウザに保存されます。',
   docsNet: '外部の公式ドキュメントを開くには通信が必要です。',
   curriculum: 'カリキュラム',
-  scLabel: 'ショートカット:',
+  scLabel: 'ショートカット（動画を選んでいるとき）:',
   scPlay: '再生と停止',
   sc5: '5 秒',
   sc10: '10 秒',
@@ -248,6 +249,7 @@ export type SiteText = Record<SiteKey, string>;
 
 const en: SiteText = {
   homeTitle: 'All courses',
+  skipToMain: 'Skip to main content',
   progressTitle: 'Lectures completed',
   lessonRegion: 'Lecture',
   langNav: 'Language',
@@ -292,7 +294,7 @@ const en: SiteText = {
   noteHint: 'Notes are saved in this browser on this device.',
   docsNet: 'Opening external official docs needs a connection.',
   curriculum: 'Curriculum',
-  scLabel: 'Shortcuts:',
+  scLabel: 'Shortcuts (while the video is selected):',
   scPlay: 'play / pause',
   sc5: '5 s',
   sc10: '10 s',
@@ -483,6 +485,7 @@ const en: SiteText = {
 
 const zh: SiteText = {
   homeTitle: '课程一览',
+  skipToMain: '跳到正文',
   progressTitle: '已完成的讲数',
   lessonRegion: '课程',
   langNav: '语言',
@@ -527,7 +530,7 @@ const zh: SiteText = {
   noteHint: '笔记保存在这台设备的浏览器中。',
   docsNet: '打开外部的官方文档需要联网。',
   curriculum: '课程目录',
-  scLabel: '快捷键：',
+  scLabel: '快捷键（选中视频时）：',
   scPlay: '播放与暂停',
   sc5: '5 秒',
   sc10: '10 秒',

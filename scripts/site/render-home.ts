@@ -7,6 +7,7 @@ import type { SiteText } from '../../site/i18n';
 import { fill } from '../../site/lib/text';
 import { fontLink, themeCss } from '../site_theme';
 import type { SiteConfig } from '../validate';
+import { readableOn } from './contrast';
 import { cspHead } from './csp';
 import { cssColor, esc, fillTemplate, type Html, html, joinHtml, raw, styleText } from './html';
 import { plain } from './model';
@@ -72,7 +73,7 @@ const courseCard = (
   const T = p.T;
   const minutes = p.minutesOf(c);
   // テーマの色は形を確かめてから style に入れる（エスケープもする）
-  const style = `--card-grad: linear-gradient(100deg, ${t.gradient.map(cssColor).join(', ')}); --card-soft: ${cssColor(t.color.surface2)}; --card-ink: ${cssColor(t.tones.violet)}`;
+  const style = `--card-grad: linear-gradient(100deg, ${t.gradient.map(cssColor).join(', ')}); --card-soft: ${cssColor(t.color.surface2)}; --card-ink: ${cssColor(readableOn(t.tones.violet, [t.color.surface2], t.color.ink))}`;
   const count =
     c.unitLabel === 'CHAPTER'
       ? `${fill(T.cardChapters, { n: c.lectures.length })}${c.syllabus ? fill(T.cardPlanned, { n: c.syllabus.chapters.length }) : ''}`

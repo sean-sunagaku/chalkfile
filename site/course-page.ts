@@ -73,8 +73,14 @@ function load(i: number, autoplay: boolean) {
   material.render(lec, store.tab());
   curriculum.renderDone();
   curriculum.renderCurriculum();
-  byId<HTMLButtonElement>('prevBtn').disabled = i === 0;
-  byId<HTMLButtonElement>('nextBtn').disabled = i === page.lectures.length - 1;
+  const prev = byId<HTMLButtonElement>('prevBtn');
+  const next = byId<HTMLButtonElement>('nextBtn');
+  // 押したボタンが端で押せなくなるときは、フォーカスを反対のボタンへ移す（押せないボタンからはフォーカスが消える）
+  const focused = document.activeElement;
+  prev.disabled = i === 0;
+  next.disabled = i === page.lectures.length - 1;
+  if (focused === prev && prev.disabled && !next.disabled) next.focus();
+  if (focused === next && next.disabled && !prev.disabled) prev.focus();
   try {
     history.replaceState(null, '', `#${lec.id}`);
   } catch {

@@ -69,9 +69,13 @@ export const createNotes = (page: Page, seek: (t: number) => void) => {
     }
     const del = closest(e, '.del');
     if (del) {
-      notes[lectureOf(page).id]?.splice(Number(del.dataset.k), 1);
+      const k = Number(del.dataset.k);
+      notes[lectureOf(page).id]?.splice(k, 1);
       page.store.saveNotes(notes);
       render();
+      // 押した「消す」は無くなるので、同じ所（無ければ 1 つ前）のメモの「消す」へ、メモが無くなれば書く欄へフォーカスを移す
+      const left = list.querySelectorAll<HTMLButtonElement>('.del');
+      (left[Math.min(k, left.length - 1)] ?? input).focus();
     }
   });
   byId('noteCopy').addEventListener('click', () => {

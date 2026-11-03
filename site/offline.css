@@ -1,5 +1,7 @@
 /* 色と書体は既存の講座テーマを使う。 */
 [hidden] { display: none !important; }
+/* 画面には出さず、読み上げにだけ伝える（保存の案内の読み上げの欄） */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 .offline-box { padding: 16px 18px; margin: 0 0 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); font-size: 14px; }
 .offline-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; }
 .offline-box h2 { margin: 0; font-size: 18px; line-height: 1.6; }

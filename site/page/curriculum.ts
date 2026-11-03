@@ -9,7 +9,7 @@ const ring = (page: Page, p: Progress | undefined, i: number) => {
   if (p?.done) {
     return svg(
       'svg',
-      { class: 'ring done', viewBox: '0 0 24 24', 'aria-label': page.T.ringDone },
+      { class: 'ring done', viewBox: '0 0 24 24', role: 'img', 'aria-label': page.T.ringDone },
       svg('circle', { class: 'disc', cx: 12, cy: 12, r: 11 }),
       svg('path', {
         class: 'tick',
@@ -25,7 +25,12 @@ const ring = (page: Page, p: Progress | undefined, i: number) => {
   const c = 2 * Math.PI * 10;
   return svg(
     'svg',
-    { class: 'ring', viewBox: '0 0 24 24', 'aria-label': page.tt('ringWatched', { p: Math.round(max * 100) }) },
+    {
+      class: 'ring',
+      viewBox: '0 0 24 24',
+      role: 'img',
+      'aria-label': page.tt('ringWatched', { p: Math.round(max * 100) }),
+    },
     svg('circle', { class: 'bg', cx: 12, cy: 12, r: 10, fill: 'none', 'stroke-width': 2.5 }),
     max > 0 &&
       svg('circle', {
@@ -78,13 +83,27 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
     });
   };
 
-  /** 右の欄（セクションごとのレクチャーと、まだ作っていない章） */
-  const renderCurriculum = () => {
+  const box = byId('sections');
+  /** 作った右の欄の、書き換える所（レクチャーのボタンとセクションの完了の数） */
+  let built: { buttons: HTMLButtonElement[]; counts: { el: HTMLElement; items: number[] }[] } | null = null;
+  /** 輪の形が変わったか（完了か、見た割合の % が変わったとき） */
+  const ringKey = (p: Progress | undefined) => (p?.done ? 'done' : String(Math.round(Math.min(1, p?.max ?? 0) * 100)));
+
+  /**
+   * 右の欄（セクションごとのレクチャーと、まだ作っていない章）を作る。構造が変わったときだけ作り、ふだんは update で今ある要素を書き換える
+   * （再生中の進み具合の保存のたびに作り直すと、フォーカスが飛ぶ）。作り直したら、フォーカスのあったレクチャーのボタンへ data-i で戻す
+   */
+  const build = () => {
+    const active = document.activeElement;
+    const focused = active instanceof HTMLElement && box.contains(active) ? active.dataset.i : undefined;
+    const buttons: HTMLButtonElement[] = [];
+    const counts: { el: HTMLElement; items: number[] }[] = [];
     put(
-      byId('sections'),
+      box,
       course.sections.map((sec) => {
         const items = lectures.map((l, i) => ({ l, i })).filter((x) => x.l.section.no === sec.no);
-        const done = items.filter((x) => progress[x.l.id]?.done).length;
+        const count = h('span', { class: 'cnt' });
+        counts.push({ el: count, items: items.map((x) => x.i) });
         return h(
           'div',
           { class: 'sec' },
@@ -92,17 +111,19 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
             'div',
             { class: 'sec-head' },
             h('div', { class: 'name' }, h('span', { class: 'no' }, `SECTION ${sec.no}`), sec.title),
-            h('span', { class: 'cnt' }, `${done} / ${items.length}`),
+            count,
           ),
-          items.map((x) =>
-            h(
+          items.map((x) => {
+            const b = h(
               'button',
-              { type: 'button', class: 'lec', 'data-i': x.i, 'aria-current': x.i === page.current ? 'true' : null },
+              { type: 'button', class: 'lec', 'data-i': x.i, 'data-ring': ringKey(progress[x.l.id]) },
               ring(page, progress[x.l.id], x.i),
               h('span', { class: 'ttl' }, x.l.title),
               h('span', { class: 'dur' }, clock(x.l.duration)),
-            ),
-          ),
+            );
+            buttons.push(b);
+            return b;
+          }),
           course.planned
             .filter((p) => p.section === sec.no)
             .map((p) =>
@@ -130,8 +151,31 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
         );
       }),
     );
+    built = { buttons, counts };
+    if (focused !== undefined) box.querySelector<HTMLElement>(`button.lec[data-i="${focused}"]`)?.focus();
   };
-  byId('sections').addEventListener('click', (e) => {
+
+  /** 右の欄の進み具合（輪・セクションの完了の数・今のレクチャーの印）を、今ある要素のまま書き換える。まだ作っていなければ作る */
+  const renderCurriculum = () => {
+    if (!built) build();
+    if (!built) return;
+    for (const b of built.buttons) {
+      const i = Number(b.dataset.i);
+      const p = progress[lectures[i].id];
+      if (i === page.current) b.setAttribute('aria-current', 'true');
+      else b.removeAttribute('aria-current');
+      const key = ringKey(p);
+      if (b.dataset.ring !== key) {
+        b.querySelector('svg.ring')?.replaceWith(ring(page, p, i));
+        b.dataset.ring = key;
+      }
+    }
+    for (const c of built.counts) {
+      const text = `${c.items.filter((i) => progress[lectures[i].id]?.done).length} / ${c.items.length}`;
+      if (c.el.textContent !== text) c.el.textContent = text;
+    }
+  };
+  box.addEventListener('click', (e) => {
     const b = closest(e, 'button.lec');
     if (b) onPick(Number(b.dataset.i));
   });

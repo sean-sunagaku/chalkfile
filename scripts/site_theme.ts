@@ -3,8 +3,9 @@
 // 図の文字色（--pink など）は、パレットの site.toneText（動画の文字色と、混ぜる割合が違う。そろえるのは、動画とサイトの見た目をまとめて更新する回）
 import type { Lang } from '../content/i18n';
 import type { FontKey, Theme } from '../content/types';
-import { alpha } from '../engine/core/color';
+import { alpha, mix } from '../engine/core/color';
 import { derivePalette } from '../engine/core/theme';
+import { readableOn } from './site/contrast';
 
 const FONT: Record<FontKey, { family: string; query: string }> = {
   'zen-maru': { family: '"Zen Maru Gothic"', query: 'Zen+Maru+Gothic:wght@500;700;900' },
@@ -59,6 +60,22 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
   const light = t.scheme === 'light';
   // 図の色を文字に使うときの色（明るい地では、図の色だと薄いので、見出しの色を少し混ぜて読める濃さにする）
   const ink = derivePalette(t, lang).site.toneText;
+  // 面に重ねる薄い色の濃さ（今のレクチャー・台詞・クイズの印）
+  const soft = {
+    pink: light ? 0.1 : 0.14,
+    violet: light ? 0.1 : 0.16,
+    cyan: light ? 0.1 : 0.13,
+    mint: light ? 0.1 : 0.14,
+    coral: light ? 0.1 : 0.15,
+  } as const;
+  // 薄い文字（時刻・数・注記）は、地・面・一段上の面と、面に重ねた薄い色のどれに置いても、本文の下限のコントラストで読める濃さにする
+  // （テーマの muted は動画と共有なので、サイトに出すときだけ本文の色へ寄せる。scripts/site/contrast.ts）
+  const grounds = [
+    c.bg,
+    c.surface,
+    c.surface2,
+    ...Object.entries(soft).map(([tone, a]) => mix(c.surface, t.tones[tone as keyof typeof soft], a)),
+  ];
   const vars: Record<string, string> = {
     '--ink': c.bg,
     '--panel': c.surface,
@@ -66,7 +83,7 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
     '--line': c.line,
     '--fg': c.ink,
     '--fg-2': c.sub,
-    '--muted': c.muted,
+    '--muted': readableOn(c.muted, grounds, c.ink),
     '--accent': c.accent,
     '--on-accent': c.onAccent,
     '--pink': ink.pink,
@@ -75,11 +92,11 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
     '--mint': ink.mint,
     '--amber': ink.amber,
     '--coral': ink.coral,
-    '--pink-soft': alpha(t.tones.pink, light ? 0.1 : 0.14),
-    '--violet-soft': alpha(t.tones.violet, light ? 0.1 : 0.16),
-    '--cyan-soft': alpha(t.tones.cyan, light ? 0.1 : 0.13),
-    '--mint-soft': alpha(t.tones.mint, light ? 0.1 : 0.14),
-    '--coral-soft': alpha(t.tones.coral, light ? 0.1 : 0.15),
+    '--pink-soft': alpha(t.tones.pink, soft.pink),
+    '--violet-soft': alpha(t.tones.violet, soft.violet),
+    '--cyan-soft': alpha(t.tones.cyan, soft.cyan),
+    '--mint-soft': alpha(t.tones.mint, soft.mint),
+    '--coral-soft': alpha(t.tones.coral, soft.coral),
     '--mark': alpha(c.accent, light ? 0.38 : 0.5),
     '--grad': `linear-gradient(100deg, ${t.gradient.join(', ')})`,
     '--shadow': t.shadow,

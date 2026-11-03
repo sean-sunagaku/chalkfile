@@ -25,7 +25,8 @@ export const createTranscript = (page: Page, seek: (t: number) => void, openAt: 
     lec.cues.forEach((c, k) => {
       if (c.scene !== scene) {
         scene = c.scene;
-        out.push(h('h4', null, lec.chapters[c.scene]?.heading ?? ''));
+        // 場面の見出し（タブの中の見出しは h3。レクチャーの題 h2 の次の段）
+        out.push(h('h3', null, lec.chapters[c.scene]?.heading ?? ''));
       }
       out.push(
         h(
