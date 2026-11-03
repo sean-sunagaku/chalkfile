@@ -1,4 +1,4 @@
-import { mediaPath, releaseUrl, type MediaEntry } from '../../site/media-shared';
+import { downloadName, mediaPath, releaseUrl, type MediaEntry } from '../../site/media-shared';
 
 type FetchMedia = (url: string, init: RequestInit) => Promise<Response>;
 // Workers Logs で code ごとに数える 1 件の記録。URL・path・query・署名・例外の本文は入れず、ホスト名だけを残す。
@@ -85,7 +85,7 @@ export function createMediaHandler(entries: MediaEntry[], fetchMedia: FetchMedia
       responseHeaders.set('Cross-Origin-Resource-Policy', CORP);
       responseHeaders.set('Cache-Control', upstream.status === 416 ? 'no-store' : 'public, max-age=31536000, immutable');
       if (url.searchParams.get('download') === '1') {
-        responseHeaders.set('Content-Disposition', `attachment; filename="${entry.lecture}${entry.kind === 'captioned' ? '.captioned' : ''}.mp4"`);
+        responseHeaders.set('Content-Disposition', `attachment; filename="${downloadName(entry)}"`);
       }
       if (request.method === 'HEAD') await upstream.body?.cancel();
       // JS で動画本文を読み出さない。CPU とメモリはファイルサイズに比例させない。

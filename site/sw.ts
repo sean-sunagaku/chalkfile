@@ -1,5 +1,8 @@
 /// <reference lib="webworker" />
-import { byteRange, COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
+import { rangeResponse } from './lib/http-range';
+import { esc } from './lib/text';
+import { downloadName, parseMediaPath } from './media-shared';
+import { COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
 import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineReply, OfflineRequest, SavedRecord, SavedVersion } from './offline-shared';
 
 /** mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。例 en → /chalkfile-media-en/） */
@@ -336,19 +339,11 @@ sw.addEventListener('message', (event) => {
   })());
 });
 
-async function cachedResponse(req: Request, response: Response): Promise<Response> {
+/** 保存した応答（200 の全体）を、要求の Range に合わせて返す（site/lib/http-range.ts）。保存の印 X-Chalkfile-SHA256 は外す */
+function cachedResponse(req: Request, response: Response): Promise<Response> {
   const headers = new Headers(response.headers);
   headers.delete('X-Chalkfile-SHA256');
-  const size = Number(headers.get('Content-Length'));
-  if (req.method === 'HEAD') return new Response(null, { headers });
-  const ifRange = req.headers.get('If-Range');
-  const range = byteRange(ifRange && ifRange !== headers.get('ETag') ? null : req.headers.get('Range'), size);
-  if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}`, 'Accept-Ranges': 'bytes' } });
-  if (range.kind === 'full') return new Response(response.body, { headers });
-  const blob = await response.blob();
-  headers.set('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
-  headers.set('Content-Length', String(range.end - range.start + 1));
-  return new Response(blob.slice(range.start, range.end + 1), { status: 206, headers });
+  return rangeResponse(req, response, headers);
 }
 
 /**
@@ -356,8 +351,8 @@ async function cachedResponse(req: Request, response: Response): Promise<Respons
  * media は動画のサイトの URL（relative は動画のサイトの中のパス）。2 文字の英小文字の講座 ID は使わない（content/index.ts）
  */
 function courseIdOf(url: URL): { id: string; relative: string; media: boolean } {
-  const hashed = /^\/media\/([a-z]{2})\/([A-Za-z0-9][A-Za-z0-9_-]*)\//.exec(url.pathname);
-  if (hashed) return { id: `${hashed[1] === 'ja' ? '' : `${hashed[1]}/`}${hashed[2]}`, relative: url.pathname.slice(1), media: true };
+  const hashed = parseMediaPath(url.pathname);
+  if (hashed) return { id: `${hashed.lang === 'ja' ? '' : `${hashed.lang}/`}${hashed.course}`, relative: url.pathname.slice(1), media: true };
   for (const [lang, root] of Object.entries(mediaRoots)) {
     if (url.href.startsWith(root)) {
       const relative = url.pathname.slice(new URL(root).pathname.length);
@@ -386,8 +381,8 @@ async function route(req: Request): Promise<Response> {
         if (response) {
           const served = await cachedResponse(req, response);
           if (download && file.type === 'video/mp4') {
-            const name = /\/([A-Za-z0-9_-]+)(\.cc)?\.[a-f0-9]{64}\.mp4$/.exec(url.pathname);
-            if (name) served.headers.set('Content-Disposition', `attachment; filename="${name[1]}${name[2] ? '.captioned' : ''}.mp4"`);
+            const name = parseMediaPath(url.pathname);
+            if (name) served.headers.set('Content-Disposition', `attachment; filename="${downloadName(name)}"`);
           }
           return served;
         }
@@ -409,7 +404,7 @@ async function route(req: Request): Promise<Response> {
   if (cached) return cachedResponse(req, cached);
   if (req.mode === 'navigate') {
     const fallback = await shell.match(new URL('offline/', scope).href);
-    if (fallback) return new Response((await fallback.text()).replaceAll('__ROOT__', new URL(scope).pathname), { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    if (fallback) return new Response((await fallback.text()).replaceAll('__ROOT__', esc(new URL(scope).pathname)), { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('オフラインです。この教材はアプリ内に保存されていません。 / Offline. This file is not saved in the app.', { status: 503 });
 }

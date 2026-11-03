@@ -5,7 +5,8 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Theme } from '../content/types';
 import { isLang } from '../content/i18n';
-import { fill, SITE_TEXT } from '../site/i18n';
+import { SITE_TEXT } from '../site/i18n';
+import { fill } from '../site/lib/text';
 import type { Asset } from '../site/offline-shared';
 import { fillTemplate } from './site/html';
 

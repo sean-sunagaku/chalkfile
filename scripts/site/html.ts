@@ -3,7 +3,11 @@
 //   raw(text)                             信頼できる HTML（リポジトリのファイル・組み立てが作った部品）を、エスケープせずに使うと明示する
 //   fillTemplate(template, { marks, text })  テンプレートの印（__NAME__ と {{key}}・{{lang.key}}）を 1 回の走査で置き換える
 // 差し込んだ値をもう一度なめないので、台本に __DOCS_NOTE__ や {{tabQuiz}} と書いても、ほかの印に当たらない。
-// 知らない印・使われない値・値の無い印は止める（置き換え忘れを公開しない）
+// 知らない印・使われない値・値の無い印は止める（置き換え忘れを公開しない）。エスケープの esc は site/lib/text.ts（SW と同じもの）
+import { esc } from '../../site/lib/text';
+
+export { esc };
+
 const BRAND: unique symbol = Symbol('Html');
 
 /** エスケープ済みの HTML（html`…`・raw()・joinHtml()・jsonHtml() だけが作る） */
@@ -17,16 +21,6 @@ const isHtml = (v: unknown): v is Html => typeof v === 'object' && v !== null &&
 
 /** Html の中身の文字 */
 export const htmlText = (h: Html): string => h[BRAND];
-
-/**
- * HTML の文字と属性の値に入れるときのエスケープ（& < > "）。台本の文字が、置き換えの印（__NAME__・{{key}}）に見えないように、
- * 印の形をした所の最初の 1 字を文字参照にする（表示は同じ。組み立ての最後の点検 scripts/site-invariants.ts が、置き換え忘れと取り違えない）
- */
-export const esc = (s: string) =>
-  s
-    .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c)
-    .replace(/_(?=_[A-Z][A-Z0-9_]*__)/g, '&#95;')
-    .replace(/\{(?=\{\s*[A-Za-z_][\w.]*\s*\}\})/g, '&#123;');
 
 /** 信頼できる HTML を、エスケープせずに使う（リポジトリのファイル・組み立てが作った部品だけに使う） */
 export const raw = (text: string): Html => make(text);

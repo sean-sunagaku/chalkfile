@@ -72,7 +72,7 @@ export class Session {
   }
 
   /** 旧 Pages（LEGACY_SCOPE の下） */
-  private legacy(req: Request, relative: string): Response {
+  private legacy(req: Request, relative: string): Response | Promise<Response> {
     const folder = LEGACY[this.control.legacyPhase];
     let file = path.resolve(folder, relative || 'index.html');
     if (!file.startsWith(folder + path.sep) && file !== folder) return new Response(null, { status: 403 });
@@ -132,7 +132,7 @@ export class Session {
     if (u.pathname === '/__test/stats') return Response.json(this.stats);
     if (u.pathname.startsWith(LEGACY_SCOPE)) {
       try {
-        return this.legacy(req, decodeURIComponent(u.pathname.slice(LEGACY_SCOPE.length)));
+        return await this.legacy(req, decodeURIComponent(u.pathname.slice(LEGACY_SCOPE.length)));
       } catch {
         return new Response(null, { status: 400 });
       }
