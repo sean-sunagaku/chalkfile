@@ -43,12 +43,19 @@ bun scripts/check_content.ts --self-test   # 点検そのものが効いてい�
 bun scripts/check_content.ts               # 台本と Git に入れる全部のファイル
 ```
 
-見るもの: AI への指示文・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・制御文字・秘密情報の形・ローカルの禁止語・https でないリンク・メールアドレスと電話番号（注意）・Claude Code の設定と hooks を Git に入れていないか・npm のインストール時スクリプト。
+見るもの: AI への指示文・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・制御文字（ファイルの中も。タブ・改行・復帰のほか）・秘密情報の形・ローカルの禁止語・https でないリンク・メールアドレスと電話番号（注意）・動画と音声と 5MiB を超えるファイル・clone した人の手元で勝手に動くもの（6 章）。
 
-`scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内を出すときだけ使う）と CI は、この点検に通らないと止まる。指示文の例をわざと見せる講座など、意図して書いたものは `scripts/content-allow.json` にその文字列を足して許す（Pull Request で理由を書く）。
+`scripts/legacy/deploy_pages.sh`（旧 Pages の移行の案内を出すときだけ使う）と CI は、この点検に通らないと止まる。指示文の例をわざと見せる講座など、意図して書いたものは `scripts/content-allow.json` に、外す規則を書いて許す（Pull Request で理由を書く）。見つけた所が `text` の中にあるときだけ、その規則だけが外れる。外せるのは `injection`・`html`・`http`・`email`・`phone`（点検の出力の［］の中）で、見えない文字・制御文字・秘密情報の形・禁止語は外せない。前の書き方（文字列だけ）は止まるので、この形に書き直す。
+
+```json
+[{ "text": "<台本の中の、わざと書いた指示文の例>", "rule": "injection", "why": "指示文の例を見せる講座" }]
+```
 
 ## 6. clone した人の手元で勝手に動くものを置かない
 
-- `.claude/settings*.json` と `.claude/hooks/` を Git に入れない（入れるのはスキルと `launch.json` だけ）
+- `.claude/` に入れるのはスキルと `launch.json` だけ（`settings*.json`・`hooks/`・agents・commands は入れない）。スキルの頭書きに `hooks`・`allowed-tools` を書かない
+- `.claude/launch.json` で起動してよいのは `bun scripts/serve.ts`・`npx remotion studio`・`npx wrangler dev` だけ（後ろに付けてよいのは `--port <番号>` だけ。serve.ts の番号は環境変数 `PORT`）。ほかを足すときは、`scripts/check_content.ts` の一覧を直す Pull Request にする
+- 開く・入る・使うだけでコマンドが動く設定を入れない: `.npmrc`・`.mcp.json`・`.vscode/tasks.json`・`.devcontainer/`・`.envrc`・`.husky/`・`lefthook.yml`・`.pre-commit-config.yaml`・mise の設定など（全部の一覧は `scripts/check_content.ts` の AUTORUN）。`bunfig.toml` は置いてよいが `preload`・`plugins` を書かない。`.vscode/settings.json` に、シェル・実行ファイルの場所・自動で動く tasks の許可を書かない
 - `package.json` に `postinstall` などのインストール時スクリプトを置かない
 - GitHub Actions は読み取りだけの権限で、Action はコミットの SHA で固定する
+- AI への指示・スクリプト・CI・配信の設定・依存を変える Pull Request は、`.github/CODEOWNERS` で持ち主のレビューに回る
