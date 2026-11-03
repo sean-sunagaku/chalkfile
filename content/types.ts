@@ -1,5 +1,6 @@
 // 講座の台本と画面構成のデータ型。
 // 画面の要素は `at`（その場面の何番目の台詞の頭で出すか、0 始まり）でナレーションに同期させる。
+import type { IconName } from '../src/components/icons';
 import type { Lang } from './i18n';
 
 export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'slate';
@@ -13,79 +14,8 @@ export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | '
 /** 効果音。harisen 以降はお笑い版の掛け合い用（ツッコミ・スベり・溜め・衝撃・ずっこけ） */
 export type SfxId = 'pop' | 'whoosh' | 'chime' | 'tick' | 'reveal' | 'correct' | 'type' | 'harisen' | 'chin' | 'drumroll' | 'deden' | 'zuko';
 
-export type IconName =
-  | 'user'
-  | 'browser'
-  | 'server'
-  | 'database'
-  | 'card'
-  | 'bell'
-  | 'receipt'
-  | 'tag'
-  | 'box'
-  | 'file'
-  | 'portal'
-  | 'shield'
-  | 'clock'
-  | 'flask'
-  | 'key'
-  | 'check'
-  | 'x'
-  | 'repeat'
-  | 'zap'
-  | 'lock'
-  | 'heart'
-  | 'phone'
-  | 'code'
-  | 'book'
-  | 'scale'
-  | 'yen'
-  | 'flag'
-  | 'list'
-  | 'alert'
-  | 'link'
-  | 'gift'
-  | 'calendar'
-  | 'route'
-  | 'search'
-  | 'layers'
-  | 'eye'
-  | 'target'
-  | 'megaphone'
-  | 'users'
-  | 'chart'
-  | 'palette'
-  | 'type'
-  | 'pointer'
-  | 'message'
-  | 'idea'
-  | 'sliders'
-  | 'hand'
-  | 'compass'
-  | 'pen'
-  | 'clipboard'
-  | 'thumbsup'
-  | 'ban'
-  | 'coins'
-  | 'store'
-  | 'sparkles'
-  | 'help'
-  | 'mail'
-  | 'funnel'
-  | 'layout'
-  | 'puzzle'
-  | 'footprints'
-  | 'brain'
-  | 'gauge'
-  | 'smile'
-  | 'frown'
-  | 'wallet'
-  | 'rocket'
-  | 'handshake'
-  | 'hourglass'
-  | 'contrast'
-  | 'ruler'
-  | 'input';
+/** 台本の icon に書ける名前。一覧は src/components/icons.ts の ICONS（名前は lucide-react の名前ではなく、短い独自の名前） */
+export type { IconName };
 
 export type Line = {
   /** 画面の台本・字幕に出す文 */
