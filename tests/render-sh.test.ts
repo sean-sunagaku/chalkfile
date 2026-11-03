@@ -1,5 +1,15 @@
 import { describe, expect, test } from 'bun:test';
-import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -22,32 +32,67 @@ echo "ffmpeg $*" >> "$FAKE_LOG"
 if [ -n "\${FAKE_FFMPEG_BYTES:-}" ]; then dd if=/dev/zero of="$out" bs=1 count=0 seek="$FAKE_FFMPEG_BYTES" 2>/dev/null; else printf encoded > "$out"; fi
 `;
 // 前の書き出しの出力（映像・字幕つきの映像・CHUNK の部品と一覧・サイト用の動画とポスター・字幕つきの版）
-const PREVIOUS = ['out/master/T01.mp4', 'out/master/T01.cc.mp4', 'out/master/T01.part0.mp4', 'out/master/T01.part1.mp4', 'out/master/T01.parts.txt',
-  'site/media/T01.mp4', 'site/media/T01.cc.mp4', 'site/media/T01.jpg', 'site/posters/T01.jpg', 'out/captioned/T01.mp4'];
-const UNCHANGED = { 'out/captioned/T01.mp4': 'old', 'site/media/T01.cc.mp4': 'old', 'site/media/T01.jpg': 'old', 'site/media/T01.mp4': 'old', 'site/posters/T01.jpg': 'old' };
+const PREVIOUS = [
+  'out/master/T01.mp4',
+  'out/master/T01.cc.mp4',
+  'out/master/T01.part0.mp4',
+  'out/master/T01.part1.mp4',
+  'out/master/T01.parts.txt',
+  'site/media/T01.mp4',
+  'site/media/T01.cc.mp4',
+  'site/media/T01.jpg',
+  'site/posters/T01.jpg',
+  'out/captioned/T01.mp4',
+];
+const UNCHANGED = {
+  'out/captioned/T01.mp4': 'old',
+  'site/media/T01.cc.mp4': 'old',
+  'site/media/T01.jpg': 'old',
+  'site/media/T01.mp4': 'old',
+  'site/posters/T01.jpg': 'old',
+};
 
 /** 300 フレーム（10 秒）の T01 を書き出し、終わったあとの out/・site/ の中身（大きいファイルは大きさだけ）と、偽の道具の呼ばれ方を返す */
 const render = (env: Record<string, string> = {}) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-render-'));
-  const put = (file: string, text: string) => { mkdirSync(path.dirname(path.join(dir, file)), { recursive: true }); writeFileSync(path.join(dir, file), text); };
+  const put = (file: string, text: string) => {
+    mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    writeFileSync(path.join(dir, file), text);
+  };
   try {
     mkdirSync(path.join(dir, 'scripts'));
     copyFileSync(path.join(import.meta.dir, '../scripts/render.sh'), path.join(dir, 'scripts/render.sh'));
     put('src/generated/timeline.json', JSON.stringify({ T01: { durationInFrames: 300, fps: 30 } }));
     put('public/audio/mix/T01.wav', 'wav');
-    put('bin/npx', FAKE_NPX); put('bin/ffmpeg', FAKE_FFMPEG);
-    chmodSync(path.join(dir, 'bin/npx'), 0o755); chmodSync(path.join(dir, 'bin/ffmpeg'), 0o755);
+    put('bin/npx', FAKE_NPX);
+    put('bin/ffmpeg', FAKE_FFMPEG);
+    chmodSync(path.join(dir, 'bin/npx'), 0o755);
+    chmodSync(path.join(dir, 'bin/ffmpeg'), 0o755);
     for (const file of PREVIOUS) put(file, 'old');
-    const r = Bun.spawnSync(['bash', 'scripts/render.sh', 'T01'], { cwd: dir,
-      env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, FAKE_LOG: path.join(dir, 'calls.log'), CAPTIONS: '', CHUNK: '', ...env } });
+    const r = Bun.spawnSync(['bash', 'scripts/render.sh', 'T01'], {
+      cwd: dir,
+      env: {
+        ...process.env,
+        PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
+        FAKE_LOG: path.join(dir, 'calls.log'),
+        CAPTIONS: '',
+        CHUNK: '',
+        ...env,
+      },
+    });
     const files: Record<string, string> = {};
-    for (const file of readdirSync(dir, { recursive: true }).map(String).filter((f) => /^(out|site)\//.test(f)).sort()) {
+    for (const file of readdirSync(dir, { recursive: true })
+      .map(String)
+      .filter((f) => /^(out|site)\//.test(f))
+      .sort()) {
       const s = statSync(path.join(dir, file));
       if (s.isFile()) files[file] = s.size > 64 ? `${s.size} bytes` : readFileSync(path.join(dir, file), 'utf8');
     }
     const calls = readFileSync(path.join(dir, 'calls.log'), 'utf8').trim().split('\n');
     return { code: r.exitCode, stderr: r.stderr.toString(), files, calls };
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 };
 
 describe('render.sh が書き出しの失敗を見逃さない', () => {
@@ -74,15 +119,32 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
   test('うまくいけば全部の出力を置き換え、一時ファイルと部品を残さない', () => {
     const r = render({ CAPTIONS: '1', CHUNK: '150' });
     expect(r.code).toBe(0);
-    expect(r.files).toEqual({ 'out/captioned/T01.mp4': 'encoded', 'out/master/T01.cc.mp4': 'new', 'out/master/T01.mp4': 'encoded',
-      'site/media/T01.cc.mp4': 'encoded', 'site/media/T01.jpg': 'encoded', 'site/media/T01.mp4': 'encoded', 'site/posters/T01.jpg': 'encoded' });
-    expect(r.calls.filter((c) => c.startsWith('remotion ')).map((c) => /--frames=\S+|captions/.exec(c)?.[0])).toEqual(['--frames=0-149', '--frames=150-299', 'captions']);
+    expect(r.files).toEqual({
+      'out/captioned/T01.mp4': 'encoded',
+      'out/master/T01.cc.mp4': 'new',
+      'out/master/T01.mp4': 'encoded',
+      'site/media/T01.cc.mp4': 'encoded',
+      'site/media/T01.jpg': 'encoded',
+      'site/media/T01.mp4': 'encoded',
+      'site/posters/T01.jpg': 'encoded',
+    });
+    expect(r.calls.filter((c) => c.startsWith('remotion ')).map((c) => /--frames=\S+|captions/.exec(c)?.[0])).toEqual([
+      '--frames=0-149',
+      '--frames=150-299',
+      'captions',
+    ]);
   });
   test('字幕つきの版を作らないときは、前の字幕つきの版が残ることを知らせる', () => {
     const r = render();
     expect(r.code).toBe(0);
     expect(r.stderr).toContain('CAPTIONS=1');
-    expect(r.files).toEqual({ ...UNCHANGED, 'out/master/T01.mp4': 'new', 'site/media/T01.jpg': 'encoded', 'site/media/T01.mp4': 'encoded', 'site/posters/T01.jpg': 'encoded' });
+    expect(r.files).toEqual({
+      ...UNCHANGED,
+      'out/master/T01.mp4': 'new',
+      'site/media/T01.jpg': 'encoded',
+      'site/media/T01.mp4': 'encoded',
+      'site/posters/T01.jpg': 'encoded',
+    });
   });
   test('crf 29 でも上限を超えたら、警告して先へ進む', () => {
     const r = render({ FAKE_FFMPEG_BYTES: String(15 * 1000 * 1000) });
