@@ -6,7 +6,8 @@ import type { VoiceId } from '../content/types';
 import { KOKORO, VOICES } from '../content/voices';
 
 /**
- * 台詞の音声ファイルの名前（.work/tts/<key>.wav）。同じ文・同じ声なら同じ名前になり、前に作った音声を使い回す。
+ * 台詞の音声ファイルの名前（共有のキャッシュの <キャッシュ>/tts/<key>.wav。前の置き場所は .work/tts）。同じ文・同じ声なら同じ名前になり、
+ * 前に作った音声を使い回す（作業フォルダの間でも）。
  * v1 の計算は凍結する（素材のブランチの音声はこの名前で置いてある）。VOICES の声の中身（credit の表記・項目の並び）も名前に入るので、
  * 声の設定を動かしたら、全台詞の名前が変わっていないかを tests/speech-snapshot.test.ts で確かめる
  */

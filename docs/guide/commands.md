@@ -1,9 +1,54 @@
 # コマンド
 
-コマンドの入口は `package.json` の `scripts`（`npm run` だけを流すと一覧が出る）。引数は `--` のあとに渡す（`npm run synth -- L03 L05`）。
+コマンドの入口は `package.json` の `scripts`（`npm run` だけを流すと一覧が出る）。引数は `--` のあとに渡す（`npm run synth -- L03 L05`）。道具をまとめた 1 つの入口は `npm run chalk -- <コマンド>`（下の「chalk」）。
 
-- 下の表は、`package.json` の `scripts` を写したもの。あとで、コマンドの説明から作る予定。それまでは、scripts を変える PR でこの表も直す
+- 「chalk」の表は、`npm run chalk -- help` と同じ一覧（`scripts/cli.ts`）から `npm run gen` が作る。ずれは `npm run check:docs` が止める
+- 「npm run」の表は、`package.json` の `scripts` を写したもの。scripts を変える PR で、この表も直す
 - 作り直しの流れは [quickstart.md](quickstart.md)、公開の順番は [公開の順番](../operations/publish.md)
+
+## chalk（1 つの入口）
+
+`npm run chalk -- <コマンド> [引数]`（`bun scripts/cli.ts` でも同じ）。そのコマンドの使い方は `npm run chalk -- <コマンド> --help`（何も流さない）。中では、前の呼び方と同じ道具を流す。
+
+- 対象: `--course <講座 ID>`・`--video <動画>`（`*` と `?` を使える。`'S03.*'` は S03 の全部の言語）・`--lang <言語>`（`all` で全部）。選ばなければ、公開する言語（`site/config.json` の `publishLangs`）の全部の動画
+- 共通: `--dry-run`（流すコマンドを出すだけ）・`--json`（AI・ほかの道具が読む）・`-v`（流すコマンドも出す）。受け取るのは、意味のあるコマンドだけ
+- 書き出し（`render`）は、掛け合いの講座（`cast` のある講座）で、字幕を焼き込んだ版も作る（前の `CAPTIONS=1` も、そのまま使える）
+- 終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（道具・素材・認証。`npm run chalk -- doctor` で確かめる）
+
+<!-- cli:start -->
+<!-- npm run gen が、scripts/cli.ts のコマンドの一覧（npm run chalk -- help の元）から作る。手で直さない -->
+
+| コマンド（`npm run chalk -- …`） | すること | 前の呼び方（そのまま使える） |
+|---|---|---|
+| `doctor [--json]` | 道具の版・VOICEVOX・gh の認証の有無・空き容量・ポート・声のキャッシュを確かめる | （新しい） |
+| `validate [--warnings] [--json]` | 台本の検証と、台本・Git に入れるファイルの点検（訳し残しも）。--json は台本の検証だけを JSON で | `bun scripts/validate.ts`・`bun scripts/check_content.ts` |
+| `voice synth [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--cached-only] [--prune]` | 台詞の声と時刻（timeline・ミックスの設計図・サイトの台本と字幕）。--cached-only は素材の声だけを使う | `bun scripts/synth.ts`・`npm run synth` |
+| `voice speech-check [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 訳の声を Whisper で聞き取り直し、読み上げの間違いを探す（選ばなければ、合成した訳の全部） | `uv run --locked --script scripts/check_speech.py` |
+| `i18n status` | 訳の表（訳あり・日本語の台本が訳のあとで変わった・未訳）と訳し残し | `bun scripts/i18n.ts status` |
+| `i18n stamp <動画…>（例: P01.en・'*.zh'）` | 訳を台本に合わせ直したあと、今の日本語の台本の指紋を訳のファイルに書く | `bun scripts/i18n.ts stamp` |
+| `i18n try <講座 ID> <言語> <レクチャー ID>` | 講座に並べる前の訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ） | `bun scripts/i18n.ts try` |
+| `music build [--only <名前>…] [--skip-verify] [--check]` | BGM・ジングル・効果音（public/audio/）。--check は素材と同じ音ができるかだけを見る | `npm run build:music`・`npm run music:verify` |
+| `mix [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 音のミックス（public/audio/mix/）。先に voice synth | `npm run mix` |
+| `render [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--captions] [--jobs <数>]` | 動画とポスター。掛け合いの講座（cast のある講座）は、字幕を焼き込んだ版も作る（--captions で全部の動画） | `npm run render`・`CAPTIONS=1 bash scripts/render.sh` |
+| `stills [動画[:場面][@フレーム]…] [--course <ID>] [--video <形>] [--lang <言語>] [--mid] [--theme <ID>] [--captions] [--scale <倍>]` | 確かめるための静止画（out/stills/） | `npm run stills` |
+| `export [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 章ごとの完成動画・字幕・音・教材を out/deliverables/ にまとめる | `bun scripts/export_deliverables.ts` |
+| `docs build [--course <ID>] [--check]` | 読む教材（docs/courses/）を台本と timeline から作る。--check は書かずに、ずれだけを見る | `npm run build:materials`・`npm run check:materials` |
+| `materials pull [--course <ID>] [--videos]` | 素材（台詞の声は共有のキャッシュへ。BGM・効果音）を取り出す。--videos は Releases の動画も | `npm run materials:pull` |
+| `materials check [--course <ID>]` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか | `npm run materials:check` |
+| `materials push [--dry-run] [--message <文>]` | 手元の素材を素材のブランチに足す（消さない）。--dry-run は本数だけを出す | `npm run materials:push` |
+| `materials gc [--keep <ref>…] [--confirm]` | 台本が使わない台詞の声を一覧にする（--confirm のときだけ消す。持ち主だけ） | `bun scripts/materials.ts gc` |
+| `media pull [--course <ID>]` | Releases の日本語の動画を site/media/ に取り出す（手元の動画は上書きしない） | `bun scripts/media.ts pull` |
+| `media check` | 動画の一覧・Releases・手元の動画を照らし合わせる | `npm run media:check` |
+| `media push --course <ID> [--lang <言語>]` | その講座の動画を Releases に置き、その講座の動画の一覧だけを書き換える | `npm run media:push` |
+| `site build [--course <ID>] [--strict]` | 講座サイト（site/dist）を組み立てる。--strict は公開と同じ確かめ方（gh の認証が要る） | `npm run build:site` |
+| `site serve [--port <番号>]` | 手元で講座サイトを見る（既定 http://127.0.0.1:8765/。Range にも答える） | `npm run serve` |
+| `site check [フォルダ]` | 組み立てた公開物（既定 site/dist）・公開の手順・Worker の設定を確かめる | `bun scripts/check_delivery.ts` |
+| `publish verify [origin]` | 公開したサイト（既定 https://chalkfile.com/）のトップと、全部の動画の Range を確かめる | `bun scripts/verify_public.ts` |
+| `check overlap --course <ID> [--lang <言語>] [--query <q>] [--min <字>] [--min-words <語>] [--refresh]` | 台本と出典の公式ページで、言い回しが続けて同じところを探す（ネットにつなぐ） | `bun scripts/check_overlap.ts` |
+| `legacy pages-migrate [--confirm <SHA>]` | 旧 Pages を移行の案内に置き換える（持ち主だけ。既定は下見だけ） | `bash scripts/legacy/deploy_pages.sh` |
+| `ci cloudflare-setup plan\|apply` | 本番の公開の初回の設定（持ち主だけ。plan は何をするかを出すだけ） | `bun scripts/setup_cloudflare_ci.ts` |
+
+<!-- cli:end -->
 
 ## 道具の役割
 
@@ -50,7 +95,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | コマンド | すること |
 |---|---|
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`。合成のコードは `scripts/audio/music/`）。書いたあと ffmpeg で音の大きさを測って目標と比べる（`-- --skip-verify` で省く）。`-- --only <名前>` で効果音を 1 つだけ書き出す |
-| `npm run synth` | 声と時刻（`content/<講座>/generated/timeline/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
+| `npm run synth` | 声と時刻（声は共有のキャッシュ `~/.cache/chalkfile/tts/`、時刻は `content/<講座>/generated/timeline/`、ほかは `.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`） |
 | `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
@@ -71,11 +116,18 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `npm run materials:pull` | 素材を取り出す（`-- --videos` で Releases の動画も） |
-| `npm run materials:check` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか |
+| `npm run materials:pull` | 素材を取り出す。台詞の声は作業フォルダの間で共有のキャッシュ（`CHALKFILE_CACHE_DIR`。既定 `~/.cache/chalkfile/tts/`）に置き、同じ中身があれば取り出さない（`-- --videos` で Releases の動画も） |
+| `npm run materials:check` | 台本の全部の台詞の声（共有のキャッシュか `.work/tts`）と、BGM・効果音が手元にあるか |
 | `npm run materials:push` | 素材を素材ブランチに足す（消さない。`-- --dry-run` で本数だけを見る） |
 | `npm run media:push -- --course <講座 ID>` | その講座の動画を Releases に置き、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを書き換える。訳の動画は `--lang en` も付ける |
 | `npm run media:check` | 動画の一覧・Releases・手元の動画を照らし合わせる |
+
+### 作業フォルダ
+
+| コマンド | すること |
+|---|---|
+| `npm run worktree:new -- <type>/<slug>` | 新しい作業フォルダ（git worktree）を作る。origin/main から branch と隣の `../chalkfile-<slug>` を作り、node_modules を複製して（APFS。ほかは `npm ci --ignore-scripts`）、素材を取り出す（1 分ほど）。`-- --dry-run` で何をするかだけを出す |
+| `npm run clean` | 作り直せる生成物（`out/`・`public/audio/mix/`・`site/dist/`・`.work/state/`）を消す。`-- --cache` で共有のキャッシュの台詞の声も消す（ほかの作業フォルダも使う）。`-- --dry-run` で消すものと大きさだけを出す |
 
 ## npm run に無いもの
 
@@ -129,5 +181,5 @@ bun scripts/i18n.ts status                         # 訳の表（訳あり・日
 | Worker（`npm run dev:worker`） | 8787 | `npm run dev:worker -- --port 8788` |
 | ブラウザのテスト（`npm run test:e2e:ci` など） | 空いている番号（テストのサーバーと、テストごとのサイト。URL を出す） | `PW_PORT=9100 npm run test:e2e:ci`（テストのサーバーの番号）。作業フォルダが違えば、同時に流せる |
 
-- Claude Code のプレビュー（`.claude/launch.json`）は、`site`（8765）・`studio`（3000）・`worker`（8787）を起動できる。`worker` は `site/dist` を配るので、先に `npm run build:site` を流す。起動してよいコマンドは `scripts/check_content.ts` の一覧で決めている（[safety.md](../../.claude/skills/study-video-course/references/safety.md) の 6）
+- Claude Code のプレビュー（`.claude/launch.json`）は、`site`（8765）・`studio`（3000）・`worker`（8787）を、`npm run serve`・`npm run studio -- --port <番号>`・`npm run dev:worker -- --port <番号>` で起動する（npx は手元に無い依存を取ってくるので使わない）。`worker` は `site/dist` を配るので、先に `npm run build:site` を流す。起動してよいコマンドと、その scripts の中身は `scripts/check_content.ts` の一覧で決めている（[safety.md](../../.claude/skills/study-video-course/references/safety.md) の 6）
 - 証跡: ブラウザのテストは、作業フォルダの `.work/evidence/browser/<project>/` に書く（`CHALKFILE_EVIDENCE_DIR` で変える。同じ作業フォルダで 2 つ同時に流すときは、別の場所にする）。本番の確かめは `.work/evidence/` に書く。どちらも Git に入れない

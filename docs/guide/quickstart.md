@@ -56,7 +56,7 @@ npm run serve              # 手元で見る（http://127.0.0.1:8765/）
 
 ```bash
 npm ci --ignore-scripts
-npm run materials:pull                          # 台詞の音声を .work/tts/ に、BGM・効果音を public/audio/ に取り出す
+npm run materials:pull                          # 台詞の音声を共有のキャッシュ（~/.cache/chalkfile/tts/）に、BGM・効果音を public/audio/ に取り出す
 npm run synth -- --cached-only                  # 声は素材から。足りないと止まる（VOICEVOX・Kokoro につながない）
 npm run mix
 npm run render                                  # CAPTIONS=1 を付けると、字幕を焼き込んだ版（サイト用の <ID>.cc.mp4）も作る
