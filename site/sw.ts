@@ -439,6 +439,7 @@ async function route(req: Request): Promise<Response> {
         if (navigation && disabled.has(v.manifest.revision)) {
           const current = await fetch(req).catch(() => null);
           if (current?.ok) return current;
+          await current?.body?.cancel().catch(() => {});
         }
         const response = await (await caches.open(v.cache)).match(assetUrl(file));
         if (response) {
@@ -452,7 +453,12 @@ async function route(req: Request): Promise<Response> {
       }
     }
     if (record.versions.length && (media || relative.includes('/media/')) && (media || url.searchParams.has('v'))) {
-      return new Response('この保存版の動画は利用できません。講座を再読み込みし、オンラインで保存し直してください。 / This saved video is not available. Reload the course and save it again online.', { status: 503 });
+      // 開く保存版を無効にした講座は、オンラインでは公開中のページになるので、保存版に無い動画とポスターは、公開中のものを取りに行く
+      let opened: SavedVersion | undefined;
+      for (const v of record.versions) if (await complete(v)) { opened = v; break; }
+      if (!opened || !disabled.has(opened.manifest.revision)) {
+        return new Response('この保存版の動画は利用できません。講座を再読み込みし、オンラインで保存し直してください。 / This saved video is not available. Reload the course and save it again online.', { status: 503 });
+      }
     }
   }
   try {

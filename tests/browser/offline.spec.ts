@@ -399,22 +399,32 @@ test('無効の一覧に入れた revision の保存版は、オンラインで�
   await control(request, { update: true, disabledRevisions: [original.manifest.revision] });
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
   await expect(page.locator('#appUpdate')).toBeVisible();
-  // このサイトのタブを全部閉じると、新しい SW が有効になる（有効になる前に開くと、前の SW のページになるので、閉じて待ち直す）
-  const next = await context.newPage();
+  // このサイトのタブを全部閉じると、新しい SW が有効になる。有効になる前に開くと、前の SW のページになるので、そのタブを閉じて
+  // （ほかのページに移るだけでは、戻る用に残ったページが前の SW を使い続ける）、少し待ってから開き直す
+  let next = await context.newPage();
   await page.close();
   await expect.poll(async () => {
+    await next.waitForTimeout(500);
     await next.goto('/');
     if ((await status(next, site).catch(() => null))?.disabled) return true;
-    await next.goto('about:blank');
-    await next.waitForTimeout(300);
+    await next.close();
+    next = await context.newPage();
     return false;
-  }, { timeout: 30000 }).toBe(true);
+  }, { timeout: 60000 }).toBe(true);
   // オンライン: 保存版ではなく公開中のページ。更新して保存するよう案内する。保存版と記録はそのまま
   const online = await next.goto(site.course.route);
   expect(online?.fromServiceWorker()).toBeTruthy();
   await expect(next).toHaveTitle(/更新テスト/);
   await expect(next.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
   await expect(next.locator('#offlineSave')).toBeEnabled();
+  // 公開中のページのポスター（新しい版の ?v=。保存版には無い）と動画も、取って再生できる
+  const poster = await next.locator('video').evaluate((v: HTMLVideoElement) => v.poster);
+  expect(poster).toContain('?v=');
+  expect(await next.evaluate(async (url) => {
+    const r = await fetch(url);
+    return { status: r.status, type: r.headers.get('Content-Type')?.split(';')[0] };
+  }, poster)).toEqual({ status: 200, type: 'image/jpeg' });
+  await playAndPause(next, seek(site, 10));
   const kept = await status(next, site);
   expect(kept.saved?.manifest.revision).toBe(original.manifest.revision);
   expect(kept.saved?.cache).toBe(original.cache);
