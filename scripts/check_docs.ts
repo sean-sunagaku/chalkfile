@@ -365,7 +365,7 @@ const listFiles = () =>
 
 /** 古い言葉を探すテキストのファイル（生成したデータ・lock は除く） */
 const TEXT = /\.(md|ts|tsx|js|mjs|json|jsonc|sh|py|ya?ml|html|css|toml|txt)$/;
-const SKIP_TEXT = /^(package-lock\.json|uv\.lock|content\/[^/]+\/generated\/|site\/media-manifest\.json)/;
+const SKIP_TEXT = /^(package-lock\.json|uv\.lock|content\/[^/]+\/generated\/)/;
 
 export const checkDocs = (out: Finding[]) => {
   const files = listFiles();

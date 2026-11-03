@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L01",
+      "kind": "standard",
+      "bytes": 11128834,
+      "sha256": "ddcf2ee4eaafe1609d675b5debd30ab575da60d4a26d1b0be3bb32e29ae47d83",
+      "filename": "L01.ddcf2ee4eaafe1609d675b5debd30ab575da60d4a26d1b0be3bb32e29ae47d83.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L02",
+      "kind": "standard",
+      "bytes": 11147346,
+      "sha256": "049fc3595581f9d8537b4e011f996be7008f8991de907e91d285a2c820296f14",
+      "filename": "L02.049fc3595581f9d8537b4e011f996be7008f8991de907e91d285a2c820296f14.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L03",
+      "kind": "standard",
+      "bytes": 14351800,
+      "sha256": "4ba26e30071b1b17dd057a6be9bdad5ce4f9f09b252565c4cc8fdd3708e54142",
+      "filename": "L03.4ba26e30071b1b17dd057a6be9bdad5ce4f9f09b252565c4cc8fdd3708e54142.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L04",
+      "kind": "standard",
+      "bytes": 12549582,
+      "sha256": "34a269d81548dfd3a15071ecbd110c8d1b95ebedc6766707daaf9bb93de85c4a",
+      "filename": "L04.34a269d81548dfd3a15071ecbd110c8d1b95ebedc6766707daaf9bb93de85c4a.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L05",
+      "kind": "standard",
+      "bytes": 13684834,
+      "sha256": "5f6f8a8dfd4d9691288af1904bbbd1320d261bee6fa9458047176498affc5870",
+      "filename": "L05.5f6f8a8dfd4d9691288af1904bbbd1320d261bee6fa9458047176498affc5870.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L06",
+      "kind": "standard",
+      "bytes": 13677279,
+      "sha256": "ff0bdf73846ce1c122debf16d35a66f00184bce5d437235ff2c4caf675a456ee",
+      "filename": "L06.ff0bdf73846ce1c122debf16d35a66f00184bce5d437235ff2c4caf675a456ee.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L07",
+      "kind": "standard",
+      "bytes": 14384219,
+      "sha256": "2d1ed08b4c2b99c12eacddb52b340a9997927d90c00715891764bf551651e0e0",
+      "filename": "L07.2d1ed08b4c2b99c12eacddb52b340a9997927d90c00715891764bf551651e0e0.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L08",
+      "kind": "standard",
+      "bytes": 13914258,
+      "sha256": "bae499781e13c447112b32df069ea82bf768ded73765a854b5a1d33570b1bd4c",
+      "filename": "L08.bae499781e13c447112b32df069ea82bf768ded73765a854b5a1d33570b1bd4c.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L09",
+      "kind": "standard",
+      "bytes": 13149015,
+      "sha256": "0155e82cba1c924cc05b4ab4ef2079bd64224d862c6641251119824c1e5b3297",
+      "filename": "L09.0155e82cba1c924cc05b4ab4ef2079bd64224d862c6641251119824c1e5b3297.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L10",
+      "kind": "standard",
+      "bytes": 11578652,
+      "sha256": "9e8d3a0a6c178a2467cf280784e2a8aef30a05878ff0ee9cd00d3d389518ba59",
+      "filename": "L10.9e8d3a0a6c178a2467cf280784e2a8aef30a05878ff0ee9cd00d3d389518ba59.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L11",
+      "kind": "standard",
+      "bytes": 14500048,
+      "sha256": "7fc20af11c009a3297f18d241ebd3ce4fed5201c646b4a27d784b4323a448259",
+      "filename": "L11.7fc20af11c009a3297f18d241ebd3ce4fed5201c646b4a27d784b4323a448259.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L12",
+      "kind": "standard",
+      "bytes": 7601409,
+      "sha256": "a8a87bd14ebea67b305a340e2e23e228a70f5aab7da43213a0b7c6120c3b7acb",
+      "filename": "L12.a8a87bd14ebea67b305a340e2e23e228a70f5aab7da43213a0b7c6120c3b7acb.mp4",
+      "tag": "media-ja-stripe-billing"
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L13",
+      "kind": "standard",
+      "bytes": 10750024,
+      "sha256": "9a11907bc3ca8d52999695fb114f73ac513f91485a7e55c05c893cb8d6c149a6",
+      "filename": "L13.9a11907bc3ca8d52999695fb114f73ac513f91485a7e55c05c893cb8d6c149a6.mp4",
+      "tag": "media-ja-stripe-billing"
+    }
+  ]
+}

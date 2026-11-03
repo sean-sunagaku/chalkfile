@@ -48,7 +48,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run build:music` | BGM・ジングル・効果音（`public/audio/`） |
 | `npm run synth` | 声と時刻（`content/<講座>/generated/timeline/`・`.work/`・`site/data/`）。`-- --cached-only` で素材の声だけを使う。`-- --course <講座 ID>` でその講座の全部の言語、`-- --prune` で台本に無い動画の timeline を消す |
 | `npm run mix` | 音のミックス（`public/audio/mix/`） |
-| `npm run render` | 動画（`site/media/`・`site/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
+| `npm run render` | 動画（`site/media/`）とポスター（`content/<講座>/generated/posters/`）。`CAPTIONS=1` で字幕を焼き込んだ版も、`CHUNK=1200` で分けて書き出し、`CONCURRENCY=<数>` で並列の数を変える |
 | `npm run stills` | 静止画（`out/stills/`）。`-- L04:3 --mid`・`--theme=<id>`・`--captions` |
 | `npm run stills:compare` | 基準の版と今の版の静止画を比べる（`-- --base origin/main`。結果は `.work/stills-compare/report.md`） |
 | `npm run studio` | Remotion Studio（音なしで場面を見る） |
@@ -69,7 +69,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run materials:pull` | 素材を取り出す（`-- --videos` で Releases の動画も） |
 | `npm run materials:check` | 台本の全部の台詞の声と、BGM・効果音が手元にあるか |
 | `npm run materials:push` | 素材を素材ブランチに足す（消さない。`-- --dry-run` で本数だけを見る） |
-| `npm run media:push` | 日本語の動画を Releases に置き、動画の一覧を書き換える |
+| `npm run media:push -- --course <講座 ID>` | その講座の動画を Releases に置き、その講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけを書き換える。訳の動画は `--lang en` も付ける |
 | `npm run media:check` | 動画の一覧・Releases・手元の動画を照らし合わせる |
 
 ## npm run に無いもの

@@ -11,7 +11,7 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 |---|---|---|
 | 正本 | ある事柄を直すときに、そこだけを直せばよい 1 か所。ほかの場所は、正本から作るか、正本へリンクする | 文書の正本は [文書の地図](../README.md) |
 | 台本 | 講座の中身を TypeScript のデータで書いたもの。台詞・画面の要素・クイズ・出典を持つ。Chalkfile の正本 | `content/<講座 ID>/`。型は `content/types.ts` |
-| 生成物 | スクリプトが台本や素材から作るファイル。手で直さない。main に入れているもの（講座のフォルダの `content/<講座>/generated/`・`site/posters/`・`site/media-manifest.json`・`docs/courses/`）と、手元だけのものがある | [全体図](overview.md) の「置き場所」 |
+| 生成物 | スクリプトが台本や素材から作るファイル。手で直さない。main に入れているもの（講座のフォルダの `content/<講座>/generated/`（timeline・ポスター・動画の一覧）・`docs/courses/`）と、手元だけのもの（Worker の許可リストなど）がある | [全体図](overview.md) の「置き場所」 |
 
 ## 講座の単位
 
@@ -57,11 +57,11 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 動画の一覧 | 公開する動画の正本。動画ごとに、言語・講座・レクチャー・種類・大きさ・SHA-256・タグを持つ。サイトの組み立てと Worker が同じ一覧を読む | `site/media-manifest.json`。形の検査は `site/media-shared.ts` |
+| 動画の一覧 | 公開する動画の正本。動画ごとに、言語・講座・レクチャー・種類・大きさ・SHA-256・タグを持つ。サイトの組み立てと Worker が同じ一覧を読む | 講座ごとの `content/<講座>/generated/media.<言語>.json`。Worker の許可リストは `npm run gen` がつないで作る（`worker/src/generated/media-manifest.json`）。形の検査は `site/media-shared.ts` |
 | 通常版・字幕版 | 字幕版（`captioned`）は字幕を焼き込んだ動画。手元の名前は `<key>.cc.mp4`。サイトは、字幕をオンにするとこちらを流す | `scripts/render.sh`（`CAPTIONS=1`） |
 | retained | 動画の一覧のうち、前の版のハッシュの動画を並べる欄。サイトはもう指さないが、Worker は配り続ける。理由は [ADR](../adr/2026-11-02-keep-old-video-hashes.md) | `scripts/media.ts`・`site/media-shared.ts` |
 | Releases のタグ | 動画を置く GitHub Releases の名前。形は `media-<言語>-<講座 ID>` | `site/media-shared.ts` |
-| ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `site/posters/<key>.jpg`。作るのは `scripts/render.sh` |
+| ポスター | 動画の始まり近く（4.2 秒）の静止画。動画の表紙と、一覧のカードに使う | `content/<講座>/generated/posters/<key>.jpg`。作るのは `scripts/render.sh` |
 | Worker | chalkfile.com の `/media/*` を受ける Cloudflare Workers のコード。ほかのパスは、組み立てたサイトの静的なファイル（assets）から返す | `worker/src/`・`wrangler.jsonc` |
 | 公開 | サイトを chalkfile.com に出すこと。main の CI が wrangler で行う。動画は、Releases に置いた時点で誰でも取れる | `.github/workflows/deploy.yml` |
 | 保存（アプリ内に保存） | 学ぶ人が講座を選んでブラウザに保存し、通信なしで見られるようにする仕組み（PWA） | `site/sw.ts`・`site/offline-client.ts`。設計はスキルの [offline.md](../../.claude/skills/study-video-course/references/offline.md) |

@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { mediaFilename, mediaPath, releaseUrl, validateMediaManifest, type MediaEntry } from '../site/media-shared';
-import worker from '../worker/src/index';
+import { createWorker } from '../worker/src/app';
 import { createMediaHandler, type MediaLog } from '../worker/src/media';
 
 // 本物の一覧（講座を足すと先頭が変わる）に頼らない、合成の動画。
@@ -8,6 +8,8 @@ const synthetic = (kind: MediaEntry['kind'], sha256: string): MediaEntry => ({ l
   filename: mediaFilename({ lecture: 'X01', kind, sha256 }), tag: 'media-ja-sample-course' });
 const entry = synthetic('standard', 'c'.repeat(64));
 const captioned = synthetic('captioned', 'd'.repeat(64));
+// 入口の中身（app.ts）を、合成の一覧で作る（本番の入口 index.ts は、npm run gen が作る全講座の一覧を渡すだけ）
+const worker = createWorker({ schema: 1, entries: [entry, captioned] });
 const request = (suffix = '', init?: RequestInit) => new Request(`https://chalkfile.com${mediaPath(entry)}${suffix}`, init);
 const success = (status = 200) => new Response(new Uint8Array([0, 1]), { status, headers: {
   'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="upstream.mp4"',
@@ -148,7 +150,7 @@ describe('/media/ の中継', () => {
   });
 });
 
-describe('Worker の入口（index.ts）', () => {
+describe('Worker の入口（app.ts の createWorker）', () => {
   // 一覧に無い合成の動画。中継に渡ったことは、中継の 404・405 で分かる（上流へは出ない）。
   const unknown = `/media/ja/sample-course/X99.${'e'.repeat(64)}.mp4`;
   // Env は wrangler types が作る型（worker/worker-configuration.d.ts）。Worker が使うのは ASSETS の fetch だけなので、偽物も fetch だけを持つ

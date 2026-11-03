@@ -25,8 +25,9 @@
       ".claude/launch.json",
       // 生成物（講座のフォルダの generated。手で直さない。作り直す）と、テストの記録（そのままの形で残す）
       "!content/*/generated",
-      // Worker の型は wrangler types が作る（npm run gen:worker-types）
+      // Worker の型は wrangler types が作る（npm run gen:worker-types）。Worker の許可リストは npm run gen が作る（Git に入れない）
       "!worker/worker-configuration.d.ts",
+      "!worker/src/generated/*.json",
       "!tests/fixtures",
       "!package-lock.json"
     ]
@@ -38,8 +39,7 @@
   "formatter": {
     "enabled": false,
     // 台本（content）は lint だけにする。台本の 1 行は長く、整形すると差分が大きく、講座の PR と必ずぶつかる
-    // 動画の一覧（site/media-manifest.json）は scripts/media.ts が書く生成物
-    "includes": ["**", "!content/**", "!site/media-manifest.json"],
+    "includes": ["**", "!content/**"],
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 120,

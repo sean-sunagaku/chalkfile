@@ -22,20 +22,21 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
  ├─ scripts/mix.py ─────────→ public/audio/mix/<key>.wav（台詞・BGM・効果音を 1 本に）
  ├─ scripts/render.sh（Remotion。映像は音なしで書き出し、ミックスの音と合わせる）
  │    ├→ out/master/<key>.mp4（高画質の映像）→ site/media/<key>.mp4（サイト用に縮めた動画）
- │    ├→ site/posters/<key>.jpg（ポスター。追跡）
+ │    ├→ content/<講座>/generated/posters/<key>.jpg（ポスター。追跡）
  │    └→ CAPTIONS=1 のとき site/media/<key>.cc.mp4（字幕を焼き込んだ版）
- ├─ scripts/media.ts push ──→ GitHub Releases（タグ media-ja-<講座>。名前に SHA-256 が入る）
- │                             ＋ site/media-manifest.json（動画の一覧。追跡）
+ ├─ scripts/media.ts push --course <講座> ──→ GitHub Releases（タグ media-<言語>-<講座>。名前に SHA-256 が入る）
+ │                             ＋ content/<講座>/generated/media.<言語>.json（その講座の動画の一覧。追跡）
+ ├─ scripts/gen.ts（npm run gen）→ worker/src/generated/media-manifest.json（全講座の動画の一覧。Worker の許可リスト。手元だけ）
  ├─ scripts/build_materials.ts（site/data も読む）→ docs/courses/（読む教材。追跡）
- └─ scripts/build_site.ts（site/data・site/posters・動画の一覧を読む）→ site/dist
-       └→ .github/workflows/deploy.yml（main への push）→ wrangler deploy → https://chalkfile.com/
+ └─ scripts/build_site.ts（site/data・講座のフォルダのポスターと動画の一覧を読む）→ site/dist
+       └→ .github/workflows/deploy.yml（main への push）→ gen.ts --media → wrangler deploy → https://chalkfile.com/
 
 旧 https://sean-sunagaku.github.io/chalkfile/ ＝ gh-pages ブランチ（新しいサイトへの案内だけ。scripts/legacy/deploy_pages.sh）
 ```
 
 - 「追跡」は main で Git が追跡するファイル。ほかは `.gitignore` で外していて、手元だけにある
 - `<key>` は動画の key（`S01`・`S01.en`）。訳の動画も同じ流れで作る。サイトに出す言語は `site/config.json` の `publishLangs` が決める
-- `media.ts push` が扱うのは日本語の動画。古いハッシュの動画は消さず、一覧の `retained` に残す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
+- `media.ts push` は、選んだ講座（`--course`）と言語（`--lang`。既定は ja）の動画だけを扱い、その講座の一覧だけを書き換える。古いハッシュの動画は消さず、一覧の `retained` に残す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
 
 ## どこで何をするか
 
@@ -67,7 +68,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 
 | 置き場所 | 中身 | 正本か | 作り直し方 |
 |---|---|---|---|
-| main ブランチ | 台本（`content/`）・動画を描くコード（`src/`）・作る道具（`scripts/`）・サイトのひな形（`site/`）・Worker（`worker/`・`wrangler.jsonc`）・テスト・文書。生成物のうち、時刻（`content/<講座>/generated/timeline/`）・ポスター（`site/posters/`）・動画の一覧（`site/media-manifest.json`）・読む教材（`docs/courses/`）も入れている | 台本とコードの正本。入れている生成物は写し。ただし動画の一覧は、Releases に置いた動画の記録 | 生成物は、時刻 → synth、ポスター → render、読む教材 → build_materials、動画の一覧 → media push |
+| main ブランチ | 台本（`content/`）・動画を描くコード（`src/`）・作る道具（`scripts/`）・サイトのひな形（`site/`）・Worker（`worker/`・`wrangler.jsonc`）・テスト・文書。生成物のうち、講座のフォルダの `content/<講座>/generated/`（時刻の `timeline/`・ポスターの `posters/`・動画の一覧の `media.<言語>.json`）と読む教材（`docs/courses/`）も入れている | 台本とコードの正本。入れている生成物は写し。ただし動画の一覧は、Releases に置いた動画の記録 | 生成物は、時刻 → synth、ポスター → render、読む教材 → build_materials、動画の一覧 → media push --course |
 | `materials` ブランチ | 台詞の音声（`tts/<講座>/<声の鍵>.flac`）と読み（`.kana`）・BGM とジングルと効果音（`audio/`）・`SHA256SUMS`・`README.md`。親の無い 1 コミット | 台詞の音声の正本。同じ文でも、VOICEVOX や Kokoro の版で音が変わりうる | `materials.ts push` で、手元の素材を足す（消すのは `materials.ts gc` だけ）。取り出すのは `materials.ts pull`（[ADR](../adr/2026-10-31-materials-branch.md)） |
 | GitHub Releases | 公開する動画（通常版と字幕版）。タグは `media-ja-<講座>`、ファイル名に SHA-256 が入る | 動画の中身の正本。どの動画を出すかは、main の動画の一覧が決める | render のあと、`media.ts push` で足す。取り出すのは `media.ts pull` |
 | Cloudflare Workers（chalkfile.com） | 組み立てたサイト（`site/dist`）と Worker | 写し。正本は main | main への push か、main を選んだ手動の実行で、deploy.yml が組み立てて出す |
@@ -86,8 +87,8 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 | `src/` | Remotion の動画。`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` がテーマの色と書体を差し込む。`timelines.ts` が講座のフォルダの timeline（synth が書く生成物）を集める |
 | `engine/core/` | React・Remotion・Node に依存しない部品（台本の検証 `validate.ts`・色のコントラスト） |
 | `scripts/` | 作る道具（合成・ミックス・書き出し・素材・動画・教材・サイト）と点検（`check_content.ts`・`check_docs.ts`・`check_delivery.ts`）。`scripts/legacy/` は旧 Pages の移行の道具 |
-| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・動画の一覧（`media-manifest.json`）・ポスター（`posters/`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
-| `worker/`・`wrangler.jsonc` | `/media/` の中継と、Workers の assets・Custom Domain の設定 |
+| `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・決まった文字（`i18n.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
+| `worker/`・`wrangler.jsonc` | `/media/` の中継（`worker/src/app.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）と、Workers の assets・Custom Domain の設定 |
 | `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`）・テストの入力（`fixtures/`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
 | `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
 | `.claude/skills/` | Claude Code のスキル（作り方・書き方・調べ方・テーマの作り方）。AI 共通のきまりは直下の `AGENTS.md` |

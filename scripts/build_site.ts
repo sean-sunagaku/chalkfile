@@ -3,7 +3,8 @@
 //   bun scripts/build_site.ts stripe-billing   # 一部の講座だけ（一覧ページは毎回作る）
 //   bun scripts/build_site.ts --strict         # 動画かポスターが無いレクチャーがあれば止める（deploy_pages.sh が使う）
 //   SITE_LANGS=ja bun scripts/build_site.ts    # その言語だけのサイトにする（訳の動画のサイトがまだ無いときに、日本語だけ出す）
-// 入力: content/（台本・訳・テーマ）、site/data/<key>.json（synth.ts の出力）、site/media/<key>.mp4|jpg（render.sh の出力）、
+// 入力: content/（台本・訳・テーマ）、site/data/<key>.json（synth.ts の出力）、content/<講座>/generated/posters/<key>.jpg（render.sh が書くポスター。
+//       無ければ site/media/<key>.jpg）、動画の一覧（講座ごとの content/<講座>/generated/media.<言語>.json。scripts/media.ts の readMediaManifest）、
 //       site/template.html（講座のページ）、site/home.html（一覧のページ）、site/i18n.ts（サイトの決まった文字）、site/assets/、site/config.json
 // 出力: site/dist/index.html と site/dist/<講座>/（日本語）、site/dist/<言語>/ と site/dist/<言語>/<講座>/（訳）、
 //       site/dist-media/<言語>/<講座>/（訳の動画とポスター。config.json の media のサイトに出す）
@@ -16,6 +17,7 @@ import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
 import { isLang, LANG_INFO, LANGS, videoKey, type Lang } from '../content/i18n';
 import { THEMES, themeOf } from '../content/themes';
+import { posterFile } from '../engine/core/generated';
 import type { ChapterMaterial, Course, Source, VoiceId } from '../content/types';
 import { creditsIn, SITE_CREDITS } from '../content/voices';
 import { fill, SITE_TEXT, THEME_SUMMARY, type SiteText } from '../site/i18n';
@@ -34,7 +36,6 @@ const SITE = path.join(ROOT, 'site');
 const DIST = path.join(SITE, 'dist');
 const DIST_MEDIA = path.join(SITE, 'dist-media');
 const MEDIA = path.join(SITE, 'media');
-const POSTERS = path.join(SITE, 'posters');
 const ASSETS = path.join(SITE, 'assets');
 
 // site/config.json（形は scripts/validate.ts の SiteConfig）
@@ -268,12 +269,14 @@ for (const lang of SITE_LANGS) {
       ui: course.ui ?? {},
       planned,
     };
-    const mediaFiles: { file: string; data: Buffer; type: string }[] = [];
+    // ポスターは講座のフォルダ（content/<講座>/generated/posters/<key>.jpg）から。無ければ書き出したばかりの site/media/<key>.jpg
+    const posterSource = (key: string) => (existsSync(path.join(ROOT, posterFile(course.id, key))) ? path.join(ROOT, posterFile(course.id, key)) : path.join(MEDIA, `${key}.jpg`));
+    const mediaFiles: { file: string; from: string; data: Buffer; type: string }[] = [];
     for (const lec of lectures) {
       const file = `${lec.key}.jpg`;
-      const from = existsSync(path.join(POSTERS, file)) ? path.join(POSTERS, file) : path.join(MEDIA, file);
-      if (existsSync(from)) mediaFiles.push({ file, data: readFileSync(from), type: 'image/jpeg' });
-      else missing.push(file);
+      const from = posterSource(lec.key);
+      if (existsSync(from)) mediaFiles.push({ file, from, data: readFileSync(from), type: 'image/jpeg' });
+      else missing.push(posterFile(course.id, lec.key));
     }
     const courseCreditsList = courseCredits(course, lang);
     // 版は出力から決める（scripts/site-version.ts）。ページとポスターの ?v= には版の印を入れて描き、版が決まってから差し込む
@@ -333,7 +336,7 @@ for (const lang of SITE_LANGS) {
     const mediaOut = path.join(out, 'media');
     rmSync(mediaOut, { recursive: true, force: true });
     mkdirSync(mediaOut, { recursive: true });
-    for (const f of mediaFiles) place(existsSync(path.join(POSTERS, f.file)) ? path.join(POSTERS, f.file) : path.join(MEDIA, f.file), path.join(mediaOut, f.file));
+    for (const f of mediaFiles) place(f.from, path.join(mediaOut, f.file));
     // 一部だけの公開・欠けた生成物を「全講座保存」として案内しない。
     const manifestPath = path.join(out, 'offline-manifest.json');
     rmSync(manifestPath, { force: true });

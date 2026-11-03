@@ -101,6 +101,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/media.ts check
+      # Worker の許可リスト（Git に入れない生成物。npm run gen）を、公開と同じく講座ごとの動画の一覧から作る（check_delivery が一覧と同じかを見る）
+      - name: Worker の許可リストを作る
+        run: bun scripts/gen.ts --media
       # --strict は、動画かポスターの無いレクチャーがあれば止まる。組み立ての最後に、公開物の決まり（scripts/site-invariants.ts）も確かめる
       - name: 静的サイトを検証して組み立てる
         env:

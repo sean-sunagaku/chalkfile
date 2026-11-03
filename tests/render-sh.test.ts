@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 // render.sh を一時フォルダに写し、偽の npx（Remotion）と ffmpeg を PATH の先に置いて流す。本物の書き出しはしない。
-// render.sh は自分の 1 つ上のフォルダで動くので、リポジトリの out/・site/media・site/posters には触れない
+// render.sh は自分の 1 つ上のフォルダで動くので、リポジトリの out/・site/media・講座のフォルダのポスターには触れない
 const FAKE_NPX = `#!/bin/sh
 # npx remotion render src/index.ts <コンポジション> <出力> [引数…]。FAKE_REMOTION（字幕つきの版は FAKE_REMOTION_CC）で動きを決める
 echo "remotion $*" >> "$FAKE_LOG"
@@ -42,7 +42,7 @@ const PREVIOUS = [
   'site/media/T01.mp4',
   'site/media/T01.cc.mp4',
   'site/media/T01.jpg',
-  'site/posters/T01.jpg',
+  'content/t-course/generated/posters/T01.jpg',
   'out/captioned/T01.mp4',
 ];
 const UNCHANGED = {
@@ -50,7 +50,7 @@ const UNCHANGED = {
   'site/media/T01.cc.mp4': 'old',
   'site/media/T01.jpg': 'old',
   'site/media/T01.mp4': 'old',
-  'site/posters/T01.jpg': 'old',
+  'content/t-course/generated/posters/T01.jpg': 'old',
 };
 
 /**
@@ -93,7 +93,7 @@ const render = (
     const files: Record<string, string> = {};
     for (const file of readdirSync(dir, { recursive: true })
       .map(String)
-      .filter((f) => /^(out|site)\//.test(f) && f !== 'site/limits.ts')
+      .filter((f) => /^(out|site|content\/t-course\/generated\/posters)\//.test(f) && f !== 'site/limits.ts')
       .sort()) {
       const s = statSync(path.join(dir, file));
       if (s.isFile()) files[file] = s.size > 64 ? `${s.size} bytes` : readFileSync(path.join(dir, file), 'utf8');
@@ -137,7 +137,7 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
       'site/media/T01.cc.mp4': 'encoded',
       'site/media/T01.jpg': 'encoded',
       'site/media/T01.mp4': 'encoded',
-      'site/posters/T01.jpg': 'encoded',
+      'content/t-course/generated/posters/T01.jpg': 'encoded',
     });
     expect(r.calls.filter((c) => c.startsWith('remotion ')).map((c) => /--frames=\S+|captions/.exec(c)?.[0])).toEqual([
       '--frames=0-149',
@@ -154,7 +154,7 @@ describe('render.sh が書き出しの失敗を見逃さない', () => {
       'out/master/T01.mp4': 'new',
       'site/media/T01.jpg': 'encoded',
       'site/media/T01.mp4': 'encoded',
-      'site/posters/T01.jpg': 'encoded',
+      'content/t-course/generated/posters/T01.jpg': 'encoded',
     });
   });
   test('crf 29 でも目安を超えたら、警告して先へ進む', () => {

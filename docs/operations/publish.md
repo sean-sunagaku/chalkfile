@@ -56,13 +56,14 @@ npm run materials:push
 ## 5. 動画を作る（render）
 
 ```bash
-bun scripts/media.ts pull                  # 手元に無い公開済みの動画を Releases から取る（render より前に流す）
+bun scripts/media.ts pull <講座 ID>        # その講座の、作り直さない公開済みの動画を Releases から取る（render より前に流す）
 npm run mix -- <ID…>
 CAPTIONS=1 npm run render -- <ID…>         # 字幕を焼き込んだ版も作る（お笑い版では必ず）
 ```
 
-- 6 の `media push` は、全部の講座の日本語の通常版が手元にないと止まる。字幕版は、手元に無いと動画の一覧から外れ、サイトに出なくなる。だから先に `media.ts pull` でそろえる
-- `media.ts pull` は、手元の動画が動画の一覧と違うと止まる（上書きしない）。作り直したあとに流すと、作り直した動画で止まる。render より前に流すか、`bun scripts/media.ts pull <講座 ID…>` で作り直していない講座だけを取る
+- render は、動画を `site/media/` に、ポスターを講座のフォルダ（`content/<講座>/generated/posters/<ID>.jpg`）に書く
+- 6 の `media push --course <講座 ID>` は、その講座の通常版が全部手元にないと止まる（ほかの講座の動画は要らない）。字幕版は、手元に無いと動画の一覧から外れ、サイトに出なくなる。だから、同じ講座の作り直さない動画は、先に `media.ts pull <講座 ID>` でそろえる
+- `media.ts pull` は、手元の動画が動画の一覧と違うと止まる（上書きしない）。作り直したあとに流すと、作り直した動画で止まる。render より前に流す
 - 書き出したら確かめる。読み・静止画・長さ・サイトの見え方は、スキルの [SKILL.md](../../.claude/skills/study-video-course/SKILL.md) の「5. 確かめる」と、[new-course.md](../guide/new-course.md) の「確かめる」
 - 見直す前の動画を、6 で push しない（置いた時点で、誰でも取れる）
 
@@ -70,13 +71,15 @@ CAPTIONS=1 npm run render -- <ID…>         # 字幕を焼き込んだ版も作
 
 ```bash
 bun scripts/check_content.ts --require-denylist
-npm run media:push
+npm run media:push -- --course <講座 ID>     # 訳の動画は --lang en のように言語も付ける（既定は ja）
 npm run media:check
 ```
 
-- push は、日本語の動画を講座ごとの Release（タグは `media-ja-<講座 ID>`）に置く。ファイルの名前に SHA-256 が入る。同じハッシュの動画は送り直さない
-- 古いハッシュの動画は消さず、動画の一覧（`site/media-manifest.json`）の `retained` に回す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
-- push は、ポスター（`site/media/<ID>.jpg`）を `site/posters/` に写し、全部の asset を確かめてから動画の一覧を書き換える
+- push は、選んだ講座の動画を、講座と言語ごとの Release（タグは `media-<言語>-<講座 ID>`）に置く。ファイルの名前に SHA-256 が入る。同じハッシュの動画は送り直さない。Release が無ければ、既定のブランチ（main）を指して作る
+- 書き換えるのは、選んだ講座の動画の一覧（`content/<講座>/generated/media.<言語>.json`）だけ。ほかの講座の一覧には触らない。ほかの講座の手元の動画が一覧と違えば、知らせるだけ
+- 古いハッシュの動画は消さず、その講座の動画の一覧の `retained` に回す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
+- push は、前の手順で `site/media/<ID>.jpg` にだけあるポスターを講座のフォルダに写し、選んだ講座の全部の asset を確かめてから、その講座の動画の一覧を書き換える
+- gh が失敗したときは、gh のエラーの出力を、token・Authorization・署名つきの URL を伏せてから出す
 - check は、公開した asset があることと、その大きさと SHA-256、手元の動画の SHA-256 を照らし合わせる
 - **動画は merge の前に、公開の Releases に置かれる**。サイトからはまだリンクされないが、置いた時点で誰でも取れる。見直す前の動画を置かない。PR の見直しで直したら、作り直してもう一度 push する（前のハッシュは `retained` に残る）
 
@@ -85,7 +88,8 @@ npm run media:check
 | 生成物 | 作るもの |
 |---|---|
 | `content/<講座>/generated/timeline/<key>.json` | synth |
-| `site/posters/<ID>.jpg`・`site/media-manifest.json` | render と `media push` |
+| `content/<講座>/generated/posters/<key>.jpg` | render |
+| `content/<講座>/generated/media.<言語>.json`（その講座の動画の一覧） | `media push --course <講座 ID>` |
 | `docs/courses/`（読む教材・AI チャット用のチャンク） | `npm run build:materials` |
 | `tests/fixtures/snapshots/`（音声の鍵と読み） | `bun scripts/snapshots.ts --update`。台詞・読み・声を変えたときと、動画を足したとき。PR に「合成し直しが要る」と書く |
 
@@ -104,8 +108,9 @@ npm run build:site -- --strict      # merge で動く Actions と同じ組み立
   1. `npm ci --ignore-scripts`・型・単体テスト・台本とファイルの点検
   2. 素材ブランチから声を取り出し、`synth --cached-only` で時刻とサイトのデータを作る（声を合成しない）
   3. `media.ts check` で、動画の一覧と Releases を照らし合わせる
-  4. `build_site.ts --strict` で組み立て、`check_delivery.ts` で公開物を点検する
-  5. `wrangler deploy` で出し、全部の動画の Range を確かめる（`verify_public.ts`）
+  4. `gen.ts --media` で、Worker の許可リスト（講座ごとの動画の一覧をつないだもの。Git に入れない）を作る
+  5. `build_site.ts --strict` で組み立て、`check_delivery.ts` で公開物と Worker の許可リストを点検する
+  6. `wrangler deploy` で出し、全部の動画の Range を確かめる（`verify_public.ts`）
 - 公開の実行は、同じ時に 1 つだけ（あとから来たものは、前のものが終わるのを待つ）
 - 止まったら [戻し方](recovery.md) の「Actions を出し直す」
 
@@ -130,7 +135,7 @@ npm run test:e2e                   # 入れてある Chrome と、生成した�
 
 - テストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
 - ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
-- PR の CI（`.github/workflows/check.yml`）は 2 つのジョブ。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `build_site --strict` → `check_delivery`）でサイトを組み立てる。公開はせず、秘密情報も使わない
+- PR の CI（`.github/workflows/check.yml`）は 2 つのジョブ。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）でサイトを組み立てる。公開はせず、秘密情報も使わない
 - `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・CSP のハッシュと動く script の数・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
 - 大きさの上限の正本は `site/limits.ts`（保存は 1 ファイル 32 MiB・ページ 4 MiB・1 講座 1 GiB・201 ファイル、Workers の静的 assets は 1 ファイル 25 MiB・2 万ファイル、Releases の動画は 2 GiB 未満）。サイト用の動画は 14,500 KiB を目安に書き出す（上限ではない）。保存の上限を超える動画は `media.ts push`・`check` が止める
 - ファイルの型は、拡張子の対応表 `site/mime.ts` から付ける。知らない拡張子のファイルを `site/assets` に置くと、組み立てが止まる
@@ -146,9 +151,11 @@ npm run test:e2e                   # 入れてある Chrome と、生成した�
 
 ```bash
 npm run synth -- --cached-only && npm run build:site -- --strict
-npx --no-install wrangler dev --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で
+npm run dev:worker -- --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で（先に Worker の許可リストを作る）
 bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 ```
+
+- Worker の許可リスト（`worker/src/generated/media-manifest.json`）は `npm run gen` が作る。`npm run dev:worker` は先に作る。`npx wrangler dev`（`.claude/launch.json` の worker も）を直に流すときは、先に `npm run gen`
 
 - HTTP では、`site/dist` の全ページの 200 と `no-transform`、`/sw.js` の `no-cache`、知らないページと知らない `/media/` の 404、`/media/` への POST の 405、www（Host ヘッダー）の `/media/` の 301 と HTML の 200 を見る
 - ブラウザ（既定は Chrome。`PW_CHANNEL` で変える）では、全ページの表示・SW の scope `/`・CSP の違反とページのエラーが 0 かを見る
@@ -162,14 +169,16 @@ bun scripts/smoke_worker.ts http://127.0.0.1:8787/
 | `content/<講座>/generated/timeline/` | `git checkout origin/main -- content/<講座>/generated/timeline/` → `npm run synth -- --cached-only --course <講座 ID>`（その講座の全部の動画の時刻を、手元の声から作り直す。声が手元に無ければ、先に `npm run materials:pull`） |
 | `docs/courses/` | `git checkout origin/main -- docs/courses/` → `npm run build:materials` |
 | `tests/fixtures/snapshots/` | `git checkout origin/main -- tests/fixtures/snapshots/` → `bun scripts/snapshots.ts --update` |
-| `site/media-manifest.json`（動画の一覧） | 下の手順 |
+| `content/<講座>/generated/posters/` | `git checkout origin/main -- content/<講座>/generated/posters/` → 作り直した動画だけ `npm run render -- <ID>` |
+| `content/<講座>/generated/media.<言語>.json`（その講座の動画の一覧） | 講座ごとなので、ほかの講座の PR とはぶつからない。同じ講座の動画を 2 本の branch で push したときだけ、下の手順 |
 
-動画の一覧がぶつかったとき:
+動画の一覧がぶつかったとき（同じ講座）:
 
-1. `git checkout origin/main -- site/media-manifest.json`（main の一覧にそろえる）
-2. 手元の動画を、main の一覧に合わせる。`bun scripts/media.ts pull <講座 ID…>` に、自分が動画を作り直していない講座を渡す
+1. `git checkout origin/main -- content/<講座>/generated/media.<言語>.json`（main の一覧にそろえる）
+2. 手元の動画を、main の一覧に合わせる。`bun scripts/media.ts pull <講座 ID>` で、作り直していない動画を取る
 3. pull が「上書きしません」で止まった動画は、手元の写しが古い。自分が作り直した動画でなければ、`site/media/` のその動画を消してから、もう一度 pull する（Releases から取り直せる写し）
-4. `npm run media:push` → `npm run media:check` → commit
+4. `npm run media:push -- --course <講座 ID>` → `npm run media:check` → commit
 
-- `content/index.ts` の講座の並びと、README の講座の表は生成物ではない。両方の行を残す
+- Worker の許可リスト（`worker/src/generated/media-manifest.json`）は Git に入れないので、ぶつからない。main を取り込んだら `npm run gen` で作り直す
+- 講座の登録表（`content/courses.ts`）は 1 講座 1 行で、`.gitattributes` の `merge=union` が、並行で足した行を両方残す。README の講座の表は生成物ではない。両方の行を残す
 - 並行作業のきまり（共有のファイル・凍結中）は [AGENTS.md](../../AGENTS.md) の「並行作業のきまり」

@@ -5,11 +5,11 @@ description: ナレーション付きの勉強動画（講座）を、調べる 
 
 # 勉強動画の講座を作る
 
-保存機能はルート `/` とhash付き `/media/` を使う。動画URL・通常/字幕版・保存サイズとhashを `site/media-manifest.json` から生成し、ポスターは静的assetsに残す。`build_site.ts --strict` はReleasesと手元のhashを照合する。`npm run test:browser` は `tests/browser-server.ts` の同じURLで、通信断・再起動・Range・字幕版切替・単体downloadを検証する。公開されていない言語はskipとして記録する。
+保存機能はルート `/` とhash付き `/media/` を使う。動画URL・通常/字幕版・保存サイズとhashを、講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`）から生成し、ポスター（`content/<講座>/generated/posters/`）は静的assetsに残す。`build_site.ts --strict` はReleasesと手元のhashを照合する。`npm run test:browser` は `tests/browser-server.ts` の同じURLで、通信断・再起動・Range・字幕版切替・単体downloadを検証する。公開されていない言語はskipとして記録する。
 
 `/media/` の変更では `tests/worker.test.ts` を含む `npm test`、`wrangler dev` と本番の `Range: bytes=0-1` を確認する。署名付きredirect URLを保存・ログ出力しない。上流にCookieやAuthorizationを渡さず、本文はstreamのままにする。HEADではRangeを無視し、エラーはno-store。キャッシュ最適化は実測後に判断する。
 
-動画配信の正本は `site/media-manifest.json`。動画を変えたらローカルで `bun scripts/media.ts push` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。
+動画配信の正本は、講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`。Worker の許可リストは `npm run gen` がつないで作る）。動画を変えたらローカルで `bun scripts/media.ts push --course <講座 ID>` → `bun scripts/media.ts check` を先に行い、その一覧とサイトを公開する。push はその講座の一覧だけを書き換える。Releases は講座×言語のタグ、ファイル名は通常/字幕焼込みと完全なSHA-256で区別する。既存の同じhashは再送・上書きせず、古いassetを自動削除しない。公開中のページと保存版が古いhashを参照することがあるため、削除は別途確認する。CIに動画upload権限を渡さない。
 
 配信移行時は `wrangler.jsonc` を正本にし、`npm run dev:worker` でルート `/` と SW scope `/` を確かめる。サイトは assets、動画は `/media/` の受付に分け、MP4 を assets に置かない。Workers Free を維持する。認証ファイルを読まず、機密情報をcommit/push/公開物/ログへ含めない。push 前に追跡ファイルと差分を点検し、API トークンは GitHub/Cloudflare の secret だけで扱う。
 
@@ -79,9 +79,9 @@ CAPTIONS=1 bash scripts/render.sh L01 L02                        # 動画（字�
 
 ### 6. 公開する
 
-動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push` → `bun scripts/media.ts check`。マニフェスト・`site/posters/` とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。公開の順番の正本は [publish.md](../../../docs/operations/publish.md)、初回の設定は [setup.md](../../../docs/operations/setup.md)、復旧は [recovery.md](../../../docs/operations/recovery.md)。
+動画とポスターを確認し `bun scripts/check_content.ts --require-denylist`（禁止語の一覧が無ければ止まる。置き場所は [references/safety.md](references/safety.md)）→ `bun scripts/media.ts push --course <講座 ID>` → `bun scripts/media.ts check`。講座のフォルダの生成物（`content/<講座>/generated/` の動画の一覧・ポスター・timeline）とコードをコミットし、PRをmainへ入れる。Actionsがキャッシュ済み音声・Releases・静的公開物を検証してWranglerで公開する。API tokenはproduction secretだけ、Cloudflare secretはDeploy stepだけ。公開の順番の正本は [publish.md](../../../docs/operations/publish.md)、初回の設定は [setup.md](../../../docs/operations/setup.md)、復旧は [recovery.md](../../../docs/operations/recovery.md)。
 
-新しい講座をReleasesへ置いたときは、全レクチャーの `site/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
+新しい講座をReleasesへ置いたときは、全レクチャーの `content/<講座>/generated/posters/<ID>.jpg` が追跡対象にあることも確認する。旧手順で作られた動画にポスターが無ければ、`media.ts pull <講座ID>` でSHA-256を照合した通常版から4.2秒地点・幅1280・JPEG品質3の画像を作り、目視して追加する。ポスター不足によるstrict buildの停止を、チェックの緩和やCIでの動画取得で回避しない。
 
 静的応答にno-transformを付け、CSPと保存用SHA-256を変える自動挿入を防ぐ。`bash scripts/legacy/deploy_pages.sh` は旧Pagesの案内だけを出す。移行SWのcache保持テストを通し、chalkfile.comの本番確認が済んでから切り替える。通常公開に旧Pages用スクリプトを使わない。
 

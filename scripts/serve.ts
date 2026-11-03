@@ -6,15 +6,15 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { byteRange } from '../site/offline-shared';
-import manifest from '../site/media-manifest.json';
-import { mediaPath, validateMediaManifest } from '../site/media-shared';
+import { mediaPath } from '../site/media-shared';
 import { contentTypeOf } from '../site/mime';
-import { localMediaPath } from './media';
+import { localMediaPath, readMediaManifest } from './media';
 
 const SITE = path.resolve(import.meta.dir, '..', 'site');
 const PORT = Number(process.env.PORT ?? 8765);
 const BASE_PATH = process.env.BASE_PATH ?? '/';
-const media = new Map(validateMediaManifest(manifest).entries.map((e) => [mediaPath(e), e]));
+// 動画は、講座ごとの動画の一覧（content/<講座>/generated/media.<言語>.json）にあるものを、手元の site/media/ から配る
+const media = new Map(readMediaManifest().entries.map((e) => [mediaPath(e), e]));
 const config = JSON.parse(readFileSync(path.join(SITE, 'config.json'), 'utf8')) as { media?: Record<string, { url: string }> };
 /** 配るもの: [URL のパスの頭, フォルダ]。動画のサイトを先に見る */
 const MOUNTS: [string, string][] = [

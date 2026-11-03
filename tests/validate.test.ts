@@ -199,9 +199,9 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
   });
   test('公開する言語の全部の動画のポスターを見る（無ければ止める。公開しない言語は見ない）', () => {
     const c = course([lec('X01'), lec('X02', { no: 2 })]);
-    const got = posterProblems({ ...config, publishLangs: ['ja'] }, ja([c]), (key) => key === 'X01');
+    const got = posterProblems({ ...config, publishLangs: ['ja'] }, ja([c]), (file) => file === 'content/invalid-sample/generated/posters/X01.jpg');
     expect(got.map((x) => `${x.level} ${x.rule} ${x.where}`)).toEqual(['error poster invalid-sample/X02']);
-    expect(got[0].message).toContain('site/posters/X02.jpg');
+    expect(got[0].message).toContain('content/invalid-sample/generated/posters/X02.jpg');
     expect(posterProblems({ ...config, publishLangs: ['ja'] }, (lang) => (lang === 'en' ? [c] : []), () => false)).toEqual([]);
     expect(posterProblems(config, coursesIn)).toEqual([]);
   });

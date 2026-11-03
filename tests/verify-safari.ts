@@ -112,7 +112,7 @@ try {
     if (await js('return document.querySelector("#ccToggle").getAttribute("aria-pressed");') === 'true') await click('#ccToggle');
     await until('!document.querySelector("video").currentSrc.includes("/R01.cc.") && document.querySelector("video").readyState>=1', '字幕の版を切り替えられません', 10000);
     receipt.offlineStandardSeek = await playAt(90);
-    const entry = JSON.parse(readFileSync(path.join(root, 'site/media-manifest.json'), 'utf8')).entries.find((e: any) => e.lecture === 'R01' && e.kind === 'standard');
+    const entry = JSON.parse(readFileSync(path.join(root, 'content/rive-comedy/generated/media.ja.json'), 'utf8')).entries.find((e: any) => e.lecture === 'R01' && e.kind === 'standard');
     receipt.offlineRange = await asyncJs('const r=await fetch(arguments[0],{headers:{Range:"bytes=1000-1127"}});return {status:r.status,bytes:[...new Uint8Array(await r.arrayBuffer())]};', [`/media/ja/rive-comedy/${entry.filename}`]);
     assert.equal(receipt.offlineRange.status, 206);
     assert.deepEqual(receipt.offlineRange.bytes, [...readFileSync(path.join(root, 'site/media/R01.mp4')).subarray(1000, 1128)]);

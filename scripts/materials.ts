@@ -320,7 +320,7 @@ ${rows.join('\n')}
 \`\`\`bash
 bun scripts/materials.ts pull                    # 全部の講座の素材を .work/tts/ と public/audio/ に取り出す
 bun scripts/materials.ts pull nudge-product      # 1 つの講座だけ
-bun scripts/materials.ts pull --videos           # Releases の動画も site/media/ に取り出す（ポスターは site/posters/）
+bun scripts/materials.ts pull --videos           # Releases の動画も site/media/ に取り出す（ポスターは講座のフォルダの generated/posters/）
 bun scripts/materials.ts push --dry-run          # 足す・変える・同じ・残すの本数だけを見る（何も書かない）
 \`\`\`
 

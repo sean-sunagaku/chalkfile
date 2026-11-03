@@ -26,7 +26,7 @@ npx --no-install wrangler rollback <Version ID> --env="" --message "<戻す理�
 | 止まった手順 | 直し方 |
 |---|---|
 | 素材と講義データ（`synth --cached-only`） | 素材ブランチに声が足りない。台本の branch で `materials push` をする（[公開の順番](publish.md) の 4）。素材が消えたときは、下の「素材を作り直す」 |
-| 動画を先に照合（`media.ts check`） | 動画の一覧と Releases が合わない。`media push` → `media check` をやり直し、動画の一覧を commit する |
+| 動画を先に照合（`media.ts check`） | 動画の一覧と Releases が合わない。その講座で `media push --course <講座 ID>` → `media check` をやり直し、その講座の動画の一覧を commit する |
 | 静的サイトを検証して組み立てる（`build_site.ts --strict`） | ポスターか動画の一覧が足りない（[ハマりどころ](troubleshooting.md) の「素材と動画の push」） |
 | Deploy（secret か vars が無いと出る） | [初回の設定](setup.md) の 2 と 3 |
 | ffmpeg を入れる手順で、取得が進まない | 一時のもの。出し直す |
@@ -60,7 +60,7 @@ bun scripts/materials.ts gc --keep origin/main --keep origin/<branch> --confirm 
 
 - `media push` は、一覧から外れた前のハッシュの動画を `retained` に残し、`retainedUntil`（UTC の日付。その日まで）を付ける。期限は、`retained` に入れた日から 90 日
 - 期限を過ぎたものが残っていると、`npm run media:check`（`build:site -- --strict` の中でも流れる）と `check_delivery.ts` が注意を出す。公開は止めない
-- 片付けるのは持ち主。`site/media-manifest.json` の `retained` と `retainedUntil` を見て、期限を過ぎ、開いたままの前のページがもう無いと見てよい項目を、`retained` から外す PR を出す。外すと、Worker はその URL に 404 を返す
+- 片付けるのは持ち主。講座ごとの動画の一覧（`content/<講座>/generated/media.<言語>.json`）の `retained` と `retainedUntil` を見て、期限を過ぎ、開いたままの前のページがもう無いと見てよい項目を、`retained` から外す PR を出す。外すと、Worker はその URL に 404 を返す
 - 延ばすときは、`retainedUntil` を書き換える
 - Release の asset は消さない（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）。1 つの Release の asset が 1000 を超えるときは `media push` が止まるので、そのときに片付け方を決める
 
