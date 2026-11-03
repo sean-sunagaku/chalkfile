@@ -88,7 +88,9 @@ JPGは `site/posters/` の小さな静的入力としてmainに含める。MP4�
 git fetch origin
 bun scripts/stills-compare.ts --base origin/main     # 場面の種類ごとに 1 つ（20 場面）× 5 テーマ。1 分ほど
 bun scripts/stills-compare.ts L04:3,6 --theme night  # 場面とテーマを絞る（--captions で字幕つきの版を比べる）
+bun scripts/stills-compare.ts --base-install --head origin/dependabot/npm_and_yarn/<名前> --out .work/stills-compare/<名前>  # 依存を上げる PR
 ```
 
 - 基準の版を一時の worktree に作って同じ静止画（場面の終わり）を書き出し、ffmpeg の PSNR で比べる。同じ絵は inf。45dB（`--threshold`）より低いと「差あり」になり、`.work/stills-compare/diff/` に「基準・今・差を強めた絵」を並べた画像を出して 1 で終わる
+- 既定では基準の worktree に今の node_modules を写すので、依存の違いは比べられない。依存を上げる PR は `--base-install`（基準で `npm ci --ignore-scripts`）と `--head <ref>`（その ref の一時の worktree で `npm ci --ignore-scripts`）で比べる。どちらの側も、その側の Remotion（bundler・renderer・Chrome Headless Shell）を別のプロセスで使って書き出す（`--out` で結果を分けて残せる）
 - 画像はコミットしない（`.work/` の下）。書体を Google Fonts から読むのでネットが要る。書体・Chrome・ネットに左右されるので、CI では流さなくてよい
