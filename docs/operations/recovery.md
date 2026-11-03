@@ -42,7 +42,7 @@ npx --no-install wrangler rollback <Version ID> --env="" --message "<戻す理�
 5. `bun scripts/check_content.ts --require-denylist` → `npm run materials:push`
 
 - VOICEVOX や Kokoro の版が変わると、同じ文でも音が変わり、時刻（timeline）が変わることがある。`git diff content/*/generated/timeline/` で変わっていたら、その動画は書き出し直して `media push` する（[公開の順番](publish.md) の 5〜7）
-- BGM と効果音は `npm run build:music` で作り直せる
+- BGM と効果音は `npm run build:music` で作り直せる。素材と同じバイト列になるかは `npm run music:verify` で確かめる（numpy・scipy の版を上げたときも）
 - push は前の版を親にするので、素材ブランチの前の版は `git log origin/materials` で見られる。gc は親の無い 1 コミットにして履歴を切るので、gc より前の素材は、そこからはたどれない
 
 ## 素材を片付ける（gc）
