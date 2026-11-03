@@ -25,6 +25,7 @@ import { creditsIn } from './voices';
 import type { Asset, CourseManifest } from '../site/offline-shared';
 import { mediaKey, mediaPath, type MediaEntry } from '../site/media-shared';
 import { checkMedia, readMediaManifest } from './media';
+import { WORKERS_ASSET_MAX_BYTES, WORKERS_MAX_ASSETS } from '../site/limits';
 import { mediaRootOf, readSiteConfig, siteProblems } from './validate';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -533,7 +534,7 @@ const inspect = (dir: string) => {
   }
 };
 inspect(DIST);
-if (emitted.length > 20000 || emitted.some((f) => f.bytes > 25 * 1024 ** 2 || f.name.endsWith('.mp4'))) {
+if (emitted.length > WORKERS_MAX_ASSETS || emitted.some((f) => f.bytes > WORKERS_ASSET_MAX_BYTES || f.name.endsWith('.mp4'))) {
   throw new Error('Workers assets のファイル数・サイズ制限、または MP4 非混入の条件を満たしません。');
 }
 console.log(`site/dist: ${emitted.length} files・${(emitted.reduce((n, f) => n + f.bytes, 0) / 1e6).toFixed(1)}MB・MP4なし。公開言語: ${SITE_LANGS.join(',')}`);
