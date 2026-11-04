@@ -80,11 +80,11 @@ npm ci --ignore-scripts
 npm run check    # CI と同じ点検（lint・型・単体テスト・台本の検証・点検。中身は package.json の check）
 ```
 
-- 新しく足した TS・JSON は `npm run format:new` で整える（CI は、足したファイルの整形を見る）。全体の整形（`npm run format`）は、開いている講座の PR が 0 の日に 1 回だけ行うので、それまで流さない
-- Python（`scripts/*.py`）を変えたら `npm run lint:py`（ruff。uv が要る）、シェル（`*.sh`）を変えたら `npm run lint:sh`（shellcheck が要る）。どちらも CI で流す。`ruff format` は TS の全体の整形と同じ日まで流さない
+- 足したり直したりした TS・JSON は `npm run format` で整える（新しいファイルだけなら `npm run format:new`）。CI は全体の lint・整形・import の並べ替えを確かめる。整形だけの大きな差分は、開いている講座の PR が 0 の日にまとめる
+- Python（`scripts/*.py`）を変えたら `npm run format:py` と `npm run lint:py`（ruff。uv が要る）、シェル（`*.sh`）を変えたら `npm run lint:sh`（shellcheck が要る）。CI では Python の整形確認も流す
 - 動画の見た目を変えたら `npm run stills -- <ID>` で静止画を見る
 - 台詞を変えたら synth → mix → render の順に作り直し、`.work/kana/<ID>.txt` の読みを見る
-- 台本を書いたり直したりしたら `bun scripts/check_overlap.ts <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
+- 台本を書いたり直したりしたら `npm run chalk -- check overlap --course <講座 ID>` で、出典の公式ページと突き合わせる（ネットにつなぐ。英語の URL から日本語版を取るときは `--query=locale=ja-JP` のように足す）
 - 動画（`site/media/`・`out/`）は commit しない。ポスター（`content/<講座>/generated/posters/`）と動画の一覧（`content/<講座>/generated/media.<言語>.json`。`media push --course` が書く）は commit する。commit する生成物の一覧は、[公開の順番](docs/operations/publish.md) の「生成物を commit する」。動画は merge の前に Releases に置き、サイトは main への merge で Actions が出す
 - 講座サイトと保存の仕組み（PWA）を変えたら、作った動画と教材で `npm run build:site -- --strict` → `npm run test:e2e` を流す。保存の失敗・更新・通信なしでの起動も確かめる。HTML（`site/template.html` など）は lint の対象の外
 - 公開した講座の中身（事実・台詞・画面の文字・教材）を直したら、講座のフォルダの `content/<講座 ID>/CHANGES.md` に、日付・直したこと・理由を足す。初めて直すときに、このファイルを作る（[変更の記録](CHANGELOG.md) の「講座ごとの更新の記録」）

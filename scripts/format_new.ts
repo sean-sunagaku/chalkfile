@@ -1,12 +1,11 @@
 // 足したファイルだけを、Biome で整形する・整形を確かめる。
-// 全体の整形は、開いている講座の PR が 0 の日に 1 回で行う（それまで biome.jsonc の formatter は切ってある）。
-// それまでも、新しいファイルは整った形で入れて、全体の整形の差分を増やさない。
+// 全体の整形は導入済み。CI の npm run lint は全体を確かめる。この道具は新しいファイルだけを整えたいときにも使える。
 //   bun scripts/format_new.ts                  # 確かめる（整っていなければ止まる）。比べる相手は origin/main
 //   bun scripts/format_new.ts --write          # 整形する（npm run format:new）
 //   bun scripts/format_new.ts --base HEAD^1    # 比べる相手を変える（CI の pull_request は、マージの commit の 1 つ目の親）
 //                                              # 別の PR の上に積んだ branch では、土台の branch を指す
 // 足したファイル: 比べる相手との分かれ目に無く、今の木にあるファイル（名前を変えただけのものと、移して元の場所に再 export を残したもの
-// ＝ 中身がほぼ同じ写し（git diff -C）は入れない。全体の整形の日まで、前からあるコードとして扱う）と、まだ追跡していないファイル。
+// ＝ 中身がほぼ同じ写し（git diff -C）は入れない。前からあるコードとして扱う）と、まだ追跡していないファイル。
 // 台本（content）・生成物・テストの記録・Biome が扱わない種類（Markdown・YAML・Python など）は、biome.jsonc の対象の外なので飛ばす。
 // 終了コード: 0 整っている（--write は整えた）・1 整っていない・2 使い方の誤り・3 前提が足りない（比べる相手が無い）
 import { existsSync } from 'node:fs';

@@ -1,7 +1,7 @@
 // 講座のフォルダの台本と生成物から、全体の生成物を作る（npm run gen）。生成物がぶつかったら、main を取り込んでからこれで作り直す。
 //   bun scripts/gen.ts            # 作る
 //   bun scripts/gen.ts --check    # 作らずに、今のファイルと比べる（違えば一覧を出して 1 で終える）
-//   bun scripts/gen.ts --media    # Worker の許可リストと実行時の設定を作る（wrangler の前。dev:worker・CI の build・deploy.yml が流す）
+//   bun scripts/gen.ts --media    # Worker の許可リストと実行時の設定を作る（wrangler の前。dev:worker・CI の build・ci.yml が流す）
 // 作るもの:
 //   worker/src/generated/media-manifest.json   全講座の動画の一覧（Worker の許可リスト。Git に入れない）。講座ごとの
 //                                              content/<講座>/generated/media.<言語>.json を、講座の登録の順につなぐ（scripts/media.ts）

@@ -42,7 +42,7 @@
 | `radius` | カードの角の丸み |
 | `dark` | 暗い地（`scheme: 'dark'`）の面と線（カードの面・札の面・色の付かない矢印・補助線・進み具合の溝・薄い光・薄い面・図の色の上の文字）。暗い地のテーマには必ず書く（`NIGHT` が見本）。明るい地は `color` から作るので書かない。`#RRGGBB` か `rgba()` で書く |
 
-テーマの形（`#RRGGBB`・要る項目・暗い地の `dark`）は、台本の検証（`bun scripts/validate.ts`）が確かめる。
+テーマの形（`#RRGGBB`・要る項目・暗い地の `dark`）は、台本の検証（`npm run validate`）が確かめる。
 
 ## 部品で色を使う
 
@@ -88,13 +88,13 @@
 2. まず静止画で試す（講座のテーマを変えずに、上書きして描ける）
 
    ```bash
-   node scripts/stills.ts L02:3 L03:3 L10:4 L13:2 L11:3 L04:3 L01:3,10 --theme=<id>
+   npm run stills -- L02:3 L03:3 L10:4 L13:2 L11:3 L04:3 L01:3,10 --theme=<id>
    ```
 
    場面の種類が全部そろう組み合わせ（カード・コード・端末・クイズ・数字・状態の図・強調・エンディング）。`out/stills/*-<id>.jpg` を全部見る
 3. 講座に `theme: '<id>'` を書き、`npm run render` で書き出し直す（色が変わると全部の動画が変わる）
-4. `bun scripts/build_site.ts` → `bun scripts/serve.ts` でサイトの色・字幕の帯・背景の飾りを確かめる
-5. 一覧ページのテーマの見本を差し替える: `node scripts/stills.ts L02:3 --theme=<id>` の画像を `site/assets/themes/<id>.jpg` に置く（`hero.jpg` は一覧の最初の画面の画像）
+4. `npm run build:site` → `npm run serve` でサイトの色・字幕の帯・背景の飾りを確かめる
+5. 一覧ページのテーマの見本を差し替える: `npm run stills -- L02:3 --theme=<id>` の画像を `site/assets/themes/<id>.jpg` に置く（`hero.jpg` は一覧の最初の画面の画像）
 
 ## 確かめること
 

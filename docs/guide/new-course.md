@@ -71,8 +71,9 @@
 | `content/<講座 ID>/generated/media.<言語>.json`（その講座の動画の一覧） | `npm run media:push -- --course <講座 ID>` |
 | README の講座の表・上の頭文字と並びの表 | `npm run gen`（`npm run check:docs` がずれを止める） |
 | `docs/courses/<講座 ID>/`（教材つきの講座の読む教材） | `npm run build:materials`（`npm run check` がずれを止める） |
-| `tests/fixtures/snapshots/videos/<key>.json`（音声の鍵と読み） | `bun scripts/snapshots.ts --update` |
+| `tests/fixtures/snapshots/videos/<key>.json`（音声の鍵と読み） | `npm run snapshots:update` |
 
+- 講座・動画・章・図などの ID を足すと、契約の一覧に無い名前を `tests/unit/contracts.test.ts` が止める。既存の ID を変えていないことを確認してから、`UPDATE_CONTRACTS=1 npm test -- tests/unit/contracts.test.ts` で新しい ID を追加する。既存の項目を消したり、期待値を手で書き換えて検査を通したりしない
 - 並行で作るとき（共有のファイル・生成物がぶつかったときの作り直し方・素材と動画の push）のきまりは、[AGENTS.md](../../AGENTS.md) の「並行作業のきまり」
 
 ## 3. 作る
@@ -88,9 +89,9 @@
 - [ ] 共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`（ほかの講座の見た目が変わっていないか。結果の表を PR に貼る）
 - [ ] 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - [ ] 事実: 台本ができたら、別の目（サブエージェント）に台本のファイルだけを渡して、主張ごとに公式で確かめてもらった（[research.md](../../.claude/skills/study-video-course/references/research.md) の「事実確認を別の目でやる」）
-- [ ] 権利: `bun scripts/check_overlap.ts <講座 ID>`（台本と、出典の公式ページで、言い回しが続けて同じところが無いか）
+- [ ] 権利: `npm run chalk -- check overlap --course <講座 ID>`（台本と、出典の公式ページで、言い回しが続けて同じところが無いか）
 - [ ] サイト: `npm run build:site` → `npm run serve` で、再生・途中への移動・字幕・スマホの幅（375px）を見た。講座を足したら `npm run test:browser` も流した
-- [ ] 音声の鍵のスナップショット: `bun scripts/snapshots.ts --update`（動画を足したとき）
+- [ ] 音声の鍵のスナップショット: `npm run snapshots:update`（動画を足したとき）
 
 ## 5. 公開する
 
@@ -105,5 +106,5 @@ PR のテンプレート（`.github/pull_request_template.md`）の項目を埋�
 - [ ] 素材と動画を、merge の前に置いたこと（`materials push`・`media push`・`media check`）
 - [ ] 作り直した生成物（講座のフォルダの `generated/`（timeline・ポスター・動画の一覧）・README の表・`docs/courses/`・スナップショット）
 - [ ] 確かめたこと（上の 4。静止画の比較の表があれば貼る）
-- [ ] 訳を作ったときは、言語と `bun scripts/i18n.ts status` の結果
+- [ ] 訳を作ったときは、言語と `npm run i18n -- status` の結果
 - [ ] AI を使ったことと、人が確かめた範囲

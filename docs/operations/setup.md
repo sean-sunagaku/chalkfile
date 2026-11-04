@@ -42,12 +42,14 @@ Cloudflare の管理画面で、対象の account の Manage Account → Account
 ## 4. 登録して、公開を始める
 
 ```bash
-bun scripts/setup_cloudflare_ci.ts plan    # 何も変えず、認証もしない。対象と 3 つの権限と、秘密の値の扱いを出す
+npm run chalk -- ci cloudflare-setup plan    # 何も変えず、認証もしない。対象と 3 つの権限と、秘密の値の扱いを出す
 # ここで、管理画面で 3 の token を作り、GitHub の production の secret の欄に直接入れる
-bun scripts/setup_cloudflare_ci.ts apply   # main だけの policy・account ID・secret の名前を読み戻し、main の Actions を始める
+export CLOUDFLARE_ACCOUNT_ID='<対象の account ID>'  # 値をコードや文書へ書かない
+npm run chalk -- ci cloudflare-setup apply   # main だけの policy・account ID・secret の名前を読み戻し、main の Actions を始める
 ```
 
 - `apply` は、secret がもうあれば新しい token を作らず、値も読まない
+- `apply` は `CLOUDFLARE_ACCOUNT_ID` が無いと、外部操作の前に終了コード 3 で止まる。`plan` は指定を求めず、指定済みでも ID の値を表示しない
 - 2026-11-03 に、公式の cf `1.0.0-beta.26` で確かめた制約: Workers Editor に当たる `workers-scripts.edit` を CLI が認可できず、CLI では最小の権限の token を作れなかった。権限の一覧の `is_selectable: false` を無視したり、Admin へ広げたり、同じ認可を繰り返したりしない。CLI の対応が変わるまでは、管理画面で作る
 - CLI で最小の権限を作れる認可を使うときだけ、`apply` は zone と 3 つの権限を確かめ、作った token をメモリから `gh secret set` の標準入力へ渡す（表示・保存・引数に出さない）。登録に失敗したら、その実行で作った token だけを失効させる。途中で止まったら、token の名前と ID・secret の名前で状態を確かめ、二重に作らない。認可の profile は OS の keychain に置く（[cf CLI の認可](https://developers.cloudflare.com/cf/get-started/)・[作れる権限と is_selectable](https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/)）
 - 初回の設定だけに使った cf の profile は、名前を指定した `cf auth delete <profile>` で消し、一覧で消えたことを確かめる。ふだんの Wrangler の認証は消さない

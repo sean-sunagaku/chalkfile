@@ -60,7 +60,13 @@
     "verify:site": "bun tools/verify/worker-site-smoke.ts",
     "verify:worker": "bun tools/verify/smoke_worker.ts",
     "format:py": "uvx ruff@0.17.3 format scripts",
-    "format:py:check": "uvx ruff@0.17.3 format --check scripts"
+    "format:py:check": "uvx ruff@0.17.3 format --check scripts",
+    "snapshots:update": "bun scripts/snapshots.ts --update",
+    "media:pull": "bun scripts/media.ts pull",
+    "deploy:worker": "bun scripts/deploy_worker.ts",
+    "verify:production": "bun tools/verify/verify-production.ts",
+    "measure:production": "bun tools/verify/measure-production.ts",
+    "verify:safari": "bun tools/verify/verify-safari.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",

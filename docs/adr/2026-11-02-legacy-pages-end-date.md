@@ -1,7 +1,7 @@
 # 旧 GitHub Pages の移行コードを 2027-05-02 に終える
 
-- 状態: 提案（持ち主が決める）
-- 決めた日: 2026-11-02 に提案
+- 状態: 採用
+- 決めた日: 2026-11-02 に提案、2026-11-04 に引き継ぎ方針として採用
 - 関連: Linear の SUN-1658（旧 Pages からの移行）
 
 ## 背景
@@ -10,13 +10,13 @@
 - 旧サイト（`sean-sunagaku.github.io/chalkfile/`・`gh-pages` ブランチ）は、新しいサイトへの案内だけを出している。旧サイトで講座を保存した人のために、移行用の Service Worker が前の保存版を残し、通信なしでも開けるようにしている
 - 保存と学習の記録は、origin が違うので、新しいサイトへ自動では移せない。学ぶ人が、新しいサイトで保存し直す
 - main には、移行のためのコードとテストがある
-  - `site/legacy-sw.ts`・`scripts/build_migration.ts`・`scripts/deploy_pages.sh`・`site/legacy-config.json`
+  - `site/legacy-sw.ts`・`scripts/build_migration.ts`・`scripts/legacy/deploy_pages.sh`・`site/legacy-config.json`
   - `tests/e2e/migration.spec.ts`・`tests/fixtures/legacy-pages/`・`tests/e2e/browser-server.ts` の旧サイトの分岐
 - これらを、いつ消すかを決める必要がある
 
 ## 決めたこと
 
-提案のうちは案。持ち主が決めるまで、ここに従って消す作業はしない。
+期限までは凍結を保ち、削除しない。期限の後に、以下の撤去を別の PR で行う。
 
 - 移行のコードを main に置く期限を、新しいサイトの公開から 6 か月後の 2027-05-02 にする
 - それまでは、移行のコードを変えない（凍結する）。移行のテストは、公開済みの移行の出力を fixture にして固定する
@@ -29,7 +29,7 @@
 
 ## 凍結（2026-11-03 から）
 
-期限を持ち主が決める前でも、凍結は先に始めた（変えないことには、決めることが無いため）。
+期限の採用に先立ち、凍結は 2026-11-03 に始めた。
 
 - `site/legacy-sw.ts` と `scripts/build_migration.ts` は変えない。ファイルの SHA-256 を `tests/unit/legacy-freeze.test.ts` が見る。Biome の全体の整形からも外す（`biome.jsonc`）
 - 移行のテスト（`tests/e2e/migration.spec.ts`）は、公開済みの移行の案内（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 を、そのまま写したもの）を配る。テストのサーバーは、今のソースから作り直さない。fixture が公開物と同じかも、`tests/unit/legacy-freeze.test.ts` が見る

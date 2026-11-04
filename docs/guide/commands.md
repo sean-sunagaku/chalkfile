@@ -8,7 +8,7 @@
 
 ## chalk（1 つの入口）
 
-`npm run chalk -- <コマンド> [引数]`（`bun scripts/cli.ts` でも同じ）。そのコマンドの使い方は `npm run chalk -- <コマンド> --help`（何も流さない）。中では、前の呼び方と同じ道具を流す。
+`npm run chalk -- <コマンド> [引数]`。そのコマンドの使い方は `npm run chalk -- <コマンド> --help`（何も流さない）。中では、前の呼び方と同じ道具を流す。
 
 - 対象: `--course <講座 ID>`・`--video <動画>`（`*` と `?` を使える。`'S03.*'` は S03 の全部の言語）・`--lang <言語>`（`all` で全部）。選ばなければ、公開する言語（`chalkfile.config.ts` の `publishLangs`）の全部の動画
 - 共通: `--dry-run`（流すコマンドを出すだけ）・`--json`（AI・ほかの道具が読む）・`-v`（流すコマンドも出す。`voice synth`・`materials`・`media` は、中の道具にも `--verbose` を渡し、VOICEVOX・git・ffmpeg・gh への問い合わせと、失敗したときの stderr の全部を伏せてから出す）。受け取るのは、意味のあるコマンドだけ
@@ -68,12 +68,23 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 ## npm run
 
+旧コマンドの表・`docs/history/`・ADR にある以前のコマンドは、互換の案内と当時の記録として残す。今流すときは、この文書の `npm run` の入口を使う。
+
 ### 確かめる
 
 | コマンド | すること |
 |---|---|
 | `npm run check` | lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検・教材のずれを順に流す（CI と同じ。動画なしで流せる） |
-| `npm run lint` | Biome の lint（TS・TSX・JSON） |
+| `npm run lint` | Biome の lint・整形・import の並べ替え（TS・TSX・JSON） |
+| `npm run format` | TS・TSX・JSON の整形・import の並べ替えと lint の安全な直し |
+| `npm run format:py` | Python の整形（固定版の ruff） |
+| `npm run format:py:check` | Python の整形を確かめる（CI と同じ） |
+| `npm run snapshots:update` | 動画を足したとき、音声の鍵と読みのスナップショットを更新する |
+| `npm run media:pull -- [講座 ID…]` | 動画の一覧にある動画を Releases から取り出す |
+| `npm run deploy:worker -- <引数>` | 公開後確認と戻しを含む配信の道具。手元は preview の drill だけ（持ち主）。本番は main の Actions だけ |
+| `npm run verify:production -- <mode>` | 本番の保存・更新・通信なしの再起動を、認証情報の無い専用 profile で確かめる。前提と mode は [公開の順番](../operations/publish.md) |
+| `npm run measure:production` | 自分の確認用ヘッダーが付いた要求を Cloudflare 側で測る。権限と副作用は [chalkfile-engine](../../.claude/skills/chalkfile-engine/SKILL.md) |
+| `npm run verify:safari -- <引数>` | Safari の実再生・保存を確かめる。OS の認可や Wi-Fi 操作を伴う前提は [chalkfile-engine](../../.claude/skills/chalkfile-engine/SKILL.md) |
 | `npm run lint:py` | ruff の lint（`scripts/*.py`。uv が要る） |
 | `npm run lint:sh` | shellcheck（`*.sh`。shellcheck が要る） |
 | `npm run knip` | 使っていないファイル・export・依存の一覧 |
@@ -142,17 +153,17 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 
 | コマンド | すること |
 |---|---|
-| `bun scripts/media.ts pull [講座 ID…]` | Releases の動画を取り出す（手元の動画は上書きしない） |
-| `bun scripts/materials.ts gc [--keep <ref>…] [--confirm]` | 台本が使わない声を消す。持ち主だけ（[戻し方](../operations/recovery.md) の「素材を片付ける」） |
-| `uv run --locked --script scripts/check_speech.py <key…>` | 訳の声を Whisper で聞き取り直す |
-| `bun scripts/check_overlap.ts <講座 ID>` | 台本と出典の公式ページで、言い回しが続けて同じところを探す（ネットにつなぐ。`--query=locale=ja-JP`・`--lang=en`） |
+| `npm run media:pull -- [講座 ID…]` | Releases の動画を取り出す（手元の動画は上書きしない） |
+| `npm run chalk -- materials gc [--keep <ref>…] [--confirm]` | 台本が使わない声を消す。持ち主だけ（[戻し方](../operations/recovery.md) の「素材を片付ける」） |
+| `npm run chalk -- voice speech-check <key…>` | 訳の声を Whisper で聞き取り直す |
+| `npm run chalk -- check overlap --course <講座 ID>` | 台本と出典の公式ページで、言い回しが続けて同じところを探す（ネットにつなぐ。`--query=locale=ja-JP`・`--lang=en`） |
 | `bun scripts/snapshots.ts`（`--update`） | 音声の鍵と読みのスナップショットと比べる（作り直す） |
-| `bun scripts/export_deliverables.ts <ID…>` | 章ごとの完成動画・字幕・音・教材と、その動画で使った全部の声のクレジット（README）を `out/deliverables/` にまとめる。要るファイルが欠けていたら、何も書かずに、欠けたものと作り方を出して止める（終了コード 3） |
-| `bun scripts/check_delivery.ts site/dist` | 公開物の点検（秘密情報・MP4・大きさ） |
+| `npm run chalk -- export <ID…>` | 章ごとの完成動画・字幕・音・教材と、その動画で使った全部の声のクレジット（README）を `out/deliverables/` にまとめる。要るファイルが欠けていたら、何も書かずに、欠けたものと作り方を出して止める（終了コード 3） |
+| `npm run chalk -- site check site/dist` | 公開物の点検（秘密情報・MP4・大きさ） |
 | `npm run verify:worker -- [URL]` | 手元の Worker の smoke（[公開の順番](../operations/publish.md) の「手元の Worker で確かめる」） |
-| `bun scripts/verify_public.ts` | 公開したサイトのトップと、全部の動画の Range |
-| `bun scripts/setup_cloudflare_ci.ts plan`・`apply` | 初回の設定。持ち主だけ（[初回の設定](../operations/setup.md)） |
-| `bash scripts/legacy/deploy_pages.sh` | 旧 Pages を移行の案内に置き換える。持ち主だけ。ふだんの公開には使わない |
+| `npm run chalk -- publish verify` | 公開したサイトのトップと、全部の動画の Range |
+| `npm run chalk -- ci cloudflare-setup plan`・`apply` | 初回の設定。持ち主だけ（[初回の設定](../operations/setup.md)） |
+| `npm run chalk -- legacy pages-migrate` | 旧 Pages を移行の案内に置き換える。持ち主だけ。ふだんの公開には使わない |
 
 ## 部分だけ作り直す・確かめる
 
@@ -160,9 +171,9 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 - 古くなったものだけ: `npm run chalk -- status` で段ごとの古い単位を見て、`npm run chalk -- build --to <段>` で前の段から順に流す（段と記録は [全体図](../architecture/overview.md) の「段と記録」、流し方は [公開の順番](../operations/publish.md) の「段の状態を見て、古い段だけを流す」）
 - 場面だけ見たいとき: `npm run studio`（音なしで場面を確かめられる。timeline（`content/<講座>/generated/timeline/`）は Git に入っている）
 - 読み: synth が `.work/kana/<ID>.txt` に台詞ごとの読み（カナ）を書く。誤読は講座の辞書 `content/<講座>/reading.ts` に足す（どの講座でも同じ読みにしたい語だけ共通の `engine/core/reading.ts`）
-- 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・読みの辞書・声をわざと変えたときや、動画を足したときは `bun scripts/snapshots.ts --update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
+- 音声の鍵と読みの網: `npm test` が、全部の台詞の音声の鍵・読み（と、訳がある動画の訳の指紋）を、`tests/fixtures/snapshots/`（動画 1 本に 1 ファイル）と照らし、変わった動画と台詞を出す。台詞・読みの辞書・声をわざと変えたときや、動画を足したときは `npm run snapshots:update` で作り直し、PR に「合成し直しが要る」と書く（[説明](../../tests/fixtures/snapshots/README.md)）
 - 見た目: `npm run stills -- L04:3 --mid`（場面の中ほどと終わりを静止画にする）
-- 公式ドキュメントとの突き合わせ: `bun scripts/check_overlap.ts stripe-billing --query=locale=ja-JP`
+- 公式ドキュメントとの突き合わせ: `npm run chalk -- check overlap --course stripe-billing --query=locale=ja-JP`
 - ディスクの空きが少ないとき: `npm run render -- L04 --chunk 1200`（1,200 フレームずつ書き出してつなぐ。`CHUNK=1200` も同じ）
 
 ## 多言語の動画を作る
@@ -172,7 +183,7 @@ npm run i18n -- scaffold S03.en                    # 訳のひな形（日本語
 npm run i18n -- try superagent-comedy en S03       # 訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ）
 npm run i18n -- stamp 'S03.*'                      # 訳したときの日本語の台本の指紋を書く
 npm run synth -- S03.en S03.zh                     # 声と時刻（足りない台詞は Kokoro でまとめて読む。初回はモデルを取ってくる）
-uv run --locked --script scripts/check_speech.py S03.en S03.zh   # 聞き取りの点検
+npm run chalk -- voice speech-check S03.en S03.zh   # 聞き取りの点検
 npm run mix -- S03.en S03.zh
 npm run render -- S03.en S03.zh                   # 掛け合いの講座は、字幕を焼き込んだ版も作る（ほかの講座で作るなら --captions）
 npm run build:site

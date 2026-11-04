@@ -36,11 +36,10 @@
 
 ## 5. 点検する
 
-Workersへの公開は `bun scripts/check_delivery.ts site/dist` でも生成物を点検する。認証ファイルは内容を読まず公開対象から拒否し、検出した機密値はログへ出さない。Actionsはmain/productionに限定し、Cloudflare secretを検証後のDeploy stepだけへ渡す。個人のWrangler OAuthをCIへ流用しない。`no-transform` で本文とCSP/hashを保つ。
+Workersへの公開は `npm run chalk -- site check site/dist` でも生成物を点検する。認証ファイルは内容を読まず公開対象から拒否し、検出した機密値はログへ出さない。Actionsはmain/productionに限定し、Cloudflare secretを検証後のDeploy stepだけへ渡す。個人のWrangler OAuthをCIへ流用しない。`no-transform` で本文とCSP/hashを保つ。
 
 ```bash
-bun scripts/check_content.ts --self-test   # 点検そのものが効いているか
-bun scripts/check_content.ts               # 台本と Git に入れる全部のファイル
+npm run check:content   # 点検そのものと、台本・Git に入れる全部のファイルを確かめる
 ```
 
 見るもの: AI への指示文・HTML とスクリプト・見えない文字（ゼロ幅・向きを変える制御文字）・制御文字（ファイルの中も。タブ・改行・復帰のほか）・秘密情報の形・ローカルの禁止語・https でないリンク・メールアドレスと電話番号（注意）・動画と音声と 5MiB を超えるファイル・clone した人の手元で勝手に動くもの（6 章）。
@@ -54,7 +53,7 @@ bun scripts/check_content.ts               # 台本と Git に入れる全部の
 ## 6. clone した人の手元で勝手に動くものを置かない
 
 - `.claude/` に入れるのはスキルと `launch.json` だけ（`settings*.json`・`hooks/`・agents・commands は入れない）。スキルの頭書きに `hooks`・`allowed-tools` を書かない
-- `.claude/launch.json` で起動してよいのは `bun scripts/serve.ts`・`npx remotion studio`・`npx wrangler dev` だけ（後ろに付けてよいのは `--port <番号>` だけ。serve.ts の番号は環境変数 `PORT`）。ほかを足すときは、`scripts/check_content.ts` の一覧を直す Pull Request にする
+- `.claude/launch.json` で起動してよいのは `npm run serve`・`npm run studio`・`npm run dev:worker` だけ（studio と dev:worker の後ろに付けてよいのは `-- --port <番号>` だけ。serve.ts の番号は環境変数 `PORT`）。ほかを足すときは、`scripts/check_content.ts` の一覧を直す Pull Request にする
 - 開く・入る・使うだけでコマンドが動く設定を入れない: `.npmrc`・`.mcp.json`・`.vscode/tasks.json`・`.devcontainer/`・`.envrc`・`.husky/`・`lefthook.yml`・`.pre-commit-config.yaml`・mise の設定など（全部の一覧は `scripts/check_content.ts` の AUTORUN）。`bunfig.toml` は置いてよいが `preload`・`plugins` を書かない。`.vscode/settings.json` に、シェル・実行ファイルの場所・自動で動く tasks の許可を書かない
 - `package.json` に `postinstall` などのインストール時スクリプトを置かない
 - GitHub Actions は読み取りだけの権限で、Action はコミットの SHA で固定する
