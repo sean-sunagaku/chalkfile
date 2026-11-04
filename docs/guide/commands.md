@@ -10,7 +10,7 @@
 
 `npm run chalk -- <コマンド> [引数]`（`bun scripts/cli.ts` でも同じ）。そのコマンドの使い方は `npm run chalk -- <コマンド> --help`（何も流さない）。中では、前の呼び方と同じ道具を流す。
 
-- 対象: `--course <講座 ID>`・`--video <動画>`（`*` と `?` を使える。`'S03.*'` は S03 の全部の言語）・`--lang <言語>`（`all` で全部）。選ばなければ、公開する言語（`site/config.json` の `publishLangs`）の全部の動画
+- 対象: `--course <講座 ID>`・`--video <動画>`（`*` と `?` を使える。`'S03.*'` は S03 の全部の言語）・`--lang <言語>`（`all` で全部）。選ばなければ、公開する言語（`chalkfile.config.ts` の `publishLangs`）の全部の動画
 - 共通: `--dry-run`（流すコマンドを出すだけ）・`--json`（AI・ほかの道具が読む）・`-v`（流すコマンドも出す。`voice synth`・`materials`・`media` は、中の道具にも `--verbose` を渡し、VOICEVOX・git・ffmpeg・gh への問い合わせと、失敗したときの stderr の全部を伏せてから出す）。受け取るのは、意味のあるコマンドだけ
 - 書き出し（`render`）は、選んだ動画を 1 回で書き出す（バンドルは 1 回だけ作る）。掛け合いの講座（`cast` のある講座）は、字幕を焼き込んだ版も作る。前の環境変数（`CAPTIONS=1` で全部の動画・`CAPTIONS=0` で作らない・`CHUNK`・`CONCURRENCY`）も、そのまま使える
 - 終了コード: 0 成功・1 失敗・2 使い方の誤り・3 前提が足りない（道具・素材・認証。`npm run chalk -- doctor` で確かめる）
@@ -176,7 +176,7 @@ npm run i18n -- status                             # 訳の表（訳あり・日
 ```
 
 - 書き方・声・確かめ方は [i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。訳の動画の名前は `S01.en.mp4`・`S01.en.cc.mp4`（字幕を焼き込んだ版）・`S01.zh.mp4`。Remotion のコンポジションは `S01-en`
-- 訳のサイトは `/en/<講座 ID>/`・`/zh/<講座 ID>/` にできる。サイトに出す言語は `site/config.json` の `publishLangs` が決める
+- 訳のサイトは `/en/<講座 ID>/`・`/zh/<講座 ID>/` にできる。サイトに出す言語は `chalkfile.config.ts` の `publishLangs` が決める
 
 ## ポート
 

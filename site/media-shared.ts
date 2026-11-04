@@ -1,7 +1,8 @@
 // URL の許可リストを、サイトの組み立てと Worker の両方で共有する（外部 URL は持たない）。
 import { LANG_PATTERN } from '../content/langs';
 import { MEDIA_LIST_MAX_ENTRIES, RELEASE_ASSET_MAX_BYTES } from './limits';
-export const MEDIA_REPOSITORY = 'sean-sunagaku/chalkfile';
+// npm run gen が chalkfile.config.ts から書く。
+export const MEDIA_REPOSITORY = "sean-sunagaku/chalkfile";
 export type MediaEntry = {
   lang: string;
   course: string;

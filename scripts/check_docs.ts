@@ -15,8 +15,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+import config from '../chalkfile.config';
 import { THEMES } from '../content/themes';
-import { docOutputs } from './gen';
+import { docOutputs, projectOutputs } from './gen';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -144,14 +145,14 @@ export const OLD_WORDS: { rx: RegExp; word: string; now: string }[] = [
   {
     rx: /sean-sunagaku\.github\.io|(?:^|[^\w.-])github\.io/,
     word: 'github.io',
-    now: '公開先は https://chalkfile.com/',
+    now: `公開先は ${config.origin}`,
   },
   // github.com/sean-sunagaku/chalkfile/ のような、リポジトリの URL の中のものは除く
-  { rx: /(?<![\w.-])\/chalkfile\//, word: '/chalkfile/', now: '旧 Pages のパス。今のサイトは chalkfile.com の直下' },
+  { rx: /(?<![\w.-])\/chalkfile\//, word: '/chalkfile/', now: `旧 Pages のパス。今のサイトは ${new URL(config.origin).hostname} の直下` },
   {
     rx: /GitHub Pages に(?:出す|出し|置|そのまま)/,
     word: 'GitHub Pages に出す',
-    now: 'サイトは main への merge で、Actions が chalkfile.com に出す',
+    now: `サイトは main への merge で、Actions が ${new URL(config.origin).hostname} に出す`,
   },
   { rx: /gh-pages で公開/, word: 'gh-pages で公開', now: 'サイトは main から Actions と Wrangler で公開する' },
   {
@@ -321,7 +322,7 @@ const checkTables = (read: (file: string) => string | null, out: Finding[]) => {
  * 生成した表（README の講座の表・docs/guide/new-course.md の頭文字の表）が、npm run gen が今作るものと同じか。
  * 手で書いた表と実装の突き合わせ（上の一覧）の代わりに、作り直して比べる（ずれたら npm run gen で作り直す）
  */
-export const checkGenerated = (read: (file: string) => string | null, out: Finding[], outputs: () => Map<string, string> = docOutputs) => {
+export const checkGenerated = (read: (file: string) => string | null, out: Finding[], outputs: () => Map<string, string> = () => new Map([...docOutputs(), ...projectOutputs()])) => {
   let expected: Map<string, string>;
   try {
     expected = outputs();

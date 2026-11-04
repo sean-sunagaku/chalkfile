@@ -12,7 +12,7 @@
 //       流す）。記録できなくても 0 で終える（道具を止めない。理由は標準エラーに出す）。書き出し（render）は、書き出しの道具
 //       （scripts/stages/video/render.ts）が動画ごとに自分で記録するので、ここでは受けない
 //   npm run chalk -- status|build …   # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
-// 対象を選ばなければ、公開する言語（site/config.json の publishLangs）の全部の動画。教材とサイトは、いつも全部を 1 つの単位で見る。
+// 対象を選ばなければ、公開する言語（chalkfile.config.ts の publishLangs）の全部の動画。教材とサイトは、いつも全部を 1 つの単位で見る。
 // 段と指紋に入れるものは scripts/stages/pipeline/stages.ts、状態の見方は runner.ts、記録の形は state.ts
 // 終了コード: 0 成功（status は古い単位があっても 0）・1 失敗（流した道具が失敗した）・2 使い方の誤り・3 前提が足りない
 import { VIDEOS } from '../content';

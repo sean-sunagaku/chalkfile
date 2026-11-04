@@ -600,7 +600,7 @@ export type Course<A extends At = number> = {
   docsNote: string;
   /** フッターのクレジットの後ろに足す、台本のもと */
   sourceNote: string;
-  /** 講座サイトの見出しの横に出すリンク（関連する講座など）。GitHub へのリンクは site/config.json から足す */
+  /** 講座サイトの見出しの横に出すリンク（関連する講座など）。GitHub へのリンクは chalkfile.config.ts から足す */
   links?: { label: string; url: string }[];
   /** 動画と講座サイトのテーマ（content/themes.ts の id）。省略すると Chalkfile の既定のテーマ */
   theme?: string;

@@ -1,5 +1,5 @@
 // 台本から台詞ごとの音声を作り、場面と台詞の時刻（タイムライン）を決める。日本語は VOICEVOX、英語と中国語は Kokoro（scripts/tts_kokoro.py）。
-//   bun scripts/synth.ts                 # 公開する言語（site/config.json の publishLangs）の全部の動画
+//   bun scripts/synth.ts                 # 公開する言語（chalkfile.config.ts の publishLangs）の全部の動画
 //   bun scripts/synth.ts L03 L05         # 日本語の一部だけ
 //   bun scripts/synth.ts P01.en P01.zh   # 訳の動画（レクチャー ID.言語）
 //   bun scripts/synth.ts 'P01.*' '*.en'  # P01 の全部の言語・英語の全部

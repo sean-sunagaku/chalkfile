@@ -1,6 +1,7 @@
 // 手元の wrangler dev に、配信の約束を HTTP とブラウザで確かめる（本番には向けない）。
 // 使い方: bun scripts/smoke_worker.ts [BASE_URL] [--dist site/dist]
 // www は Host ヘッダーで試す。wrangler dev は --infer-origin-from-routes=false で起動する（docs/operations/publish.md）。
+import config from '../chalkfile.config';
 import { chromium } from '@playwright/test';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -18,7 +19,7 @@ if ((distAt >= 0 && !args[distAt + 1]) || positional.length > 1 || positional.so
 }
 const dist = path.resolve(distAt >= 0 ? args[distAt + 1]! : path.join(ROOT, 'site/dist'));
 const base = new URL(positional[0] ?? process.env.BASE_URL ?? 'http://127.0.0.1:8787/');
-const WWW = 'www.chalkfile.com';
+const WWW = `www.${new URL(config.origin).hostname}`;
 // 一覧に無い合成の動画。中継は上流へ出ずに 404 を返す。
 const UNKNOWN_MEDIA = `/media/ja/smoke-course/X00.${'0'.repeat(64)}.mp4`;
 
@@ -112,7 +113,7 @@ const www = await get(`${UNKNOWN_MEDIA}?download=1`, { headers: { Host: WWW } })
 await www.body?.cancel();
 check(
   'www の /media/ は apex へ 301',
-  www.status === 301 && header(www, 'Location') === `https://chalkfile.com${UNKNOWN_MEDIA}?download=1`,
+  www.status === 301 && header(www, 'Location') === `${new URL(config.origin).origin}${UNKNOWN_MEDIA}?download=1`,
   `${www.status} ${header(www, 'Location')}${www.status === 404 ? '（wrangler dev を --infer-origin-from-routes=false で起動したか確かめる）' : ''}`,
 );
 const wwwPage = await get('/', { headers: { Host: WWW, Accept: 'text/html', 'Sec-Fetch-Mode': 'navigate' } });

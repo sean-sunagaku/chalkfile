@@ -8,7 +8,8 @@
 // 訳のファイルは content/<講座>/<言語>/<レクチャー ID>.ts（content/i18n.ts）。npm run i18n -- <コマンド> でも流せる。
 // 訳の指紋は、日本語の台本の訳す文字（content/fields.ts の text。題・要約・クイズ・要点・出典の題・場面の文字と台詞）だけから作る。
 // 色・座標・at・効果音・読み上げる文（s）・読む教材を直しても、訳は stale（訳のあとで日本語が変わった）にならない。
-// stale の訳は、公開する言語（site/config.json の publishLangs）なら止める（scripts/check_content.ts）。まだ公開しない言語は注意だけ
+// stale の訳は、公開する言語（chalkfile.config.ts の publishLangs）なら止める（scripts/check_content.ts）。まだ公開しない言語は注意だけ
+import { readSiteConfig } from './lib/config';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -45,8 +46,8 @@ export const translationRows = (): Row[] =>
     ),
   );
 
-/** 公開する言語（site/config.json の publishLangs） */
-export const publishLangs = (): string[] => (JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')) as { publishLangs: string[] }).publishLangs;
+/** 公開する言語（chalkfile.config.ts の publishLangs） */
+export const publishLangs = (): string[] => readSiteConfig().publishLangs;
 
 export type StaleNotice = { level: 'error' | 'warn'; file: string; message: string };
 /** stale の訳の知らせ。公開する言語の訳は止める（error）。まだ公開しない言語は注意（warn）にとどめる（scripts/check_content.ts が出す） */

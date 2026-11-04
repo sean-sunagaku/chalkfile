@@ -307,7 +307,7 @@ describe('hash・pool・wav・config', () => {
     expect(wavSeconds(Buffer.concat([head, Buffer.alloc(data)]))).toBe(1.5);
     expect(() => wavSeconds(head.subarray(0, 36))).toThrow('data チャンクが無い');
   });
-  test('readSiteConfig は、site/config.json を読む（公開する言語を持つ）', () => {
+  test('readSiteConfig は、chalkfile.config.ts を読む（公開する言語を持つ）', () => {
     const config = readSiteConfig();
     expect(config.publishLangs).toContain('ja');
     expect(config.baseUrl.startsWith('https://')).toBe(true);

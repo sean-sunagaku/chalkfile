@@ -1,4 +1,5 @@
 // 講座のテーマ（色・書体・背景の飾り）の値と一覧。項目の意味は engine/core/schema.ts の Theme、言語に合わせた書体の選び方は engine/core/fonts.ts
+import { DEFAULT_THEME } from '../engine/core/project-settings';
 import type { Theme } from './types';
 
 /**
@@ -225,7 +226,7 @@ const THEME_LIST = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: 
 export type ThemeId = keyof typeof THEME_LIST;
 export const THEMES: Record<string, Theme> = THEME_LIST;
 
-export const DEFAULT_THEME = 'chalkfile';
+export { DEFAULT_THEME } from '../engine/core/project-settings';
 
 export const themeOf = (id?: string): Theme => {
   const t = THEMES[id || DEFAULT_THEME];

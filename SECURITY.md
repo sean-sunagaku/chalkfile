@@ -23,7 +23,7 @@ To report a vulnerability, please use GitHub's private vulnerability reporting: 
 
 - 講座サイト
   - ページに出す文字は全部エスケープする
-  - リンクは 2 段で守る。台本と `site/config.json` のリンク（公式ドキュメント・出典・関連のリンク・リポジトリ）は `https://` だけを通し、ほかは組み立ての前に止める（`scripts/validate.ts` の `siteProblems`。PR の CI の `npm run validate` と、`scripts/build_site.ts` が流す）。ページの側でも、`https:` と `http:` のほかのリンク（`javascript:`・`data:` など）は `#` にして無効にする（`site/template.html` の `safeUrl`）
+  - リンクは 2 段で守る。台本と `chalkfile.config.ts` のリンク（公式ドキュメント・出典・関連のリンク・リポジトリ）は `https://` だけを通し、ほかは組み立ての前に止める（`scripts/validate.ts` の `siteProblems`。PR の CI の `npm run validate` と、`scripts/build_site.ts` が流す）。ページの側でも、`https:` と `http:` のほかのリンク（`javascript:`・`data:` など）は `#` にして無効にする（`site/template.html` の `safeUrl`）
   - CSP（Content-Security-Policy）で、動いてよいページのスクリプトをハッシュで限る。PWA の Service Worker と manifest は同じ origin のものだけを許し、外のスクリプトは読み込まない
   - オフライン用の保存は、生成した公開の教材と、同じ origin・scope の中の MP4・JPG だけ。全部のファイルの大きさと SHA-256 を照らし合わせてから確定する。外の URL・リダイレクト・欠けた応答を保存せず、DRM・認証・アクセスの制限を回避しない
   - リファラーは `strict-origin-when-cross-origin`、外へのリンクは `noopener noreferrer`

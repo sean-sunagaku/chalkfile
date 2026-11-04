@@ -1,9 +1,10 @@
 // 公開したサイト（既定は https://chalkfile.com/）のトップと、全講座の動画の一覧の全部の動画の Range を確かめる（deploy.yml が公開のあとに流す）。
 //   bun scripts/verify_public.ts [origin]
+import config from '../chalkfile.config';
 import { mediaPath } from '../site/media-shared';
 import { readMediaManifest } from './media';
 
-export async function verifyPublic(origin = 'https://chalkfile.com/') {
+export async function verifyPublic(origin = config.origin) {
   const base = new URL(origin);
   if (!['https:', 'http:'].includes(base.protocol) || base.username || base.password) throw new Error('公開先のURLが不正です。');
   const home = await fetch(base, { redirect: 'error', signal: AbortSignal.timeout(20000) });

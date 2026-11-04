@@ -50,7 +50,7 @@ export type BuildSiteOptions = {
   strict?: boolean;
   /** 組み立てる講座の ID（空なら全部。一覧のページは毎回作る） */
   only?: readonly string[];
-  /** site/config.json の中身（既定は読む） */
+  /** chalkfile.config.ts の中身（既定は読む） */
   config?: SiteConfig;
   /** ポスターの置き場所（既定は本物の講座の置き場所。config.ts の realPosterOf） */
   posterOf?: (courseId: string, key: string) => string;

@@ -252,7 +252,7 @@ export const en = defineLocale<typeof ja>()({
     body: 'You are offline. Saved courses open from the course list. To save a new course, open it online and choose "Save this course in the app".',
     link: 'Go to the Chalkfile course list and saved courses',
   },
-  /** 無いページ（言語ごとの 404.html。site/not-found.html。{series} は site/config.json の series） */
+  /** 無いページ（言語ごとの 404.html。site/not-found.html。{series} は chalkfile.config.ts の series） */
   notFound: {
     title: 'Page not found | {series}',
     heading: 'Page not found',

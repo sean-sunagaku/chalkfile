@@ -1,7 +1,0 @@
-{
-  "series": "Chalkfile",
-  "seriesSub": "台本（コード）から、ナレーション付きの講座動画と講座サイトを作る。動画・台本・確認クイズをブラウザで見られます。",
-  "baseUrl": "https://chalkfile.com/",
-  "repoUrl": "https://github.com/sean-sunagaku/chalkfile",
-  "publishLangs": ["ja"]
-}

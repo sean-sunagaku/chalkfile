@@ -7,7 +7,7 @@
 //   台本（engine/core/validate.ts）: 全講座・全言語の台本と、テーマ・timeline（content/<講座>/generated/timeline/。形と指紋）・
 //     講座をまたいだもの（レクチャー ID の頭文字・一覧の並び・講座 ID が重ならないか）
 //   公開で止まること（このファイル）: 講座サイトの設定・ID・リンク（siteProblems。scripts/build_site.ts も組み立ての前に呼ぶ）、
-//     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
+//     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（chalkfile.config.ts の publishLangs）の
 //     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
 //     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める。
 //     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems）。
@@ -55,7 +55,7 @@ export type Report = { ok: boolean; errors: number; warnings: number; courses: n
 
 /* ───────────── 講座サイトの設定と、公開で止まること ───────────── */
 
-/** site/config.json の形と読み方（scripts/build_site.ts も、ここから読む。置き場所は scripts/lib/config.ts） */
+/** chalkfile.config.ts の形と読み方（scripts/build_site.ts も、ここから読む。置き場所は scripts/lib/config.ts） */
 export { readSiteConfig, type SiteConfig };
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
@@ -69,7 +69,7 @@ const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
  */
 export const siteProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], themes: readonly Theme[] = Object.values(THEMES)): string[] => {
   const problems: string[] = [];
-  if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
+  if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('サイトの baseUrl と repoUrl は https:// で書く');
   for (const lang of LANGS)
     for (const c of coursesIn(lang)) {
       if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
@@ -204,7 +204,7 @@ export const publishIssues = (courses: Course[], coursesIn: (lang: Lang) => Cour
   try {
     config = readSiteConfig();
   } catch (e) {
-    fail('site', 'site/config.json', messageOf(e));
+    fail('site', 'chalkfile.config.ts', messageOf(e));
     return out;
   }
   for (const message of siteProblems(config, coursesIn)) fail('site', '講座サイト', message);

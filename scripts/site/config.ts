@@ -1,5 +1,5 @@
 // 講座サイトの組み立ての設定: 置き場所・サイトの URL・出す言語・ポスターの場所・一覧のページの最初の画面に出す台本の抜き出し。
-// site/config.json の形と読み方・安全のための確かめ（siteProblems）は scripts/validate.ts にある（PR の CI の npm run validate と同じもの）
+// chalkfile.config.ts の形と読み方・安全のための確かめ（siteProblems）は scripts/validate.ts にある（PR の CI の npm run validate と同じもの）
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { CourseModule, HeroSnippet } from '../../content/course-module';
@@ -13,11 +13,11 @@ export const ROOT = path.resolve(import.meta.dir, '../..');
 /** サイトの部品（template.html・home.html・offline-*.ts・assets/・config.json） */
 export const SITE_DIR = path.join(ROOT, 'site');
 
-/** サイトの URL（site/config.json の baseUrl。/ で終える。SW の scope と同じ） */
+/** サイトの URL（chalkfile.config.ts の origin。/ で終える。SW の scope と同じ） */
 export const siteBase = (config: SiteConfig): string =>
   config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
 
-/** サイトに出す言語。SITE_LANGS（a,b）で絞る。無ければ site/config.json の publishLangs。未公開の言語と、ja の無い組は止める */
+/** サイトに出す言語。SITE_LANGS（a,b）で絞る。無ければ chalkfile.config.ts の publishLangs。未公開の言語と、ja の無い組は止める */
 export const siteLangs = (env: string | undefined, config: SiteConfig): Lang[] => {
   const v = env?.trim() || config.publishLangs.join(',');
   if (!v) return [...LANGS];

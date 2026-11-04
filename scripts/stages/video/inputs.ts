@@ -34,6 +34,7 @@ export const COURSE_FIELDS = [
 
 /** 描き方の側のファイルとフォルダ（リポジトリの直下から） */
 export const RENDER_CODE = [
+  'chalkfile.config.ts',
   'src',
   'engine',
   'content/i18n.ts',

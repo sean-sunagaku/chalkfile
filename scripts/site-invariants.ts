@@ -26,7 +26,7 @@ import { PAGE_VERSION_MARK } from './site-version';
 export type SiteInvariantInput = {
   /** 組み立てたサイトのフォルダ（site/dist） */
   dist: string;
-  /** アプリの場所（site/config.json の baseUrl。SW の scope と同じ） */
+  /** アプリの場所（chalkfile.config.ts の origin。SW の scope と同じ） */
   scope: string;
   /** 動画の一覧（Worker の許可リスト）。渡すと、保存の manifest の動画が一覧にあるかも見る */
   media?: MediaManifest;

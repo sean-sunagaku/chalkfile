@@ -27,7 +27,7 @@ curl -s http://127.0.0.1:50021/version
 | `npm run render -- [ID…]`（`bun scripts/stages/video/render.ts`。`npm run chalk -- render` も同じ） | `src/`、書体 `engine/fonts/`、timeline、mix | 選んだ動画を 1 回で書き出す（バンドルは 1 回）。`out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター（公開する言語の動画は `content/<講座>/generated/posters/<id>.jpg`。どの動画も写しを `site/media/<id>.jpg`）。掛け合いの講座（`cast` のある講座）は `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用）も（`--captions` か `CAPTIONS=1` で全部の動画）。出力は一時の名前に書き、ffprobe で確かめてから置き換える。設定は `scripts/stages/video/render.config.ts` |
 | `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、書体 `engine/fonts/`、timeline | `out/stills/` |
 | `bun scripts/fonts.ts [--check]`（`npm run fonts`） | 台本の全部の文字、元の書体（google/fonts の固定した commit。共有のキャッシュ `~/.cache/chalkfile/fonts/`） | `engine/fonts/`（サブセットの woff2・`fonts.json`・`OFL-<書体>.txt`。コミットする） |
-| `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`site/config.json`（`--strict` は Releases も照らす） | `site/dist/` |
+| `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`chalkfile.config.ts`（`--strict` は Releases も照らす） | `site/dist/` |
 | `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
 | `bun scripts/media.ts push --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
 | `bun scripts/media.ts pull [講座 ID…]` | 動画の一覧、Releases | `site/media/`（SHA-256 を確かめる。手元の違う動画は上書きしない） |
