@@ -19,29 +19,28 @@ import { checkMedia, readMediaManifest } from './media';
 import { buildSite } from './site/build';
 import { heroSnippetOf, SITE_DIR, siteLangs } from './site/config';
 import { readSiteConfig } from './validate';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 
-if (import.meta.main) {
-  const args = process.argv.slice(2);
-  const strict = args.includes('--strict');
-  try {
-    const config = readSiteConfig();
-    const langs = siteLangs(process.env.SITE_LANGS, config);
-    const mediaManifest = readMediaManifest();
-    if (strict) checkMedia(mediaManifest);
-    const courses = Object.fromEntries(LANGS.map((l) => [l, coursesIn(l)])) as Record<Lang, Course[]>;
-    await buildSite({
-      courses,
-      dataDir: path.join(SITE_DIR, 'data'),
-      mediaManifest,
-      outDir: path.join(SITE_DIR, 'dist'),
-      langs,
-      hero: heroSnippetOf(courses.ja, Object.values(REGISTRY) as CourseModule[]),
-      strict,
-      only: args.filter((a) => !a.startsWith('--')),
-      config,
-    });
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : String(e));
-    process.exit(1);
-  }
+async function main(argv: string[]) {
+  const { values, positionals } = readArgs(argv, { strict: { type: 'boolean' } }, { positionals: true });
+  if (values.help) return showHelp(import.meta.filename);
+  for (const id of positionals) if (!Object.values(REGISTRY).some((module) => module.course.id === id)) throw new UsageError(`講座が無い: ${id}`);
+  const strict = !!values.strict;
+  const config = readSiteConfig();
+  const langs = siteLangs(process.env.SITE_LANGS, config);
+  const mediaManifest = readMediaManifest();
+  if (strict) checkMedia(mediaManifest);
+  const courses = Object.fromEntries(LANGS.map((l) => [l, coursesIn(l)])) as Record<Lang, Course[]>;
+  await buildSite({
+    courses,
+    dataDir: path.join(SITE_DIR, 'data'),
+    mediaManifest,
+    outDir: path.join(SITE_DIR, 'dist'),
+    langs,
+    hero: heroSnippetOf(courses.ja, Object.values(REGISTRY) as CourseModule[]),
+    strict,
+    only: positionals,
+    config,
+  });
 }
+if (import.meta.main) await runMain(main);

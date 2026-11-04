@@ -325,9 +325,33 @@ export const COMMANDS: Command[] = [
     positionals: true,
     dry: 'plan',
     steps: ({ positionals }) => {
-      if (!positionals.length) throw new UsageError("指紋を書く訳の動画を渡す（例: P01.en・'*.zh'）");
+      if (!positionals.length || positionals.some((arg) => !/^(?:[A-Z]\d{2}\.(?:en|zh|\*)|\*\.(?:en|zh))$/.test(arg))) throw new UsageError("指紋を書く訳の動画を渡す（例: P01.en・'*.zh'）");
       return [bun('scripts/i18n.ts', 'stamp', ...positionals)];
     },
+  },
+  {
+    name: 'i18n scaffold',
+    usage: '<動画> [--stdout]（例: S07.en）',
+    summary: '日本語の注釈を入れた訳のひな形を作る（--stdout は表示だけ）',
+    old: ['bun scripts/i18n.ts scaffold'],
+    file: 'scripts/i18n.ts',
+    options: { ...DRY, stdout: { type: 'boolean' } },
+    positionals: true,
+    dry: 'plan',
+    steps: ({ values, positionals }) => {
+      if (positionals.length !== 1 || !/^[A-Z]\d{2}\.(en|zh)$/.test(positionals[0] ?? '')) throw new UsageError('ひな形の動画を 1 つ渡す（例: S07.en）');
+      return [bun('scripts/i18n.ts', 'scaffold', ...positionals, ...(values.stdout ? ['--stdout'] : []))];
+    },
+  },
+  {
+    name: 'i18n restamp',
+    usage: '',
+    summary: '日本語が変わっていない訳の、前の作り方の指紋だけを付け直す',
+    old: ['bun scripts/i18n.ts restamp'],
+    file: 'scripts/i18n.ts',
+    options: { ...DRY },
+    dry: 'plan',
+    steps: () => [bun('scripts/i18n.ts', 'restamp')],
   },
   {
     name: 'i18n try',

@@ -26,6 +26,8 @@ describe('コマンドの一覧', () => {
       'voice speech-check',
       'i18n status',
       'i18n stamp',
+      'i18n scaffold',
+      'i18n restamp',
       'i18n try',
       'music build',
       'mix',
@@ -93,6 +95,26 @@ describe('対象の選び方（--course・--video・--lang）', () => {
 });
 
 describe('流すコマンド（--dry-run は出すだけ）', () => {
+  test('i18n scaffold と restamp は共通の入口を使い、dry-run はファイルを書かない', () => {
+    const scaffold = chalk('i18n', 'scaffold', 'P01.en', '--stdout', '--dry-run');
+    expect(scaffold.code).toBe(0);
+    expect(scaffold.stdout).toContain('bun scripts/i18n.ts scaffold P01.en --stdout');
+    const restamp = chalk('i18n', 'restamp', '--dry-run');
+    expect(restamp.code).toBe(0);
+    expect(restamp.stdout).toContain('bun scripts/i18n.ts restamp');
+    expect(chalk('i18n', 'scaffold', '../P01.en', '--dry-run').code).toBe(2);
+    expect(chalk('i18n', 'restamp', 'extra', '--dry-run').code).toBe(2);
+    expect(chalk('i18n', 'stamp', '../P01.en', '--dry-run').code).toBe(2);
+  });
+  test('i18n scaffold の stdout はひな形だけを返し、既存の訳も上書きしない', () => {
+    const file = path.join(ROOT, 'content/pstack-comedy/en/P01.ts');
+    const before = readFileSync(file, 'utf8');
+    const result = chalk('i18n', 'scaffold', 'P01.en', '--stdout');
+    expect(result.code).toBe(0);
+    expect(result.stdout).toStartWith("import type { LectureL10n }");
+    expect(result.stdout).toContain('export const P01: LectureL10n = {');
+    expect(readFileSync(file, 'utf8')).toBe(before);
+  });
   test('voice synth は、選んだ動画を synth.ts に渡す', () => {
     const r = chalk('voice', 'synth', '--course', 'ga4-comedy', '--cached-only', '--dry-run');
     expect(r.code).toBe(0);
