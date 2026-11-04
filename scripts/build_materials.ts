@@ -75,7 +75,7 @@ const paras = (list: string[]): string[] => {
   const out: string[] = [];
   list.forEach((b, i) => {
     out.push(b);
-    if (!(isItem(b) && list[i + 1] !== undefined && isItem(list[i + 1]))) out.push('');
+    if (!(isItem(b) && list[i + 1] !== undefined && isItem(list[i + 1]!))) out.push('');
   });
   return out;
 };
@@ -291,7 +291,7 @@ const existingFiles = (wanted: string[]): string[] => {
   const walk = (dir: string): string[] =>
     existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.relative(OUT, path.join(dir, e.name))])) : [];
   const files = walk(OUT).map((f) => f.split(path.sep).join('/'));
-  return wanted.length ? files.filter((f) => f === 'README.md' || wanted.includes(f.split('/')[0])) : files;
+  return wanted.length ? files.filter((f) => f === 'README.md' || wanted.includes(f.split('/')[0]!)) : files;
 };
 
 const main = (argv: string[]) => {

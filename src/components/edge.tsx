@@ -39,7 +39,7 @@ export const Edge: React.FC<{
   b: Box;
   at: number;
   label?: string;
-  t?: Tone;
+  t?: Tone | undefined;
   dashed?: boolean;
   bend?: number;
   fromSide?: Side;

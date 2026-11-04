@@ -215,7 +215,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     if (built) return built.pageVersion;
     const saved = path.join(dist, cid, 'offline-manifest.json');
     if (existsSync(saved)) return (JSON.parse(readFileSync(saved, 'utf8')) as CourseManifest).pageVersion;
-    const poster = path.join(dist, homePosterOf(c, '', '').split('?')[0]);
+    const poster = path.join(dist, homePosterOf(c, '', '').split('?')[0]!);
     return existsSync(poster) ? hash(readFileSync(poster)) : '';
   };
   for (const lang of langs) {

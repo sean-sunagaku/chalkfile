@@ -2,6 +2,7 @@
 // 本物の道具（synth・mix・render・サイトの組み立て）は流さない。
 // 何も変えていなければ流さない・変えた単位だけを流す・前の段の出力が同じなら次の段を流さない・高い段は記録が無くても出力を残す・
 // 描き方のコードだけの変化は既定で流さない・--force・--dry-run・流している間に入力が変わったら記録しない・記録の形
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -172,7 +173,7 @@ describe('build（古くなった単位だけを流す）', () => {
     await build(w.ctx, w.stages, 'c', w.target, quiet);
     w.take();
     w.write('code.txt', 'v2');
-    const s = unitStatus(w.ctx, w.stages[2], 'x');
+    const s = unitStatus(w.ctx, required(w.stages[2]), 'x');
     expect(s).toMatchObject({ state: 'stale', changed: ['code'], advisoryOnly: true });
     await build(w.ctx, w.stages, 'c', w.target, quiet);
     expect(w.take()).toEqual([]);
@@ -185,8 +186,8 @@ describe('build（古くなった単位だけを流す）', () => {
     w.take();
     w.write('out/b/x.txt', '手で直した');
     rmSync(path.join(w.root, 'out/b/y.txt'));
-    expect(unitStatus(w.ctx, w.stages[1], 'x')).toMatchObject({ state: 'stale', outputs: 'changed' });
-    expect(unitStatus(w.ctx, w.stages[1], 'y')).toMatchObject({ state: 'stale', outputs: 'missing' });
+    expect(unitStatus(w.ctx, required(w.stages[1]), 'x')).toMatchObject({ state: 'stale', outputs: 'changed' });
+    expect(unitStatus(w.ctx, required(w.stages[1]), 'y')).toMatchObject({ state: 'stale', outputs: 'missing' });
     await build(w.ctx, w.stages, 'b', w.target, quiet);
     expect(w.take()).toEqual(['b x', 'b y']);
     expect(w.read('out/b/x.txt')).toBe('1X');
@@ -245,15 +246,15 @@ describe('status（記録と今の入力を比べる。何も流さない）', (
   test('入力がそろわない単位は古い（理由を出す）。記録の無い単位は「記録が無い」と、出力のあるなし', () => {
     const w = world();
     rmSync(path.join(w.root, 'in/y.txt'));
-    expect(unitStatus(w.ctx, w.stages[0], 'y')).toMatchObject({ state: 'stale', reasons: ['in/y.txt が無い'] });
-    expect(unitStatus(w.ctx, w.stages[0], 'x')).toMatchObject({ state: 'unrecorded', outputs: 'missing' });
-    expect(willRun(w.stages[0], unitStatus(w.ctx, w.stages[0], 'x'))).toBe(true);
+    expect(unitStatus(w.ctx, required(w.stages[0]), 'y')).toMatchObject({ state: 'stale', reasons: ['in/y.txt が無い'] });
+    expect(unitStatus(w.ctx, required(w.stages[0]), 'x')).toMatchObject({ state: 'unrecorded', outputs: 'missing' });
+    expect(willRun(required(w.stages[0]), unitStatus(w.ctx, required(w.stages[0]), 'x'))).toBe(true);
   });
   test('記録の代わり（fallback）が partial なら、記録に無い部分は比べない', () => {
     const w = world();
     w.write('out/c/x.txt', 'c');
     const c: Stage = {
-      ...w.stages[2],
+      ...required(w.stages[2]),
       fingerprint: () => ({ parts: { input: 'aaaa', code: 'bbbb', audio: 'cccc' } }),
       fallback: () => ({
         parts: { input: 'aaaa', code: 'bbbb' },
@@ -281,7 +282,7 @@ describe('記録（.work/state/<段>/<単位>.json）', () => {
   });
   test('begin のあとで入力が変われば、commit は記録しない。同じなら記録する。出力が無ければ記録しない', () => {
     const w = world();
-    const a = w.stages[0];
+    const a = required(w.stages[0]);
     w.write('out/a/x.txt', 'X1');
     begin(w.ctx, a, 'x');
     w.write('in/x.txt', 'x9');

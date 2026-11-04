@@ -13,6 +13,9 @@ const K = new Uint32Array([
   0xc67178f2,
 ]);
 
+// h は必ず 8 語の固定長バッファ。長さが変わらないことをタプルで表す（計算も Uint32 の丸めも変えない）。
+type HashState = Uint32Array & [number, number, number, number, number, number, number, number];
+
 /** 32 ビットの右回転 */
 const ror = (x: number, n: number) => (x >>> n) | (x << (32 - n));
 
@@ -29,18 +32,19 @@ export const sha256Hex = (text: string): string => {
   view.setUint32(padded.length - 4, bits >>> 0);
   const h = new Uint32Array([
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
-  ]);
+  ]) as HashState;
   const w = new Uint32Array(64);
   for (let block = 0; block < padded.length; block += 64) {
     for (let i = 0; i < 16; i++) w[i] = view.getUint32(block + i * 4);
+    // w は 64 語、K も 64 語。以下の添字は、このループの範囲内にある。
     for (let i = 16; i < 64; i++) {
-      const s0 = ror(w[i - 15], 7) ^ ror(w[i - 15], 18) ^ (w[i - 15] >>> 3);
-      const s1 = ror(w[i - 2], 17) ^ ror(w[i - 2], 19) ^ (w[i - 2] >>> 10);
-      w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+      const s0 = ror(w[i - 15]!, 7) ^ ror(w[i - 15]!, 18) ^ (w[i - 15]! >>> 3);
+      const s1 = ror(w[i - 2]!, 17) ^ ror(w[i - 2]!, 19) ^ (w[i - 2]! >>> 10);
+      w[i] = w[i - 16]! + s0 + w[i - 7]! + s1;
     }
     let [a, b, c, d, e, f, g, x] = h;
     for (let i = 0; i < 64; i++) {
-      const t1 = (x + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;
+      const t1 = (x + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + K[i]! + w[i]!) >>> 0;
       const t2 = ((ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
       x = g;
       g = f;

@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import {
   ALLOW_OLD,
@@ -30,7 +31,7 @@ describe('リンクとアンカー', () => {
   test('見出しのアンカーは GitHub と同じ形（記号を外す・同じ見出しは -1）', () => {
     expect(slug('講座ごとのテーマ（トンマナ）')).toBe('講座ごとのテーマトンマナ');
     expect(slug('Step 1: `npm ci` を流す')).toBe('step-1-npm-ci-を流す');
-    expect([...anchorsOf(files['docs/a.md'])]).toEqual(['文書の地図', '安全並行作業ai', '安全並行作業ai-1', 'extra']);
+    expect([...anchorsOf(required(files['docs/a.md']))]).toEqual(['文書の地図', '安全並行作業ai', '安全並行作業ai-1', 'extra']);
   });
 
   test('コードの中の [文字](先) はリンクにしない', () => {
@@ -119,12 +120,12 @@ describe('古い言葉', () => {
   test('ファイルごとの例外は、書いた言葉だけを許し、使った数を数える', () => {
     const out: Finding[] = [];
     const used = new Map<OldAllow, number>();
-    checkOldWords('tests/unit/delivery.test.ts', "migrationUrl('/chalkfile/a/')\nnpm install\n", out, used);
-    expect(out.map((f) => [f.where, f.level])).toEqual([['tests/unit/delivery.test.ts:2', 'error']]);
-    const allow = allowOf('tests/unit/delivery.test.ts', '/chalkfile/');
+    checkOldWords('tests/unit/legacy-migration.test.ts', "migrationUrl('/chalkfile/a/')\nnpm install\n", out, used);
+    expect(out.map((f) => [f.where, f.level])).toEqual([['tests/unit/legacy-migration.test.ts:2', 'error']]);
+    const allow = allowOf('tests/unit/legacy-migration.test.ts', '/chalkfile/');
     expect(allow?.words).toEqual(['/chalkfile/']);
     expect(used.get(allow as OldAllow)).toBe(1);
-    expect(allowOf('tests/unit/delivery.test.ts', 'npm install')).toBeUndefined();
+    expect(allowOf('tests/unit/legacy-migration.test.ts', 'npm install')).toBeUndefined();
   });
 
   test('もう古い言葉が無いファイルごとの例外を出す（場所ごとの例外は出さない）', () => {

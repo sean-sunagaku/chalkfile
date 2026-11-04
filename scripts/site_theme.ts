@@ -43,7 +43,7 @@ const decorCss = (t: Theme) => {
   radial-gradient(${alpha(t.color.ink, 0.085)} 1.2px, transparent 1.2px) 0 0 / 28px 28px,
   radial-gradient(900px 560px at 2% -6%, ${alpha(m[0], 0.32)}, transparent 62%),
   radial-gradient(760px 520px at 104% 4%, ${alpha(m[1], 0.2)}, transparent 62%),
-  radial-gradient(900px 640px at 100% 104%, ${alpha(m[2], 0.2)}, transparent 62%),
+  radial-gradient(900px 640px at 100% 104%, ${alpha(m[2]!, 0.2)}, transparent 62%),
   var(--ink);
   background-attachment: fixed; }
 .decor { display: none; }`;

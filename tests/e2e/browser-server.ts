@@ -76,8 +76,8 @@ const hub = Bun.serve({
     }
     const closing = /^\/__test\/session\/(\d+)$/.exec(u.pathname);
     if (closing && req.method === 'DELETE') {
-      sessions.get(closing[1])?.server.stop(true);
-      sessions.delete(closing[1]);
+      sessions.get(closing[1]!)?.server.stop(true);
+      sessions.delete(closing[1]!);
       return new Response(null, { status: 204 });
     }
     try {

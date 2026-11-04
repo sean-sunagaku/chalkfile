@@ -99,6 +99,7 @@ export const woff2Tables = (file: Buffer): { data: Buffer; tables: Table[] } => 
   const tables: Table[] = [];
   for (let i = 0; i < numTables; i++) {
     const flags = file[at++];
+    if (flags === undefined) throw new Error('WOFF2 のテーブルの印の前でファイルが終わった');
     const index = flags & 0x3f;
     const version = flags >> 6;
     let tag: string;

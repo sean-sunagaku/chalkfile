@@ -25,8 +25,9 @@ export const findCue = (cues: readonly { start: number }[], t: number) => {
   let hi = cues.length - 1;
   let found = -1;
   while (lo <= hi) {
+    // lo <= mid <= hi。hi の初期値は length-1 なので範囲内。
     const mid = (lo + hi) >> 1;
-    if (cues[mid].start <= t) {
+    if (cues[mid]!.start <= t) {
       found = mid;
       lo = mid + 1;
     } else hi = mid - 1;

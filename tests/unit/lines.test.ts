@@ -1,5 +1,6 @@
 // 台詞の id と at（content/lines.ts）。at を台詞の id で書くと、読み込むときに番号に直る。台詞を足しても並べ替えても、
 // 画面の要素は同じ台詞に付いたまま動く。訳は、日本語の台詞と同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { AUTHORED_COURSES, COURSES } from '../../content';
 import { localizeCourse, type LectureL10n } from '../../content/i18n';
@@ -98,7 +99,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
   test('id で書いた見本（tests/fixtures/content/line-ids）は番号に直り、検証の誤りも注意も 0 件', () => {
     const course = resolveCourse(LINE_IDS);
     expect(validateCourse(course, CTX)).toEqual([]);
-    const [lec] = course.lectures;
+    const lec = required(course.lectures[0]);
     expect(Object.fromEntries(lec.scenes.flatMap((s, i) => atsOf(s).map(([p, at]) => [`${i + 1}${p}`, at])))).toEqual({
       '1.items[0].at': 1,
       '1.items[1].at': 2,
@@ -112,7 +113,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
       '3.left.notes[1].at': 1,
       '4.revealAt': 1,
     });
-    const screens = lec.scenes[2];
+    const screens = required(lec.scenes[2]);
     if (screens.kind !== 'screens') throw new Error('場面 3 は screens');
     expect(screens.left.notes?.map((nt) => [nt.blockId, nt.block])).toEqual([
       ['title', 0],
@@ -131,7 +132,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
   });
 
   test('全部の場面の種類（tests/fixtures/content/all-scenes）で: id に書き換えても同じ番号に戻り、台詞を足してもずれない', () => {
-    const [x01] = ALL_SCENES.lectures;
+    const x01 = required(ALL_SCENES.lectures[0]);
     const ids = toIds(x01);
     // 書き換えた at と注が、全部の種類で文字になっている（数のまま残るのは、最後の台詞の終わりを指す at だけ）
     const written = ids.scenes.flatMap((s) => atsOf(s));
@@ -156,7 +157,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
     const lineIdsAt = (lec: Lecture) =>
       lec.scenes.map((s, i) =>
         atsOf(s)
-          .filter(([p]) => byId[i].has(p))
+          .filter(([p]) => required(byId[i]).has(p))
           .map(([p, at]) => `${p} → ${s.lines[at as number]?.id ?? '（id の無い台詞）'}`),
       );
     expect(lineIdsAt(added)).toEqual(lineIdsAt(resolved));
@@ -170,7 +171,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
 
   test('訳: 日本語の台詞と同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい', () => {
     const enCourse = localizeCourse(LINE_IDS, LINE_IDS_EN, 'en');
-    const [en] = enCourse.lectures;
+    const en = required(enCourse.lectures[0]);
     // ずんだもんの台詞を足した場面でも、要素は同じ id の台詞で出る
     expect(shownAt(en)[0]).toEqual([
       '場面 1.items[0].at → One: give a line an id.',
@@ -187,7 +188,7 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
 
   test('訳の台詞に、日本語の at の id が無いと、その動画の誤りになる（どの id が無いかを出す）', () => {
     const [goals, ...rest] = X10_EN.scenes;
-    if (goals.kind !== 'goals') throw new Error('場面 1 は goals');
+    if (!goals || goals.kind !== 'goals') throw new Error('場面 1 は goals');
     const tr: LectureL10n = {
       ...X10_EN,
       scenes: [{ ...goals, lines: goals.lines.map((l) => (l.id === 'second' ? { t: l.t } : l)) }, ...rest],
@@ -195,6 +196,6 @@ describe('台詞の id で書いた at（content/lines.ts）', () => {
     const enCourse = localizeCourse(LINE_IDS, { ...LINE_IDS_EN, lectures: { X10: tr } }, 'en');
     const errors = validateCourse(enCourse, CTX).filter((x) => x.level === 'error');
     expect(errors.map((x) => `${x.rule} ${x.where}`)).toEqual(['at line-ids/X10.en 場面 1 goals.items[1].at']);
-    expect(errors[0].message).toContain('台詞の id「second」が、この場面の台詞に無い（あるのは first）');
+    expect(required(errors[0]).message).toContain('台詞の id「second」が、この場面の台詞に無い（あるのは first）');
   });
 });

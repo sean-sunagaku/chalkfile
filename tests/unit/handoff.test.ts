@@ -1,6 +1,7 @@
 // TS の道具が書き、Python の道具が読む JSON（受け渡し。形は scripts/lib/handoff.ts、読む側は scripts/audio/handoff.py）。
 // TS の型で書いたものを Python の側が読めるか、形の違うものを読める文で止めるか、版（schema）の数が同じかを、python3 で読んで確かめる。
 // 効果音の一覧（content/sfx.ts）と、その書き出し（scripts/audio/sfx.json）・合成（scripts/audio/music/sfx.py）・台本の検証の一覧も比べる
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -106,7 +107,7 @@ const planWith = (edit: (p: Json & { scenes: Json[] }) => void) => {
   edit(p);
   return p;
 };
-const firstLine = (p: { scenes: Json[] }) => (p.scenes[1].lines as Json[])[0];
+const firstLine = (p: { scenes: Json[] }) => required((required(p.scenes[1]).lines as Json[])[0]);
 
 describe.skipIf(!python)('Python の側（scripts/audio/handoff.py）が、TS の型で書いたものを読む', () => {
   test('版（schema）の数が、TS の SCHEMA と同じ', () => {
@@ -153,7 +154,7 @@ describe.skipIf(!python)('Python の側（scripts/audio/handoff.py）が、TS �
     );
   });
   test('形の違う聞き取りの対応と Kokoro の仕事も止める', () => {
-    const { file: _f, ...noFile } = SPEECH.lines[0];
+    const { file: _f, ...noFile } = required(SPEECH.lines[0]);
     expect(readInPython('speech', 'X01.en.json', { ...SPEECH, lines: [noFile] })).toBe(
       'HandoffError: X01.en.json: lines[0].file が無い',
     );

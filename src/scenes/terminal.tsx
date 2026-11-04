@@ -33,6 +33,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
   const noteRoom = W - PAD - noteLeft - NOTE_INNER;
   const top = CONTENT_TOP + 6;
   let y = 88;
+  // pos は entries と同じ長さで作る。描くときの添字も entries の map から得る。
   const pos = s.entries.map((e) => {
     const at = y;
     y += ((e.cmd ? 1 : 0) + (e.out?.length ?? 0)) * lh + 34;
@@ -73,7 +74,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
                   position: 'absolute',
                   left: 30,
                   right: 30,
-                  top: pos[i],
+                  top: pos[i]!,
                   fontFamily: MONO,
                   fontSize: fs,
                   lineHeight: `${lh}px`,
@@ -113,7 +114,7 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
           if (!e.note) return null;
           // 注のカードの高さは、測った文字が 1 行に入るかで決める（重ならないように、次の注をその下に置く）
           const h = lineCount(e.note, TYPE.body.terminalNote, noteRoom, { fontFamily: SANS, fontWeight: 700 }) > 1 ? NOTE_H.two : NOTE_H.one;
-          const y = Math.max(top + pos[i] - 4, prev + 14);
+          const y = Math.max(top + pos[i]! - 4, prev + 14);
           prev = y + h;
           return <TermNote key={i} at={e.at} text={e.note} y={y} left={noteLeft} />;
         });

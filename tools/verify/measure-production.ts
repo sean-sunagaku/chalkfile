@@ -97,7 +97,7 @@ try {
     headless: true,
     extraHTTPHeaders: { 'X-Chalkfile-Verify': marker },
   });
-  const page = context.pages()[0];
+  const page = context.pages()[0] ?? await context.newPage();
   await page.goto(new URL('rive-comedy/', config.origin).href, { waitUntil: 'domcontentloaded' });
   const video = page.locator('video');
   await expect

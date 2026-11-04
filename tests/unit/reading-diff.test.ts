@@ -1,5 +1,6 @@
 // 読みの差分（scripts/reading-diff.ts）。比べる相手と今の台本の読みを比べ、公開する言語の公開中の動画で読みが変わったのに
 // 動画を作り直していなければ止める
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,7 +16,7 @@ const video = (key: string, lang: string, speech: string[]): VideoReading => ({
   video: key,
   lang,
   course: 'sample',
-  lecture: key.split('.')[0],
+  lecture: key.split('.')[0]!,
   lines: speech.map((s, i) => ({ at: `s1-${i + 1}`, voice: 'narrator', speech: s, text: s })),
 });
 const entry = (lecture: string, lang: string, kind: MediaEntry['kind'], sha: string): MediaEntry => {
@@ -113,7 +114,7 @@ describe('読みの差分（scripts/reading-diff.ts）', () => {
             ? /^(?:import|export)\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm
             : /^(?:import|export)\s+[^;]*?from\s+'([^']+)'/gm;
           for (const m of readFileSync(p, 'utf8').matchAll(rx))
-            out.push({ file: path.relative(ROOT, p), spec: m[1], to: path.resolve(path.dirname(p), m[1]) });
+            out.push({ file: path.relative(ROOT, p), spec: m[1]!, to: path.resolve(path.dirname(p), required(m[1])) });
         }
       }
     };

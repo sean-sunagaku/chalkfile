@@ -146,8 +146,9 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
     if (!built) build();
     if (!built) return;
     for (const b of built.buttons) {
+      // buttons と counts の添字は、このモジュールが lectures から作ったもの。
       const i = Number(b.dataset.i);
-      const p = progress[lectures[i].id];
+      const p = progress[lectures[i]!.id];
       if (i === page.current) b.setAttribute('aria-current', 'true');
       else b.removeAttribute('aria-current');
       const key = ringKey(p);
@@ -157,7 +158,7 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
       }
     }
     for (const c of built.counts) {
-      const text = `${c.items.filter((i) => progress[lectures[i].id]?.done).length} / ${c.items.length}`;
+      const text = `${c.items.filter((i) => progress[lectures[i]!.id]?.done).length} / ${c.items.length}`;
       if (c.el.textContent !== text) c.el.textContent = text;
     }
   };
@@ -168,7 +169,7 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
 
   /** 完了の札（今のレクチャー） */
   const renderDone = () => {
-    const done = !!progress[page.lectures[page.current].id]?.done;
+    const done = !!progress[page.lectures[page.current]!.id]?.done;
     const b = byId('doneToggle');
     b.setAttribute('aria-pressed', done ? 'true' : 'false');
     const label = b.querySelector('span');
@@ -182,7 +183,7 @@ export const createCurriculum = (page: Page, onPick: (i: number) => void) => {
     renderCourseProgress();
   };
   byId('doneToggle').addEventListener('click', () => {
-    const id = page.lectures[page.current].id;
+    const id = page.lectures[page.current]!.id;
     progress[id] ??= { t: 0, max: 0, done: false };
     progress[id].done = !progress[id].done;
     page.store.saveProgress(progress);

@@ -82,21 +82,21 @@ const checkHtml = (rel: string, html: string, problems: string[], trusted?: Read
   let at = 0;
   const executable: { src: boolean; body: string }[] = [];
   for (const m of scripts) {
-    const type = scriptType(m[1]);
+    const type = scriptType(m[1]!);
     if (runs(type)) {
-      executable.push({ src: /\bsrc\s*=/i.test(m[1]), body: m[2] });
+      executable.push({ src: /\bsrc\s*=/i.test(m[1]!), body: m[2]! });
       continue;
     }
     // 中身は開きのタグ（<script + 属性 + >）のすぐ後ろから
-    const start = (m.index ?? 0) + '<script'.length + m[1].length + 1;
+    const start = (m.index ?? 0) + '<script'.length + m[1]!.length + 1;
     outside += html.slice(at, start);
-    at = start + m[2].length;
-    if (m[2].includes(PAGE_VERSION_MARK)) {
+    at = start + m[2]!.length;
+    if (m[2]!.includes(PAGE_VERSION_MARK)) {
       problems.push(`${rel}: JSON のデータに版の印 ${PAGE_VERSION_MARK} が残っています`);
     }
     if (type.endsWith('json')) {
       try {
-        JSON.parse(m[2]);
+        JSON.parse(m[2]!);
       } catch {
         problems.push(
           `${rel}: <script type="${type}"> の中身が JSON として読めません（置き換えの印が残っていないか見る）`,
@@ -294,9 +294,9 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
       const page = new URL(f.rel.replace(/(^|\/)index\.html$/, '$1'), scope).href;
       const text = read(f.rel).toString('utf8');
       for (const m of text.matchAll(/\b(?:src|href|poster)="([^"]+)"|<meta property="og:image" content="([^"]+)"/g)) {
-        pinned(f.rel, (m[1] ?? m[2]).replace(/&amp;/g, '&'), page);
+        pinned(f.rel, (m[1] ?? m[2])!.replace(/&amp;/g, '&'), page);
       }
-      for (const m of text.matchAll(/"poster":"([^"]+)"/g)) pinned(`${f.rel} の JSON のデータ`, m[1], page);
+      for (const m of text.matchAll(/"poster":"([^"]+)"/g)) pinned(`${f.rel} の JSON のデータ`, m[1]!, page);
     }
     for (const rel of manifests) {
       try {

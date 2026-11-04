@@ -75,7 +75,7 @@ export type Palette = {
   /** 大きな数字や文字の塗り */
   DISPLAY: string;
   SYNTAX: Theme['syntax'];
-  MESH: string[];
+  MESH: Theme['mesh'];
   /** 本文の書体の並び（言語に合わせる。中国語は Noto Sans SC。engine/core/fonts.ts の fontsFor） */
   fonts: FontKey[];
   /** 図の色の組。省くと violet */
@@ -112,11 +112,12 @@ const whiteOn = (under: readonly string[], from: number): number => {
 };
 
 /** グラデーションの、文字が乗る真ん中あたり（0.3・0.5・0.7 の所の色） */
-export const gradientMiddle = (stops: readonly string[]): string[] =>
+export const gradientMiddle = (stops: readonly [string, string, ...string[]]): string[] =>
   [0.3, 0.5, 0.7].map((t) => {
     const x = t * (stops.length - 1);
     const i = Math.min(stops.length - 2, Math.floor(x));
-    return mix(stops[i], stops[i + 1], x - i);
+    // 2 色以上あり、0 < t < 1 なので i と i+1 は範囲内。
+    return mix(stops[i]!, stops[i + 1]!, x - i);
   });
 
 const linear = (stops: string[], deg = 110) => `linear-gradient(${deg}deg, ${stops.join(', ')})`;

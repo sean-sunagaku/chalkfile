@@ -11,12 +11,12 @@ import { defineScene } from './define';
 
 const NodeCard: React.FC<{
   label: string;
-  sub?: string;
-  icon?: Parameters<typeof IconBadge>[0]['name'];
+  sub?: string | undefined;
+  icon?: Parameters<typeof IconBadge>[0]['name'] | undefined;
   t: Tone;
   box: Box;
   at: number;
-  mono?: boolean;
+  mono?: boolean | undefined;
   focus: number;
 }> = ({ label, sub, icon, t, box, at, mono, focus }) => {
   const { C, MONO, SANS } = usePalette();

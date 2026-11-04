@@ -21,7 +21,7 @@ const BLOCK_DOT = 34;
 
 type Variant = 'primary' | 'secondary' | 'link' | 'danger';
 
-const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean; flex?: boolean }> = ({ text, variant, weak, flex }) => {
+const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean | undefined; flex?: boolean }> = ({ text, variant, weak, flex }) => {
   if (variant === 'link') {
     return <div style={{ fontSize: weak ? T.linkWeak : T.link, color: weak ? M.weak : M.primary, textDecoration: 'underline', fontWeight: 600, alignSelf: 'center', padding: '0 6px' }}>{text}</div>;
   }

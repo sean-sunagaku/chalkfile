@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { afterEach, describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
@@ -324,9 +325,9 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
     const site = makeSite();
     const shell = site.input.shell ?? [];
     site.write('assets/logo.bmp', 'bmp');
-    const cases: [SiteInvariantInput['shell'], string][] = [
+    const cases: [NonNullable<SiteInvariantInput['shell']>, string][] = [
       [
-        [...shell, { ...shell[2], type: 'image/jpeg' }],
+        [...shell, { ...required(shell[2]), type: 'image/jpeg' }],
         '起動用ファイル: icons/icon-180.png の型 image/jpeg が、拡張子の型 image/png と違います（SW が取れない）',
       ],
       [
@@ -338,7 +339,7 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
         '起動用ファイル: assets/none.jpg のファイル（assets/none.jpg）がありません',
       ],
       [
-        [...shell, { ...shell[0], sha256: 'a'.repeat(64) }],
+        [...shell, { ...required(shell[0]), sha256: 'a'.repeat(64) }],
         '起動用ファイル: ./ の大きさか SHA-256 が、置いたファイルと違います',
       ],
       [

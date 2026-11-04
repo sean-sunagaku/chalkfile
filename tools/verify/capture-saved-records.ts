@@ -16,7 +16,7 @@ import type { CourseManifest, SavedVersion } from '../../site/offline-shared';
 
 const root = path.resolve(import.meta.dir, '../..');
 const date = process.argv[2];
-if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) throw new Error('fixture の日付（例: 2026-11-02）を指定してください');
+if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('fixture の日付（例: 2026-11-02）を指定してください');
 const out = path.join(root, 'tests/fixtures/saved-records', date);
 if (existsSync(out)) throw new Error(`${path.relative(root, out)} はもうあります。fixture は足すだけで、書き換えない`);
 const port = process.env.PW_PORT ?? '8877';
@@ -141,6 +141,7 @@ try {
     write(recordFile('legacy-pages', 'pstack-comedy'), legacy.body);
     // 旧 Pages の最後の公開（legacy-config.json の snapshot）の教材情報。記録は pstack-comedy の実録と同じ形で組む
     const captured = (JSON.parse(legacy.body) as { versions: SavedVersion[] }).versions[0];
+    if (!captured) throw new Error('旧 Pages の保存記録に版が無い');
     const legacyIds = git('ls-tree', '-r', '--name-only', legacyConfig.snapshot)
       .split('\n')
       .flatMap((f) => /^([^/]+)\/offline-manifest\.json$/.exec(f)?.[1] ?? []);

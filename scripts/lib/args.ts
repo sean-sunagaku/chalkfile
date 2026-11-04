@@ -60,15 +60,17 @@ export const readArgs = <const O extends Options>(args: string[], options: O, { 
  */
 export const headerOf = (file: string): string => {
   const lines = readFileSync(file, 'utf8').split('\n');
+  // 以下の直接参照は i/j < lines.length を確かめるループの中だけ。
+
   let i = lines[0]?.startsWith('#!') ? 1 : 0;
   if (file.endsWith('.py')) {
-    while (i < lines.length && (lines[i].startsWith('#') || !lines[i].trim())) i++;
+    while (i < lines.length && (lines[i]!.startsWith('#') || !lines[i]!.trim())) i++;
     const first = lines[i]?.trim() ?? '';
     const quote = first.startsWith('"""') ? '"""' : first.startsWith("'''") ? "'''" : '';
     if (!quote) return '';
     const body: string[] = [];
     for (let j = i; j < lines.length; j++) {
-      const line = j === i ? first.slice(3) : lines[j];
+      const line = j === i ? first.slice(3) : lines[j]!;
       const end = line.indexOf(quote);
       body.push(end >= 0 ? line.slice(0, end) : line);
       if (end >= 0) break;
@@ -79,8 +81,8 @@ export const headerOf = (file: string): string => {
   if (mark === '//' && lines[i]?.trimStart().startsWith('/*')) {
     const body: string[] = [];
     for (let j = i; j < lines.length; j++) {
-      const end = lines[j].includes('*/');
-      const text = lines[j]
+      const end = lines[j]!.includes('*/');
+      const text = lines[j]!
         .replace(/^\s*\/\*\*?/, '')
         .replace(/\*\/.*$/, '')
         .replace(/^\s*\* ?/, '');
@@ -90,8 +92,8 @@ export const headerOf = (file: string): string => {
     return body.join('\n').trim();
   }
   const body: string[] = [];
-  for (let j = i; j < lines.length && lines[j].startsWith(mark); j++)
-    body.push(lines[j].slice(mark.length).replace(/^ /, ''));
+  for (let j = i; j < lines.length && lines[j]!.startsWith(mark); j++)
+    body.push(lines[j]!.slice(mark.length).replace(/^ /, ''));
   return body.join('\n').trimEnd();
 };
 

@@ -1,3 +1,4 @@
+// 部品の任意の色・style は、親から undefined を渡した場合も既定の描き方を使う。
 import React from 'react';
 import type { IconName, Tone } from '../../engine/core/schema';
 import { alpha, usePalette, WHITE, type VideoPalette } from '../theme';
@@ -12,7 +13,7 @@ export const Icon: React.FC<{ name: IconName; size?: number; color?: string; str
 };
 
 /** 色つきの丸いアイコン台 */
-export const IconBadge: React.FC<{ name: IconName; t?: Tone; size?: number; glow?: number }> = ({ name, t, size = 64, glow = 0 }) => {
+export const IconBadge: React.FC<{ name: IconName; t?: Tone | undefined; size?: number; glow?: number }> = ({ name, t, size = 64, glow = 0 }) => {
   const { THEME, tone } = usePalette();
   const tt = tone(t);
   return (
@@ -42,8 +43,8 @@ export const IconBadge: React.FC<{ name: IconName; t?: Tone; size?: number; glow
 
 export const Glass: React.FC<{
   children: React.ReactNode;
-  style?: React.CSSProperties;
-  t?: Tone;
+  style?: React.CSSProperties | undefined;
+  t?: Tone | undefined;
   active?: number;
 }> = ({ children, style, t, active = 0 }) => {
   const { C, THEME, tone } = usePalette();
@@ -69,7 +70,7 @@ export const Glass: React.FC<{
 };
 
 /** 札。size は文字の大きさ（src/video.config.ts の TYPE.label から選ぶ） */
-export const Pill: React.FC<{ children: React.ReactNode; t?: Tone; mono?: boolean; size?: number; style?: React.CSSProperties }> = ({ children, t, mono, size = TYPE.label.pill, style }) => {
+export const Pill: React.FC<{ children: React.ReactNode; t?: Tone | undefined; mono?: boolean; size?: number; style?: React.CSSProperties | undefined }> = ({ children, t, mono, size = TYPE.label.pill, style }) => {
   const { MONO, SANS, tone } = usePalette();
   const tt = tone(t);
   return (
@@ -120,7 +121,7 @@ const emphasis = ({ C, GRAD, THEME, tone }: VideoPalette, t?: Tone): React.CSSPr
 };
 
 /** **強調** を色つきで出す */
-export const Rich: React.FC<{ text: string; t?: Tone; style?: React.CSSProperties }> = ({ text, t, style }) => {
+export const Rich: React.FC<{ text: string; t?: Tone | undefined; style?: React.CSSProperties | undefined }> = ({ text, t, style }) => {
   const palette = usePalette();
   const parts = text.split(/\*\*(.+?)\*\*/g);
   return (
@@ -139,7 +140,7 @@ export const Rich: React.FC<{ text: string; t?: Tone; style?: React.CSSPropertie
 };
 
 /** 横に出す注のカード（コードの光る行の注・端末の注）。文字の大きさ・行の高さ・カードの余白は、場面ごとに渡す */
-export const NoteCard: React.FC<{ text: string; t?: Tone; active: number; size: number; lineHeight: number; style?: React.CSSProperties }> = ({
+export const NoteCard: React.FC<{ text: string; t?: Tone | undefined; active: number; size: number; lineHeight: number; style?: React.CSSProperties | undefined }> = ({
   text,
   t,
   active,
@@ -158,13 +159,13 @@ export const NoteCard: React.FC<{ text: string; t?: Tone; active: number; size: 
 };
 
 /** 英字の識別子（snake_case など）は等幅で出す */
-export const Code: React.FC<{ children: React.ReactNode; t?: Tone; size?: number }> = ({ children, t, size }) => {
+export const Code: React.FC<{ children: React.ReactNode; t?: Tone | undefined; size?: number }> = ({ children, t, size }) => {
   const { C, MONO, tone } = usePalette();
   return <span style={{ fontFamily: MONO, fontWeight: 500, color: t ? tone(t).text : C.ink, fontSize: size }}>{children}</span>;
 };
 
 /** 文中の `…` と識別子らしい英字を等幅にする */
-export const Smart: React.FC<{ text: string; t?: Tone }> = ({ text, t }) => {
+export const Smart: React.FC<{ text: string; t?: Tone | undefined }> = ({ text, t }) => {
   const parts = text.split(/([A-Za-z_][A-Za-z0-9_]*(?:[._/][A-Za-z0-9_{}…]+)+|[a-z]+_[a-z_]+|\{[A-Z_]+\})/g);
   return (
     <>

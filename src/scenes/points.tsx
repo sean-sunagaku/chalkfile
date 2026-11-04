@@ -11,7 +11,7 @@ import { defineScene } from './define';
 const PointCard: React.FC<{
   item: PointsScene['items'][number];
   index: number;
-  numbered?: boolean;
+  numbered?: boolean | undefined;
   active: boolean;
   tall: boolean;
 }> = ({ item, index, numbered, active, tall }) => {

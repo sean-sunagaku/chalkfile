@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -81,7 +82,7 @@ for (const date of readdirSync(fixtures).filter((d) => /^\d{4}-\d{2}-\d{2}$/.tes
           const before = records.find((r) => r.id === id && r.file === 'record.json')!.value;
           expect(value.versions).toHaveLength(2);
           expect(value.versions[1]).toEqual(before.versions[0]);
-          expect(value.versions[0].manifest.revision).not.toBe(before.versions[0].manifest.revision);
+          expect(required(value.versions[0]).manifest.revision).not.toBe(required(before.versions[0]).manifest.revision);
         });
       if (era.reader === 'sw')
         test('保存したあとの Cache を、今の cleanup は 1 つも消さず、隔離もしない', () => {
@@ -114,7 +115,7 @@ describe('読めない記録の扱い', () => {
     const broken = [
       { ...record(), versions: [...record().versions, ...record().versions, ...record().versions] },
       { versions: [{ ...record().versions[0], cache: `${prefix}course:rive-comedy:x` }] },
-      { versions: [{ ...record().versions[0], manifest: { ...record().versions[0].manifest, pageVersion: 'x' } }] },
+      { versions: [{ ...record().versions[0], manifest: { ...required(record().versions[0]).manifest, pageVersion: 'x' } }] },
       { versions: [null] },
       { versions: 'x' },
       null,
@@ -124,7 +125,7 @@ describe('読めない記録の扱い', () => {
     expect(parseRecord({ versions: [] }, 'pstack-comedy', scope, prefix).versions).toEqual([]);
   });
   test('読めない記録が指していた Cache の名前を拾う。指す先が分からなければ null', () => {
-    const v = record().versions[0];
+    const v = required(record().versions[0]);
     expect(recordCaches({ versions: [{ ...v, manifest: null }] }, 'pstack-comedy', prefix)).toEqual([v.cache]);
     expect(
       recordCaches(
@@ -237,7 +238,7 @@ describe('学習の記録（localStorage）の互換', () => {
   for (const file of readdirSync(localFixtures).filter((f) => f.endsWith('.json'))) {
     const fixture = read<LocalFixture>(path.join(localFixtures, file));
     const prefix = storagePrefix(fixture.lang, fixture.course);
-    const old = (name: string) => JSON.parse(fixture.storage[`${prefix}${name}`]) as unknown;
+    const old = (name: string) => JSON.parse(required(fixture.storage[`${prefix}${name}`])) as unknown;
 
     test(`${file}: 前の形の記録を、今の画面が落とさずに読む`, () => {
       const store = openStore(memory(fixture.storage).storage, prefix);

@@ -554,16 +554,18 @@ export const validateCourses = (courses: readonly Course[]): Issue[] => {
     } else if (RESERVED_PREFIXES.includes(c.prefix)) {
       push(out, 'error', 'prefix', where, `頭文字 ${c.prefix} はテストの見本が使うので、講座には使わない。${free()}`);
     } else {
+      // 今見ている c 自身が一致するので、findIndex は範囲内の添字を返す。
       const first = courses.findIndex((x) => x.prefix === c.prefix);
-      if (first !== i) push(out, 'error', 'prefix', where, `頭文字 ${c.prefix} が ${courses[first].id} と重なっている（レクチャー ID がぶつかる）。${free()}`);
+      if (first !== i) push(out, 'error', 'prefix', where, `頭文字 ${c.prefix} が ${courses[first]!.id} と重なっている（レクチャー ID がぶつかる）。${free()}`);
     }
     if (!isInt(c.order) || c.order < 1) {
       push(out, 'error', 'order', `${c.id} order`, `order（一覧の並び）は 1 以上の整数で書く（書いたのは ${JSON.stringify(c.order)}）`);
     } else {
+      // 今見ている c 自身が一致するので、findIndex は範囲内の添字を返す。
       const first = courses.findIndex((x) => x.order === c.order);
       if (first !== i) {
         const used = [...new Set(courses.map((x) => x.order))].filter((n) => isInt(n)).sort((a, b) => a - b);
-        push(out, 'error', 'order', `${c.id} order`, `order ${c.order} が ${courses[first].id} と重なっている（一覧の並びが決まらない）。使っている数: ${used.join(' ')}`);
+        push(out, 'error', 'order', `${c.id} order`, `order ${c.order} が ${courses[first]!.id} と重なっている（一覧の並びが決まらない）。使っている数: ${used.join(' ')}`);
       }
     }
     if (courses.findIndex((x) => x.id === c.id) !== i) push(out, 'error', 'course-id', `${c.id}`, `講座 ID ${c.id} が 2 つの講座で重なっている（content/courses.ts に同じ講座を 2 回並べていないか）`);

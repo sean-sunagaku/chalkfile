@@ -1,7 +1,7 @@
 {
-  // Service Worker の側（sw.ts と、旧 Pages の移行の legacy-sw.ts）。WebWorker の型だけで見るので、document や window を使うと型のエラーになる。
+  // Service Worker の側（sw.ts。凍結中の旧 SW は tsconfig.legacy-sw.json）。WebWorker の型だけで見るので、document や window を使うと型のエラーになる。
   // 共有のモジュール（offline-shared.ts・media-shared.ts・lib/）は、tsconfig.client.json からも見る（どちらの型でも通ること）
   "extends": "../tsconfig.json",
   "compilerOptions": { "lib": ["WebWorker", "ES2022"] },
-  "include": ["sw.ts", "legacy-sw.ts", "offline-shared.ts", "media-shared.ts", "lib/*.ts"]
+  "include": ["sw.ts", "offline-shared.ts", "media-shared.ts", "lib/*.ts"]
 }

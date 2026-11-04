@@ -233,7 +233,7 @@ export const videoProblems = (p: Probe, want: VideoExpect): string[] => {
   const seconds = want.frames / want.fps;
   if (video.length !== 1) out.push(`映像が ${video.length} 本（1 本のはず）`);
   else {
-    const v = video[0];
+    const v = video[0]!; // 直前に 1 本であることを確かめた
     if (v.codec_name !== 'h264') out.push(`映像の形式が ${v.codec_name ?? '分からない'}（h264 のはず）`);
     if (v.width !== want.width || v.height !== want.height)
       out.push(`大きさが ${v.width}x${v.height}（${want.width}x${want.height} のはず）`);
@@ -249,7 +249,7 @@ export const videoProblems = (p: Probe, want: VideoExpect): string[] => {
   if (want.audio) {
     if (audio.length !== 1) out.push(`音が ${audio.length} 本（1 本のはず）`);
     else {
-      const a = audio[0];
+      const a = audio[0]!; // 直前に 1 本であることを確かめた
       if (a.codec_name !== RENDER.audio.codec)
         out.push(`音の形式が ${a.codec_name ?? '分からない'}（${RENDER.audio.codec} のはず）`);
       if (Number(a.sample_rate) !== RENDER.audio.sampleRate)
@@ -267,8 +267,8 @@ export const posterProblems = (p: Probe): string[] => {
   const s = p.streams ?? [];
   if (s.length !== 1) return [`画像が ${s.length} 枚（1 枚のはず）`];
   const out: string[] = [];
-  if (s[0].codec_name !== 'mjpeg') out.push(`画像の形式が ${s[0].codec_name ?? '分からない'}（JPEG のはず）`);
-  if (s[0].width !== RENDER.poster.width) out.push(`幅が ${s[0].width}（${RENDER.poster.width} のはず）`);
+  if (s[0]!.codec_name !== 'mjpeg') out.push(`画像の形式が ${s[0]!.codec_name ?? '分からない'}（JPEG のはず）`);
+  if (s[0]!.width !== RENDER.poster.width) out.push(`幅が ${s[0]!.width}（${RENDER.poster.width} のはず）`);
   return out;
 };
 

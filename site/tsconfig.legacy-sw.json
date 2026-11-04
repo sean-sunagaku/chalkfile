@@ -1,0 +1,10 @@
+{
+  // 凍結中の旧 Pages の SW だけを従来の設定で見る。2027-05-02 以降の撤去時に、この設定も消す。
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["WebWorker", "ES2022"],
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["legacy-sw.ts"]
+}

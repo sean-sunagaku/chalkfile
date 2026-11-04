@@ -6,9 +6,10 @@ import { validateCourse, validateTimeline } from '../../engine/core/validate';
 import { SCENES } from '../../src/scenes';
 import { VIDEO } from '../../src/video.config';
 import { ALL_SCENES, ALL_SCENES_TIMELINE } from '../fixtures/content/all-scenes/course';
+import { required } from '../support/required';
 
 describe('全部の場面の見本（tests/fixtures/content/all-scenes）', () => {
-  const lec = ALL_SCENES.lectures[0];
+  const lec = required(ALL_SCENES.lectures[0]);
   test('20 種類の場面を 1 つずつ使う', () => {
     expect(SCENE_KINDS).toHaveLength(20);
     expect(lec.scenes.map((s) => s.kind).sort()).toEqual([...SCENE_KINDS].sort());
@@ -16,7 +17,7 @@ describe('全部の場面の見本（tests/fixtures/content/all-scenes）', () =
   test('台本の検証で、誤りも注意も 0 件', () =>
     expect(validateCourse(ALL_SCENES, { themes: Object.keys(THEMES) })).toEqual([]));
   test('固定の timeline が台本の形と合い、時刻が前から順に並ぶ', () => {
-    const tl = ALL_SCENES_TIMELINE[lec.id];
+    const tl = required(ALL_SCENES_TIMELINE[lec.id]);
     expect(tl.fps).toBe(VIDEO.fps);
     expect(validateTimeline(lec, ALL_SCENES, tl)).toEqual([]);
     let t = 0;

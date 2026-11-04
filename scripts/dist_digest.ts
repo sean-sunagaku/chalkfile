@@ -99,8 +99,8 @@ if (import.meta.main) {
       console.error(`一覧 ${list}（${digestFiles(ROOT).length} 個）を書いた`);
       console.log(digest);
     } else if (command === 'verify' && rest.length >= 1 && rest.length <= 2) {
-      const count = verifyDigest(rest[0], ROOT, rest[1] ?? LIST);
-      console.log(`公開物 ${count} 個が、build の一覧（sha256 ${rest[0].slice(0, 12)}…）と同じ`);
+      const count = verifyDigest(rest[0]!, ROOT, rest[1] ?? LIST);
+      console.log(`公開物 ${count} 個が、build の一覧（sha256 ${rest[0]!.slice(0, 12)}…）と同じ`);
     } else {
       console.error(USAGE);
       process.exit(2);

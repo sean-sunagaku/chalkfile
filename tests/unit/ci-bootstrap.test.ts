@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { expect, test } from 'bun:test';
 import { registerGeneratedToken, tokenPolicies } from '../../scripts/setup_cloudflare_ci';
 import { checkSecrets } from '../../scripts/check_content';
@@ -17,8 +18,8 @@ const groups = [
 test('CIは対象account/zoneの3権限だけとし、token発行権限や全zoneを渡さない', () => {
   const policies = tokenPolicies(groups, 'e'.repeat(32));
   expect(policies.flatMap((p) => p.permission_groups.map((g) => g.id))).toEqual(groups.slice(0, 3).map((g) => g.id));
-  expect(policies[1].resources).toEqual({ [`com.cloudflare.api.account.zone.${'e'.repeat(32)}`]: '*' });
-  for (const source of [groups.slice(1), [...groups, groups[0]], groups.map((g) => ({ ...g, is_selectable: false }))])
+  expect(required(policies[1]).resources).toEqual({ [`com.cloudflare.api.account.zone.${'e'.repeat(32)}`]: '*' });
+  for (const source of [groups.slice(1), [...groups, required(groups[0])], groups.map((g) => ({ ...g, is_selectable: false }))])
     expect(() => tokenPolicies(source, 'e'.repeat(32))).toThrow();
   expect(() => tokenPolicies(groups, '*')).toThrow();
 });

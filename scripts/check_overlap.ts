@@ -100,11 +100,12 @@ const compareEnglish = (course: Course, pages: Map<string, string>, urls: string
     const d = words(html.replace(JSON_ESCAPE, (_, h: string) => String.fromCharCode(parseInt(h, 16))).replace(/<[^>]+>/g, ' ').replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, decodeEntity));
     for (let k = 0; k + n <= d.length; k++) {
       for (const [i, a] of grams.get(d.slice(k, k + n).join(' ')) ?? []) {
-        const w = strings[i].w;
+        // grams の添字は、この strings の列挙から作ったもの。
+        const w = strings[i]!.w;
         let len = n;
         while (a + len < w.length && k + len < d.length && w[a + len] === d[k + len]) len++;
         const span = w.slice(a, a + len).join(' ');
-        const h = hits.get(span) ?? { lecture: strings[i].lecture, pages: new Set<string>() };
+        const h = hits.get(span) ?? { lecture: strings[i]!.lecture, pages: new Set<string>() };
         h.pages.add(u);
         hits.set(span, h);
       }
@@ -184,14 +185,15 @@ const main = async (argv: string[]) => {
       const hits = index.get(d.slice(k, k + min));
       if (!hits) continue;
       for (const [i, a] of hits) {
-        const t = texts[i].text;
+        // hits の添字は、この texts の列挙から作ったもの。
+        const t = texts[i]!.text;
         let right = min;
         while (a + right < t.length && k + right < d.length && t[a + right] === d[k + right]) right++;
         let left = 0;
         while (a - left > 0 && k - left > 0 && t[a - left - 1] === d[k - left - 1]) left++;
         const span = t.slice(a - left, a + right);
         if (jaCount(span) < JA_MIN) continue;
-        const hit = found.get(span) ?? { lecture: texts[i].lecture, pages: new Set<string>() };
+        const hit = found.get(span) ?? { lecture: texts[i]!.lecture, pages: new Set<string>() };
         hit.pages.add(u);
         found.set(span, hit);
       }

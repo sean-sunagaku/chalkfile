@@ -23,8 +23,8 @@ export const MIME: Readonly<Record<string, string>> = {
   '.woff2': 'font/woff2',
 };
 
-/** ファイルの名前か URL のパスの拡張子（小文字。. から）。無ければ '' */
-const extOf = (name: string) => /\.[^./\\]+$/.exec(name.split(/[?#]/)[0])?.[0].toLowerCase() ?? '';
+/** ファイルの名前か URL のパスの拡張子（小文字。. から）。無ければ ''。split は空文字列でも先頭要素を返す */
+const extOf = (name: string) => /\.[^./\\]+$/.exec(name.split(/[?#]/)[0]!)?.[0].toLowerCase() ?? '';
 
 /** MIME（; の前の本体）。知らない拡張子なら undefined */
 export const mimeTypeOf = (name: string): string | undefined => {

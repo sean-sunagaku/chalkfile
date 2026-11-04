@@ -26,17 +26,17 @@ export const useScene = (): Ctx => {
 /** 動画の言語の、部品が出す決まった文字（src/i18n.ts） */
 export const useText = (): VideoText => VIDEO_TEXT[useScene().lang];
 
-/** at 番目の台詞が始まるフレーム（場面の頭からの相対） */
+/** at 番目の台詞が始まるフレーム（場面の頭からの相対）。空配列を先に返し、残りの添字は範囲内に収める */
 export const lineStart = (lines: LineTiming[], at: number): number => {
   if (!lines.length) return 0;
-  if (at <= 0) return lines[0].start;
-  if (at >= lines.length) return lines[lines.length - 1].end;
-  return lines[at].start;
+  if (at <= 0) return lines[0]!.start;
+  if (at >= lines.length) return lines[lines.length - 1]!.end;
+  return lines[at]!.start;
 };
 
 export const lineEnd = (lines: LineTiming[], at: number): number => {
   if (!lines.length) return 0;
-  return lines[Math.min(Math.max(at, 0), lines.length - 1)].end;
+  return lines[Math.min(Math.max(at, 0), lines.length - 1)]!.end;
 };
 
 /** 台詞 at の頭で 0→1 になる spring。ナレーションより LEAD.appear（4）フレームだけ先に動き出す（src/video.config.ts） */
@@ -53,7 +53,7 @@ export const useActiveLine = (): number => {
   const frame = useCurrentFrame();
   const { lines } = useScene();
   let active = 0;
-  for (let i = 0; i < lines.length; i++) if (frame >= lines[i].start - LEAD.appear) active = i;
+  for (let i = 0; i < lines.length; i++) if (frame >= lines[i]!.start - LEAD.appear) active = i;
   return active;
 };
 

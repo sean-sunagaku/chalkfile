@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { VIDEOS } from '../../content';
 import type { Scene } from '../../content/types';
@@ -129,7 +130,7 @@ describe('古い書き方の読み替え（engine/core/legacy.ts）', () => {
     }
   });
   test('書き換え方を、そのまま写せる形で出す', () => {
-    const [opening, , , , , timeline] = PAIRS.map((p) => legacyUses(p.old)[0].message);
+    const [opening, , , , , timeline] = PAIRS.map((p) => required(legacyUses(p.old)[0]).message);
     expect(opening).toContain("titleLines: ['基本の', '考え方']");
     expect(timeline).toContain("kicker: 'STEP 1', title: '書く'");
   });
@@ -141,10 +142,10 @@ describe('古い書き方の読み替え（engine/core/legacy.ts）', () => {
     );
   });
   test('動画 1 本を読み替える（同じ動画なら前に作ったもの。古い書き方が無ければ、同じ動画をそのまま返す）', () => {
-    const lec = lecture([PAIRS[0].old, { kind: 'big', text: '大事', lines }]);
+    const lec = lecture([required(PAIRS[0]).old, { kind: 'big', text: '大事', lines }]);
     const up = upgradeLecture(lec);
     expect(up).not.toBe(lec);
-    expect(up.scenes[0]).toEqual(PAIRS[0].explicit);
+    expect(up.scenes[0]).toEqual(required(PAIRS[0]).explicit);
     expect(up.scenes[1]).toBe(lec.scenes[1]);
     expect(upgradeLecture(lec)).toBe(up);
     const plain = lecture([{ kind: 'big', text: '大事', lines }]);

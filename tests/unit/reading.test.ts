@@ -1,4 +1,5 @@
 // 読みの辞書（content/reading.ts の共通の辞書と、content/<講座>/reading.ts の講座の辞書）。講座の辞書は、その講座の台詞にだけ効く
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -76,8 +77,8 @@ describe('読みの辞書を講座ごとに分ける', () => {
     const common = { words: new Map<string, string>(), phrases: new Map<string, string>() };
     // 共通の辞書は engine/core/reading.ts（content/reading.ts は再 export だけ）
     const src = readFileSync(path.join(ROOT, 'engine/core/reading.ts'), 'utf8');
-    for (const m of src.matchAll(/^ {2}\['([^']+)', '([^']+)'\],$/gm)) common.phrases.set(m[1], m[2]);
-    for (const m of src.matchAll(/^ {2}([a-z0-9]+): '([^']+)',$/gm)) common.words.set(m[1], m[2]);
+    for (const m of src.matchAll(/^ {2}\['([^']+)', '([^']+)'\],$/gm)) common.phrases.set(required(m[1]), m[2]!);
+    for (const m of src.matchAll(/^ {2}([a-z0-9]+): '([^']+)',$/gm)) common.words.set(required(m[1]), m[2]!);
     expect(common.phrases.size).toBeGreaterThan(10);
     expect(common.words.size).toBeGreaterThan(50);
     for (const m of MODULES) {

@@ -172,7 +172,8 @@ const label = (cp: number) => `${String.fromCodePoint(cp)}（U+${cp.toString(16)
 /** 書体のファイルに入っている文字（太さごとにファイルがある書体は、全部のファイルにある文字） */
 const coverageOf = (id: FontId, root: string): Set<number> => {
   const sets = FONTS[id].files.map((f) => woff2CodePoints(readFileSync(path.join(root, FONT_DIR, f.file))));
-  return new Set([...sets[0]].filter((cp) => sets.every((s) => s.has(cp))));
+  // FONTS.files は 1 個以上。map 後の sets にも先頭要素がある。
+  return new Set([...sets[0]!].filter((cp) => sets.every((s) => s.has(cp))));
 };
 
 /**

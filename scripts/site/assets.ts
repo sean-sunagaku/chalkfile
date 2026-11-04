@@ -52,6 +52,6 @@ export const copyAssets = (from: string, to: string, dist: string): Asset[] => {
  */
 export const thumbnailAssets = (dist: string, posters: string[]): Asset[] =>
   posters.flatMap((url) => {
-    const local = path.join(dist, url.split('?')[0]);
+    const local = path.join(dist, url.split('?')[0]!);
     return existsSync(local) ? [asset(url, readFileSync(local), mimeOf(url))] : [];
   });

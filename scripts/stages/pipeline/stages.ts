@@ -31,7 +31,7 @@ import { speechIn } from '../../../content/voices';
 import { posterFile, timelineFile } from '../../../engine/core/generated';
 import { timelineFingerprint } from '../../../engine/core/timeline';
 import { readSiteConfig } from '../../lib/config';
-import { runInherit } from '../../lib/proc';
+import { runInherit, type CommandLine } from '../../lib/proc';
 import { wavFileSamples } from '../../lib/wav';
 import { readMediaManifest } from '../../media';
 import { mediaManifestJson, readCourseMediaFile } from '../../media-lists';
@@ -46,7 +46,7 @@ import type { Ctx, Recorded, RunOptions, Stage } from './runner';
 export const STAGE_NAMES = ['voice', 'mix', 'render', 'docs', 'site'] as const;
 
 /** 子のプロセスで道具を流す（テストは偽物に替える）。終了コードを返す */
-export type RunCommand = (argv: string[], env?: Record<string, string>) => number;
+export type RunCommand = (argv: CommandLine, env?: Record<string, string>) => number;
 
 export type StagesCtx = Ctx & {
   /** 声の置き場所（共有のキャッシュと .work/tts） */

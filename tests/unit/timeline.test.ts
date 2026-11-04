@@ -1,4 +1,5 @@
 // 動画ごとの timeline（content/<講座>/generated/timeline/<key>.json）の形・書き方・指紋と、置いてあるファイルの確かめ
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -33,7 +34,7 @@ describe('SHA-256（engine/core/hash.ts。Remotion と bun で同じ値にする
       'a'.repeat(64),
       'a'.repeat(119),
       'あいう🎉'.repeat(50),
-      JSON.stringify(VIDEOS[0].lecture),
+      JSON.stringify(required(VIDEOS[0]).lecture),
     ]) {
       expect(sha256Hex(text)).toBe(createHash('sha256').update(text).digest('hex'));
     }
@@ -65,6 +66,8 @@ const lec = lecture([
   { kind: 'ending', closing: 'おわり', lines: say('おわりです。') },
 ]);
 const c = course([lec]);
+const testScene = (value: Lecture, scene: number) => required(value.scenes[scene]);
+const testLine = (value: Lecture, scene: number, line: number) => required(testScene(value, scene).lines[line]);
 const file = (patch: Partial<TimelineFile> = {}): TimelineFile => ({
   schema: TIMELINE_SCHEMA,
   key: 'X01',
@@ -102,61 +105,61 @@ describe('指紋（時刻に効く入力のハッシュ）', () => {
       [
         '読み（s）',
         (l) => {
-          l.scenes[1].lines[0].s = 'ひとつめ。';
+          testLine(l, 1, 0).s = 'ひとつめ。';
         },
       ],
       [
         '読み（s の無い台詞の t）',
         (l) => {
-          l.scenes[1].lines[1].t = '二つ目でした。';
+          testLine(l, 1, 1).t = '二つ目でした。';
         },
       ],
       [
         '声',
         (l) => {
-          l.scenes[1].lines[0].v = 'zundamon';
+          testLine(l, 1, 0).v = 'zundamon';
         },
       ],
       [
         'pause',
         (l) => {
-          l.scenes[1].lines[1].pause = 0.3;
+          testLine(l, 1, 1).pause = 0.3;
         },
       ],
       [
         'sfx',
         (l) => {
-          l.scenes[1].lines[0].sfx = 'pop';
+          testLine(l, 1, 0).sfx = 'pop';
         },
       ],
       [
         'sfxAfter',
         (l) => {
-          l.scenes[1].lines[0].sfxAfter = 'chin';
+          testLine(l, 1, 0).sfxAfter = 'chin';
         },
       ],
       [
         'bgm',
         (l) => {
-          l.scenes[1].lines[0].bgm = 'cut';
+          testLine(l, 1, 0).bgm = 'cut';
         },
       ],
       [
         'hold',
         (l) => {
-          l.scenes[1].hold = 2;
+          testScene(l, 1).hold = 2;
         },
       ],
       [
         '場面の種類',
         (l) => {
-          l.scenes[1] = { kind: 'goals', items: [], lines: l.scenes[1].lines };
+          l.scenes[1] = { kind: 'goals', items: [], lines: testScene(l, 1).lines };
         },
       ],
       [
         '台詞の数',
         (l) => {
-          l.scenes[1].lines.pop();
+          testScene(l, 1).lines.pop();
         },
       ],
     ];
@@ -165,12 +168,12 @@ describe('指紋（時刻に効く入力のハッシュ）', () => {
   test('読みの決まっている台詞の画面の文字（t）・見出しは入らない（時刻に効かない）', () => {
     expect(
       fp((l) => {
-        l.scenes[1].lines[0].t = '一つ目の文を直した。';
+        testLine(l, 1, 0).t = '一つ目の文を直した。';
       }),
     ).toBe(base);
     expect(
       fp((l) => {
-        l.scenes[1].heading = '見出しを直した';
+        testScene(l, 1).heading = '見出しを直した';
       }),
     ).toBe(base);
   });
@@ -228,23 +231,23 @@ describe('台本と照らし合わせる（validateTimeline・validateTimelineFi
   test('指紋が今の台本と違えば「timeline が古い」（台本を直したのに合成し直していない）', () => {
     const got = validateTimeline(lec, c, file({ fingerprint: '0'.repeat(16) }));
     expect(brief(got)).toEqual(['error timeline invalid-sample/X01 timeline']);
-    expect(got[0].message).toContain('timeline が古い');
-    expect(got[0].message).toContain('bun scripts/synth.ts X01');
+    expect(required(got[0]).message).toContain('timeline が古い');
+    expect(required(got[0]).message).toContain('bun scripts/synth.ts X01');
   });
   test('fps が動画と違う・場面が続いていない・長さが場面の終わりと違うと誤り', () => {
-    expect(validateTimeline(lec, c, file({ fps: 60 }))[0].message).toContain('fps（60）');
+    expect(required(validateTimeline(lec, c, file({ fps: 60 }))[0]).message).toContain('fps（60）');
     const gap = file();
-    gap.scenes[2].start = 310;
-    expect(validateTimeline(lec, c, gap)[0].message).toContain('前の場面の終わり（300）と続いていない');
-    expect(validateTimeline(lec, c, file({ durationInFrames: 401 }))[0].message).toContain('動画の長さ（401）');
+    required(gap.scenes[2]).start = 310;
+    expect(required(validateTimeline(lec, c, gap)[0]).message).toContain('前の場面の終わり（300）と続いていない');
+    expect(required(validateTimeline(lec, c, file({ durationInFrames: 401 }))[0]).message).toContain('動画の長さ（401）');
   });
   test('ファイルが無ければ注意、2 つ以上・置き場所が違う・読めないときは誤り', () => {
     expect(brief(validateTimelineFiles(lec, c, []))).toEqual(['warning timeline invalid-sample/X01 timeline']);
-    expect(validateTimelineFiles(lec, c, [entry(), entry({}, 'other')])[0].message).toContain(
+    expect(required(validateTimelineFiles(lec, c, [entry(), entry({}, 'other')])[0]).message).toContain(
       '2 つ以上の講座のフォルダにある',
     );
-    expect(validateTimelineFiles(lec, c, [entry({}, 'other')])[0].message).toContain('置き場所が違う');
-    expect(validateTimelineFiles(lec, c, [entry({ schema: 9 as 1 })])[0].message).toContain('schema が 1 でない');
+    expect(required(validateTimelineFiles(lec, c, [entry({}, 'other')])[0]).message).toContain('置き場所が違う');
+    expect(required(validateTimelineFiles(lec, c, [entry({ schema: 9 as 1 })])[0]).message).toContain('schema が 1 でない');
   });
 });
 

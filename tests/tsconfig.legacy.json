@@ -1,0 +1,11 @@
+{
+  // 凍結中の旧 Pages の組み立てと、その API のテストだけを従来の設定で見る。
+  // 2027-05-02 以降の撤去時に、この設定も消す。現行の道具やテストは tsconfig.bun.json などが新しい設定で見る。
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"],
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["../scripts/build_migration.ts", "unit/legacy-migration.test.ts"]
+}

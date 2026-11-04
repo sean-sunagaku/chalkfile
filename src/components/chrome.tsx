@@ -69,6 +69,7 @@ export const Background: React.FC = () => {
       </AbsoluteFill>
     );
   }
+  // 台本の検証は chalk/stars の mesh が 4 色以上であることを確かめる。
   if (THEME.decor === 'chalk') {
     // 方眼の点と、チョークの粉のにじみ
     return (
@@ -78,8 +79,8 @@ export const Background: React.FC = () => {
             background: [
               `radial-gradient(900px 560px at 4% -8%, ${alpha(MESH[0], 0.3)}, transparent 62%)`,
               `radial-gradient(760px 520px at 104% 10%, ${alpha(MESH[1], 0.22)}, transparent 62%)`,
-              `radial-gradient(1000px 640px at 98% 110%, ${alpha(MESH[2], 0.24)}, transparent 62%)`,
-              `radial-gradient(760px 520px at -6% 106%, ${alpha(MESH[3], 0.2)}, transparent 62%)`,
+              `radial-gradient(1000px 640px at 98% 110%, ${alpha(MESH[2]!, 0.24)}, transparent 62%)`,
+              `radial-gradient(760px 520px at -6% 106%, ${alpha(MESH[3]!, 0.2)}, transparent 62%)`,
             ].join(','),
           }}
         />
@@ -101,8 +102,8 @@ export const Background: React.FC = () => {
           background: [
             `radial-gradient(1100px 700px at 8% -10%, ${alpha(MESH[1], 0.3)}, transparent 60%)`,
             `radial-gradient(900px 620px at 102% 8%, ${alpha(MESH[0], 0.2)}, transparent 62%)`,
-            `radial-gradient(1100px 760px at 96% 112%, ${alpha(MESH[2], 0.18)}, transparent 60%)`,
-            `radial-gradient(800px 600px at -6% 108%, ${alpha(MESH[3], 0.1)}, transparent 62%)`,
+            `radial-gradient(1100px 760px at 96% 112%, ${alpha(MESH[2]!, 0.18)}, transparent 60%)`,
+            `radial-gradient(800px 600px at -6% 108%, ${alpha(MESH[3]!, 0.1)}, transparent 62%)`,
             base,
           ].join(','),
         }}
@@ -245,7 +246,7 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
  * 下の端の出典（左。研究や公式の数字を見せる場面）と注意書き（右。法律・税・規約の話のレクチャーで出し続ける）。
  * 両方あるときは 1 行に並べ、出典が注意書きにかかるときは、出典を折り返す（注意書きは折り返さない）
  */
-export const Footer: React.FC<{ cite?: string; caution?: string }> = ({ cite, caution }) => {
+export const Footer: React.FC<{ cite?: string | undefined; caution?: string | undefined }> = ({ cite, caution }) => {
   const { C, SANS } = usePalette();
   const head = useText().cite;
   if (!cite && !caution) return null;

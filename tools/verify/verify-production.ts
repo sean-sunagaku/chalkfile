@@ -9,7 +9,7 @@ import { COURSES } from '../../content';
 import type { CourseManifest } from '../../site/offline-shared';
 
 const mode = process.argv[2];
-if (!['legacy-before', 'legacy-after', 'offline', 'offline-restart', 'redirects'].includes(mode))
+if (!mode || !['legacy-before', 'legacy-after', 'offline', 'offline-restart', 'redirects'].includes(mode))
   throw new Error('legacy-before | legacy-after | offline | offline-restart | redirects を指定してください');
 const root = path.resolve(import.meta.dir, '../..');
 const evidence = path.join(root, '.work/evidence');
@@ -213,7 +213,7 @@ try {
     output.redirects = redirects;
     for (const route of ['', ...COURSES.map((c) => `${c.id}/`), 'unknown-path/']) {
       // 講座側が未知のhashを先頭講義IDへ正規化する既存動作と、移行処理を分けて確認する。
-      const hash = COURSES.find((c) => `${c.id}/` === route)?.lectures[0].id ?? 'kept';
+      const hash = COURSES.find((c) => `${c.id}/` === route)?.lectures[0]?.id ?? 'kept';
       await page.goto(`https://sean-sunagaku.github.io/chalkfile/${route}?from=migration#${hash}`);
       await expect(page).toHaveURL(`${config.origin}${route}?from=migration#${hash}`, { timeout: 30000 });
       redirects.push(page.url());

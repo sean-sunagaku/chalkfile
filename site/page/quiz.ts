@@ -22,7 +22,7 @@ export const createQuiz = (page: Page) => {
     h(
       'div',
       { class: `explain${choice === q.answer ? '' : ' bad'}`, tabindex: -1 },
-      choice === q.answer ? T.quizRight : tt('quizAnswer', { a: q.choices[q.answer] }),
+      choice === q.answer ? T.quizRight : tt('quizAnswer', { a: q.choices[q.answer]! }),
       q.explain,
     );
 
@@ -82,7 +82,7 @@ export const createQuiz = (page: Page) => {
     const item = b.closest('.q');
     if (!q || !item) return;
     answers[lec.id] ??= {};
-    answers[lec.id][String(qi)] = choice;
+    answers[lec.id]![String(qi)] = choice;
     page.store.saveQuiz(answers);
     for (const c of Array.from(item.querySelectorAll<HTMLButtonElement>('.choice'))) {
       c.className = choiceClass(Number(c.dataset.c), q, choice);

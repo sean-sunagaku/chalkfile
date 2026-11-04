@@ -1,6 +1,7 @@
 // 動画の一覧の版 2（項目の inputs。書き出したときの台本と描き方の指紋）。版 1 も読めること・Worker の許可リストが変わらないこと・
 // media push が書き出しの記録から inputs を書くこと・台本が変わった動画を置く前に止めること・CI の確かめ（validate）の誤り・注意・知らせ。
 // gh は偽物で、ファイルは一時のフォルダにだけ書く（Releases には何も置かない）
+import { required } from '../support/required';
 import { afterAll, describe, expect, spyOn, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -55,7 +56,7 @@ describe('動画の一覧の版 1 と 2', () => {
     expect(courseMediaJson(list, new Map())).toBe(LEGACY_RIVE);
   });
   test('inputs のある一覧は版 2 で書き、読むと inputs を外した版 1 の形と、ファイル名 → inputs が返る', () => {
-    const inputs = new Map([[list.entries[0].filename, A]]);
+    const inputs = new Map([[required(list.entries[0]).filename, A]]);
     const text = courseMediaJson(list, inputs);
     const v = JSON.parse(text);
     expect(v.schema).toBe(2);
@@ -64,7 +65,7 @@ describe('動画の一覧の版 1 と 2', () => {
     const parsed = parseCourseMedia(v);
     expect(parsed.schema).toBe(2);
     expect(parsed.manifest).toEqual(list);
-    expect([...parsed.inputs]).toEqual([[list.entries[0].filename, A]]);
+    expect([...parsed.inputs]).toEqual([[required(list.entries[0]).filename, A]]);
   });
   test('版 1 の一覧に inputs がある・inputs の形が違う・知らない版は止める', () => {
     const e = { ...list.entries[0], inputs: A };
@@ -303,8 +304,8 @@ describe('CI の確かめ（validate の mediaInputProblems）', () => {
     ]);
     expect(r.issues).toHaveLength(1);
     expect(r.issues[0]).toMatchObject({ level: 'error', rule: 'inputs', where: 'ga4-comedy/G01' });
-    expect(r.issues[0].message).toContain('通常版・字幕版');
-    expect(r.issues[0].message).toContain('npm run chalk -- build --to render --video G01');
+    expect(required(r.issues[0]).message).toContain('通常版・字幕版');
+    expect(required(r.issues[0]).message).toContain('npm run chalk -- build --to render --video G01');
     expect(r.notices).toEqual([]);
   });
   test('描き方のコードだけが変わったときは注意（一覧のファイルごとに 1 件）。inputs の無い項目は、知らせを 1 行だけ', () => {
@@ -317,7 +318,7 @@ describe('CI の確かめ（validate の mediaInputProblems）', () => {
     expect(r.issues.map((x) => [x.level, x.where])).toEqual([
       ['warning', 'content/ga4-comedy/generated/media.ja.json'],
     ]);
-    expect(r.issues[0].message).toContain('2 本（G01 G02）');
+    expect(required(r.issues[0]).message).toContain('2 本（G01 G02）');
     expect(r.notices).toEqual([expect.stringContaining('書き出しの記録（inputs）の無い動画が 1 本（1 個の一覧）')]);
   });
   test('今の本物の一覧は、どれも誤りにならない（記録の無い一覧は知らせだけ）', async () => {

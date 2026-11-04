@@ -10,6 +10,7 @@
 // - 確かめのコマンドには、Cloudflare の token と account ID を渡さない（環境変数から外して流す）
 // - --main を付けると、main の先頭がその commit でないときは何も出さずに終える（古い実行を流し直して、古い版を出さない）
 // - --drill は preview だけ。確かめをわざと失敗させて、rollback が動くかを試す（docs/operations/recovery.md の「rollback を試す（preview）」）
+import type { CommandLine } from './lib/proc';
 import config from '../chalkfile.config';
 import { spawn } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -17,14 +18,14 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 
 const ROOT = path.resolve(import.meta.dir, '..');
-const WRANGLER = ['npx', '--no-install', 'wrangler'];
+const WRANGLER = ['npx', '--no-install', 'wrangler'] as const;
 /** 確かめのコマンドに渡さない環境変数（Cloudflare の token と account） */
 const SECRET_ENV = ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'];
 export const PRODUCTION_ORIGIN = config.origin;
 
 export type Env = Record<string, string | undefined>;
 export type Run = (
-  cmd: string[],
+  cmd: CommandLine,
   opts: { capture: boolean; env: Env },
 ) => Promise<{ code: number; stdout: string; stderr: string }>;
 export type Deps = {
@@ -43,7 +44,7 @@ export type Options = {
   /** 組み立てた site/dist */
   dist: string;
   /** main の先頭であるべき commit（CI の github.sha） */
-  main?: string;
+  main?: string | undefined;
   drill: boolean;
   /** 公開したものが組み立てたものと同じになるのを待つ長さと、確かめを流し直すまでの間（ミリ秒） */
   waitMs: number;
@@ -256,7 +257,7 @@ const USAGE = `使い方:
   bun scripts/deploy_worker.ts --env preview --origin <URL> [--drill]   preview に出す（--drill で、確かめをわざと失敗させて rollback を試す）`;
 
 if (import.meta.main) {
-  let values: { env?: string; origin?: string; main?: string; drill?: boolean; help?: boolean };
+  let values: { env?: string; origin?: string; main?: string | undefined; drill?: boolean; help?: boolean };
   try {
     ({ values } = parseArgs({
       options: {

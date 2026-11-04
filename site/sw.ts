@@ -36,7 +36,7 @@ const disabled = new Set(CONFIG.disabledRevisions);
 /** その言語の SW の文字（ページが送る言語。知らない言語は日本語） */
 const textIn = (lang: string): SwText => (isLang(lang) ? CONFIG.messages[lang] : undefined) ?? CONFIG.messages.ja;
 /** 講座の ID の言語（en/… は en。頭に言語のフォルダの無い講座は日本語） */
-const langOf = (id: string) => (id.includes('/') ? id.split('/')[0] : 'ja');
+const langOf = (id: string) => (id.includes('/') ? id.split('/')[0]! : 'ja');
 const messageOf = (e: unknown, lang: string) => {
   const m = textIn(lang).errors;
   if (e instanceof OfflineError) return m[e.code];
@@ -152,7 +152,8 @@ async function download(f: Asset, signal: AbortSignal, onBytes: (bytes: number) 
   const failed = (e: unknown) => (signal.aborted ? signal.reason ?? e : e instanceof OfflineError ? e : new OfflineError('fetchFile'));
   let res: Response;
   try { res = await fetch(assetUrl(f), { cache: 'no-store', credentials: 'omit', redirect: 'error', signal }); } catch (e) { throw failed(e); }
-  if (res.status !== 200 || !res.body || res.type === 'opaque' || res.headers.get('Content-Type')?.split(';')[0].trim() !== f.type) {
+  // biome-ignore lint/suspicious/noNonNullAssertedOptionalChain: split は 1 要素以上。ヘッダーが null なら trim まで含む chain 全体を通らない。
+  if (res.status !== 200 || !res.body || res.type === 'opaque' || res.headers.get('Content-Type')?.split(';')[0]!.trim() !== f.type) {
     throw new OfflineError('fetchFile');
   }
   const reader = res.body.getReader();
@@ -339,8 +340,8 @@ function courseIdOf(url: URL): { id: string; relative: string; media: boolean } 
   const hashed = parseMediaPath(url.pathname);
   if (hashed) return { id: `${hashed.lang === 'ja' ? '' : `${hashed.lang}/`}${hashed.course}`, relative: url.pathname.slice(1), media: true };
   const relative = url.pathname.slice(new URL(scope).pathname.length);
-  const parts = relative.split('/');
-  const id = isLangFolder(parts[0]) && parts.length > 1 && parts[1] ? `${parts[0]}/${parts[1]}` : parts[0];
+  const parts = relative.split('/'); // split は先頭要素を必ず返す（ルートなら空文字列）
+  const id = isLangFolder(parts[0]!) && parts.length > 1 && parts[1] ? `${parts[0]!}/${parts[1]}` : parts[0]!;
   return { id, relative, media: false };
 }
 

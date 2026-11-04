@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { chromium, type Page, type APIRequestContext } from '@playwright/test';
 import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -109,7 +110,7 @@ test('講座を開いただけでは、動画（/media/）を取りに行かな�
   await playAndPause(page, seek(site, 5));
   expect((await stats(request)).mediaRequests).toBeGreaterThan(0);
   expect(await page.locator('video').evaluate((v: HTMLVideoElement) => new URL(v.currentSrc).pathname)).toMatch(
-    new RegExp(`/${site.course.lectures[0].id}(\\.cc)?\\.[a-f0-9]{64}\\.mp4$`),
+    new RegExp(`/${required(site.course.lectures[0]).id}(\\.cc)?\\.[a-f0-9]{64}\\.mp4$`),
   );
 });
 
@@ -128,7 +129,7 @@ test('オンライン再生、単体ファイル保存、学習UI、PWA情報と
   const download = page.waitForEvent('download');
   await page.locator('#fileDownload').click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe(`${site.course.lectures[0].id}.mp4`);
+  expect(file.suggestedFilename()).toBe(`${required(site.course.lectures[0]).id}.mp4`);
   expect(await file.failure()).toBeNull();
   expect((await status(page, site)).saved).toBeNull();
   await page.getByRole('tab', { name: '台本', exact: true }).click();
@@ -185,7 +186,8 @@ test('全講座を保存し、オフライン起動・再生・Range・シーク
   const runtimeErrors: string[] = [];
   page.on('pageerror', (e) => runtimeErrors.push(e.message));
   const manifest = manifestOf(site);
-  const [first, second] = site.course.lectures;
+  const first = required(site.course.lectures[0]);
+  const second = required(site.course.lectures[1]);
   const notesKey = `chalkfile:${site.course.id}:notes`;
   await ready(page, site);
   // 同一 origin の別アプリの保存を保持する。
@@ -318,13 +320,13 @@ for (const mode of ['fail', 'partial', 'corrupt', 'truncated', 'redirect'] as co
 
 test('容量不足の保存例外を表示し、未保存として再試行できる', async ({ page, context, site }) => {
   await ready(page, site);
-  const worker = context.serviceWorkers()[0];
+  const worker = required(context.serviceWorkers()[0]);
   await worker.evaluate(() => {
     const original = Cache.prototype.put;
     (globalThis as any).originalPut = original;
     Cache.prototype.put = function (input, response) {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-      if (url.includes('/media/') && url.split('?')[0].endsWith('.mp4'))
+      if (url.includes('/media/') && url.split('?')[0]!.endsWith('.mp4'))
         return Promise.reject(new DOMException('容量不足テスト', 'QuotaExceededError'));
       return original.call(this, input, response);
     };
@@ -393,7 +395,7 @@ test('教材更新：旧版の教材と動画を維持し、失敗後に再試�
   await expect(page.locator('#offlineReload')).toBeVisible();
   expect((await status(page, site)).saved!.manifest.revision).not.toBe(original.manifest.revision);
   // 更新後も直前の版の MP4 を混ぜずに返せる。
-  const oldFile = original.manifest.files.find((f) => f.url.includes(`/${site.course.lectures[0].id}.`))!;
+  const oldFile = original.manifest.files.find((f) => f.url.includes(`/${required(site.course.lectures[0]).id}.`))!;
   const oldRange = await page.evaluate(
     async (url) => (await fetch(new URL(url, location.origin + '/'), { headers: { Range: 'bytes=0-127' } })).status,
     oldFile.url,
@@ -446,7 +448,7 @@ test('教材のページだけの更新では、変わっていない動画を�
   transfer.pageOnlyUpdate = await stats(request);
   const updated = await savedNow();
   // 前の版に戻して保存し直す。写す元（新旧の両方の保存版）の 1 本の動画の中身だけを壊す（印の大きさと SHA-256 はそのまま）
-  const broken = videos[0];
+  const broken = required(videos[0]);
   await page.evaluate(
     async ({ caches: names, url }) => {
       const key = new URL(url, `${location.origin}/`).href;
@@ -455,7 +457,9 @@ test('教材のページだけの更新では、変わっていない動画を�
         const r = await cache.match(key);
         if (!r) throw new Error(`保存版に動画がありません: ${name}`);
         const data = new Uint8Array(await r.arrayBuffer());
-        data[100] ^= 255;
+        const byte = data[100];
+        if (byte === undefined) throw new Error('破損の検査には 101 バイト以上の動画が要る');
+        data[100] = byte ^ 255;
         await cache.put(key, new Response(data, { headers: r.headers }));
       }
     },
@@ -526,7 +530,7 @@ test('無効の一覧に入れた revision の保存版は、オンラインで�
 }) => {
   // 新しい SW は、このサイトのタブを全部閉じると有効になる。ブラウザを閉じて開き直すと、決まって有効になるので、profile を残して開き直す
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-disabled-'));
-  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
   try {
     let page = await context.newPage();
     await ready(page, site);
@@ -541,7 +545,7 @@ test('無効の一覧に入れた revision の保存版は、オンラインで�
     });
     await expect(page.locator('#appUpdate')).toBeVisible();
     await context.close();
-    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
     page = await context.newPage();
     await page.goto('/');
     await expect.poll(async () => (await status(page, site).catch(() => null))?.disabled ?? null).toBe(true);
@@ -605,7 +609,7 @@ test('保存ファイルの欠損を検出し、保存済み表示と再生を�
     },
     {
       cache: stored.cache,
-      url: stored.manifest.files.find((f) => f.url.includes(`/${site.course.lectures[1].id}.`))!.url,
+      url: stored.manifest.files.find((f) => f.url.includes(`/${required(site.course.lectures[1]).id}.`))!.url,
     },
   );
   await page.reload();
@@ -663,7 +667,7 @@ test('読めない保存の記録は、動画を消さずに隔離して保存�
   await record();
   await page.reload();
   await expect(page.locator('#savedState')).toContainText('保存が不完全');
-  const [mark] = await marks();
+  const mark = required((await marks())[0]);
   await page.evaluate(
     async ({ mark, cache }) => {
       await caches.delete(mark);
@@ -716,7 +720,7 @@ test('外部動画を指す教材情報は拒否し、取得しない', async ({
 
 test('ブラウザ完全終了後のオフライン起動とworker更新後にも保存を維持する', async ({ request, site, baseURL }) => {
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-restart-'));
-  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
   try {
     let page = await context.newPage();
     await ready(page, site);
@@ -734,7 +738,7 @@ test('ブラウザ完全終了後のオフライン起動とworker更新後に�
     await expect(page.locator('#appUpdate')).toBeVisible();
     expect((await status(page, site)).saved).not.toBeNull();
     await context.close();
-    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
     await context.setOffline(true);
     page = await context.newPage();
     await page.goto('/');
@@ -750,7 +754,7 @@ test('ブラウザ完全終了後のオフライン起動とworker更新後に�
 
 test('保存中にブラウザを終了しても、途中の講座を保存済みにせず再試行できる', async ({ request, site, baseURL }) => {
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-interrupt-'));
-  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
   try {
     let page = await context.newPage();
     await ready(page, site);
@@ -759,7 +763,7 @@ test('保存中にブラウザを終了しても、途中の講座を保存済�
     await expect(page.locator('#offlineMessage')).toContainText(delayedProgress(site, manifestOf(site)));
     await context.close();
     await control(request);
-    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL });
+    context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
     page = await context.newPage();
     await ready(page, site);
     expect((await status(page, site)).saved).toBeNull();

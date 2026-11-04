@@ -20,5 +20,5 @@ export type Page = {
   current: number;
 };
 
-/** 今のレクチャー */
-export const lectureOf = (page: Page): LectureData => page.lectures[page.current];
+/** 今のレクチャー。course-page の load が範囲を確かめた添字だけを設定する */
+export const lectureOf = (page: Page): LectureData => page.lectures[page.current]!;

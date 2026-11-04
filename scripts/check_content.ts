@@ -311,7 +311,7 @@ const AGENT_FILE = /(^|\/)(CLAUDE|AGENTS)\.md$/i;
  *  コードの囲みの中も見分けずに見る（Claude Code はそこを読み込まないが、見分け方の違いですり抜けさせない） */
 export const agentImportsOutside = (text: string): string[] =>
   [...text.matchAll(/(?:^|\s)@(\S+)/g)]
-    .map((m) => m[1])
+    .map((m) => m[1]!)
     .filter((p) => {
       if (/^[~/\\]|^[A-Za-z]:/.test(p)) return true;
       const to = path.posix.normalize(p.replaceAll('\\', '/'));
@@ -343,7 +343,7 @@ export const checkPath = (f: string, bytes: number | undefined, out: Finding[]) 
  * （npx は、手元に無い依存をネットから取ってくるので使わない）。script はその scripts の中身で、ほかの中身にすると止める。
  * 後ろに付けてよいのは、port が true のものの -- --port <番号> だけ（-- が無いと、npm が --port を自分の設定として読む）
  */
-export const LAUNCH_COMMANDS: { argv: string[]; port: boolean; script: string }[] = [
+export const LAUNCH_COMMANDS: { argv: [string, string, string]; port: boolean; script: string }[] = [
   // 講座サイト（番号は環境変数 PORT で変える）
   { argv: ['npm', 'run', 'serve'], port: false, script: 'bun scripts/serve.ts' },
   // Remotion Studio（--config などで別のファイルを読ませない）
@@ -356,7 +356,7 @@ const LAUNCH_KEYS = ['name', 'runtimeExecutable', 'runtimeArgs', 'port', 'url'];
 const LOCAL_URL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?\/?$/;
 const isPortArgs = (rest: string[]) =>
   !rest.length ||
-  (rest[0] === '--' && ((rest.length === 2 && /^--port=\d{1,5}$/.test(rest[1])) || (rest.length === 3 && rest[1] === '--port' && /^\d{1,5}$/.test(rest[2]))));
+  (rest[0] === '--' && ((rest.length === 2 && /^--port=\d{1,5}$/.test(rest[1]!)) || (rest.length === 3 && rest[1] === '--port' && /^\d{1,5}$/.test(rest[2]!))));
 export const checkLaunch = (where: string, text: string, out: Finding[]) => {
   const stop = (what: string) => { out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' }); };
   let value: unknown;
@@ -469,7 +469,7 @@ const checkPackageJson = (where: string, text: string, out: Finding[], root: boo
 const checkSkill = (where: string, text: string, out: Finding[]) => {
   const head = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)?.[1] ?? '';
   for (const m of head.matchAll(/^["']?(hooks|allowed[-_]?tools)["']?\s*:/gim)) {
-    const what = /^hooks$/i.test(m[1]) ? 'スキルを使う間、コマンドが動く' : '確かめずにツールを使わせる';
+    const what = /^hooks$/i.test(m[1]!) ? 'スキルを使う間、コマンドが動く' : '確かめずにツールを使わせる';
     out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: スキルの頭書きの ${m[1]}（${what}）`, sample: '', rule: 'claude' });
   }
 };

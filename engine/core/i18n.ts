@@ -20,7 +20,8 @@ export const videoKey = (lectureId: string, lang: Lang) => (lang === 'ja' ? lect
 export const parseVideoKey = (key: string): { id: string; lang: Lang } => {
   const [id, lang = 'ja'] = key.split('.');
   if (!isLang(lang) || key.split('.').length > 2) throw new Error(`動画の名前が読めない: ${key}（例: S01、S01.en）`);
-  return { id, lang };
+  // split は空文字列でも 1 要素を返す。
+  return { id: id!, lang };
 };
 /** Remotion のコンポジションの ID（ドットが使えないのでハイフンにする。S01.en → S01-en） */
 export const compositionId = (key: string) => key.replace(/\./g, '-');
@@ -244,7 +245,8 @@ export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: Trans
     syllabus: undefined,
     lectures: [],
   };
-  shell.lectures = base.lectures.filter((l) => tr.lectures[l.id]).map((l) => localizeLecture(l, tr.lectures[l.id], shell));
+  // filter で訳がある ID に絞ったので、map の参照は存在する。
+  shell.lectures = base.lectures.filter((l) => tr.lectures[l.id]).map((l) => localizeLecture(l, tr.lectures[l.id]!, shell));
   for (const id of Object.keys(tr.lectures)) if (!base.lectures.some((l) => l.id === id)) problems.push({ where: `lectures.${id}`, message: `日本語の講座に無いレクチャーの訳: ${id}` });
   if (problems.length) PROBLEMS.set(shell, problems);
   return shell;

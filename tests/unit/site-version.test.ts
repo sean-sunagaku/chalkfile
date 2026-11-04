@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { PAGE_VERSION_MARK, pageVersionOf, stampVersion, type PageVersionInput } from '../../scripts/site-version';
 import type { Asset } from '../../site/offline-shared';
@@ -30,15 +31,15 @@ describe('サイトの版（出力から決める）', () => {
   });
   test('動画の sha256 が変われば版が変わる', () => {
     const changed = input();
-    changed.files[0].sha256 = sha('c');
+    required(changed.files[0]).sha256 = sha('c');
     expect(pageVersionOf(changed)).not.toBe(pageVersionOf(input()));
   });
   test('ポスターの中身・動画の大きさ・並びが変われば版が変わる', () => {
     const before = pageVersionOf(input());
     const posterChanged = input();
-    posterChanged.files[1].sha256 = sha('d');
+    required(posterChanged.files[1]).sha256 = sha('d');
     const bytesChanged = input();
-    bytesChanged.files[0].bytes = 1001;
+    required(bytesChanged.files[0]).bytes = 1001;
     expect(pageVersionOf(posterChanged)).not.toBe(before);
     expect(pageVersionOf(bytesChanged)).not.toBe(before);
     expect(pageVersionOf({ ...input(), files: [{ ...poster }, { ...video }] })).not.toBe(before);

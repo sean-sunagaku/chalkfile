@@ -70,7 +70,7 @@ const staticParts = (p: CoursePageInput, text: CourseTexts) => {
   const { tt } = text;
   const T = p.T;
   const meta = courseMeta(p.course, T, p.config);
-  const first = p.lectures[0];
+  const first = p.lectures[0]!; // siteProblems が講座に動画があることを確かめた
   const counts = courseCounts(text, meta, p.lectures.map((l) => l.duration));
   const sections = meta.sections.map((sec) => {
     const items = p.lectures.map((l, i) => ({ l, i })).filter((x) => x.l.section.no === sec.no);
@@ -142,7 +142,7 @@ export const renderCoursePage = (p: CoursePageInput): string => {
   const cid = `${info.path}${p.course.id}`;
   const url = `${p.base}${cid}/`;
   // SNS の共有の画像は、最初のレクチャーのポスター。ページと同じく ?v= に版を付ける（版の印は、版が決まってから組み立てが置き換える）
-  const firstPoster = raw(`${esc(`${url}media/${p.lectures[0].key}.jpg`)}?v=${PAGE_VERSION_MARK}`);
+  const firstPoster = raw(`${esc(`${url}media/${p.lectures[0]!.key}.jpg`)}?v=${PAGE_VERSION_MARK}`);
   const marks = {
     // CSP の script-src は、このページに入れる script（文書の順に、画面・offline-client）のハッシュ
     CSP: cspHead([p.pageScript, p.offlineClient]),

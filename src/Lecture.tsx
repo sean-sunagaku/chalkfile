@@ -19,7 +19,7 @@ const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
   return <Body s={s} />;
 };
 
-const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string }> = ({ s, duration, caution }) => {
+const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string | undefined }> = ({ s, duration, caution }) => {
   const frame = useCurrentFrame();
   const o = fadeInOut(frame, duration, s.kind === 'opening' ? 1 : 10, s.kind === 'ending' ? 20 : 9);
   const body = s.kind !== 'opening' && s.kind !== 'ending';
@@ -43,13 +43,13 @@ const CAPTION_BAND = H - Math.round(H * CAPTION_SCALE);
 const CAPTION_LINE_HEIGHT = 1.42;
 
 /** who: 掛け合いの講座で、話している人の名前と色（講座の cast） */
-type Cue = { start: number; end: number; text: string; who?: { name: string; tone: Tone } };
+type Cue = { start: number; end: number; text: string; who?: { name: string; tone: Tone } | undefined };
 
 const Captions: React.FC<{ cues: Cue[]; lang: Lang }> = ({ cues, lang }) => {
   const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
   let i = -1;
-  for (let k = 0; k < cues.length; k++) if (frame >= cues[k].start - LEAD.caption) i = k;
+  for (let k = 0; k < cues.length; k++) if (frame >= cues[k]!.start - LEAD.caption) i = k;
   const cue = cues[i];
   // 台詞の後の短い間では字幕を残す（ちらつかせない）。次の台詞の手前までか、CAPTION.holdSec（0.7 秒）まで
   const until = cue ? Math.min(cue.end + frames(CAPTION.holdSec), (cues[i + 1]?.start ?? Infinity) - LEAD.caption) : -1;
@@ -140,15 +140,16 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
   const lecture = upgradeLecture(video.lecture);
   // 置いてある timeline が 1 つだけで、読めたもの（台本と合うかは、描く前に src/Root.tsx の calculateMetadata が確かめる）
   const entries = project.timelines.get(id);
-  const tl = entries?.length === 1 ? entries[0].timeline : undefined;
+  const tl = entries?.length === 1 ? entries[0]!.timeline : undefined;
   if (!tl) throw new Error(`${id} の timeline が無いか、読めない（bun scripts/synth.ts ${id} で作る）`);
   // この動画のテーマ（stills.ts --theme=… で上書きできる）。色と書体（言語に合わせる）は ThemeProvider が子の部品に渡す
   const th = project.themeOf(theme || course.theme);
   const { SANS, fonts } = videoPalette(th, lang);
   // 書体（本文の書体と等幅の書体）を読み込み終わるまで、場面を描かない（文字の幅を測る部品が、読み込む前の書体で測らないように）
   const ready = useFonts([...fonts, 'mono']);
+  // calculateMetadata が台本と timeline の場面数・台詞数を照合してから描く。
   const scenes = lecture.scenes.map((s, i) => {
-    const st = tl.scenes[i];
+    const st = tl.scenes[i]!;
     return (
       <Sequence key={i} from={st.start} durationInFrames={st.duration} name={`${i + 1} ${s.kind}`}>
         <SceneProvider value={{ ...st, scene: s, lecture, index: i, course, lang }}>
@@ -160,7 +161,7 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
   const cast = course.cast ?? {};
   const cues: Cue[] = captions
     ? lecture.scenes.flatMap((s, i) =>
-        s.lines.map((ln, k) => ({ start: tl.scenes[i].start + tl.scenes[i].lines[k].start, end: tl.scenes[i].start + tl.scenes[i].lines[k].end, text: ln.t, who: cast[ln.v ?? 'narrator'] })),
+        s.lines.map((ln, k) => ({ start: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.start, end: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.end, text: ln.t, who: cast[ln.v ?? 'narrator'] })),
       )
     : [];
   return (

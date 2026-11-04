@@ -167,7 +167,7 @@ export const mediaInputProblems = (checks: readonly PublishedCheck[]): { issues:
   const byVideo = new Map<string, PublishedCheck[]>();
   for (const c of checks.filter((x) => x.result === 'script')) byVideo.set(c.video.key, [...(byVideo.get(c.video.key) ?? []), c]);
   for (const [key, list] of byVideo) {
-    const { course, lang } = list[0].video;
+    const { course, lang } = list[0]!.video;
     const kinds = list.map((c) => (c.kind === 'captioned' ? '字幕版' : '通常版')).join('・');
     issues.push({
       level: 'error',

@@ -2,6 +2,7 @@
 //   ci: 合成の講座（tests/fixtures/content/site-sample）を、buildSite で一時のフォルダに組む。動画は ffmpeg の testsrc で作る（4 秒・小さい）。
 //       旧 Pages の P01 の動画も合成の動画にし、旧 Pages の保存の manifest の大きさと sha256 を、その動画に合わせて配る
 //   real: 本物の講座（npm run build:site で作った site/dist と、手元の site/media の動画）
+import { required } from '../support/required';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -54,7 +55,7 @@ export async function prepareRealSite(): Promise<PreparedSite> {
   const old = JSON.parse(readFileSync(LEGACY_MANIFEST, 'utf8')) as CourseManifest;
   const legacyFile = async (kind: MediaEntry['kind']) => {
     const name = kind === 'captioned' ? 'P01.cc.mp4' : 'P01.mp4';
-    const file = old.files.find((f) => f.type === 'video/mp4' && f.url.split('?')[0].endsWith(`/${name}`));
+    const file = old.files.find((f) => f.type === 'video/mp4' && f.url.split('?')[0]!.endsWith(`/${name}`));
     if (!file) throw new Error(`凍結した旧一覧に ${name} が無い`);
     const entry: MediaEntry = {
       lang: 'ja', course: 'pstack-comedy', lecture: 'P01', kind,
@@ -140,7 +141,7 @@ export async function prepareFixtureSite(work: string): Promise<PreparedSite> {
   const files = new Map<string, string>();
   const entries = course.lectures.map((l, i): MediaEntry => {
     const file = path.join(mediaDir, `${l.id}.mp4`);
-    makeVideo(file, patterns[i % patterns.length]);
+    makeVideo(file, required(patterns[i % patterns.length]));
     const data = readFileSync(file);
     const e = {
       lang: 'ja',
@@ -204,7 +205,7 @@ export async function prepareFixtureSite(work: string): Promise<PreparedSite> {
       title: course.title,
       searchTerm: '通信',
       lectures: entries.map((e) => ({ id: e.lecture, video: files.get(e.filename) ?? '' })),
-      faultLecture: course.lectures[course.lectures.length - 1].id,
+      faultLecture: required(course.lectures[course.lectures.length - 1]).id,
     },
     legacy: { ...legacy, manifest: JSON.stringify(manifest) },
     videoSeconds: VIDEO_SECONDS,

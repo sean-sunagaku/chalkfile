@@ -28,9 +28,10 @@ export const alpha = (hex: string, a: number): string => {
 export const mix = (a: string, b: string, t: number): string => {
   const x = rgb(a);
   const y = rgb(b);
+  // x と y はともに RGB の 3 要素。map の添字は y の範囲内。
   return `#${x
     .map((v, i) =>
-      Math.round(v + (y[i] - v) * t)
+      Math.round(v + (y[i]! - v) * t)
         .toString(16)
         .padStart(2, '0'),
     )
@@ -42,13 +43,13 @@ export const luminance = (hex: string): number => {
   const [r, g, b] = rgb(hex).map((c) => {
     const s = c / 255;
     return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
+  }) as [number, number, number]; // map は RGB の要素数を保つ
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
 /** 文字と地のコントラスト比（1〜21）。どちらが文字でも同じ */
 export const contrastRatio = (a: string, b: string): number => {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
 };
 

@@ -34,7 +34,7 @@ const timelineOf = (key: string): TimelineFile => {
     .filter((f) => existsSync(f));
   if (!found.length) throw new MissingError(`${key} の timeline が無い（台本に無い動画か、まだ synth していない。先に npm run synth -- ${key}）`);
   if (found.length > 1) throw new Error(`${key} の timeline が 2 つ以上の講座にある: ${found.join(' ')}`);
-  return JSON.parse(readFileSync(found[0], 'utf8')) as TimelineFile;
+  return JSON.parse(readFileSync(found[0]!, 'utf8')) as TimelineFile;
 };
 
 /** 受け取る動画の形: 動画（L01・P01.en）・場面で絞る（L03:3,6。場面は 1 始まり）・フレームを決める（L01@120）。場面とフレームは、どちらか 1 つ */
@@ -52,14 +52,14 @@ export const parseTargets = (targets: string[], find: (key: string) => TimelineF
   targets.map((t) => {
     const g = TARGET.exec(t)?.groups;
     if (!g) throw new UsageError(`動画の形が違う: ${t}（例: L01・L03:3,6・L01@120・P01.en:3。場面とフレームは、どちらか 1 つ）`);
-    const timeline = find(g.id);
+    const timeline = find(g.id!);
     const scenes = g.scenes ? g.scenes.split(',').map(Number) : null;
     if (scenes?.some((n) => n > timeline.scenes.length)) throw new UsageError(`${g.id} の場面は 1〜${timeline.scenes.length}: ${t}`);
     const frame = g.frame === undefined ? null : Number(g.frame);
     if (frame !== null && frame >= timeline.durationInFrames) {
       throw new UsageError(`${g.id} のフレームは 0〜${timeline.durationInFrames - 1}: ${t}`);
     }
-    return { id: g.id, frame, scenes, timeline };
+    return { id: g.id!, frame, scenes, timeline };
   });
 
 const main = async (argv: string[]) => {

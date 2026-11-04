@@ -87,7 +87,8 @@ export const createCatalog = (
       const tr = TRANSLATIONS[lang];
       for (const id of Object.keys(tr))
         if (!COURSES.some((c) => c.id === id)) throw new Error(`訳の講座が日本語の講座に無い: ${lang}/${id}`);
-      list = AUTHORED_COURSES.filter((c) => tr[c.id]).map((c) => localizeCourse(c, tr[c.id], lang));
+      // filter で訳がある講座だけを選んでいる。
+      list = AUTHORED_COURSES.filter((c) => tr[c.id]).map((c) => localizeCourse(c, tr[c.id]!, lang));
       localized.set(lang, list);
     }
     return list;

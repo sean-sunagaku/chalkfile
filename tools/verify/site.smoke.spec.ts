@@ -7,7 +7,7 @@ import { COURSES } from '../../content';
 test('全ページの表示・CSP・SW scope', async ({ page, context, baseURL }, testInfo) => {
   const violations: { directive: string; blocked: string }[] = [];
   const errors: string[] = [];
-  const pages: { path: string; status: number | undefined; cacheControl?: string; transformed?: boolean }[] = [];
+  const pages: { path: string; status: number | undefined; cacheControl: string | undefined; transformed: boolean | undefined }[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await context.exposeFunction('recordCspViolation', (directive: string, blocked: string) =>
     violations.push({ directive, blocked }),
@@ -16,7 +16,7 @@ test('全ページの表示・CSP・SW scope', async ({ page, context, baseURL }
     document.addEventListener('securitypolicyviolation', (event) => {
       void (window as unknown as { recordCspViolation(d: string, b: string): Promise<void> }).recordCspViolation(
         event.violatedDirective,
-        event.blockedURI.split('?')[0],
+        event.blockedURI.split('?')[0]!,
       );
     }),
   );

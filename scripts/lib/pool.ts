@@ -8,7 +8,8 @@ export const pool = async <T>(items: readonly T[], n: number, run: (item: T) => 
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(n, items.length) }, async () => {
-      while (next < items.length) await run(items[next++]);
+      // 範囲の検査と取り出しの間には await がなく、添字を他の処理へ渡す前に進める。
+      while (next < items.length) await run(items[next++]!);
     }),
   );
 };

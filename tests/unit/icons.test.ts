@@ -15,7 +15,7 @@ const importedNames = (): Map<string, string> => {
   const out = new Map<string, string>();
   for (const part of block.split(',').map((s) => s.trim())) {
     if (!part || part.startsWith('type ')) continue;
-    const [name, as] = part.split(/\s+as\s+/);
+    const [name, as] = part.split(/\s+as\s+/) as [string, ...string[]];
     out.set(as ?? name, name);
   }
   return out;
@@ -27,7 +27,7 @@ describe('アイコンの対応（src/components/icons.ts）', () => {
   });
   test('lucide-react のアイコンを、別名ではなく正式な名前で読む', () => {
     const names = importedNames();
-    const rows = [...SOURCE.matchAll(/^\s+(\w+): (\w+),$/gm)].map((m) => ({ key: m[1], local: m[2] }));
+    const rows = [...SOURCE.matchAll(/^\s+(\w+): (\w+),$/gm)].map((m) => ({ key: m[1]!, local: m[2]! }));
     expect(rows.map((r) => r.key).sort()).toEqual([...ICON_NAMES].sort());
     const aliases = rows.flatMap(({ key, local }) => {
       const name = names.get(local);

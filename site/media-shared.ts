@@ -33,7 +33,8 @@ export const mediaPath = (entry: MediaEntry) => `/media/${entry.lang}/${entry.co
 /** 配るパス（/media/<言語>/<講座>/<レクチャー>[.cc].<SHA-256>.mp4。mediaPath の形）を読む。形が違えば null（query の付いたものも null） */
 export const parseMediaPath = (pathname: string): Pick<MediaEntry, 'lang' | 'course' | 'lecture' | 'kind' | 'sha256'> | null => {
   const m = MEDIA_PATH.exec(pathname);
-  return m ? { lang: m[1], course: m[2], lecture: m[3], kind: m[4] ? 'captioned' : 'standard', sha256: m[5] } : null;
+  // 一致すれば捕捉群 1/2/3/5 は必ずある（4 の字幕版の印だけ省略可）。
+  return m ? { lang: m[1]!, course: m[2]!, lecture: m[3]!, kind: m[4] ? 'captioned' : 'standard', sha256: m[5]! } : null;
 };
 /** 単体で保存するときのファイルの名前（字幕を焼き込んだ版は .captioned）。Worker・SW・手元の配信が同じ名前を付ける */
 export const downloadName = (entry: Pick<MediaEntry, 'lecture' | 'kind'>) =>

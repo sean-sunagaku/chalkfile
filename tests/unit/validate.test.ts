@@ -1,10 +1,11 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../../content';
 import type { Lang } from '../../content/i18n';
 import { CHALKFILE, THEMES } from '../../content/themes';
-import type { Course, Lecture } from '../../content/types';
+import type { Course, Lecture, Theme } from '../../content/types';
 import { VOICES } from '../../content/voices';
 import {
   captionLines,
@@ -97,28 +98,28 @@ describe('講座の登録（頭文字・並び・講座 ID）', () => {
   test('頭文字が重なると誤りで、空いている文字を出す（X はテストの見本が使うので出さない）', () => {
     const got = validateCourses(two({}, { prefix: 'A' }));
     expect(brief(got)).toEqual(['error prefix beta prefix']);
-    expect(got[0].message).toContain('頭文字 A が alpha と重なっている');
-    expect(got[0].message).toContain('空いている文字: B C D');
-    expect(got[0].message).not.toMatch(/ X /);
+    expect(required(got[0]).message).toContain('頭文字 A が alpha と重なっている');
+    expect(required(got[0]).message).toContain('空いている文字: B C D');
+    expect(required(got[0]).message).not.toMatch(/ X /);
     expect(freePrefixes(COURSES)).not.toContain('X');
     expect(freePrefixes(COURSES)).not.toContain('G');
   });
   test('頭文字は英大文字 1 字（X は使えない）、order は 1 以上の整数で重ならない', () => {
-    expect(validateCourses(two({ prefix: 'ab' }, {}))[0].message).toContain('英大文字 1 字');
-    expect(validateCourses(two({ prefix: 'X' }, {}))[0].message).toContain('テストの見本が使う');
-    expect(validateCourses(two({ order: 0 }, {}))[0].message).toContain('1 以上の整数');
+    expect(required(validateCourses(two({ prefix: 'ab' }, {}))[0]).message).toContain('英大文字 1 字');
+    expect(required(validateCourses(two({ prefix: 'X' }, {}))[0]).message).toContain('テストの見本が使う');
+    expect(required(validateCourses(two({ order: 0 }, {}))[0]).message).toContain('1 以上の整数');
     const dup = validateCourses(two({}, { order: 10 }));
     expect(brief(dup)).toEqual(['error order beta order']);
-    expect(dup[0].message).toContain('使っている数: 10');
+    expect(required(dup[0]).message).toContain('使っている数: 10');
   });
   test('講座 ID の重なりと、言語の名前（2 文字の英小文字）を止める', () => {
     expect(brief(validateCourses(two({}, { id: 'alpha' })))).toEqual(['error course-id alpha']);
-    expect(validateCourses(two({ id: 'en' }, {}))[0].message).toContain('2 文字の英小文字');
+    expect(required(validateCourses(two({ id: 'en' }, {}))[0]).message).toContain('2 文字の英小文字');
   });
   test('レクチャー ID が頭文字と 2 桁の番号の形でなければ、その講座の誤り', () => {
     const c = relabel(course(say1(), { prefix: 'Q' }), 'invalid-sample');
     expect(validateCourse(c, CTX)).toEqual([]);
-    expect(brief(validateCourse({ ...c, lectures: [{ ...c.lectures[0], id: 'Q1' }] }, CTX))).toEqual([
+    expect(brief(validateCourse({ ...c, lectures: [{ ...required(c.lectures[0]), id: 'Q1' }] }, CTX))).toEqual([
       'error prefix invalid-sample lectures[0].id',
     ]);
     expect(brief(validateCourse({ ...c, prefix: 'R' }, CTX))).toEqual(['error prefix invalid-sample lectures[0].id']);
@@ -175,11 +176,11 @@ describe('テーマ（validateTheme）', () => {
     for (const t of Object.values(THEMES)) expect(validateTheme(t)).toEqual([]);
   });
   test('#RRGGBB でない色と、足りない色の数を見つける', () => {
-    const bad = {
+    const bad: Theme = {
       ...CHALKFILE,
       color: { ...CHALKFILE.color, ink: 'red' },
       tones: { ...CHALKFILE.tones, amber: '#FFF' },
-      mesh: CHALKFILE.mesh.slice(0, 3),
+      mesh: [CHALKFILE.mesh[0], CHALKFILE.mesh[1], required(CHALKFILE.mesh[2])],
     };
     expect(brief(validateTheme(bad, 'bad'))).toEqual(
       ['error theme bad color.ink', 'error theme bad mesh', 'error theme bad tones.amber'].sort(),
@@ -273,14 +274,14 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
   });
   test('教材の ID の重なりと、質問例の参照先の抜け（build_materials.ts にあったもの）を、全部まとめて返す', () => {
     const c = structuredClone(NUDGE_PRODUCT);
-    const m = c.lectures[0].material;
+    const m = required(c.lectures[0]).material;
     if (!m) throw new Error('nudge-product の 1 本目に教材が無い');
     // 1 つ目の節を写して同じ ID の節を足し、参照先の無い質問例を足す（台本のほかの所には頼らない）
-    m.sections.push({ ...m.sections[0] });
+    m.sections.push({ ...required(m.sections[0]) });
     m.askExamples.push({ q: '見本の質問', refs: ['no-such-section'] });
     expect(materialProblems(c)).toEqual([
-      `nudge-product: ID が重なっている: ${m.sections[0].id}`,
-      `${c.lectures[0].id}: 質問例の参照先が無い: no-such-section`,
+      `nudge-product: ID が重なっている: ${required(m.sections[0]).id}`,
+      `${required(c.lectures[0]).id}: 質問例の参照先が無い: no-such-section`,
     ]);
     expect(materialProblems(NUDGE_PRODUCT)).toEqual([]);
   });
@@ -292,7 +293,7 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
       (file) => file === 'content/invalid-sample/generated/posters/X01.jpg',
     );
     expect(got.map((x) => `${x.level} ${x.rule} ${x.where}`)).toEqual(['error poster invalid-sample/X02']);
-    expect(got[0].message).toContain('content/invalid-sample/generated/posters/X02.jpg');
+    expect(required(got[0]).message).toContain('content/invalid-sample/generated/posters/X02.jpg');
     expect(
       posterProblems(
         { ...config, publishLangs: ['ja'] },

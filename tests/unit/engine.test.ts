@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { LANGS } from '../../content/i18n';
 import { CHALKFILE, isThemeId, NIGHT, THEMES } from '../../content/themes';
@@ -62,7 +63,7 @@ describe('色の関数（engine/core/color.ts の alpha・mix）', () => {
 /** 前の src/theme.ts（applyTheme）が作った色（tests/fixtures/palette/themes.json。見た目の更新の前の色） */
 type Recorded = {
   C: Record<string, string>;
-  TONES: Record<string, Record<string, string>>;
+  TONES: Record<string, Record<'main' | 'soft' | 'deep' | 'text', string>>;
   GRAD: string;
   DISPLAY: string;
   SYNTAX: Record<string, string>;
@@ -78,10 +79,10 @@ describe('パレット（engine/core/theme.ts の derivePalette）', () => {
     expect<string[]>(Object.keys(THEMES).filter(isThemeId).sort()).toEqual(Object.keys(RECORDED_PALETTE).sort());
     for (const [id, theme] of Object.entries(THEMES)) {
       const p = derivePalette(theme);
-      const want = RECORDED_PALETTE[id];
+      const want = required(RECORDED_PALETTE[id]);
       const same = Object.keys(want.C).filter((k) => !(READABLE_C as readonly string[]).includes(k));
       expect(Object.fromEntries(same.map((k) => [k, p.C[k as keyof typeof p.C]]))).toEqual(
-        Object.fromEntries(same.map((k) => [k, want.C[k]])),
+        Object.fromEntries(same.map((k) => [k, required(want.C[k])])),
       );
       for (const [t, set] of Object.entries(want.TONES)) {
         const got = p.TONES[t as keyof typeof p.TONES];
@@ -91,7 +92,7 @@ describe('パレット（engine/core/theme.ts の derivePalette）', () => {
           deep: set.deep,
         });
       }
-      expect({ GRAD: p.GRAD, DISPLAY: p.DISPLAY, SYNTAX: p.SYNTAX, MESH: p.MESH }).toEqual({
+      expect<Pick<Recorded, 'GRAD' | 'DISPLAY' | 'SYNTAX' | 'MESH'>>({ GRAD: p.GRAD, DISPLAY: p.DISPLAY, SYNTAX: p.SYNTAX, MESH: p.MESH }).toEqual({
         GRAD: want.GRAD,
         DISPLAY: want.DISPLAY,
         SYNTAX: want.SYNTAX as typeof p.SYNTAX,
@@ -103,13 +104,13 @@ describe('パレット（engine/core/theme.ts の derivePalette）', () => {
     const changed: string[] = [];
     for (const [id, theme] of Object.entries(THEMES)) {
       const p = derivePalette(theme);
-      const want = RECORDED_PALETTE[id];
+      const want = required(RECORDED_PALETTE[id]);
       if (p.C.muted !== want.C.muted) changed.push(`${id} muted`);
       if (p.C.codeMuted !== want.C.codeMuted) changed.push(`${id} codeMuted`);
       for (const [t, set] of Object.entries(want.TONES))
         if (p.TONES[t as keyof typeof p.TONES].text !== set.text) changed.push(`${id} ${t}.text`);
       // 暗い地（night）の補足は、前の色のまま届いている
-      if (theme.scheme === 'dark') expect(p.C.muted).toBe(want.C.muted);
+      if (theme.scheme === 'dark') expect(p.C.muted).toBe(required(want.C.muted));
     }
     expect(changed.sort()).toEqual(
       [
@@ -219,7 +220,7 @@ describe('テーマの検証（engine/core/validate.ts の validateTheme）', ()
     expect(brief({ ...NIGHT, dark })).toEqual(['error t dark.edge', 'error t dark.onTone', 'error t dark.overlay']);
   });
   test('明るい地のテーマに dark を書くと注意（使わない）', () => {
-    expect(brief({ ...CHALKFILE, dark: NIGHT.dark })).toEqual(['warning t dark']);
+    expect(brief({ ...CHALKFILE, dark: required(NIGHT.dark) })).toEqual(['warning t dark']);
   });
 });
 

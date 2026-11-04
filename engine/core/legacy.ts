@@ -21,7 +21,8 @@ const list = <T>(x: T[] | undefined | null): T[] => (Array.isArray(x) ? x : []);
 
 /** timeline の題を、古い書き方で札と題に分けたもの（3 つ目より後は、前から出していない） */
 const splitKicker = (title: string) => {
-  const [kicker, rest] = title.split('　');
+  // 呼び出し側は全角空白があるときだけ使うので、先頭の 2 要素がある。
+  const [kicker, rest] = title.split('　') as [string, string, ...string[]];
   return { kicker, title: rest };
 };
 

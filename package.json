@@ -20,7 +20,7 @@
     "knip": "knip",
     "format": "biome check --write",
     "format:new": "bun scripts/format_new.ts --write",
-    "typecheck": "npm run typecheck:worker-types && tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.client.json && tsc --noEmit -p site/tsconfig.sw.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.bun.json && tsc --noEmit -p tools/verify/tsconfig.json",
+    "typecheck": "npm run typecheck:worker-types && tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.client.json && tsc --noEmit -p site/tsconfig.sw.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.bun.json && tsc --noEmit -p tools/verify/tsconfig.json && tsc --noEmit -p tests/tsconfig.legacy.json && tsc --noEmit -p site/tsconfig.legacy-sw.json",
     "typecheck:worker-types": "bun scripts/worker_types.ts",
     "gen:worker-types": "bun scripts/worker_types.ts --write",
     "test": "bun test",
