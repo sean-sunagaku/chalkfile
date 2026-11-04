@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L12: Lecture = {
@@ -6,11 +8,11 @@ export const L12: Lecture = {
   section: { no: 4, title: 'お金・法律・iOS' },
   title: 'iOS アプリとの関係',
   summary: 'App Store の課金ルール（3.1.1・3.1.3(b)）、日本の外部リンク、Web だけ・アプリ内課金も・外部リンクの 3 つの売り方と、データの持ち方。',
-  docs: [
-    { title: 'Apple: App Store Review Guidelines（3.1 支払い）', url: 'https://developer.apple.com/app-store/review/guidelines/#payments' },
-    { title: 'Apple: 日本でのアプリの配信（代替決済とリンクアウト）', url: 'https://developer.apple.com/support/app-distribution-in-japan/' },
-    { title: 'Apple: App Store Server Notifications', url: 'https://developer.apple.com/documentation/appstoreservernotifications' },
-  ],
+  docs: docsOf([
+    "l-doc-040",
+    "l-doc-041",
+    "l-doc-042"
+  ]),
   quiz: [
     {
       q: 'iOS アプリの中で機能を開ける購読は、原則として？',
@@ -51,21 +53,21 @@ export const L12: Lecture = {
         { t: 'Web で売るサブスクと、iOS アプリの関係を整理します。ここは、ルールを知らないと、アプリの審査で止まるところです。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'App Store の課金のルールが分かる', at: 1 },
-        { text: 'Web で買った人をアプリで扱う条件が分かる', at: 2 },
-        { text: '3 つの売り方と、データの持ち方が分かる', at: 3 },
+        'App Store の課金のルールが分かる',
+        'Web で買った人をアプリで扱う条件が分かる',
+        '3 つの売り方と、データの持ち方が分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: 'App Store の、課金のルール。', sfx: 'pop' },
-        { t: 'Web で買った人を、アプリで扱うときの条件。', sfx: 'pop' },
-        { t: 'そして、三つの売り方と、データの持ち方です。', sfx: 'pop' },
+        { t: 'App Store の、課金のルール。' },
+        { t: 'Web で買った人を、アプリで扱うときの条件。' },
+        { t: 'そして、三つの売り方と、データの持ち方です。' },
       ],
-    },
+    }),
     {
       kind: 'table',
       heading: 'iOS アプリと課金のルール',

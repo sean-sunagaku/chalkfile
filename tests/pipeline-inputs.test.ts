@@ -2,6 +2,7 @@
 // 見逃すのが一番の危険なので、「変えると指紋が変わるもの」と「変えても変わらないもの（サイトと教材だけが使う項目）」を、本物の台本で
 // 確かめる。ファイルは一時のフォルダにだけ書く（声・ミックス・動画は小さい偽物）。本物の道具は流さない
 import { afterAll, describe, expect, test } from 'bun:test';
+import { parse } from '@babel/parser';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -160,6 +161,7 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
       'src/Lecture.tsx',
       'engine/core/theme.ts',
       'content/i18n.ts',
+      'content/videos.ts',
       'content/themes.ts',
       'content/courses.ts',
       'content/ga4-comedy/G01.ts',
@@ -187,6 +189,7 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
       'src/Lecture.tsx',
       'engine/core/theme.ts',
       'content/i18n.ts',
+      'content/videos.ts',
       'content/themes.ts',
       'remotion.config.ts',
       'scripts/stages/video/render.ts',
@@ -240,8 +243,11 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
     const packages = new Set<string>();
     for (const file of listFiles(ROOT, ['src', 'engine']).filter((f) => /\.tsx?$/.test(f))) {
       const text = readFileSync(path.join(ROOT, file), 'utf8');
-      for (const hit of text.matchAll(/from\s*['"]([^.'"][^'"]*)['"]/g)) {
-        const parts = hit[1].split('/');
+      for (const statement of parse(text, { sourceType: 'module', plugins: ['typescript', 'jsx'] }).program.body) {
+        if (statement.type !== 'ImportDeclaration' && statement.type !== 'ExportNamedDeclaration' && statement.type !== 'ExportAllDeclaration') continue;
+        const name = statement.source?.value;
+        if (!name || name.startsWith('.')) continue;
+        const parts = name.split('/');
         packages.add(parts[0].startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]);
       }
     }

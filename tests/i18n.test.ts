@@ -155,6 +155,13 @@ describe('講座の訳（content/i18n.ts の localizeCourse）', () => {
     expect(validateCourse(extra, { themes: Object.keys(THEMES) }).filter((x) => x.rule === 'l10n').map((x) => x.where)).toEqual(['sample（en） lectures.X09']);
     expect(l10nProblems(localizeCourse(course(), courseTr({ sections: [] }), 'en')).map((p) => p.message)).toEqual(['セクションの数が合わない（講座 1・訳 0）']);
   });
+  test('出典の訳は説明だけを重ね、不明な ID は講座の誤りになる', () => {
+    const original = { ...course(), sources: [{ id: 'spec', title: '仕様', url: 'https://example.com/spec', publisher: '作成者', year: '2026', kind: 'official' as const, checked: '2026-11-04', note: '試験の見本' }] };
+    const out = localizeCourse(original, courseTr({ sources: { spec: { title: 'Specification' }, missing: { note: 'Unknown' } } }), 'en');
+    expect(out.sources).toEqual([{ ...original.sources[0], title: 'Specification' }]);
+    expect(l10nProblems(out)).toEqual([{ where: 'sources.missing', message: '日本語の講座に無い出典の訳: missing' }]);
+    expect(validateCourse(out, { themes: Object.keys(THEMES) }).filter((issue) => issue.rule === 'l10n').map((issue) => issue.where)).toEqual(['sample（en） sources.missing']);
+  });
   test('誤りは動画ごと: 1 本の訳が壊れていても、ほかの動画の訳は誤りにならない（Studio はその動画だけを止める）', () => {
     const two = course([base(), base({ id: 'X02', no: 2 })]);
     const out = localizeCourse(two, courseTr({ lectures: { X01: tr({ scenes: [] }), X02: tr() } }), 'en');

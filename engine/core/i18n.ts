@@ -220,6 +220,10 @@ export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: Trans
   const cast = base.cast
     ? Object.fromEntries(Object.entries(base.cast).flatMap(([v, c]) => (c ? [[v, { ...c, name: tr.cast?.[v as VoiceId]?.name ?? c.name }]] : [])))
     : undefined;
+  const knownSources = new Set(base.sources?.map((source) => source.id) ?? []);
+  for (const id of Object.keys(tr.sources ?? {})) {
+    if (!knownSources.has(id)) problems.push({ where: `sources.${id}`, message: `日本語の講座に無い出典の訳: ${id}` });
+  }
   const sources = base.sources?.map((s) => ({ ...s, ...(tr.sources?.[s.id] ?? {}) }));
   const shell: Course = {
     ...base,

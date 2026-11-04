@@ -15,7 +15,7 @@
 
 | 置き場所 | 渡す値 |
 |---|---|
-| `engine/core/project-settings.ts` | 既定テーマ・声・講座のリンクの公開先 |
+| `engine/core/project-settings.ts` | 既定テーマ・テーマ名（テーマの表から）・声・講座のリンクの公開先 |
 | `engine/core/langs.ts` の `LANG_LIST` と `LANG_INFO` | 言語の一覧と名前 |
 | `site/media-shared.ts` の `MEDIA_REPOSITORY` | 動画の中継先のリポジトリ |
 | `worker/src/generated/project-settings.json` | Worker の公開先とリポジトリ |

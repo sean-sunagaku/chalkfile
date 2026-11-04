@@ -41,21 +41,22 @@
 
 - テーマは、色・書体・背景の飾りをまとめたもの。動画と講座サイトの両方に効く。今あるテーマの一覧と、項目の意味と確かめ方は [theme.md](../../.claude/skills/study-video-course/references/theme.md)、値は `content/themes.ts`
 - 講座の `theme: '<id>'` で選ぶ。書かなければ `chalkfile`
-- 作るときは `content/themes.ts` に足す（項目は `engine/core/schema.ts` の `Theme`）。地・文字・主役の色・図の 7 色・コードの色分け・背景の飾り（`chalk`・`band`・`stars`）・書体を決める
+- 作るときは `content/themes.ts` に足し、`npm run gen` を流す（項目は `engine/core/schema.ts` の `Theme`）。地・文字・主役の色・図の 7 色・コードの色分け・背景の飾り（`chalk`・`band`・`stars`）・書体を決める
 - 書き出す前に試す: `npm run stills -- L02:3 L03:3 --theme=<id>`（講座のテーマを変えずに、そのテーマで静止画を描く）
 - 実在のブランドに寄せるときは、色の雰囲気までにする。テーマの名前に会社名を付けず、ロゴ・社名の書体は使わない
 
 ## 2. 作るファイル
 
-講座のことは、講座のフォルダ（`content/<講座 ID>/`）に閉じる。講座を足す PR が触るのは、そのフォルダと、登録表 `content/courses.ts` の 1 行だけ。フォルダの名前は講座 ID にする（生成物の置き場所にも使う）。
+講座のことは、講座のフォルダ（`content/<講座 ID>/`）に閉じる。講座を足す PR は、そのフォルダと、登録表 `content/courses.ts` の 1 行を直す。教材を足した場合は、`npm run gen` が作る `content/materials.ts` の差分も入れる。フォルダの名前は講座 ID にする（生成物の置き場所にも使う）。
 
 手で書くもの:
 
 - [ ] `content/<講座 ID>/<ID>.ts`: レクチャーごとの台本。場面の型は `engine/core/schema.ts`（台本は `content/types.ts` から読む）、画面と話し方の決まりは [style.md](../../.claude/skills/study-video-course/references/style.md)
+- [ ] 読む教材がある章は `content/<講座 ID>/<ID>.material.ts`。[教材の決まり](../../.claude/skills/study-video-course/references/materials.md) に従い、動画のファイルに本文を置かない
 - [ ] `content/<講座 ID>/course.ts`: 講座（`id`・`prefix`（頭文字）・`order`（一覧の並び）・`title`・`subtitle`・`headline`・`theme`・`sections`・`lectures`・`disclaimer`・`docsNote`・`sourceNote`）。お笑い版は `cast`、章立ては `unitLabel: 'CHAPTER'`、1 本だけの動画は `standalone: true`。頭文字と並びは、上の表で使っていないものにする
 - [ ] `content/<講座 ID>/index.ts`: 講座の登録（`export default defineCourseModule({ course, translations })`。訳が無ければ `translations` は書かない）
 - [ ] `content/courses.ts`: 1 行（`export { default as <名前> } from './<講座 ID>';`）。行の順は問わない（並びは `order` で決まる）
-- [ ] `content/<講座 ID>/sources.ts`: 出典と確かめた日（章立て・教材つきの講座）
+- [ ] `content/<講座 ID>/sources.ts`: 出典と公式リンクの表。章は `docsOf` で ID から引く（[教材の決まり](../../.claude/skills/study-video-course/references/materials.md)）
 - [ ] `content/<講座 ID>/syllabus.ts`: 全体の目次・到達目標・章の計画（教材つきの講座。[materials.md](../../.claude/skills/study-video-course/references/materials.md)）
 - [ ] `content/<講座 ID>/reading.ts`: その講座の読みの辞書（講座の用語・固有名詞。要るときだけ。`index.ts` の `reading` に登録する。[style.md](../../.claude/skills/study-video-course/references/style.md) の「読み間違いの直し方」）
 - [ ] 訳を作るときは、`content/<講座 ID>/<言語>/` と、`index.ts` の `translations`（[i18n.md](../../.claude/skills/study-video-course/references/i18n.md)。コマンドは [commands.md](commands.md) の「多言語の動画を作る」）

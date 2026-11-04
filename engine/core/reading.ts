@@ -168,7 +168,7 @@ const COMMON: Reading = { phrases: PHRASES, words: WORDS };
 
 /* ───────────── 台詞と講座の辞書 ─────────────
  * 読み上げる文（engine/core/voices.ts の speechOf）は、台詞のオブジェクトに付けた講座の辞書で読む。付けるのは content/index.ts（日本語の講座を
- * 読み込むとき）。付いていない台詞（テストの見本など）は、共通の辞書だけで読む。台詞のオブジェクトを写すと（structuredClone など）辞書は
+ * 読み込むとき。動画専用の content/videos.ts も同じ辞書を付ける）。付いていない台詞（テストの見本など）は、共通の辞書だけで読む。台詞のオブジェクトを写すと（structuredClone など）辞書は
  * 付いていないので、台本から読んだ台詞のまま渡す
  */
 const READING_OF = new WeakMap<object, Reading>();

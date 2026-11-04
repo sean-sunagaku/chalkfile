@@ -1,11 +1,8 @@
-import { docsFrom } from '../sources-util';
+import { Z, T, TEN } from '../_shared/comedy';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { GA4_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * GA4 のお笑い版 第 3 章。email_entry を「メールの入口」という名前のカスタム ディメンション（範囲: イベント）にする設定。
@@ -21,7 +18,13 @@ export const G03: Lecture = {
   title: '「メールの入口」を設定する',
   summary:
     'サイトから届く email_entry を、GA4 の画面で「メールの入口」として見る・絞り込むための、カスタム ディメンションの作り方。ディメンション名・範囲・イベント パラメータの 3 つの欄が GA4 への何の指示かと、保存の後の注意を知る。',
-  docs: docsFrom(GA4_SOURCES, ['ga4-create-custom-dimension', 'ga4-basics', 'ga4-custom-dimensions', 'ga4-config-limits', 'ga4-not-set']),
+  docs: docsOf([
+    "ga4-create-custom-dimension",
+    "ga4-basics",
+    "ga4-custom-dimensions",
+    "ga4-config-limits",
+    "ga4-not-set"
+  ]),
   quiz: [
     {
       q: 'email_entry を「メールの入口」として見るカスタム ディメンションで、「イベント パラメータ」の欄に入れるのは？',

@@ -1,3 +1,5 @@
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L08: Lecture = {
@@ -6,12 +8,21 @@ export const L08: Lecture = {
   section: { no: 3, title: 'サンプルで作る' },
   title: 'Webhook を受けて DB に写す',
   summary: 'サンプルの 3 つのテーブル、受け取りの 4 ステップ、イベントの振り分け、取り直し方式の同期関数、Webhook と完了ページが同時に動いても壊れない理由。',
-  docs: [
-    { title: 'Stripe: Webhook（イベントの順序・重複・署名）', url: 'https://docs.stripe.com/webhooks' },
-    { title: 'Stripe: イベントの仕組み（Snapshot は古い可能性）', url: 'https://docs.stripe.com/events/how-events-work' },
-    { title: 'Stripe: 注文のフルフィルメント（同じ関数を 2 か所から）', url: 'https://docs.stripe.com/checkout/fulfillment' },
-    { title: 'Stripe API: Retrieve a subscription', url: 'https://docs.stripe.com/api/subscriptions/retrieve' },
-  ],
+  docs: docsOf([
+    {
+      "id": "l-doc-022",
+      "title": "Stripe: Webhook（イベントの順序・重複・署名）"
+    },
+    {
+      "id": "l-doc-023",
+      "title": "Stripe: イベントの仕組み（Snapshot は古い可能性）"
+    },
+    {
+      "id": "l-doc-020",
+      "title": "Stripe: 注文のフルフィルメント（同じ関数を 2 か所から）"
+    },
+    "l-doc-026"
+  ]),
   quiz: [
     {
       q: '台帳への INSERT が一意制約で失敗したら？',
@@ -51,22 +62,22 @@ export const L08: Lecture = {
         { t: 'レクチャー7で学んだ四つの約束を、サンプルアプリのコードに落とし込みます。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: '3 つのテーブルの役割が分かる', at: 1 },
-        { text: '受け取りの 4 ステップが書ける', at: 2 },
-        { text: '取り直し方式の同期が分かる', at: 3 },
+        '3 つのテーブルの役割が分かる',
+        '受け取りの 4 ステップが書ける',
+        '取り直し方式の同期が分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: 'サンプルの、三つのテーブルの役割。', sfx: 'pop' },
-        { t: '受け取りの、四つのステップ。', sfx: 'pop' },
-        { t: 'そして、届く順番に強い、取り直し方式の同期です。', sfx: 'pop' },
+        { t: 'サンプルの、三つのテーブルの役割。' },
+        { t: '受け取りの、四つのステップ。' },
+        { t: 'そして、届く順番に強い、取り直し方式の同期です。' },
       ],
-    },
-    {
+    }),
+    flow({
       kind: 'flow',
       heading: 'サンプルの 3 つのテーブル',
       nodes: [
@@ -84,7 +95,7 @@ export const L08: Lecture = {
         { t: 'subscriptions テーブルは、Stripe の契約の写しです。解約して再加入すると、一人に複数の行ができます。', sfx: 'pop' },
         { t: 'webhook_events は、受け取った通知の台帳。二回届いた通知を見分けるためのものです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'table',
       heading: 'subscriptions（契約の写し）の列',
@@ -109,7 +120,7 @@ export const L08: Lecture = {
         { t: 'trial_end は無料期間の終わり。updated_at は、最後に同期した時刻です。' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '受け取りの 4 ステップ',
       nodes: [
@@ -138,7 +149,7 @@ export const L08: Lecture = {
         { t: 'ステップ3。種類ごとに同期して、同じトランザクションで processed にして、200。', sfx: 'pop' },
         { t: 'ステップ4。途中で例外が起きたら、failed と例外の種類だけを記録して 500。Stripe が送り直してきたら、failed の行は、もう一度処理できるようにします。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'code',
       heading: 'FastAPI で書くとこうなる',

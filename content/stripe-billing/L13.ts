@@ -1,3 +1,4 @@
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L13: Lecture = {
@@ -6,11 +7,14 @@ export const L13: Lecture = {
   section: { no: 5, title: 'まとめ' },
   title: '総まとめ　よくある誤解クイズ',
   summary: 'よくある誤解 7 つを ○× クイズで潰し、この講座の要点と次の一歩を確かめる。',
-  docs: [
-    { title: 'Stripe: 本番稼働前のチェックリスト', url: 'https://docs.stripe.com/get-started/checklist/go-live' },
-    { title: 'Stripe: Webhook（ベストプラクティス）', url: 'https://docs.stripe.com/webhooks' },
-    { title: 'Stripe: 価格の変更（新しい Price を作る）', url: 'https://docs.stripe.com/products-prices/manage-prices' },
-  ],
+  docs: docsOf([
+    "l-doc-035",
+    {
+      "id": "l-doc-022",
+      "title": "Stripe: Webhook（ベストプラクティス）"
+    },
+    "l-doc-043"
+  ]),
   quiz: [
     {
       q: '正しいのはどれ？',

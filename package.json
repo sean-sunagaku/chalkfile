@@ -55,7 +55,8 @@
     "media:check": "bun scripts/media.ts check",
     "media:push": "bun scripts/media.ts push",
     "worktree:new": "bun scripts/worktree.ts",
-    "clean": "bun scripts/clean.ts"
+    "clean": "bun scripts/clean.ts",
+    "codemod:content": "bun scripts/codemod_content.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",
@@ -68,6 +69,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@babel/parser": "7.24.1",
     "@biomejs/biome": "2.6.4",
     "@playwright/test": "1.64.1",
     "@remotion/bundler": "4.0.539",

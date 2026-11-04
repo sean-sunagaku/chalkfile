@@ -1,6 +1,7 @@
 # 生成物（スクリプトが作る。手で直さない・手でマージしない。ぶつかったら main の側を取って作り直す。AGENTS.md の「並行作業のきまり」）
 # GitHub の差分では畳んで見せる
 content/*/generated/** linguist-generated=true
+content/materials.ts linguist-generated=true
 # 書体のサブセットと、その記録（npm run fonts が作る）
 engine/fonts/** linguist-generated=true
 

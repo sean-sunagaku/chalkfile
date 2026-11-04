@@ -1,3 +1,4 @@
+import type { THEME_IDS } from './project-settings';
 // 講座の台本と画面構成のデータ型（台本の形）。台本（content/<講座>/）は content/types.ts から読む（ここを再 export しているだけ）。
 // 画面の要素は `at`（その場面の何番目の台詞の頭で出すか、0 始まり）でナレーションに同期させる。
 // at は台詞の番号のほかに、同じ場面の台詞の id（Line の id）でも書ける（At）。id で書いた台本の型は AuthoredLecture・AuthoredCourse。
@@ -603,7 +604,7 @@ export type Course<A extends At = number> = {
   /** 講座サイトの見出しの横に出すリンク（関連する講座など）。GitHub へのリンクは chalkfile.config.ts から足す */
   links?: { label: string; url: string }[];
   /** 動画と講座サイトのテーマ（content/themes.ts の id）。省略すると Chalkfile の既定のテーマ */
-  theme?: string;
+  theme?: ThemeId;
   /** 動画のはじめと終わり、サイトの見出しの下に出す注意書き（実在の会社や製品を扱う講座では「非公式」と書く） */
   disclaimer?: string;
   /** 掛け合いの講座の配役（声ごとの名前と色）。字幕の帯と、サイトの台本・字幕に名前を付ける */
@@ -721,3 +722,6 @@ export type DarkSurfaces = {
   /** 図の色（tone の main）の上に乗せる文字 */
   onTone: string;
 };
+
+/** 登録したテーマの名前。値は npm run gen がテーマの表から書き出す。 */
+export type ThemeId = (typeof THEME_IDS)[number];

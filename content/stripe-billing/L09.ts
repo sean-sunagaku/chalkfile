@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L09: Lecture = {
@@ -6,13 +8,13 @@ export const L09: Lecture = {
   section: { no: 3, title: 'サンプルで作る' },
   title: '使えるかの判定と Customer Portal',
   summary: 'DB だけを見る判定関数、権利をアプリの DB で判定する理由、Customer Portal の作り方と、解約・プラン変更・日割りの動き。',
-  docs: [
-    { title: 'Stripe: エンタイトルメント（内部で保持する推奨）', url: 'https://docs.stripe.com/billing/entitlements' },
-    { title: 'Stripe: カスタマーポータル', url: 'https://docs.stripe.com/customer-management' },
-    { title: 'Stripe: カスタマーポータルの組み込み', url: 'https://docs.stripe.com/customer-management/integrate-customer-portal' },
-    { title: 'Stripe: プランの変更（アップグレード・ダウングレード）', url: 'https://docs.stripe.com/billing/subscriptions/change' },
-    { title: 'Stripe: 日割り（プロレーション）', url: 'https://docs.stripe.com/billing/subscriptions/prorations' },
-  ],
+  docs: docsOf([
+    "l-doc-027",
+    "l-doc-028",
+    "l-doc-029",
+    "l-doc-030",
+    "l-doc-031"
+  ]),
   quiz: [
     {
       q: '判定関数が Stripe の API を呼ぶのは？',
@@ -51,21 +53,21 @@ export const L09: Lecture = {
         { t: '写した契約を使って Pro の機能を開け、契約の管理は、Stripe の画面に任せます。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: '使えるかの判定関数が書ける', at: 1 },
-        { text: '判定をアプリの DB で行う理由が分かる', at: 2 },
-        { text: 'Portal での解約とプラン変更の動きが分かる', at: 3 },
+        '使えるかの判定関数が書ける',
+        '判定をアプリの DB で行う理由が分かる',
+        'Portal での解約とプラン変更の動きが分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: '使えるかどうかの、判定関数。', sfx: 'pop' },
-        { t: '判定を、アプリの DB で行う理由。', sfx: 'pop' },
-        { t: 'そして、Portal での解約と、プラン変更の動きです。', sfx: 'pop' },
+        { t: '使えるかどうかの、判定関数。' },
+        { t: '判定を、アプリの DB で行う理由。' },
+        { t: 'そして、Portal での解約と、プラン変更の動きです。' },
       ],
-    },
+    }),
     {
       kind: 'code',
       heading: '使えるかの判定関数',

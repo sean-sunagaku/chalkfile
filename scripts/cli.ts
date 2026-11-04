@@ -174,6 +174,15 @@ const renderSteps = ({ values, positionals }: Ctx): Step[] => {
 
 export const COMMANDS: Command[] = [
   {
+    name: 'content migrate',
+    usage: '[--write]',
+    summary: '教材を分け、出典と共通の書き方をまとめる（既定は差分の一覧だけ）',
+    old: ['npm run codemod:content'],
+    file: 'scripts/codemod_content.ts',
+    options: { write: { type: 'boolean' } },
+    steps: ({ values }) => [bun('scripts/codemod_content.ts', ...flag(values, 'write'))],
+  },
+  {
     name: 'doctor',
     usage: '[--json]',
     summary: '道具の版・VOICEVOX・gh の認証の有無・空き容量・ポート・声のキャッシュを確かめる',

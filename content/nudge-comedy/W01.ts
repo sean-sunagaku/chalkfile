@@ -1,12 +1,10 @@
-import { N01 } from '../nudge-product/N01';
-import { docsOf } from '../nudge-product/sources';
+import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { goals } from '../_shared/scenes';
+import { N01_LEARNING } from '../nudge-product/N01.learning';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生（講師の声）
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const ZC = 'zundamon-cry' as const; // ボケの涙声
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * ナッジ講座 第 1 章のお笑い版。中身（主張・出典・クイズ）は真面目版の N01 と同じ。
@@ -20,9 +18,16 @@ export const W01: Lecture = {
   title: 'ナッジとは何か',
   summary: 'ナッジ講座の第 1 章のお笑い版。ずんだもんのやりすぎな案（強制・お金・ダークパターン）に先生がツッコミで名前をつけながら、ナッジとの違いと、良いナッジの 3 つの条件を覚える。',
   // クイズのスラッジ（Thaler, 2018）は、教材の無いこの講座ではここにしか出典が出ないので足す
-  docs: [...N01.docs, ...docsOf(['thaler-2018-sludge'])],
-  quiz: N01.quiz,
-  takeaways: N01.takeaways,
+  docs: docsOf([
+    "thaler-sunstein-2008",
+    "thaler-2015-nyt",
+    "dellavigna-linos-2022",
+    "ftc-2022-dark-patterns",
+    "caa-tokushoho-2022",
+    "thaler-2018-sludge"
+  ]),
+  quiz: N01_LEARNING.quiz,
+  takeaways: N01_LEARNING.takeaways,
   scenes: [
     {
       kind: 'opening',
@@ -37,7 +42,8 @@ export const W01: Lecture = {
         { t: 'この講座は、ナッジ講座のお笑い版である。主張と出典は、真面目版と同じ。違うのは、ボケがいることだけである。', v: TEN },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -53,7 +59,7 @@ export const W01: Lecture = {
         { t: '二つ目。ナッジを、強制やお金、ダークパターンと見分けられること。', sfx: 'pop' },
         { t: '三つ目。良いナッジの三つの条件で、自分の施策を点検できることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'phone',
       heading: '困りごと: 続けたいのに、続かない',

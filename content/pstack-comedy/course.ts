@@ -1,3 +1,4 @@
+import { comedyCast } from '../_shared/comedy';
 import type { Course } from '../types';
 import { P01 } from './P01';
 
@@ -14,13 +15,7 @@ export const PSTACK_COMEDY: Course = {
   standalone: true,
   sections: [{ no: 1, title: 'ざっくり入門' }],
   lectures: [P01],
-  cast: {
-    zundamon: { name: 'ずんだもん', tone: 'mint' },
-    'zundamon-cry': { name: 'ずんだもん', tone: 'mint' },
-    narrator: { name: '先生', tone: 'coral' },
-    tsukkomi: { name: '先生', tone: 'coral' },
-    tennokoe: { name: '天の声', tone: 'violet' },
-  },
+  cast: comedyCast(),
   ui: { takeaways: '要点メモ', docs: '公式の説明', searchHint: 'poteto-mode、スキル' },
   docsNote:
     '動画の内容は、2026 年 11 月 1 日に読んだ pstack の README と、各スキル・/poteto-mode の手順書の説明（GitHub の cursor/plugins、版 0.15.36）がもとです。スキルの数・名前・既定のモデルは変わるので、使う前に README で確かめてください。ずんだもん（ボケ）の台詞は、わざと間違えています。',

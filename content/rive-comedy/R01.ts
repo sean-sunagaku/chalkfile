@@ -1,10 +1,8 @@
+import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const ZC = 'zundamon-cry' as const; // ボケの涙声
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Rive をざっくり知るお笑い版（1 本だけ）。サンプルのコードは出さず、仕組みだけを掛け合いで見せる。
@@ -17,11 +15,11 @@ export const R01: Lecture = {
   section: { no: 1, title: 'ざっくり入門' },
   title: 'Rive ってなに？',
   summary: 'Rive を、ずんだもんと先生の掛け合いでざっくり知る。動きを作るエディタと動かすランタイムのセット、.riv ファイル、ステートマシン、対応する環境と注意点。',
-  docs: [
-    { title: 'Rive のランタイム（公式ドキュメント。対応環境・オープンソースと MIT ライセンス）', url: 'https://rive.app/docs/runtimes' },
-    { title: 'ステートマシン（公式ドキュメント）', url: 'https://rive.app/docs/editor/state-machine/state-machine' },
-    { title: '料金プラン（公式）', url: 'https://rive.app/pricing' },
-  ],
+  docs: docsOf([
+    "r-doc-001",
+    "r-doc-002",
+    "r-doc-003"
+  ]),
   quiz: [
     {
       q: 'Rive の .riv ファイルについて、正しいものは？',

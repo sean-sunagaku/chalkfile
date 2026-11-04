@@ -26,7 +26,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { VIDEOS } from '../content';
 import { compositionId } from '../content/i18n';
-import { THEMES } from '../content/themes';
+import { isThemeId, THEMES } from '../content/themes';
 import type { Scene } from '../content/types';
 import { SCENE_KINDS } from '../engine/core/scenes';
 import { readArgs, runMain, showHelp, UsageError } from './lib/args';
@@ -210,7 +210,7 @@ const main = async (argv: string[]) => {
 
   const targets = positionals.length ? positionals.flatMap(parseTarget) : defaultTargets();
   const themes = opt.theme ? opt.theme.split(',') : Object.keys(THEMES);
-  for (const t of themes) if (!THEMES[t]) throw new UsageError(`テーマが無い: ${t}（${Object.keys(THEMES).join('・')}）`);
+  for (const t of themes) if (!isThemeId(t)) throw new UsageError(`テーマが無い: ${t}（${Object.keys(THEMES).join('・')}）`);
 
   /* ───────────── 実行 ───────────── */
 

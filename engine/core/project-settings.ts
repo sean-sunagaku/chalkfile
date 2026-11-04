@@ -1,5 +1,12 @@
 // npm run gen が chalkfile.config.ts から作る。手で直さない。
 export const DEFAULT_THEME = "chalkfile" as const;
+export const THEME_IDS = [
+  "chalkfile",
+  "indigo",
+  "night",
+  "paper",
+  "stage"
+] as const;
 export const VOICES = {
   "narrator": {
     "speaker": 29,

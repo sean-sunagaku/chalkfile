@@ -1,11 +1,9 @@
-import { docsFrom } from '../sources-util';
+import { Z, T, TEN } from '../_shared/comedy';
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { SUPERAGENT_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Super-agent のお笑い版 第 6 章（最終章）「止まらない仕組みと、残る課題」。事実は DeepSeek Harness チームの記事（英語版、2026-11-02 確認）の
@@ -19,7 +17,11 @@ export const S06: Lecture = {
   title: '止まらない仕組みと、残る課題',
   summary:
     '計算・状態・環境を 2 段階で分け、ループはクラウド、状態はデータベース、環境はその場のデーモンでつなぐ。外から見張る Watchdog が、故障だけでなく「進んでいるか」を見る。記事が残した 4 つの課題（広げ方・セッションの無い使い方・文脈の境目と A2A・安全）と、講座のまとめ。',
-  docs: docsFrom(SUPERAGENT_SOURCES, ['dsh-superagent-article', 'anthropic-managed-agents', 'dsh-superagent-prototype']),
+  docs: docsOf([
+    "dsh-superagent-article",
+    "anthropic-managed-agents",
+    "dsh-superagent-prototype"
+  ]),
   quiz: [
     {
       q: '記事の「計算・状態・環境の分離」の 1 段目は？',
@@ -74,7 +76,8 @@ export const S06: Lecture = {
         { t: '最終章では、ずっと動き続けるための、分け方と見張り。そして、記事が残した課題を見ます。' },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -90,7 +93,7 @@ export const S06: Lecture = {
         { t: '二つ目。Watchdog が見るものを、言えること。', sfx: 'pop' },
         { t: '三つ目。記事が残した課題、特に、安全の話がわかることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'compare',
       heading: '計算・状態・環境: 1 台に結びつけない',
@@ -129,7 +132,7 @@ export const S06: Lecture = {
         { t: '入れ物は、増やしても、起動し直しても、取り替えてもいい。続きは、データベースが覚えています。', sfx: 'chime' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '2 段目: 環境は、その場でつなぐ',
       cite: 'DeepSeek Harness チーム「Exploring Super-agent Design」(2026)',
@@ -163,7 +166,7 @@ export const S06: Lecture = {
           s: 'アンソロピックの記事、ディカップリング・ザ・ブレイン・フロム・ザ・ハンズも、同じ方向だと紹介されています。違うのは、記事のチームが、まず、毎日使う個人のパソコンをつなぎたいことです。',
         },
       ],
-    },
+    }),
     {
       kind: 'points',
       heading: 'Watchdog: 外から見張る',

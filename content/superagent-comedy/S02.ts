@@ -1,12 +1,9 @@
-import { docsFrom } from '../sources-util';
+import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { SUPERAGENT_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const ZC = 'zundamon-cry' as const; // ボケの涙声
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Super-agent のお笑い版 第 2 章「受付と作業を分ける（二層構造）」。事実は DeepSeek Harness チームの記事（英語版、2026-11-02 確認）の
@@ -20,7 +17,10 @@ export const S02: Lecture = {
   title: '受付と作業を分ける（二層構造）',
   summary:
     '会話を 1 つにまとめる形と、出来事ごとにばらす形の弱点から、Router 層（受付）と Worker 層（作業）に分ける二層構造を知る。Router が仕事をしない理由、Agent Team との違い、まとめて処理（バッチ）で受付が詰まりにくい理由と、記事の予備の実験。',
-  docs: docsFrom(SUPERAGENT_SOURCES, ['dsh-superagent-article', 'dsh-superagent-prototype']),
+  docs: docsOf([
+    "dsh-superagent-article",
+    "dsh-superagent-prototype"
+  ]),
   quiz: [
     {
       q: '記事の二層構造で、人とのやり取りを受け持つのは？',
@@ -70,7 +70,8 @@ export const S02: Lecture = {
         { t: 'この章では、Super-agent の土台、二層構造を見ます。仕事の受付と、仕事そのものを、分けます。', s: 'このしょうでは、スーパーエージェントの土台、二層構造を見ます。仕事の受付と、仕事そのものを、分けます。' },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -86,7 +87,7 @@ export const S02: Lecture = {
         { t: '二つ目。Router 層と、Worker 層の役割を言えること。', sfx: 'pop' },
         { t: '三つ目。受付が一つでも、詰まりにくい理由がわかることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'compare',
       heading: '会話の分け方: 両極端',
@@ -129,7 +130,7 @@ export const S02: Lecture = {
         { t: '続くことと、速さ。会話の分け方では、この二つが、引っ張り合います。', sfx: 'chime' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '二層構造: Router 層と Worker 層',
       cite: 'DeepSeek Harness チーム「Exploring Super-agent Design」(2026)',
@@ -162,7 +163,7 @@ export const S02: Lecture = {
           s: 'セッションをひとに手で管理させるのは、主に、モデルのエーピーアイの作りから引き継いだ習慣。セッションは、仕組みの中の話にすべきだ、と記事は言います。',
         },
       ],
-    },
+    }),
     {
       kind: 'points',
       heading: 'Router 層の約束',

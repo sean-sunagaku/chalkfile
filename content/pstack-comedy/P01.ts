@@ -1,10 +1,9 @@
+import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { flow } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const ZC = 'zundamon-cry' as const; // ボケの涙声
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * pstack をざっくり知るお笑い版（1 本だけ）。コードは出さず、考え方と使い方だけを掛け合いで見せる。
@@ -19,14 +18,14 @@ export const P01: Lecture = {
   title: 'pstack ってなに？',
   summary:
     '作った人と考え方、始め方（/add-plugin・/setup-pstack・/poteto-mode）、23 個の手順書、主なスキル（/tdd・/interrogate・/arena・/unslop）と、使う前の注意。',
-  docs: [
-    { title: 'pstack の README（GitHub の cursor/plugins。入れ方・スキル・手順書・原則の一覧）', url: 'https://github.com/cursor/plugins/tree/main/pstack' },
-    { title: '/poteto-mode の説明（GitHub）', url: 'https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md' },
-    { title: '/poteto-mode の 23 個の手順書（GitHub）', url: 'https://github.com/cursor/plugins/tree/main/pstack/skills/poteto-mode/playbooks' },
-    { title: '/setup-pstack の説明（GitHub）', url: 'https://github.com/cursor/plugins/blob/main/pstack/skills/setup-pstack/SKILL.md' },
-    { title: '/interrogate の説明（GitHub）', url: 'https://github.com/cursor/plugins/blob/main/pstack/skills/interrogate/SKILL.md' },
-    { title: '/arena の説明（GitHub）', url: 'https://github.com/cursor/plugins/blob/main/pstack/skills/arena/SKILL.md' },
-  ],
+  docs: docsOf([
+    "p-doc-001",
+    "p-doc-002",
+    "p-doc-003",
+    "p-doc-004",
+    "p-doc-005",
+    "p-doc-006"
+  ]),
   quiz: [
     {
       q: 'pstack の /poteto-mode がすることとして、正しいものは？',
@@ -159,7 +158,7 @@ export const P01: Lecture = {
         { t: '揚げません。', v: T, sfx: 'harisen' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '/poteto-mode の中身',
       nodes: [
@@ -189,7 +188,7 @@ export const P01: Lecture = {
         { t: '一つ目は？', v: T },
         { t: '……ずんだ餅なのだ。', v: ZC, sfxAfter: 'zuko' },
       ],
-    },
+    }),
     {
       kind: 'table',
       heading: '主なスキル',

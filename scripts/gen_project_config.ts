@@ -1,5 +1,6 @@
 // プロジェクトの設定を、エンジンと Worker が読む純粋なデータに書き出す。
 import config from '../chalkfile.config';
+import { THEMES } from '../content/themes';
 export const CORE_SETTINGS = 'engine/core/project-settings.ts';
 export const WORKER_SETTINGS = 'worker/src/generated/project-settings.json';
 export const coreSettings = (settings = config) =>
@@ -7,6 +8,7 @@ export const coreSettings = (settings = config) =>
     '// npm run gen が chalkfile.config.ts から作る。手で直さない。',
     ...Object.entries({
       DEFAULT_THEME: settings.defaultTheme,
+      THEME_IDS: Object.keys(THEMES),
       VOICES: settings.voices,
       KOKORO: settings.translatedVoices,
       ORIGIN: settings.origin,

@@ -1,11 +1,9 @@
-import { docsFrom } from '../sources-util';
+import { Z, T, TEN } from '../_shared/comedy';
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { SUPERAGENT_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Super-agent のお笑い版 第 4 章「文脈の詰め方と先回り」。事実は DeepSeek Harness チームの記事（英語版、2026-11-02 確認）の
@@ -19,7 +17,9 @@ export const S04: Lecture = {
   title: '文脈の詰め方と先回り',
   summary:
     'モデルの文脈の窓を、キャッシュとして扱う考え方。すぐ要りそうなものを入れる Inline と、入りきらないものを外に置く Spill、ID をたどって昔の文脈を戻す Chain of Recall。使うかわからないうちに裏で始める先回り（投機的実行）と、確かなときだけ出す使い方。',
-  docs: docsFrom(SUPERAGENT_SOURCES, ['dsh-superagent-article']),
+  docs: docsOf([
+    "dsh-superagent-article"
+  ]),
   quiz: [
     {
       q: '記事が勧める、モデルの文脈の窓の扱い方は？',
@@ -64,7 +64,8 @@ export const S04: Lecture = {
         { t: 'この章では、モデルの文脈の窓に、何を、どれだけ入れるか。そして、頼まれる前に動く、先回りを見ます。', s: 'このしょうでは、モデルの文脈の窓に、何を、どれだけ入れるか。そして、頼まれる前に動く、先回りを見ます。' },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -80,7 +81,7 @@ export const S04: Lecture = {
         { t: '二つ目。Inline と Spill、そして Chain of Recall を、説明できること。', sfx: 'pop' },
         { t: '三つ目。先回りの使い方と、結果の出し方がわかることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'compare',
       heading: '困りごと: 入れすぎと、少なすぎ',
@@ -165,7 +166,7 @@ export const S04: Lecture = {
         { t: 'これが、Inline と Spill です。', sfx: 'chime' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: 'Chain of Recall: ID をたどって思い出す',
       cite: 'DeepSeek Harness チーム「Exploring Super-agent Design」(2026)。ID と中身は説明用の例',
@@ -198,7 +199,7 @@ export const S04: Lecture = {
         { t: 'リコール……ずんだ餅の、回収なのだ！？', v: Z, pause: -0.15 },
         { t: '回収しません。思い出すんです。', v: T, sfx: 'harisen' },
       ],
-    },
+    }),
     {
       kind: 'quiz',
       heading: 'クイズ',

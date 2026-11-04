@@ -1,3 +1,5 @@
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L02: Lecture = {
@@ -6,12 +8,12 @@ export const L02: Lecture = {
   section: { no: 2, title: 'Stripe の概念とデータ' },
   title: 'Stripe の登場人物',
   summary: 'Customer・Product・Price・Subscription・Checkout Session・Customer Portal・Event の 7 つと、その関係・ID の読み方・金額の書き方。',
-  docs: [
-    { title: 'Stripe: 商品と価格の仕組み', url: 'https://docs.stripe.com/products-prices/overview' },
-    { title: 'Stripe API: Subscription オブジェクト', url: 'https://docs.stripe.com/api/subscriptions/object' },
-    { title: 'Stripe: 対応通貨（ゼロ小数通貨）', url: 'https://docs.stripe.com/currencies' },
-    { title: 'Stripe: サンドボックス', url: 'https://docs.stripe.com/sandboxes' },
-  ],
+  docs: docsOf([
+    "l-doc-004",
+    "l-doc-005",
+    "l-doc-006",
+    "l-doc-007"
+  ]),
   quiz: [
     {
       q: '`evt_` で始まる ID は何のオブジェクト？',
@@ -49,21 +51,21 @@ export const L02: Lecture = {
         { t: 'Stripe は、お客さんも、商品も、契約も、全部オブジェクトという形で持っています。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: '7 つのオブジェクトの役割が言える', at: 1 },
-        { text: '7 つのつながりを図で説明できる', at: 2 },
-        { text: 'ID の頭の文字で種類が分かる', at: 3 },
+        '7 つのオブジェクトの役割が言える',
+        '7 つのつながりを図で説明できる',
+        'ID の頭の文字で種類が分かる',
       ],
       lines: [
         { t: 'このレクチャーのゴールは三つです。' },
-        { t: '七つのオブジェクトの役割を言えること。', sfx: 'pop' },
-        { t: '七つのつながりを、図で説明できること。', sfx: 'pop' },
-        { t: 'そして、ID の頭の文字で、何のオブジェクトか分かることです。', sfx: 'pop' },
+        { t: '七つのオブジェクトの役割を言えること。' },
+        { t: '七つのつながりを、図で説明できること。' },
+        { t: 'そして、ID の頭の文字で、何のオブジェクトか分かることです。' },
       ],
-    },
+    }),
     {
       kind: 'concepts',
       heading: '覚える 7 つのオブジェクト',
@@ -88,7 +90,7 @@ export const L02: Lecture = {
         { t: 'そして Webhook とイベント。Stripe で何かが起きたとき、アプリのサーバーに届く通知です。', sfx: 'pop' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '7 つの関係',
       nodes: [
@@ -118,7 +120,7 @@ export const L02: Lecture = {
         { t: '最初の契約を作るのが Checkout。契約を変えたり、解約したりするのが Portal です。' },
         { t: 'そして契約に変化があるたびに、イベントが生まれて、Webhook で届きます。', sfx: 'chime' },
       ],
-    },
+    }),
     {
       kind: 'points',
       heading: '補足の用語',

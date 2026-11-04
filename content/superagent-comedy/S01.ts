@@ -1,12 +1,9 @@
-import { docsFrom } from '../sources-util';
+import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { SUPERAGENT_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const ZC = 'zundamon-cry' as const; // ボケの涙声
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Super-agent のお笑い版 第 1 章。事実は DeepSeek Harness チームの記事（英語版、2026-11-02 確認）の 1 節:
@@ -20,7 +17,11 @@ export const S01: Lecture = {
   title: 'Super-agent ってなに？',
   summary:
     'AI のエージェントを、会話（セッション）ごとに人が見張る今の形の限界と、それを越える Super-agent の考え方。4 つの性質と、それを支える 5 つの部品の地図を、ずんだもんの掛け合いで知る。',
-  docs: docsFrom(SUPERAGENT_SOURCES, ['dsh-superagent-article', 'dsh-superagent-prototype', 'deepseek-harness-readme']),
+  docs: docsOf([
+    "dsh-superagent-article",
+    "dsh-superagent-prototype",
+    "deepseek-harness-readme"
+  ]),
   quiz: [
     {
       q: '記事が「たくさんの仕事を同時に回すときの限界」としたものは？',
@@ -66,7 +67,8 @@ export const S01: Lecture = {
         { t: 'なお、天の声は、外から、ずっと見ている。', v: TEN },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -82,7 +84,7 @@ export const S01: Lecture = {
         { t: '二つ目。Super-agent の、四つの性質を言えること。', sfx: 'pop' },
         { t: '三つ目。それを支える、五つの部品の地図がわかることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'points',
       heading: '困りごと: 人の注意が、足りない',

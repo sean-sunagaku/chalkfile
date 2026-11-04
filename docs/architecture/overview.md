@@ -35,6 +35,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 ```
 
 - 「追跡」は main で Git が追跡するファイル。ほかは `.gitignore` で外していて、手元だけにある
+- 動画の入口は `content/videos.ts`。読む教材（`*.material.ts`）は依存関係に入れない。サイトと教材の入口 `content/index.ts` は、`npm run gen` が作る `content/materials.ts` の表から教材を付ける。どちらも `engine/core/catalog.ts` で同じ順に台本・訳・読みの辞書を組み立てる
 - `<key>` は動画の key（`S01`・`S01.en`）。訳の動画も同じ流れで作る。サイトに出す言語は `chalkfile.config.ts` の `publishLangs` が決める
 - `media.ts push` は、選んだ講座（`--course`）と言語（`--lang`。既定は ja）の動画だけを扱い、その講座の一覧だけを書き換える。古いハッシュの動画は消さず、一覧の `retained` に残す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
 
@@ -105,8 +106,10 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | パス | 中身 |
 |---|---|
 | `content/courses.ts` | 講座の登録表（1 講座 1 行。`.gitattributes` で `merge=union`）。並びは各講座の `order` で決まる |
-| `content/index.ts` | 登録表から作る講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
-| `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・章の計画（`syllabus.ts`）・読みの辞書（`reading.ts`。その講座の台詞にだけ効く）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
+| `content/index.ts` | 教材を付けた講座の一覧（`COURSES`）・訳の一覧（`TRANSLATIONS`）・動画の一覧（`VIDEOS`） |
+| `content/videos.ts` | 同じ登録表から作る、教材を含めない動画専用の一覧。`src/project.ts` が読む |
+| `content/materials.ts` | `npm run gen` が教材のファイルから作る登録表 |
+| `content/<講座 ID>/` | 講座ごとの台本（`<レクチャー ID>.ts`）・登録（`index.ts`）・講座の定義（`course.ts`。頭文字 `prefix` と並び `order` も）・出典（`sources.ts`）・読む教材（`<ID>.material.ts`）・章の計画（`syllabus.ts`）・読みの辞書（`reading.ts`。その講座の台詞にだけ効く）・訳（`<言語>/`）・生成物（`generated/`）。フォルダの名前は講座 ID |
 | `content/themes.ts` | テーマ（色・書体・背景の飾り）の値と一覧（`THEMES`）。項目の意味は `engine/core/schema.ts` の `Theme` |
 | `content/types.ts`・`langs.ts`・`i18n.ts`・`fields.ts`・`lines.ts`・`reading.ts`・`voices.ts`・`sfx.ts`・`course-module.ts`・`sources-util.ts` | `engine/core/` の再 export だけ（台本と訳の import の行を変えないために残す）。中身を直すのは `engine/core/` の同じ名前のファイル（`types.ts` は `schema.ts`、`sources-util.ts` は `sources.ts`） |
 | `src/` | Remotion の動画。`index.ts` が、中身とのつなぎの `project.ts`（`src/` で `content/` を読むのはここだけ。動画の一覧・テーマ・講座のフォルダの timeline を集める）を `Root.tsx` に渡す。`Root.tsx` は動画ごとのコンポジションを並べ、`Lecture.tsx` が場面を並べ、`scenes/` が場面の種類ごとに描き、`theme.ts` の `ThemeProvider` がテーマの色と書体の名前を部品に渡す（部品は `usePalette()` で読む）。書体のファイルは `fonts.ts` が読み込む |

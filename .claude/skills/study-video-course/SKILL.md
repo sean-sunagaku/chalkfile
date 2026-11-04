@@ -32,7 +32,7 @@ description: ナレーション付きの勉強動画の講座を、調べる →
 
 - 場面ごとの台詞（`lines`）と、台詞に合わせて出す要素（`at`）を書く。場面の型は `engine/core/schema.ts`（台本は `content/types.ts` から読む）、画面と話し方の決まりは [style.md](references/style.md)
 - **お笑い（ずんだもん＝ボケ・先生＝ツッコミ・天の声の掛け合い）を必ず入れ、笑いを優先する**（持ち主の方針）。ずんだもんのボケだけにせず型を混ぜ、ツッコミの大げさな言葉を台詞ですぐ訂正しない。表示は少なくする（副題・前置きを出さない。1 本だけの動画は `standalone: true`）。決まりと見本（W01・R01・P01・S01〜S06）は [comedy.md](references/comedy.md)
-- 読む教材・実践課題・AI チャットの質問例・章の計画まで作る章立ての講座は、レクチャーの `material` と講座の `syllabus`・`sources` を書く（[materials.md](references/materials.md)。見本は `content/nudge-product/`）
+- 読む教材・実践課題・AI チャットの質問例・章の計画まで作る章立ての講座は、`<ID>.material.ts` と講座の `syllabus`・`sources` を書く（[materials.md](references/materials.md)。見本は `content/nudge-product/`）。台本の共通の書き方は [authoring.md](../../../docs/guide/authoring.md)
 - 英語・中国語の版は、`content/<講座>/<言語>/<ID>.ts` に訳の上書きを書いて重ねる。日本語の台本が正本。お笑いは直訳せず、言語ごとに作り直す（[i18n.md](references/i18n.md)）
 
 ### 4. 声・音・動画を作る

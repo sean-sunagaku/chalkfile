@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L01: Lecture = {
@@ -6,11 +8,11 @@ export const L01: Lecture = {
   section: { no: 1, title: 'はじめに' },
   title: 'サブスク課金の全体像',
   summary: 'Stripe が受け持つこと・アプリが作ること、課金の裏側で起きる 5 つのこと、コースの地図をつかむ。',
-  docs: [
-    { title: 'Stripe: サブスクリプションの仕組み', url: 'https://docs.stripe.com/billing/subscriptions/overview' },
-    { title: 'Stripe: サブスクリプションの組み込み（Checkout を使う）', url: 'https://docs.stripe.com/billing/subscriptions/build-subscriptions' },
-    { title: 'Stripe: Billing', url: 'https://docs.stripe.com/billing' },
-  ],
+  docs: docsOf([
+    "l-doc-001",
+    "l-doc-002",
+    "l-doc-003"
+  ]),
   quiz: [
     {
       q: 'カード番号を保管するのは？',
@@ -41,21 +43,21 @@ export const L01: Lecture = {
         { t: 'こんにちは。Stripe サブスク課金の基礎講座へ、ようこそ。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'Stripe とアプリの役割分担が分かる', at: 1 },
-        { text: '課金の裏側で起きる 5 つのことを知る', at: 2 },
-        { text: 'コース全体の地図をつかむ', at: 3 },
+        'Stripe とアプリの役割分担が分かる',
+        '課金の裏側で起きる 5 つのことを知る',
+        'コース全体の地図をつかむ',
       ],
       lines: [
         { t: 'このレクチャーでは、まず全体像をつかみます。' },
-        { t: 'Stripe とアプリが、それぞれ何を受け持つのか。', sfx: 'pop' },
-        { t: '課金の裏側で、何が起きるのか。', sfx: 'pop' },
-        { t: 'そして、このコースをどんな順番で進むのか。この三つです。', sfx: 'pop' },
+        { t: 'Stripe とアプリが、それぞれ何を受け持つのか。' },
+        { t: '課金の裏側で、何が起きるのか。' },
+        { t: 'そして、このコースをどんな順番で進むのか。この三つです。' },
       ],
-    },
+    }),
     {
       kind: 'big',
       heading: 'この講座の題材',

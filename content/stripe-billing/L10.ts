@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L10: Lecture = {
@@ -6,13 +8,13 @@ export const L10: Lecture = {
   section: { no: 3, title: 'サンプルで作る' },
   title: 'テストと本番への切り替え',
   summary: 'サンドボックス・テストカード・Stripe CLI・Test clock での確かめ方、通すべきシナリオ、本番に切り替えるときの注意とリリース前のチェック。',
-  docs: [
-    { title: 'Stripe: Billing の組み込みのテスト（Test clock・失敗のテスト）', url: 'https://docs.stripe.com/billing/testing' },
-    { title: 'Stripe: テストカード', url: 'https://docs.stripe.com/testing' },
-    { title: 'Stripe: サンドボックス', url: 'https://docs.stripe.com/sandboxes' },
-    { title: 'Stripe CLI: stripe listen', url: 'https://docs.stripe.com/cli/listen' },
-    { title: 'Stripe: 本番稼働前のチェックリスト', url: 'https://docs.stripe.com/get-started/checklist/go-live' },
-  ],
+  docs: docsOf([
+    "l-doc-032",
+    "l-doc-033",
+    "l-doc-007",
+    "l-doc-034",
+    "l-doc-035"
+  ]),
   quiz: [
     {
       q: '「登録はできるが請求が失敗する」テストカードは？',
@@ -50,21 +52,21 @@ export const L10: Lecture = {
         { t: 'お金を動かさずに、課金のすべての場面を確かめる方法を見ていきます。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'テストの道具 4 つが使える', at: 1 },
-        { text: '通すべきシナリオが分かる', at: 2 },
-        { text: '本番に切り替えるときの注意が分かる', at: 3 },
+        'テストの道具 4 つが使える',
+        '通すべきシナリオが分かる',
+        '本番に切り替えるときの注意が分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: 'テストの、四つの道具。', sfx: 'pop' },
-        { t: 'サンドボックスで、通すべきシナリオ。', sfx: 'pop' },
-        { t: 'そして、本番に切り替えるときの注意です。', sfx: 'pop' },
+        { t: 'テストの、四つの道具。' },
+        { t: 'サンドボックスで、通すべきシナリオ。' },
+        { t: 'そして、本番に切り替えるときの注意です。' },
       ],
-    },
+    }),
     {
       kind: 'points',
       heading: 'テストの 4 つの道具',
@@ -148,25 +150,25 @@ export const L10: Lecture = {
         { t: 'そして、鍵はサーバーの設定にだけ置きます。コードやログ、PR には、絶対に出しません。', sfx: 'pop' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'リリース前のチェック',
       items: [
-        { text: 'サンドボックスで全部のシナリオを通した', at: 1 },
-        { text: '本番の商品・価格・Portal・メール・Webhook を設定した', at: 2 },
-        { text: '本番の鍵と whsec_ をサーバーの設定に入れた', at: 3 },
-        { text: '自分のカードで、購入から解約までできた', at: 4 },
-        { text: '特商法の表記と最終確認画面を用意した（L11）', at: 5 },
+        'サンドボックスで全部のシナリオを通した',
+        '本番の商品・価格・Portal・メール・Webhook を設定した',
+        '本番の鍵と whsec_ をサーバーの設定に入れた',
+        '自分のカードで、購入から解約までできた',
+        '特商法の表記と最終確認画面を用意した（L11）',
       ],
       lines: [
         { t: 'リリースの前に、確かめることです。' },
-        { t: 'サンドボックスで、全部のシナリオを通したこと。', sfx: 'pop' },
-        { t: '本番の Stripe で、商品、価格、Portal、メール、Webhook を設定したこと。', sfx: 'pop' },
-        { t: '本番の鍵と、Webhook のシークレットを、サーバーの設定に入れたこと。', sfx: 'pop' },
-        { t: '本番で、自分のカードを使って、購入から解約までできたこと。', sfx: 'pop' },
-        { t: 'そして、特定商取引法の表記と、最終確認画面を用意したこと。これは次のレクチャーで見ます。', sfx: 'pop' },
+        { t: 'サンドボックスで、全部のシナリオを通したこと。' },
+        { t: '本番の Stripe で、商品、価格、Portal、メール、Webhook を設定したこと。' },
+        { t: '本番の鍵と、Webhook のシークレットを、サーバーの設定に入れたこと。' },
+        { t: '本番で、自分のカードを使って、購入から解約までできたこと。' },
+        { t: 'そして、特定商取引法の表記と、最終確認画面を用意したこと。これは次のレクチャーで見ます。' },
       ],
-    },
+    }),
     {
       kind: 'recap',
       heading: 'まとめ',

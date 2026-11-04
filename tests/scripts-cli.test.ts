@@ -16,6 +16,7 @@ afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
 const TS = [
   'build_materials',
   'check_content',
+  'codemod_content',
   'clean',
   'cli',
   'check_overlap',
@@ -41,6 +42,8 @@ const MODULES = [
   'media-lists',
   'timelines',
   'voices',
+  'gen_project_config',
+  'gen_materials_registry',
   ...readdirSync(path.join(ROOT, 'scripts/lib')).map((f) => `lib/${f.replace(/\.ts$/, '')}`),
   // 段の部品（scripts/stages/<段>/<部品>.ts）
   ...readdirSync(path.join(ROOT, 'scripts/stages')).flatMap((stage) =>
@@ -114,7 +117,8 @@ describe('--help は頭書きを出すだけで、何も消さず・何も書か
       });
       // 頭書きを出す（cli.ts は、そのあとにコマンドの一覧も出す）
       expect(r.stdout.startsWith(`${headerOf(path.join(ROOT, c.file)).trim()}\n`)).toBe(true);
-      expect(r.stdout).toMatch(/scripts\/[\w/-]+\.(ts|sh)/);
+      // 入口は package.json の scripts。前からある直接の流し方も読める。
+      expect(r.stdout).toMatch(/scripts\/[\w/-]+\.(ts|sh)|npm run [\w:-]+/);
     }, 60_000);
   for (const c of PY)
     test.skipIf(!python)(
