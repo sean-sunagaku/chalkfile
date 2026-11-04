@@ -5,9 +5,9 @@
 //   書き出し: scripts/scripts/stages/video/render.ts（サイト用の動画の目安。bun で、このファイルだけを読む）
 // ほかのファイルを import しない（scripts/stages/video/render.ts が bun -e でこのファイルだけを読む。sw.js と Worker にも入る）。
 // 値を変えるとき
-//   - 保存の上限（OFFLINE_*）を厳しくすると、利用者が保存した講座が読めなくなる（tests/offline-compat.test.ts が落ちる）。緩める方向だけにする
+//   - 保存の上限（OFFLINE_*）を厳しくすると、利用者が保存した講座が読めなくなる（tests/unit/offline-compat.test.ts が落ちる）。緩める方向だけにする
 //   - 外のサービスの上限（Workers・Releases）は、今使っている無料の枠の値。変わったら、公式の文書で確かめてから直す
-//   - 数は「この値まで」（超えたら止める）。tests/limits.test.ts が、境目の値で各ファイルの確かめ方と合うかを見る
+//   - 数は「この値まで」（超えたら止める）。tests/unit/limits.test.ts が、境目の値で各ファイルの確かめ方と合うかを見る
 
 const MiB = 1024 * 1024;
 const GiB = 1024 * MiB;

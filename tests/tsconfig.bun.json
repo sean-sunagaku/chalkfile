@@ -4,5 +4,5 @@
   "extends": "../tsconfig.json",
   "compilerOptions": { "types": ["bun", "@playwright/test"] },
   "include": ["**/*.ts", "../playwright.config.ts"],
-  "exclude": ["worker.test.ts"]
+  "exclude": ["unit/worker.test.ts"]
 }

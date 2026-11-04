@@ -1,4 +1,4 @@
-// ブラウザのテストで配る講座サイトの形。テストのサーバー（tests/browser-server.ts）が作り、テスト（tests/browser/fixtures.ts の site）が受け取る。
+// ブラウザのテストで配る講座サイトの形。テストのサーバー（tests/e2e/browser-server.ts）が作り、テスト（tests/e2e/fixtures.ts の site）が受け取る。
 //   ci: 合成の講座（tests/fixtures/content/site-sample。2 本・4 秒の動画）。本物の講座も動画も要らない（CI の e2e のジョブ）
 //   real: 本物の講座（site/dist と、手元の site/media の動画）と入れてある Chrome での回帰（手で流す）
 

@@ -19,7 +19,7 @@
 | ファイル | すること |
 |---|---|
 | `scripts/build_site.ts`（本体は `scripts/site/` の `buildSite`）・`scripts/pwa.ts` | 教材の版・ファイルごとの SHA-256 と大きさ・講座の `offline-manifest.json`・起動用のページ・言語ごとの Web App Manifest（`<言語>/manifest.webmanifest`）・アイコン（`any` と `maskable` を別の画像に）・worker を作る。ページの 2 本の script（画面と offline-client）は、Bun で 1 本ずつ iife にまとめて縮め、ページの中に入れる（保存版の HTML が 1 枚で完結する。外の JS にすると、SW を更新したときに古い保存版が壊れる） |
-| `scripts/site-version.ts` | 教材の版（pageVersion）を出力から計算する。版の印を入れたまま描いたページと、保存する動画・ポスターの URL・大きさ・SHA-256 から求め、印に差し込む（テストは `tests/site-version.test.ts`） |
+| `scripts/site-version.ts` | 教材の版（pageVersion）を出力から計算する。版の印を入れたまま描いたページと、保存する動画・ポスターの URL・大きさ・SHA-256 から求め、印に差し込む（テストは `tests/unit/site-version.test.ts`） |
 | `site/offline-client.ts`・`offline-panel.html`・`offline.css` | 選んで保存・バイト単位の進み具合・保存の状態・取り消し・やり直し・削除・更新（何が変わったかの文も）・容量の見積もり・保持の要求・インストールの案内 |
 | `site/course-page.ts`・`site/page/` | 講座のページの画面（動画と字幕・カリキュラムと進み具合・概要・台本と検索・ノート・クイズ・教材・タブ・ショートカット）。本数と長さの文と見出しの上の札は `page/summary.ts`（JS が無くても読めるように、組み立てがページに書く最初のレクチャーとカリキュラムも、これで作る）。ページの JSON の形は `page/data.ts` の `CourseData`（組み立ての `courseJson` が `satisfies` で確かめる）、offline-client からの知らせは `page/events.ts`、学習の記録は `page/storage.ts`（下の「学習の記録の互換」）、部品は文字を文字のまま入れる `page/dom.ts` |
 | `site/news.ts` | 「新しい版」の案内に出す、何が変わったかの文の正本（下の「新しい版の案内」） |
@@ -28,11 +28,11 @@
 | `site/offline-shared.ts` | 保存するものの形と範囲（講座の ID の頭と、動画とポスターの名前の言語は、言語の一覧 `content/langs.ts` から作る）・保存の記録の読み込み・片付けと隔離の判断 |
 | `site/lib/http-range.ts`・`site/lib/text.ts` | SW と手元の配信が使う共有の部品（1 つの bytes の Range の読み方と応答・HTML のエスケープと差し込み）。動画の配るパスの読み方とダウンロードの名前は `site/media-shared.ts` |
 | `site/disabled-revisions.ts` | 無効にした保存版の revision の一覧の正本（下の「無効にした保存版」） |
-| `site/limits.ts` | 保存・動画・Workers の大きさの上限の正本（境目のテストは `tests/limits.test.ts`） |
+| `site/limits.ts` | 保存・動画・Workers の大きさの上限の正本（境目のテストは `tests/unit/limits.test.ts`） |
 | `site/mime.ts` | 拡張子と MIME の対応表（Workers が返す型と同じ）。起動用のファイル（一覧のページの画像・講座のサムネイル・アイコン・manifest）と保存するファイルの型はここから付け、知らない拡張子なら組み立てを止める |
-| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本のどれかで CSP と合うか・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型・`_headers` で長くキャッシュさせるポスターを `?v=` 無しで指していないか。テストは `tests/site-invariants.test.ts`） |
-| `tests/offline.test.ts`・`tests/browser/` | 境目の値と、実ブラウザの確かめ（合成の講座の `test:e2e:ci` と、本物の講座の `test:e2e:real`）。通信などの障害は、テストのサーバー（`tests/browser-server.ts`）が、テストごとのセッション（`tests/e2e/session.ts`）で起こす |
-| `tests/offline-compat.test.ts`・`tests/fixtures/saved-records/<日付>/` | 学ぶ人が保存した記録の互換のテスト（下の「保存データの互換」）。fixture は `tests/capture-saved-records.ts` で作る |
+| `scripts/site-invariants.ts` | 組み立ての最後に、公開物の決まりを確かめる（Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本のどれかで CSP と合うか・全部の `offline-manifest.json` が `validateManifest` を通るか・起動用のファイルの中身と型・`_headers` で長くキャッシュさせるポスターを `?v=` 無しで指していないか。テストは `tests/unit/site-invariants.test.ts`） |
+| `tests/unit/offline.test.ts`・`tests/e2e/` | 境目の値と、実ブラウザの確かめ（合成の講座の `test:e2e:ci` と、本物の講座の `test:e2e:real`）。通信などの障害は、テストのサーバー（`tests/e2e/browser-server.ts`）が、テストごとのセッション（`tests/e2e/session.ts`）で起こす |
+| `tests/unit/offline-compat.test.ts`・`tests/fixtures/saved-records/<日付>/` | 学ぶ人が保存した記録の互換のテスト（下の「保存データの互換」）。fixture は `tools/verify/capture-saved-records.ts` で作る |
 
 ## 多言語と字幕版
 
@@ -47,7 +47,7 @@
 - 旧 Pages の scope の保存は、移行用の Service Worker（`site/legacy-sw.ts`）が守る。install と activate で、旧サイトの保存（registry・course・shell の cache）を消さない
 - オンラインでは、次のページの移動で新しいサイトへ案内する。オフラインでは、完全な旧保存版から Range と途中への移動を返し、保存し直しの案内を付ける
 - 新しい origin へ、保存・メモ・進み具合を自動では移さない。旧サイトの画面で受け付けるのは、はっきり選んだ削除だけ。新しい保存は、新しいサイトで案内する
-- 確かめるのは `tests/browser/migration.spec.ts`（本物の旧公開の HTML と Service Worker を使う）。旧公開の写しの出どころは `site/legacy-config.json`。案内の出し方と、移行のコードを終える日は [配信の設計](delivery.md) の「旧 GitHub Pages の移行」
+- 確かめるのは `tests/e2e/migration.spec.ts`（本物の旧公開の HTML と Service Worker を使う）。旧公開の写しの出どころは `site/legacy-config.json`。案内の出し方と、移行のコードを終える日は [配信の設計](delivery.md) の「旧 GitHub Pages の移行」
 
 ## 保存と更新の約束
 
@@ -74,7 +74,7 @@
 
 Service Worker は、保存した記録（registry の 1 件）を使うたびに `parseRecord`（中は `validateManifest`）に通し、通らない記録は無いものとして扱う。だから検証を少し厳しくしただけで、学ぶ人が保存した講座（1 講座で数十〜百数十 MiB）が読めなくなる。次の 4 つで守る。
 
-1. **互換のテスト**: `tests/offline-compat.test.ts` は、`tests/fixtures/saved-records/<日付>/` の教材情報と記録を、今の読み込みが全部受け入れるかを確かめる。落ちたら、検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。記録や教材情報の形を変えたら、`bun tests/capture-saved-records.ts <日付>` で新しい日付の fixture を足し、古い日付も残す
+1. **互換のテスト**: `tests/unit/offline-compat.test.ts` は、`tests/fixtures/saved-records/<日付>/` の教材情報と記録を、今の読み込みが全部受け入れるかを確かめる。落ちたら、検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。記録や教材情報の形を変えたら、`bun tools/verify/capture-saved-records.ts <日付>` で新しい日付の fixture を足し、古い日付も残す
    - `2026-11-02` の fixture: main の 5ac64db で組んだ全 9 講座を本物の Chrome で保存した記録（更新して版を 2 つ持つ記録を含む）と、旧 Pages の最後の公開 a4399995 の 8 講座の記録（pstack-comedy は本物の旧 Service Worker で保存し、ほかは同じ形で組んだもの）。動画は入れない
 2. **版の決まり**: 保存データの版 `offline-v1`（Cache の名前・registry の記録の形・教材情報の `schema: 1`）を上げるのは、前の版の記録を読んで移す移行のコードと一緒のときだけ。版だけを上げると、前の版の保存は誰も読まず、学ぶ人の保存が消える
 3. **検証の分け方（方針）**: 読むとき（保存した記録と教材情報）は、安全のために要る項目だけを見る。同じ origin と scope・講座の範囲・Cache の名前の頭・再生のときの大きさと SHA-256 の照合。新しく保存するとき（`fetchManifest`）は、今の `validateManifest` の全部で厳しく見る。今は両方が同じ `validateManifest` を使うので、保存の検証を厳しくすると、読む方も厳しくなる。分けるまでは、`validateManifest` を厳しくする変更に互換のテストが当たる
@@ -91,7 +91,7 @@ Service Worker は、保存した記録（registry の 1 件）を使うたび�
 - 形のある値（`progress`・`notes`・`quiz`・`prefs`）には、書くときに形の版 `v`（今は 1）を入れる。版の無い値は前の形として読む
 - 読むときは、どの版でも形を確かめ、足りない項目を補い、読めない項目だけを落とす。壊れた値や、localStorage を使えない設定で、画面を止めない
 - 前の版のページ（開いたままのタブ・無効にした版をオフラインで開いたとき）も、同じ鍵を読み書きする。前のページは、値の中のレクチャー ID の項目だけを引くので、`v` を足しても読める。形を変えるときは、前のページが読み書きしても壊れないように足すだけにし、読めない形にするときは鍵の名前を変えて移す
-- `tests/offline-compat.test.ts` は、前の画面が書いた見本（`tests/fixtures/local-storage/<日付>.json`）を今の画面が落とさずに読むことと、今の画面が書き直した値を前の画面も読めることを確かめる。見本を書き換えて通さない
+- `tests/unit/offline-compat.test.ts` は、前の画面が書いた見本（`tests/fixtures/local-storage/<日付>.json`）を今の画面が落とさずに読むことと、今の画面が書き直した値を前の画面も読めることを確かめる。見本を書き換えて通さない
 
 ## 新しい版の案内
 

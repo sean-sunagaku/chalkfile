@@ -5,7 +5,7 @@
 //   1. 今の版を控える（wrangler deployments status）
 //   2. wrangler deploy（devDependency の固定の版）
 //   3. 公開したページの HTML と sw.js が、組み立てた site/dist と同じバイトになるのを待つ（新しい版が届いたか・no-transform が効いているか）
-//   4. verify_public（トップと全部の動画の Range）と HTML の smoke（tests/worker-site-smoke.ts。全ページ・SW の scope・CSP）
+//   4. verify_public（トップと全部の動画の Range）と HTML の smoke（tools/verify/worker-site-smoke.ts。全ページ・SW の scope・CSP）
 //   5. 3 か 4 が通らなければ（4 は間をおいて 1 回だけ流し直す）、1 で控えた版へ wrangler rollback して、1 で終える
 // - 確かめのコマンドには、Cloudflare の token と account ID を渡さない（環境変数から外して流す）
 // - --main を付けると、main の先頭がその commit でないときは何も出さずに終える（古い実行を流し直して、古い版を出さない）
@@ -140,7 +140,7 @@ async function checks(o: Options, d: Deps): Promise<string[]> {
   const failed: string[] = [];
   for (const [name, cmd] of [
     ['verify_public（トップと全部の動画の Range）', ['bun', 'scripts/verify_public.ts', o.origin]],
-    ['HTML の smoke（全ページ・SW の scope・CSP）', ['bun', 'tests/worker-site-smoke.ts', o.origin]],
+    ['HTML の smoke（全ページ・SW の scope・CSP）', ['bun', 'tools/verify/worker-site-smoke.ts', o.origin]],
   ] as const) {
     d.log(`確かめる: ${name}`);
     if ((await d.run([...cmd], { capture: false, env })).code !== 0) failed.push(name);

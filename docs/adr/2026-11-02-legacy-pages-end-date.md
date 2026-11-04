@@ -11,7 +11,7 @@
 - 保存と学習の記録は、origin が違うので、新しいサイトへ自動では移せない。学ぶ人が、新しいサイトで保存し直す
 - main には、移行のためのコードとテストがある
   - `site/legacy-sw.ts`・`scripts/build_migration.ts`・`scripts/deploy_pages.sh`・`site/legacy-config.json`
-  - `tests/browser/migration.spec.ts`・`tests/fixtures/legacy-pages/`・`tests/browser-server.ts` の旧サイトの分岐
+  - `tests/e2e/migration.spec.ts`・`tests/fixtures/legacy-pages/`・`tests/e2e/browser-server.ts` の旧サイトの分岐
 - これらを、いつ消すかを決める必要がある
 
 ## 決めたこと
@@ -31,8 +31,8 @@
 
 期限を持ち主が決める前でも、凍結は先に始めた（変えないことには、決めることが無いため）。
 
-- `site/legacy-sw.ts` と `scripts/build_migration.ts` は変えない。ファイルの SHA-256 を `tests/legacy-freeze.test.ts` が見る。Biome の全体の整形からも外す（`biome.jsonc`）
-- 移行のテスト（`tests/browser/migration.spec.ts`）は、公開済みの移行の案内（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 を、そのまま写したもの）を配る。テストのサーバーは、今のソースから作り直さない。fixture が公開物と同じかも、`tests/legacy-freeze.test.ts` が見る
+- `site/legacy-sw.ts` と `scripts/build_migration.ts` は変えない。ファイルの SHA-256 を `tests/unit/legacy-freeze.test.ts` が見る。Biome の全体の整形からも外す（`biome.jsonc`）
+- 移行のテスト（`tests/e2e/migration.spec.ts`）は、公開済みの移行の案内（`tests/fixtures/legacy-migration`。`gh-pages` の 9dd4e82 を、そのまま写したもの）を配る。テストのサーバーは、今のソースから作り直さない。fixture が公開物と同じかも、`tests/unit/legacy-freeze.test.ts` が見る
 - 移行のテストは、本物の講座がなくても流れる（合成の講座のテストでは、前の公開の動画を合成の動画に替える）
 - 凍結を解くとき（期限の前に、移行の不具合を直すなど）は、先にこの ADR を直し、そのあとでテストの値を直す
 

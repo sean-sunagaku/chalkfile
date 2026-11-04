@@ -36,7 +36,7 @@ Worker の入口（`worker/src/app.ts`）は、パスの頭で受け口を選ぶ
 
 - `/api/*` を `run_worker_first` に足すのは、M4 で `/api/ask` の受け口と、下の守りを入れる PR にする。それまでは `["/media/*"]` のまま
 - 足すのは `/api/*` だけにする。`true`（全部の要求で Worker を先に通す）にはしない。静的なページを assets が先に返す今の形を保つ
-- 広げる PR では、公開の点検（`scripts/check_delivery.ts` の Worker の設定の検査）と、手元の smoke（`scripts/smoke_worker.ts`）も合わせて直す
+- 広げる PR では、公開の点検（`scripts/check_delivery.ts` の Worker の設定の検査）と、手元の smoke（`tools/verify/smoke_worker.ts`）も合わせて直す
 
 ### AI の呼び出しの守り
 
@@ -88,7 +88,7 @@ AI に問い合わせる前に、上から順に確かめる。どれかで止�
 
 ## 影響
 
-- 入口は `worker/src/app.ts` の受け口の表、`/api/*` の受け口は `worker/src/api.ts`。本番の `run_worker_first` は `["/media/*"]` のまま。テストは `tests/worker.test.ts`
+- 入口は `worker/src/app.ts` の受け口の表、`/api/*` の受け口は `worker/src/api.ts`。本番の `run_worker_first` は `["/media/*"]` のまま。テストは `tests/unit/worker.test.ts`
 - M4 で入れるもの: `/api/ask` の受け口・守り・データベース（M4 の ADR）・`run_worker_first` の `/api/*`・公開の点検と smoke の直し
 - 節 ID を変えないことを、テストで守る（別に足す）
 - 有料の機能（Workers の有料プラン・有料の置き場所）が要るときは、[Workers Free のままにする](2026-11-02-workers-free-only.md) を置き換える ADR を先に書く

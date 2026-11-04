@@ -3,7 +3,7 @@ import type { AuthoredCourse } from '../../../../content/types';
 import { X10 } from './X10';
 
 /**
- * at を台詞の id で書いた見本の講座（講座の一覧には並べない。tests/lines.test.ts が読む）。
+ * at を台詞の id で書いた見本の講座（講座の一覧には並べない。tests/unit/lines.test.ts が読む）。
  * id で at を書く動画を入れる講座は AuthoredCourse にする（content/<講座>/course.ts と同じ形）
  */
 export const LINE_IDS: AuthoredCourse = {

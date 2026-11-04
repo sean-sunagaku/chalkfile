@@ -4,7 +4,7 @@
 //   （JSON も Git に入れる。ずれると npm test が止める）
 // - 台本の型の SfxId（engine/core/schema.ts）は、ここの名前から作る。台本の検証の効果音の名前の一覧（engine/core/validate.ts）も、ここから作る
 // - 足すときは、ここと scripts/audio/music/sfx.py の SFX（合成）に足し、npm run gen と npm run build:music -- --only <名前> を流す。
-//   名前の一覧がずれると、テスト（tests/handoff.test.ts）と build_music.py が止める
+//   名前の一覧がずれると、テスト（tests/unit/handoff.test.ts）と build_music.py が止める
 // 純粋なデータだけを置く（Node・React・Remotion に依存しない）。台本と道具は content/sfx.ts からも読める（再 export）
 
 export type SfxSpec = {

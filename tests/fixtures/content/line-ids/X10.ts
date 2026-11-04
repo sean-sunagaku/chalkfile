@@ -5,7 +5,7 @@ const Z = 'zundamon' as const; // ボケ: ずんだもん（配役は course.ts 
 /**
  * at を台詞の id で書いた見本（番号で数えない書き方）。台詞に id を付け、画面の要素の at にその id を書く。
  * 画面の図の注は、部品の id（blockId）で指す。読み込むとき（content/lines.ts）に番号に直る。
- * 台詞を足しても並べ替えても、要素は同じ台詞に付いたまま動く（tests/lines.test.ts）
+ * 台詞を足しても並べ替えても、要素は同じ台詞に付いたまま動く（tests/unit/lines.test.ts）
  */
 export const X10: AuthoredLecture = {
   id: 'X10',

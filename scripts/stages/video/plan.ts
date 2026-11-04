@@ -1,4 +1,4 @@
-// 動画の書き出し（scripts/stages/video/render.ts）のうち、ファイルを読み書きしない部分。テストは tests/render.test.ts。
+// 動画の書き出し（scripts/stages/video/render.ts）のうち、ファイルを読み書きしない部分。テストは tests/unit/render.test.ts。
 //   動画の名前の形・出力と一時のファイルの名前・分けて書き出すフレームの範囲・サイト用の動画の crf の選び方・ffmpeg の引数・
 //   ffprobe で確かめること・引数と環境変数（CAPTIONS・CHUNK・CONCURRENCY）の読み方
 // 値（crf・品質・秒など）は scripts/stages/video/render.config.ts

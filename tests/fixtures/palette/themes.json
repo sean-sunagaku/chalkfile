@@ -1,5 +1,5 @@
 {
- "note": "前の src/theme.ts（applyTheme・live binding）が 5 つのテーマで作った色（origin/main 1f8df8e で書き出した）。見た目の更新の前の色として残す。derivePalette が、読める濃さにした色（tests/engine.test.ts の READABLE_C と図の色の text）のほかは同じ色を作ることを、tests/engine.test.ts で確かめる",
+ "note": "前の src/theme.ts（applyTheme・live binding）が 5 つのテーマで作った色（origin/main 1f8df8e で書き出した）。見た目の更新の前の色として残す。derivePalette が、読める濃さにした色（tests/unit/engine.test.ts の READABLE_C と図の色の text）のほかは同じ色を作ることを、tests/unit/engine.test.ts で確かめる",
  "themes": {
   "chalkfile": {
    "C": {

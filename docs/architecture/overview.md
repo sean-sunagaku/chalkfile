@@ -61,7 +61,7 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 - 前の段の出力は、出力の中身の sha256 で次の段に入る。前の段を流し直しても、出力が同じなら次の段は流さない
 - 書き出し（render）は長いので、書き出しの道具（`scripts/stages/video/render.ts`）が動画ごとに、書き出す前の指紋を置き、全部の出力を置き換えてから比べて記録する（流している間に台本を直したら、記録しない）。記録の無い動画は、既定で書き出し直さない。描き方の側だけが変わった動画も、既定では書き出さない（`--src`）
 - 書き出しの記録の台本の側と描き方の側の指紋は、`media push` が動画の一覧の項目の `inputs` に写す（一覧の版 2。版 1 も読む。Worker の許可リストには入れない）。PR の CI の `npm run validate` が、今の台本から作った指紋と比べる
-- 指紋の作り方の正本は `scripts/stages/pipeline/stages.ts` と `scripts/stages/video/inputs.ts`、状態の見方は `scripts/stages/pipeline/runner.ts`。入れるものは `tests/pipeline-inputs.test.ts` が固定する（サイトと教材だけが使う項目を直しても、動画は古くならない）
+- 指紋の作り方の正本は `scripts/stages/pipeline/stages.ts` と `scripts/stages/video/inputs.ts`、状態の見方は `scripts/stages/pipeline/runner.ts`。入れるものは `tests/unit/pipeline-inputs.test.ts` が固定する（サイトと教材だけが使う項目を直しても、動画は古くならない）
 
 ## どこで何をするか
 
@@ -119,14 +119,15 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | `scripts/audio/` | BGM・ジングル・効果音の合成（`music/`。役割ごとのモジュールで、一覧は `music/__init__.py`。入口は `scripts/build_music.py`）、Python の道具の共有の部品（`common.py`）、TS の道具が書く JSON を読んで形を確かめる部品（`handoff.py`。形の正本は `scripts/lib/handoff.ts`）、`npm run gen` が書き出す効果音の一覧（`sfx.json`。正本は `engine/core/sfx.ts`）と動画の値（`video_config.json`） |
 | `site/` | 講座サイトのひな形（`template.html` が講座、`home.html` が一覧）・講座のページの画面（`course-page.ts` と `page/`。組み立てが 1 本にまとめてページに入れる）・決まった文字（`i18n/`。言語ごとのファイル）・何が変わったかの文（`news.ts`）・保存（`sw.ts`・`offline-*.ts`）・設定（`config.json`）・一覧のページの画像（`assets/`）。色と書体は `scripts/site_theme.ts` がテーマから作る |
 | `worker/`・`wrangler.jsonc` | Worker の入口（`worker/src/app.ts`。パスの頭で受け口を選ぶ）・`/media/` の中継（`media.ts`。許可リストは `npm run gen` が作る `worker/src/generated/media-manifest.json`）・AI チャットの受け口（`api.ts`。M4 で入れる）と、Workers の assets・Custom Domain の設定 |
-| `tests/` | 単体テスト（`*.test.ts`）・ブラウザのテスト（`browser/`。テストのサーバーは `browser-server.ts` と `e2e/`）・テストの入力（`fixtures/`。合成の講座は `fixtures/content/site-sample`）・本番を確かめる道具（`verify-*.ts` など。手で流す） |
+| `tests/` | 単体テスト（`unit/`）・ブラウザのテストと専用サーバー（`e2e/`）・テストの入力（`fixtures/`。合成の講座は `fixtures/content/site-sample`） |
+| `tools/verify/` | 公開サイト・Safari・計測・smoke の道具。前提・副作用・権限は各ファイルの頭書き。型検査にも含める |
 | `docs/` | 文書（[文書の地図](../README.md)）。`docs/courses/` は生成物 |
 | `.claude/skills/` | Claude Code のスキル（講座の作り方・書き方・調べ方・テーマの作り方は `study-video-course`、共通プロンプトからの講座は `course-from-prompt`、サイト・保存・Worker は `chalkfile-engine`）。AI 共通のきまりは直下の `AGENTS.md` |
 | `.github/` | CI（`workflows/`）・Dependabot・CODEOWNERS・PR のひな形 |
 
 ## 依存の向き
 
-部品が読んでよいものを、置き場所ごとに決めている。破る import は `biome.jsonc` の `noRestrictedImports` が止め（CI の lint）、決まりが効いているかは `tests/import-rules.test.ts` が確かめる。
+部品が読んでよいものを、置き場所ごとに決めている。破る import は `biome.jsonc` の `noRestrictedImports` が止め（CI の lint）、決まりが効いているかは `tests/unit/import-rules.test.ts` が確かめる。
 
 | 置き場所 | 読んでよいもの |
 |---|---|
@@ -135,11 +136,11 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | `src/` | `src/` の中・`engine/core/`・React・Remotion など。`content/` を読むのは `src/project.ts` だけで、場面と部品は描くものを props と context で受け取る。`scripts/` は読まない |
 | `scripts/` | `src/` の内部を読まない（動画と道具の両方で使うものは `engine/core/` に置く）。動画を書き出すときは、`src/index.ts` をバンドルの入口として渡す |
 
-- 台本と一緒に取り出して読む道具（`scripts/reading-diff.ts` の比べる相手・`scripts/materials.ts` の gc の `--keep`）は、`content/` と `engine/core/`（と `scripts/voices.ts`）だけを取り出す。取り出したものだけで読めることは `tests/reading-diff.test.ts` が確かめる
+- 台本と一緒に取り出して読む道具（`scripts/reading-diff.ts` の比べる相手・`scripts/materials.ts` の gc の `--keep`）は、`content/` と `engine/core/`（と `scripts/voices.ts`）だけを取り出す。取り出したものだけで読めることは `tests/unit/reading-diff.test.ts` が確かめる
 
 ## 外から指される名前（変えると壊れる）
 
-凍結していて、変えると `tests/contracts.test.ts` が止める。凍結した名前の一覧は `tests/fixtures/contracts/frozen.json`（足すだけ）、変えるときの手順は [ADR](../adr/2026-11-03-frozen-contracts.md)。
+凍結していて、変えると `tests/unit/contracts.test.ts` が止める。凍結した名前の一覧は `tests/fixtures/contracts/frozen.json`（足すだけ）、変えるときの手順は [ADR](../adr/2026-11-03-frozen-contracts.md)。
 
 | 名前 | 指している所 |
 |---|---|

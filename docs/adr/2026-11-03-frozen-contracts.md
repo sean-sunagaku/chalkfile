@@ -2,7 +2,7 @@
 
 - 状態: 採用
 - 決めた日: 2026-11-03
-- 関連: [全体図](../architecture/overview.md) の「外から指される名前（変えると壊れる）」・`tests/contracts.test.ts`・`tests/fixtures/contracts/frozen.json`・`engine/core/migrate.ts`
+- 関連: [全体図](../architecture/overview.md) の「外から指される名前（変えると壊れる）」・`tests/unit/contracts.test.ts`・`tests/fixtures/contracts/frozen.json`・`engine/core/migrate.ts`
 
 ## 背景
 
@@ -27,14 +27,14 @@
 | Releases のタグとファイル名 | タグは `media-<言語>-<講座 ID>`、ファイル名は `<レクチャー ID>[.cc].<SHA-256>.mp4`、配る場所は `/media/<言語>/<講座 ID>/<ファイル名>` | 作り方と、講座の動画の一覧の全部の項目 |
 | 台本の形の版 | Course の `schemaVersion`（書かなければ 1。今の版は `engine/core/migrate.ts` の `COURSE_SCHEMA_VERSION`） | 今の講座が今の版で、直さずにそのまま読めること |
 
-- 凍結した名前の一覧は `tests/fixtures/contracts/frozen.json` に置く。足すだけにする（名前を足すのはよい。`UPDATE_CONTRACTS=1 bun test tests/contracts.test.ts` が、今ある名前を一覧に足す。消さない）
+- 凍結した名前の一覧は `tests/fixtures/contracts/frozen.json` に置く。足すだけにする（名前を足すのはよい。`UPDATE_CONTRACTS=1 bun test tests/unit/contracts.test.ts` が、今ある名前を一覧に足す。消さない）
 - 台本の形（`engine/core/schema.ts` の `Course` とその中身）を、前の台本が読めなくなる形に変えるときは、版を上げ、1 つ前の版から直す関数を `engine/core/migrate.ts` の `MIGRATIONS` に足す。直すのは講座の登録（`defineCourseModule`）で、台本のファイルは書き換えない。知らない版の講座は、台本の検証（`npm run validate`）が誤りにする
 
 ## 変えるときの手順
 
 1. 変える理由と、壊れるもの（保存・Releases・素材・AI チャット・書き出しの道具・作業中の branch）を、新しい ADR に書く。持ち主の許可をもらう
 2. 古い名前と形を読めるようにしてから変える
-   - 動画の key・ファイル名・タグ: 古い名前の動画を Releases と動画の一覧の `retained` に残し、保存した講座が古い名前を読めることを `tests/offline-compat.test.ts` で確かめる
+   - 動画の key・ファイル名・タグ: 古い名前の動画を Releases と動画の一覧の `retained` に残し、保存した講座が古い名前を読めることを `tests/unit/offline-compat.test.ts` で確かめる
    - 声の鍵: 新しい版の鍵（v2 など）を足し、v1 の計算は消さない。素材が当たるかを `npm run materials:check` で見る
    - timeline: `TIMELINE_SCHEMA` を上げ、読む側（`parseTimeline`）が古い版を読むか、全部を作り直す（`npm run synth -- --cached-only`）
    - 台本の形: `COURSE_SCHEMA_VERSION` を上げ、`MIGRATIONS` に古い形から直す関数と、そのテストを足す

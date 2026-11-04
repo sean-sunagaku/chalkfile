@@ -10,7 +10,7 @@ import type { Lecture, Line, VoiceId } from './schema';
 /**
  * 日本語の声（VOICEVOX）。合成の設定（speaker・speed・intonation・pitch）は声の鍵（scripts/voices.ts の合成のレシピ）に入り、
  * 変えた声は新しい鍵になる（合成し直し）。credit は表示だけで、鍵には入らない。どの項目も timeline の指紋には入るので、
- * 変えたら npm run synth -- --cached-only で timeline を作り直す。動かしたら tests/speech-snapshot.test.ts で、鍵を確かめる
+ * 変えたら npm run synth -- --cached-only で timeline を作り直す。動かしたら tests/unit/speech-snapshot.test.ts で、鍵を確かめる
  */
 export const VOICES: Record<VoiceId, VoicevoxVoice> = SETTINGS_VOICES;
 

@@ -4,7 +4,7 @@
 //   Speech      .work/speech/<動画>.json    scripts/synth.ts が書き、scripts/check_speech.py が読む（訳の台詞と音声の対応）
 //   KokoroJobs  一時のフォルダの jobs.json   scripts/synth.ts が書き、scripts/tts_kokoro.py が読む（Kokoro に読ませる台詞）
 //   SfxList     scripts/audio/sfx.json      npm run gen が content/sfx.ts から書き（Git に入れる）、scripts/mix.py・build_music.py が読む
-// 形を変えたら、ここと handoff.py の SCHEMA の数を 1 つ上げる。tests/handoff.test.ts が、この型で書いたものを handoff.py で読めるかと、
+// 形を変えたら、ここと handoff.py の SCHEMA の数を 1 つ上げる。tests/unit/handoff.test.ts が、この型で書いたものを handoff.py で読めるかと、
 // 数が同じかを確かめる
 import type { TranslatedLang } from '../../content/i18n';
 import { SFX } from '../../content/sfx';

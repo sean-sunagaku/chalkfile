@@ -1,5 +1,5 @@
 // コードの色分け（言語ごとの規則）。コードの場面（src/scenes/code.tsx）が、1 行ずつ字句に分けて、字句の種類の色（テーマの syntax）で描く。
-// 言語は台本の lang（python・ts・bash・json・text）。text は色を付けない。React・Remotion に依存しない（tests/syntax.test.ts が確かめる）
+// 言語は台本の lang（python・ts・bash・json・text）。text は色を付けない。React・Remotion に依存しない（tests/unit/syntax.test.ts が確かめる）
 import type { CodeScene, Theme } from '../../engine/core/schema';
 
 /** 字句の種類（テーマの syntax の名前。plain は色を付けない文字） */

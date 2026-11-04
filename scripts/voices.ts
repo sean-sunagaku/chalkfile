@@ -14,7 +14,7 @@ import { KOKORO, type KokoroVoice, VOICES } from '../content/voices';
 /** VOICEVOX の出力の設定（全部の声で共通。synthesis に渡す）。変えると、日本語の全部の台詞が新しい鍵になる（合成し直し） */
 export const VOICEVOX_OUTPUT = { volumeScale: 1, pre: 0.08, post: 0.12, sampleRate: 48000, channels: 1 } as const;
 /**
- * Kokoro の出力の後処理（scripts/tts_kokoro.py の SR_OUT・PRE・POST・TARGET_RMS_DB・PEAK_DB。tests/voices.test.ts が照らす）。
+ * Kokoro の出力の後処理（scripts/tts_kokoro.py の SR_OUT・PRE・POST・TARGET_RMS_DB・PEAK_DB。tests/unit/voices.test.ts が照らす）。
  * Python の側を変えたら、ここも変える（訳の全部の台詞が新しい鍵になる）
  */
 export const KOKORO_OUTPUT = { pre: 0.08, post: 0.12, sampleRate: 48000, channels: 1, rmsDb: -20, peakDb: -1 } as const;

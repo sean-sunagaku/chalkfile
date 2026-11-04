@@ -41,7 +41,7 @@ jobs:
         env:
           # runner の image に入っている Chrome で開く
           PW_CHANNEL: chrome
-        run: bun tests/worker-site-smoke.ts https://chalkfile.com/
+        run: bun tools/verify/worker-site-smoke.ts https://chalkfile.com/
       # 旧サイトは GitHub Pages（https://<持ち主>.github.io/<リポジトリ>/）。移行の案内だけを置いている（scripts/build_migration.ts）
       - name: 旧サイトの案内ページ
         id: legacy

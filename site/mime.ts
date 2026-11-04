@@ -4,7 +4,7 @@
 //   組み立て（scripts/site/assets.ts・scripts/pwa.ts）: 起動用ファイル（site/assets・アイコン・manifest・講座のサムネイル）の型を、ここから付ける。
 //     知らない拡張子なら止める（mimeOf）
 //   組み立ての最後（scripts/site-invariants.ts）: 起動用ファイルと保存するファイルの型が、ここと合うか
-//   手元の配信（scripts/serve.ts）・テストのサーバー（tests/browser-server.ts）: 応答の Content-Type（contentTypeOf・mimeTypeOf）
+//   手元の配信（scripts/serve.ts）・テストのサーバー（tests/e2e/browser-server.ts）: 応答の Content-Type（contentTypeOf・mimeTypeOf）
 // 足すときは、Workers が返す型を確かめてから足す。ほかのファイルを import しない（SW にも入れられるように）
 
 export const MIME: Readonly<Record<string, string>> = {

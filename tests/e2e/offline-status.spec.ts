@@ -1,0 +1,252 @@
+import { chromium, type Page, type APIRequestContext } from '@playwright/test';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import type { CourseStatus } from '../../site/offline-shared';
+import type { Control } from './site';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
+import { waitForSaved } from './fixtures';
+
+// 保存の状態の案内を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座）
+
+async function control(request: APIRequestContext, data: Partial<Control> = {}) {
+  expect((await request.post('/__test/control', { data })).ok()).toBeTruthy();
+}
+async function state(page: Page, id: string): Promise<CourseStatus> {
+  return page.evaluate(
+    (id) =>
+      new Promise((resolve) => {
+        const c = new MessageChannel();
+        c.port1.onmessage = (e) => {
+          c.port1.close();
+          resolve(e.data.courses.find((s: CourseStatus) => s.id === id));
+        };
+        navigator.serviceWorker.controller!.postMessage({ protocol: 1, type: 'STATUS' }, [c.port2]);
+      }),
+    id,
+  );
+}
+async function refresh(page: Page) {
+  await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
+  // 実 worker の状態確認と容量表示が完了する時間を置き、案内文が保たれることを観測する。
+  await page.waitForTimeout(300);
+}
+
+test('保存状態の初期案内と進捗・エラーの保護', async ({ request, site, baseURL }, testInfo) => {
+  test.setTimeout(240000);
+  await control(request);
+  const course = site.course.route;
+  const manifest = manifestOf(site);
+  const evidence = evidenceDir('offline-status');
+  mkdirSync(evidence, { recursive: true });
+  const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-offline-status-'));
+  const options = { channel, headless: true, baseURL, viewport: { width: 1440, height: 1000 } };
+  let context = await chromium.launchPersistentContext(profile, options);
+  const browser = context.browser()!.version();
+  const observations: { name: string; message: string | null }[] = [];
+  const errors: string[] = [];
+  const observe = (page: Page) => page.on('pageerror', (e) => errors.push(e.message));
+  const record = async (page: Page, name: string) => {
+    observations.push({ name, message: await page.locator('#offlineMessage').textContent() });
+  };
+  let passed = false;
+  let completeDownloads = 0;
+  let incompleteStateInjected = false;
+  try {
+    let page = await context.newPage();
+    observe(page);
+    await test.step('未保存のオンライン・通信断と、通信エラーを状態確認で上書きしない', async () => {
+      await page.goto(course);
+      await expect(page.locator('#offlineSave')).toBeEnabled();
+      await expect(page.locator('#offlineMessage')).toContainText('この講座は未保存');
+      await context.setOffline(true);
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).toContainText('通信が必要');
+      await record(page, '未保存・オフライン');
+      await context.setOffline(false);
+      await expect(page.locator('#offlineCheck')).toBeEnabled();
+      await control(request, { manifestMode: 'fail' });
+      await page.locator('#offlineCheck').click();
+      await expect(page.locator('#offlineMessage')).toContainText('教材情報を取得できません');
+      const error = await page.locator('#offlineMessage').textContent();
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).toHaveText(error!);
+      await context.setOffline(true);
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).toHaveText(error!);
+      await record(page, '通信エラーを保持');
+      await page.screenshot({ path: path.join(evidence, 'communication-error.png') });
+      await control(request);
+      await context.setOffline(false);
+      await expect(page.locator('#networkState')).toContainText('オンライン');
+      await expect(page.locator('#offlineCheck')).toBeEnabled();
+      await page.locator('#offlineCheck').click();
+      await expect(page.locator('#offlineSave')).toBeEnabled();
+    });
+    await test.step('遅れて返る確認エラーと、同時の状態確認から保存進捗を守る', async () => {
+      await control(request, { mode: 'delay', manifestMode: 'delay-first-fail' });
+      await page.locator('#offlineCheck').click();
+      await page.locator('#offlineSave').click();
+      await expect(page.locator('#offlineMessage')).toContainText(delayedProgress(site, manifest));
+      await expect.poll(async () => (await (await request.get('/__test/stats')).json()).manifestFailures).toBe(1);
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).toContainText('保存中');
+      await expect(page.locator('#offlineProgress')).toBeVisible();
+      await record(page, '遅い確認エラー後も保存進捗を保持');
+      await page.screenshot({ path: path.join(evidence, 'saving-progress.png') });
+      const other = await context.newPage();
+      observe(other);
+      await other.goto(course);
+      await expect(other.locator('#offlineMessage')).toContainText('保存中');
+      await refresh(other);
+      await expect(other.locator('#offlineMessage')).toContainText('保存中');
+      await other.close();
+      await waitForSaved(page);
+      await expect(page.locator('#offlineProgress')).toBeHidden();
+      await expect(page.locator('#offlineMessage')).toContainText('保存が完了しました');
+      const completed = await page.locator('#offlineMessage').textContent();
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).toHaveText(completed!);
+      expect((await state(page, site.course.id)).saved!.manifest.files).toHaveLength(manifest.files.length);
+      completeDownloads++;
+      await control(request);
+    });
+    await test.step('完全終了後にオフラインで起動し、保存済みの案内と実動画を確認', async () => {
+      await context.close();
+      context = await chromium.launchPersistentContext(profile, { ...options, offline: true });
+      page = await context.newPage();
+      observe(page);
+      const response = await page.goto('/');
+      expect(response!.fromServiceWorker()).toBeTruthy();
+      await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
+      await page.locator(`#savedCourses a[href$="${course}"]`).click();
+      await expect(page.locator('#offlineMessage')).toContainText('保存済みの教材と全動画を利用できます');
+      await expect(page.locator('#networkState')).toContainText('オフライン');
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).not.toContainText('準備しています');
+      const at = seek(site, 20);
+      await page.locator('video').evaluate(async (v: HTMLVideoElement, at) => {
+        v.muted = true;
+        v.currentTime = at;
+        await v.play();
+      }, at);
+      await expect
+        .poll(() => page.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime))
+        .toBeGreaterThan(at + 0.2);
+      expect(
+        await page.locator('video').evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames),
+      ).toBeGreaterThan(0);
+      await page.locator('video').evaluate((v: HTMLVideoElement) => v.pause());
+      await page.evaluate(() => scrollTo(0, 0));
+      await record(page, '完全再起動・オフラインの保存済み案内');
+      await page.screenshot({ path: path.join(evidence, 'saved-offline-restart.png') });
+    });
+    await test.step('一部欠損でも旧完全版が使える状態を、再起動後に正しく案内', async () => {
+      // 追加の全動画取得を避け、最新保存領域の消去に相当する状態を Cache API で注入する。
+      await page.evaluate(async (id) => {
+        const name = (await caches.keys()).find((n) => n.endsWith(':registry'))!;
+        const registry = await caches.open(name);
+        const key = (await registry.keys()).find((r) => r.url.endsWith(`/${id}`))!;
+        const record = await (await registry.match(key))!.json();
+        record.versions.unshift({ ...record.versions[0], cache: record.versions[0].cache + ':missing' });
+        await registry.put(key, Response.json(record));
+      }, site.course.id);
+      incompleteStateInjected = true;
+      await context.close();
+      context = await chromium.launchPersistentContext(profile, { ...options, offline: true });
+      page = await context.newPage();
+      observe(page);
+      await page.goto(course);
+      await expect(page.locator('#offlineMessage')).toContainText('一部の保存が不完全');
+      await expect(page.locator('#offlineMessage')).toContainText('前の完全な保存版を利用できます');
+      expect((await state(page, site.course.id)).incomplete).toBeTruthy();
+      await record(page, '完全再起動・不完全だが旧版あり');
+      await page.screenshot({ path: path.join(evidence, 'incomplete-with-previous.png') });
+    });
+    await test.step('完全版が残っていない欠損と、削除後の未保存を案内', async () => {
+      const saved = (await state(page, site.course.id)).saved!;
+      await page.evaluate(async (name) => {
+        await caches.delete(name);
+      }, saved.cache);
+      await context.setOffline(false);
+      await page.reload();
+      await expect(page.locator('#savedState')).toContainText('保存が不完全');
+      await expect(page.locator('#offlineMessage')).toHaveText('保存が不完全です。オンラインで保存し直してください。');
+      await expect(page.locator('#offlineCheck')).toBeEnabled();
+      await page.locator('#offlineCheck').click();
+      await expect(page.locator('#offlineMessage')).toHaveText('保存が不完全です。オンラインで保存し直してください。');
+      await record(page, '完全版のない不完全な保存');
+      await page.locator('#offlineDelete').click();
+      await expect(page.locator('#offlineMessage')).toContainText('削除しました');
+      await refresh(page);
+      await expect(page.locator('#offlineMessage')).toContainText('削除しました');
+      await page.reload();
+      await expect(page.locator('#offlineMessage')).toContainText('この講座は未保存');
+      await record(page, '削除後の未保存');
+    });
+    expect(errors).toEqual([]);
+    passed = true;
+  } finally {
+    await context.close();
+    rmSync(profile, { recursive: true, force: true });
+    const result = {
+      passed,
+      browser,
+      observations,
+      pageErrors: errors,
+      sourceManifestRevision: manifest.revision,
+      completeDownloads,
+      incompleteState: incompleteStateInjected ? 'CacheStorage参照先の欠損を注入' : '未実施',
+      publicSiteTested: false,
+    };
+    writeFileSync(path.join(evidence, 'result.json'), JSON.stringify(result, null, 2));
+    await testInfo.attach('保存状態の回帰証跡', {
+      body: Buffer.from(JSON.stringify(result, null, 2)),
+      contentType: 'application/json',
+    });
+  }
+});
+
+// 初めて開いたとき、SW が動き出す前（register のあと、ready の前）に pageshow が来ても、保存状態は ready のあとにだけ問い合わせる。
+// 前は、その間に問い合わせて「保存機能を準備できません」を出し、初めの案内がそのまま出なかった（遅い回線や CI の runner で起きる）。
+// SW の install が取る起動用ファイルを遅らせて（installDelay）、その間に pageshow を起こす
+for (const where of ['home', 'course'] as const) {
+  test(`初めて開いたとき、SW が動き出す前に pageshow が来ても、初めの案内が出る（${where}）`, async ({
+    page,
+    request,
+    site,
+  }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await control(request, { installDelay: 5000 });
+    await page.goto(where === 'home' ? '/' : site.course.route);
+    await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.installing);
+    const during = await page.evaluate(async () => {
+      window.dispatchEvent(new Event('pageshow'));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return {
+        installing: !!(await navigator.serviceWorker.getRegistration())?.installing,
+        message: document.getElementById('offlineMessage')?.textContent,
+      };
+    });
+    // pageshow は SW が動き出す前に来た。案内は準備中のまま（「保存機能を準備できません」にしない）
+    expect(during).toEqual({ installing: true, message: '保存機能を準備しています…' });
+    const first = where === 'home' ? '保存状態を確認しました' : 'この講座は未保存';
+    await expect(page.locator('#offlineMessage')).toContainText(first);
+    // 動き出したあとの pageshow（bfcache から戻ったときなど）は、今までどおり状態を取り直し、初めの案内を消さない
+    await refresh(page);
+    await expect(page.locator('#offlineMessage')).toContainText(first);
+    expect(errors).toEqual([]);
+  });
+}
+
+test('375pxで未保存の案内がはみ出さない', async ({ page, request, site }) => {
+  await control(request);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(site.course.route);
+  await expect(page.locator('#offlineMessage')).toContainText('この講座は未保存');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  const evidence = evidenceDir('offline-status');
+  mkdirSync(evidence, { recursive: true });
+  await page.screenshot({ path: path.join(evidence, 'unsaved-mobile-375.png') });
+});

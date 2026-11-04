@@ -56,7 +56,7 @@ esac
 # 切替前に公開先・全動画・CSP・SW scope を実際に確認する。
 bun scripts/check_content.ts --require-denylist
 bun scripts/verify_public.ts
-bun tests/worker-site-smoke.ts https://chalkfile.com/
+bun tools/verify/worker-site-smoke.ts https://chalkfile.com/
 bun scripts/build_migration.ts
 bun scripts/check_delivery.ts site/migration-dist
 # 置き換える中身を、今の gh-pages と比べて出す（同じファイルは数だけ）
