@@ -23,14 +23,14 @@ import { ROOT, realPosterOf, SITE_DIR, siteBase } from './config';
 import { WWW_REDIRECT_SCRIPT } from './csp';
 import { cleanOutput, listOutput, writeCourse } from './emit';
 import { writeServingFiles } from './headers';
-import { newsFor, newsProblems } from './news';
 import { courseJson, homeCredits, lectureModels, minutesOf, type ReadData, type SiteData } from './model';
+import { newsFor, newsProblems } from './news';
 import { courseManifest, type PosterFile, pageFiles } from './offline-manifest';
 import { type AppContext, appParts, textOf } from './parts';
 import { renderCoursePage } from './render-course';
+import { homePosterOf, renderHomePage } from './render-home';
 import { notFoundFile, renderNotFound } from './render-not-found';
 import { robotsTxt, type SitemapPage, sitemapXml } from './seo';
-import { homePosterOf, renderHomePage } from './render-home';
 
 /** 組み立ての入力 */
 export type BuildSiteOptions = {
@@ -81,7 +81,10 @@ export type BuildSiteResult = {
  * 無効にした保存版の一覧（site/disabled-revisions.ts）の誤り: revision の形（64 字の SHA-256）・重なり・今公開する版
  * （無効にすると、直した版を保存した人まで、オンラインでは保存版を開けなくなる）
  */
-export const disabledRevisionProblems = (revisions: readonly string[], manifests: readonly CourseManifest[]): string[] => {
+export const disabledRevisionProblems = (
+  revisions: readonly string[],
+  manifests: readonly CourseManifest[],
+): string[] => {
   const problems: string[] = [];
   const seen = new Set<string>();
   for (const r of revisions) {
@@ -89,7 +92,10 @@ export const disabledRevisionProblems = (revisions: readonly string[], manifests
     else if (seen.has(r)) problems.push(`無効にした保存版の revision が重なっている: ${r}`);
     seen.add(r);
     const current = manifests.find((m) => m.revision === r);
-    if (current) problems.push(`今公開する版を無効にしている（${current.id}）: ${r}。直した版を公開してから、前の版の revision を入れる`);
+    if (current)
+      problems.push(
+        `今公開する版を無効にしている（${current.id}）: ${r}。直した版を公開してから、前の版の revision を入れる`,
+      );
   }
   return problems;
 };
@@ -276,7 +282,10 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   writeServingFiles(dist);
   // 検索のための sitemap.xml と robots.txt（出す言語の一覧のページと講座のページ。講座を指定して組み立てても、全部の講座を並べる）
   const sitemap: SitemapPage[] = langs.flatMap((lang) => [
-    { url: `${base}${LANG_INFO[lang].path}`, alternates: langs.map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}` })) },
+    {
+      url: `${base}${LANG_INFO[lang].path}`,
+      alternates: langs.map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}` })),
+    },
     ...coursesIn(lang).map((c) => ({
       url: `${base}${LANG_INFO[lang].path}${c.id}/`,
       alternates: langs
@@ -291,7 +300,10 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   for (const lang of langs) {
     const file = path.join(dist, notFoundFile(lang));
     mkdirSync(path.dirname(file), { recursive: true });
-    writeFileSync(file, renderNotFound({ template: notFound, lang, series: config.series, basePath: new URL(base).pathname }));
+    writeFileSync(
+      file,
+      renderNotFound({ template: notFound, lang, series: config.series, basePath: new URL(base).pathname }),
+    );
   }
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。

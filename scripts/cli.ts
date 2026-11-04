@@ -15,11 +15,11 @@ import path from 'node:path';
 import type { ParseArgsConfig } from 'node:util';
 import { VIDEOS, type Video } from '../content';
 import { isLang, LANGS } from '../content/i18n';
-import type { CommandLine } from './lib/proc';
 import { THEMES } from '../content/themes';
 import { EXIT, headerOf, readArgs, runMain, UsageError } from './lib/args';
 import { readSiteConfig } from './lib/config';
 import { ROOT } from './lib/paths';
+import type { CommandLine } from './lib/proc';
 import { runInherit } from './lib/proc';
 
 type Options = NonNullable<ParseArgsConfig['options']>;
@@ -158,7 +158,8 @@ const renderSteps = ({ values, positionals }: Ctx): Step[] => {
   for (const name of ['jobs', 'chunk'] as const)
     if (values[name] !== undefined && !/^\d+$/.test(String(values[name])))
       throw new UsageError(`--${name} は整数: ${values[name]}`);
-  if (values.jobs !== undefined && Number(values.jobs) < 1) throw new UsageError(`--jobs は 1 以上の整数: ${values.jobs}`);
+  if (values.jobs !== undefined && Number(values.jobs) < 1)
+    throw new UsageError(`--jobs は 1 以上の整数: ${values.jobs}`);
   return [
     bun(
       'scripts/stages/video/render.ts',
@@ -326,7 +327,8 @@ export const COMMANDS: Command[] = [
     positionals: true,
     dry: 'plan',
     steps: ({ positionals }) => {
-      if (!positionals.length || positionals.some((arg) => !/^(?:[A-Z]\d{2}\.(?:en|zh|\*)|\*\.(?:en|zh))$/.test(arg))) throw new UsageError("指紋を書く訳の動画を渡す（例: P01.en・'*.zh'）");
+      if (!positionals.length || positionals.some((arg) => !/^(?:[A-Z]\d{2}\.(?:en|zh|\*)|\*\.(?:en|zh))$/.test(arg)))
+        throw new UsageError("指紋を書く訳の動画を渡す（例: P01.en・'*.zh'）");
       return [bun('scripts/i18n.ts', 'stamp', ...positionals)];
     },
   },
@@ -340,7 +342,8 @@ export const COMMANDS: Command[] = [
     positionals: true,
     dry: 'plan',
     steps: ({ values, positionals }) => {
-      if (positionals.length !== 1 || !/^[A-Z]\d{2}\.(en|zh)$/.test(positionals[0] ?? '')) throw new UsageError('ひな形の動画を 1 つ渡す（例: S07.en）');
+      if (positionals.length !== 1 || !/^[A-Z]\d{2}\.(en|zh)$/.test(positionals[0] ?? ''))
+        throw new UsageError('ひな形の動画を 1 つ渡す（例: S07.en）');
       return [bun('scripts/i18n.ts', 'scaffold', ...positionals, ...(values.stdout ? ['--stdout'] : []))];
     },
   },
@@ -396,7 +399,8 @@ export const COMMANDS: Command[] = [
   {
     name: 'mix',
     usage: '[動画…] [--course <ID>] [--video <形>] [--lang <言語>]',
-    summary: '音のミックス（public/audio/mix/）。先に voice synth。ミックスの前後に、段の記録（.work/state/mix/）も書く',
+    summary:
+      '音のミックス（public/audio/mix/）。先に voice synth。ミックスの前後に、段の記録（.work/state/mix/）も書く',
     old: ['npm run mix'],
     file: 'scripts/mix.py',
     options: { ...TARGET, ...DRY },
@@ -502,7 +506,13 @@ export const COMMANDS: Command[] = [
     options: { course: TARGET.course, videos: { type: 'boolean' }, ...DRY },
     dry: 'plan',
     steps: ({ values }) => [
-      bun('scripts/materials.ts', 'pull', ...pickCourses(values), ...flag(values, 'videos'), ...flag(values, 'verbose')),
+      bun(
+        'scripts/materials.ts',
+        'pull',
+        ...pickCourses(values),
+        ...flag(values, 'videos'),
+        ...flag(values, 'verbose'),
+      ),
     ],
   },
   {
@@ -523,7 +533,13 @@ export const COMMANDS: Command[] = [
     options: { message: { type: 'string' }, ...DRY },
     dry: 'pass',
     steps: ({ values }) => [
-      bun('scripts/materials.ts', 'push', ...flag(values, 'dry-run'), ...opt(values, 'message'), ...flag(values, 'verbose')),
+      bun(
+        'scripts/materials.ts',
+        'push',
+        ...flag(values, 'dry-run'),
+        ...opt(values, 'message'),
+        ...flag(values, 'verbose'),
+      ),
     ],
   },
   {

@@ -1,8 +1,8 @@
 // 場面「terminal」: 端末（コマンドと出力、横の注）
-import React from 'react';
+import type React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
-import type { TerminalOut, TerminalScene, Theme } from '../../engine/core/schema';
 import { terminalText } from '../../engine/core/scenes';
+import type { TerminalOut, TerminalScene, Theme } from '../../engine/core/schema';
 import { lineCount } from '../components/fit';
 import { CodeWindow } from '../components/frame';
 import { NoteCard } from '../components/ui';
@@ -13,6 +13,7 @@ import { LEAD, TYPE } from '../video.config';
 /** 横の注のカードの左右の余白（枠を含む）と、1 行・2 行のときの高さ */
 const NOTE_INNER = 22 * 2 + 4;
 const NOTE_H = { one: 74, two: 112 } as const;
+
 import { defineScene } from './define';
 
 /** 出力の行の色（書かなければ薄い色。ok は成功、info は目を向けてほしい行） */
@@ -113,7 +114,10 @@ const Terminal: React.FC<{ s: TerminalScene }> = ({ s }) => {
         return s.entries.map((e, i) => {
           if (!e.note) return null;
           // 注のカードの高さは、測った文字が 1 行に入るかで決める（重ならないように、次の注をその下に置く）
-          const h = lineCount(e.note, TYPE.body.terminalNote, noteRoom, { fontFamily: SANS, fontWeight: 700 }) > 1 ? NOTE_H.two : NOTE_H.one;
+          const h =
+            lineCount(e.note, TYPE.body.terminalNote, noteRoom, { fontFamily: SANS, fontWeight: 700 }) > 1
+              ? NOTE_H.two
+              : NOTE_H.one;
           const y = Math.max(top + pos[i]! - 4, prev + 14);
           prev = y + h;
           return <TermNote key={i} at={e.at} text={e.note} y={y} left={noteLeft} />;
@@ -137,7 +141,14 @@ const TermNote: React.FC<{ at: number; text: string; y: number; left: number }> 
         transform: `translateX(${(1 - p) * -16}px)`,
       }}
     >
-      <NoteCard text={text} t="mint" active={on ? 1 : 0} size={TYPE.body.terminalNote} lineHeight={1.4} style={{ padding: '18px 22px' }} />
+      <NoteCard
+        text={text}
+        t="mint"
+        active={on ? 1 : 0}
+        size={TYPE.body.terminalNote}
+        lineHeight={1.4}
+        style={{ padding: '18px 22px' }}
+      />
     </div>
   );
 };

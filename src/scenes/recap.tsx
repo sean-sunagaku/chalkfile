@@ -1,5 +1,5 @@
 // 場面「recap」: まとめ
-import React from 'react';
+import type React from 'react';
 import type { RecapScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';

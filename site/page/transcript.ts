@@ -1,5 +1,5 @@
 // 台本のタブ: 今のレクチャーの台詞（場面の見出しごと。押すとその時刻へ）・全レクチャーの台本の検索・再生に合わせた印とスクロール
-import { type Page, lectureOf } from './context';
+import { lectureOf, type Page } from './context';
 import { byId, closest, h, put } from './dom';
 import { clock, pad2 } from './format';
 

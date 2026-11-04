@@ -1,7 +1,7 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
-import { PAGE_VERSION_MARK, pageVersionOf, stampVersion, type PageVersionInput } from '../../scripts/site-version';
+import { PAGE_VERSION_MARK, type PageVersionInput, pageVersionOf, stampVersion } from '../../scripts/site-version';
 import type { Asset } from '../../site/offline-shared';
+import { required } from '../support/required';
 
 // 版の印を入れたまま描いた講座のページと、保存の manifest に入るファイル（scripts/build_site.ts と同じ形の小さな見本）
 const sha = (c: string) => c.repeat(64);

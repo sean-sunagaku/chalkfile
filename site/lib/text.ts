@@ -42,7 +42,9 @@ type PluralVars<P> = { [F in keyof P]: VarsOf<P[F]> }[keyof P];
 /** 差し込む値の引数（差し込みの無い文字なら渡さない） */
 type VarsArg<V> = [V] extends [never] ? [] : [vars: Readonly<Record<V & string, string | number>>];
 /** ページの言語の表（文字は string、数で形の変わる文字は Plural）。B は日本語の表の型 */
-export type TextTable<B> = { readonly [K in keyof B]: B[K] extends string ? string : B[K] extends Plural ? Plural : unknown };
+export type TextTable<B> = {
+  readonly [K in keyof B]: B[K] extends string ? string : B[K] extends Plural ? Plural : unknown;
+};
 
 /**
  * 決まった文字の表から、キーで引いて差し込む関数を作る。tt は文字、tn は数で形の変わる文字（{n} に数を入れる）。

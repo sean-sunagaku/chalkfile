@@ -1,15 +1,16 @@
 // 前提: 組み立てたサイト・Chrome・手元の動画。副作用: ローカルサーバーを起動し、専用 profile で講座を保存し、指定日の tests/fixtures/saved-records に記録を書く。権限: localhost の待ち受け・ローカルへの書き込み。手動で流す。
-import config from '../../chalkfile.config';
+
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 // 利用者の保存の記録を、互換テスト（tests/unit/offline-compat.test.ts）の fixture にする。実行は手動のみ。
 // 本物の Chrome で今の site/dist/sw.js に全講座を保存させ、Cache API に書いた registry の記録をそのまま取り出す。
 // 旧 Pages（scope /chalkfile/）の記録は、tests/fixtures/legacy-pages の本物の旧 SW で取る。動画は fixture に入れない。
 // 使い方: bun scripts/build_site.ts --strict のあとに bun tools/verify/capture-saved-records.ts <日付>
 // tests/e2e/browser-server.ts を 127.0.0.1:8877 で起動する（PW_PORT で変える。使っていれば止まる）
 import { chromium, type Page } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
+import config from '../../chalkfile.config';
 import { isLangFolder } from '../../content/langs';
 import legacyConfig from '../../site/legacy-config.json';
 import type { CourseManifest, SavedVersion } from '../../site/offline-shared';

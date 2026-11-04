@@ -1,7 +1,7 @@
 // TS の道具が書き、Python の道具が読む JSON（受け渡し。形は scripts/lib/handoff.ts、読む側は scripts/audio/handoff.py）。
 // TS の型で書いたものを Python の側が読めるか、形の違うものを読める文で止めるか、版（schema）の数が同じかを、python3 で読んで確かめる。
 // 効果音の一覧（content/sfx.ts）と、その書き出し（scripts/audio/sfx.json）・合成（scripts/audio/music/sfx.py）・台本の検証の一覧も比べる
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -10,6 +10,7 @@ import { SFX } from '../../content/sfx';
 import { KOKORO } from '../../content/voices';
 import { SFX_IDS } from '../../engine/core/validate';
 import { type KokoroJobs, type Plan, SCHEMA, SFX_JSON, type Speech, sfxJson } from '../../scripts/lib/handoff';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const python = Bun.which('python3');

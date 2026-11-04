@@ -1,4 +1,3 @@
-import { SOURCES } from './sources';
 import type { Course } from '../types';
 import { D01 } from './D01';
 import { D02 } from './D02';
@@ -8,6 +7,7 @@ import { D05 } from './D05';
 import { D06 } from './D06';
 import { D07 } from './D07';
 import { D08 } from './D08';
+import { SOURCES } from './sources';
 import { UIUX_SYLLABUS } from './syllabus';
 
 /** エンジニアのための UI・UX デザイン（目的・情報設計・流れ・優先順位・余白・文字・色・フォーム・エラー・アクセシビリティ・確かめ方） */

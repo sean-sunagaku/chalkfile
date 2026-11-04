@@ -1,4 +1,5 @@
-import React, { createContext, useContext } from 'react';
+import type React from 'react';
+import { createContext, useContext } from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { Lang } from '../engine/core/i18n';
 import type { Course, Lecture, Scene } from '../engine/core/schema';
@@ -84,7 +85,10 @@ export const ramp = (x: number, from: number, to: number): number =>
   interpolate(x, [from, to], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
 export const fadeInOut = (frame: number, duration: number, inF = 10, outF = 9) =>
-  interpolate(frame, [0, inF, duration - outF, duration], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  interpolate(frame, [0, inF, duration - outF, duration], [0, 1, 1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
 
 /** 上から下へのスライド（px） */
 export const dropY = (p: number, dist = 26) => (1 - p) * -dist;

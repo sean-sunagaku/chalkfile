@@ -1,10 +1,11 @@
 // 前提: 公開サイトと Chrome。専用 profile を使う。副作用: サイトへ接続し、講座・学習の記録・証跡を専用 profile と .work/evidence に保存する。権限: ネットワークとローカルへの書き込み。手動で流す。
-import config from '../../chalkfile.config';
-// 本物の公開サイトを、認証情報のない専用Chrome profileで検証する。実行は手動のみ。
-import { chromium, expect } from '@playwright/test';
+
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+// 本物の公開サイトを、認証情報のない専用Chrome profileで検証する。実行は手動のみ。
+import { chromium, expect } from '@playwright/test';
+import config from '../../chalkfile.config';
 import { COURSES } from '../../content';
 import type { CourseManifest } from '../../site/offline-shared';
 

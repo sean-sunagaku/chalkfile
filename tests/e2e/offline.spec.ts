@@ -1,13 +1,12 @@
-import { required } from '../support/required';
-import { chromium, type Page, type APIRequestContext } from '@playwright/test';
-import { existsSync, readFileSync, readdirSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { type APIRequestContext, chromium, type Page } from '@playwright/test';
 import type { CourseStatus } from '../../site/offline-shared';
+import { required } from '../support/required';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test, waitForSaved } from './fixtures';
 import type { Stats } from './session';
 import { type Control, type SiteSession, UPDATE_NEWS } from './site';
-import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
-import { waitForSaved } from './fixtures';
 
 // 保存と再生を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座。tests/e2e/sites.ts）
 /** 一覧の「講座ごとの保存状態」は、組み立てた講座の数だけ並ぶ */
@@ -530,7 +529,11 @@ test('無効の一覧に入れた revision の保存版は、オンラインで�
 }) => {
   // 新しい SW は、このサイトのタブを全部閉じると有効になる。ブラウザを閉じて開き直すと、決まって有効になるので、profile を残して開き直す
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-disabled-'));
-  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
+  let context = await chromium.launchPersistentContext(profile, {
+    channel,
+    headless: true,
+    baseURL: required(baseURL),
+  });
   try {
     let page = await context.newPage();
     await ready(page, site);
@@ -720,7 +723,11 @@ test('外部動画を指す教材情報は拒否し、取得しない', async ({
 
 test('ブラウザ完全終了後のオフライン起動とworker更新後にも保存を維持する', async ({ request, site, baseURL }) => {
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-restart-'));
-  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
+  let context = await chromium.launchPersistentContext(profile, {
+    channel,
+    headless: true,
+    baseURL: required(baseURL),
+  });
   try {
     let page = await context.newPage();
     await ready(page, site);
@@ -754,7 +761,11 @@ test('ブラウザ完全終了後のオフライン起動とworker更新後に�
 
 test('保存中にブラウザを終了しても、途中の講座を保存済みにせず再試行できる', async ({ request, site, baseURL }) => {
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-pwa-interrupt-'));
-  let context = await chromium.launchPersistentContext(profile, { channel, headless: true, baseURL: required(baseURL) });
+  let context = await chromium.launchPersistentContext(profile, {
+    channel,
+    headless: true,
+    baseURL: required(baseURL),
+  });
   try {
     let page = await context.newPage();
     await ready(page, site);

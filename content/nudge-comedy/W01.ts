@@ -1,8 +1,8 @@
-import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { T, TEN, Z, ZC } from '../_shared/comedy';
 import { goals } from '../_shared/scenes';
 import { N01_LEARNING } from '../nudge-product/N01.learning';
-import { docsOf } from './sources';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生（講師の声）
 

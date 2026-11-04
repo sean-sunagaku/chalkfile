@@ -2,21 +2,22 @@
 //   ci: 合成の講座（tests/fixtures/content/site-sample）を、buildSite で一時のフォルダに組む。動画は ffmpeg の testsrc で作る（4 秒・小さい）。
 //       旧 Pages の P01 の動画も合成の動画にし、旧 Pages の保存の manifest の大きさと sha256 を、その動画に合わせて配る
 //   real: 本物の講座（npm run build:site で作った site/dist と、手元の site/media の動画）
-import { required } from '../support/required';
+
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES } from '../../content';
 import type { HeroSnippet } from '../../content/course-module';
+import { resolveCourse } from '../../content/lines';
 import { localMediaPath, readMediaManifest } from '../../scripts/media';
 import { buildSite } from '../../scripts/site/build';
 import { type MediaFiles, mediaFilesOf } from '../../scripts/site/serve-files';
 import { type MediaEntry, mediaFilename, releaseUrl } from '../../site/media-shared';
 import type { CourseManifest } from '../../site/offline-shared';
-import { resolveCourse } from '../../content/lines';
 import SAMPLE from '../fixtures/content/site-sample';
-import type { SiteMode, SiteSession } from './site';
+import { required } from '../support/required';
 import { legacyMediaFile } from './legacy-media';
+import type { SiteMode, SiteSession } from './site';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 /** 前の公開の旧 Pages（tests/fixtures/legacy-pages）の、動画を持つ講座の保存の manifest */
@@ -58,8 +59,14 @@ export async function prepareRealSite(): Promise<PreparedSite> {
     const file = old.files.find((f) => f.type === 'video/mp4' && f.url.split('?')[0]!.endsWith(`/${name}`));
     if (!file) throw new Error(`凍結した旧一覧に ${name} が無い`);
     const entry: MediaEntry = {
-      lang: 'ja', course: 'pstack-comedy', lecture: 'P01', kind,
-      bytes: file.bytes, sha256: file.sha256, filename: '', tag: 'media-ja-pstack-comedy',
+      lang: 'ja',
+      course: 'pstack-comedy',
+      lecture: 'P01',
+      kind,
+      bytes: file.bytes,
+      sha256: file.sha256,
+      filename: '',
+      tag: 'media-ja-pstack-comedy',
     };
     entry.filename = mediaFilename(entry);
     return legacyMediaFile({

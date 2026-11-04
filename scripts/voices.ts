@@ -45,7 +45,10 @@ export type Recipe = VoicevoxRecipe | KokoroRecipe;
 /** VOICEVOX の声の設定（content/voices.ts の VOICES の 1 つ。credit などの表示の項目は読まない） */
 type VoicevoxSetting = { speaker: number; speed: number; intonation: number; pitch: number; engineVersion?: string };
 
-export const voicevoxRecipe = (v: VoicevoxSetting, output: Numbers<typeof VOICEVOX_OUTPUT> = VOICEVOX_OUTPUT): VoicevoxRecipe => ({
+export const voicevoxRecipe = (
+  v: VoicevoxSetting,
+  output: Numbers<typeof VOICEVOX_OUTPUT> = VOICEVOX_OUTPUT,
+): VoicevoxRecipe => ({
   v: 2,
   engine: 'voicevox',
   speaker: v.speaker,
@@ -88,7 +91,10 @@ const sameRecipe = (a: Recipe, b: Recipe) => canonical(a) === canonical(b);
 
 /** v2 の鍵: 読み上げる文と合成のレシピ（キーを並べた JSON）の sha256 の頭 16 字 */
 export const ttsKeyV2 = (text: string, recipe: Recipe): string =>
-  createHash('sha256').update(canonical([text, recipe])).digest('hex').slice(0, 16);
+  createHash('sha256')
+    .update(canonical([text, recipe]))
+    .digest('hex')
+    .slice(0, 16);
 
 /* ───────────── v1（凍結） ───────────── */
 
@@ -152,7 +158,12 @@ const recipeV1In = (voice: VoiceId, lang: Lang): Recipe | null => {
 /* ───────────── 探す鍵 ───────────── */
 
 /** v1 の鍵。声の合成のレシピが v1 のときと同じ声だけ（設定を変えた声・v1 に無い声は null） */
-export const ttsKeyV1In = (text: string, voice: VoiceId, lang: Lang, recipe: Recipe = recipeIn(voice, lang)): string | null => {
+export const ttsKeyV1In = (
+  text: string,
+  voice: VoiceId,
+  lang: Lang,
+  recipe: Recipe = recipeIn(voice, lang),
+): string | null => {
   const old = recipeV1In(voice, lang);
   if (!old || !sameRecipe(old, recipe)) return null;
   return lang === 'ja' ? ttsKeyV1(text, voice) : kokoroKeyV1(text, voice, lang);
@@ -162,7 +173,12 @@ export const ttsKeyV1In = (text: string, voice: VoiceId, lang: Lang, recipe: Rec
  * 台詞の音声を探す鍵（この順に探す。v2、あれば v1）。先頭（v2）が、新しく合成する声の名前。
  * recipe を渡すと、その設定で求める（テストで、声の設定を変えたときの鍵を見る）
  */
-export const ttsKeysIn = (text: string, voice: VoiceId, lang: Lang, recipe: Recipe = recipeIn(voice, lang)): [string, ...string[]] => {
+export const ttsKeysIn = (
+  text: string,
+  voice: VoiceId,
+  lang: Lang,
+  recipe: Recipe = recipeIn(voice, lang),
+): [string, ...string[]] => {
   const v1 = ttsKeyV1In(text, voice, lang, recipe);
   const v2 = ttsKeyV2(text, recipe);
   return v1 ? [v2, v1] : [v2];

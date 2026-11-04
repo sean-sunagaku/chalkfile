@@ -1,9 +1,8 @@
-import type { Page } from '@playwright/test';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
 import type { CourseManifest, CourseStatus } from '../../site/offline-shared';
-import { evidenceDir, expect, test } from './fixtures';
-import { waitForSaved } from './fixtures';
+import { evidenceDir, expect, test, waitForSaved } from './fixtures';
 
 // 多言語（本物の講座だけ。project real）: 言語の切り替え、訳の講座（動画は /media/<言語>/ から）の保存・オフライン再生・Range、
 // 字幕を焼き込んだ版がある講座（お笑い版）の保存。先に npm run build:site -- --strict で site/dist を作り、手元に動画を置いてから流す

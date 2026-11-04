@@ -1,22 +1,22 @@
 // 段の指紋に入れるもの（scripts/stages/video/inputs.ts・scripts/stages/pipeline/stages.ts）を固定する。入れ忘れた入力の変化を
 // 見逃すのが一番の危険なので、「変えると指紋が変わるもの」と「変えても変わらないもの（サイトと教材だけが使う項目）」を、本物の台本で
 // 確かめる。ファイルは一時のフォルダにだけ書く（声・ミックス・動画は小さい偽物）。本物の道具は流さない
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
-import { parse } from '@babel/parser';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { parse } from '@babel/parser';
 import { VIDEOS, type Video } from '../../content';
 import { THEMES } from '../../content/themes';
 import type { Course, Lecture } from '../../content/types';
-import { VOICES, speechIn } from '../../content/voices';
+import { speechIn, VOICES } from '../../content/voices';
 import { mediaListFile, timelineFile } from '../../engine/core/generated';
-import { readSiteConfig } from '../../scripts/lib/config';
 import { materialOutputs } from '../../scripts/build_materials';
+import { readSiteConfig } from '../../scripts/lib/config';
 import { courseMediaJson, readCourseMedia } from '../../scripts/media-lists';
 import { codeFiles, fileHasher, listFiles } from '../../scripts/stages/pipeline/digest';
-import { docsFiles, makeStages, MIX_CODE, MUSIC_FILES } from '../../scripts/stages/pipeline/stages';
+import { docsFiles, MIX_CODE, MUSIC_FILES, makeStages } from '../../scripts/stages/pipeline/stages';
 import {
   COURSE_FIELDS,
   currentInputs,
@@ -29,6 +29,7 @@ import {
   srcDigest,
 } from '../../scripts/stages/video/inputs';
 import { ttsKeysIn } from '../../scripts/voices';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-pipeline-inputs-'));
@@ -70,7 +71,12 @@ describe('動画の台本の側の指紋（render の script・動画の一覧�
   });
   test('動画が描くレクチャーと講座の項目・テーマの値・声のクレジット・timeline を変えると変わる', () => {
     const cases: [string, Video][] = [
-      ['場面の見出し', lectureWith((l) => Object.assign(required(l.scenes[1]), { heading: `${required(l.scenes[1]).heading ?? ''}。` }))],
+      [
+        '場面の見出し',
+        lectureWith((l) =>
+          Object.assign(required(l.scenes[1]), { heading: `${required(l.scenes[1]).heading ?? ''}。` }),
+        ),
+      ],
       ['注意書き', lectureWith((l) => Object.assign(l, { caution: '注意' }))],
       ['レクチャーの題', lectureWith((l) => Object.assign(l, { title: `${l.title}。` }))],
       ['番号', lectureWith((l) => Object.assign(l, { no: l.no + 1 }))],

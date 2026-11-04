@@ -1,6 +1,6 @@
 // 動画のプレーヤー: 動画と字幕（自前の字幕の帯・全画面のときのネイティブの字幕・字幕を焼き込んだ版への差し替え）・速度・繰り返し・全画面・
 // 1 本のダウンロードのリンク・次のレクチャーの案内・再生の状態の文（保存の状態の知らせ OFFLINE_STATE を受ける）
-import { type Page, lectureOf } from './context';
+import { lectureOf, type Page } from './context';
 import type { LectureData } from './data';
 import { byId, closest, put } from './dom';
 import { OFFLINE_STATE, type OfflineState } from './events';

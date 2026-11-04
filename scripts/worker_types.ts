@@ -88,7 +88,8 @@ const compare = (file: string, before: string | null, write: boolean): number =>
   const b = after.split('\n');
   const at = a.findIndex((l, i) => l !== b[i]);
   const line = at < 0 ? a.length + 1 : at + 1;
-  const show = (s: string | undefined) => (s === undefined ? '（行が無い）' : s.length > 160 ? `${s.slice(0, 160)}…` : s);
+  const show = (s: string | undefined) =>
+    s === undefined ? '（行が無い）' : s.length > 160 ? `${s.slice(0, 160)}…` : s;
   console.error(
     [
       `${TYPES} が、wrangler.jsonc と wrangler の版から作り直した中身と違います（${line} 行目から）`,

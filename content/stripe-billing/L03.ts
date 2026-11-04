@@ -1,6 +1,6 @@
 import { goals } from '../_shared/scenes';
-import { docsOf } from './sources';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 export const L03: Lecture = {
   id: 'L03',

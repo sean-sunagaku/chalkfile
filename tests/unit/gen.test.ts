@@ -1,5 +1,7 @@
 // npm run gen（scripts/gen.ts）が作る全体の生成物: Worker の許可リスト・README の講座の表・new-course.md の頭文字の表・Python が読む JSON
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { COURSES } from '../../content';
 import { freePrefixes } from '../../engine/core/validate';
 import { checkGenerated, type Finding } from '../../scripts/check_docs';
@@ -13,20 +15,18 @@ import {
   staleOutputs,
   WORKER_MEDIA,
 } from '../../scripts/gen';
+import { MATERIALS_REGISTRY, materialsRegistry } from '../../scripts/gen_materials_registry';
 import {
   CORE_SETTINGS,
-  WORKER_SETTINGS,
-  LANGUAGE_SETTINGS,
-  MEDIA_SETTINGS,
   coreSettings,
-  workerSettings,
+  LANGUAGE_SETTINGS,
   languageSettings,
+  MEDIA_SETTINGS,
   mediaSettings,
+  WORKER_SETTINGS,
+  workerSettings,
 } from '../../scripts/gen_project_config';
-import { MATERIALS_REGISTRY, materialsRegistry } from '../../scripts/gen_materials_registry';
-import { readFileSync } from 'node:fs';
 import { ROOT } from '../../scripts/lib/paths';
-import path from 'node:path';
 import { readMediaManifest } from '../../scripts/media';
 import { mediaManifestJson } from '../../scripts/media-lists';
 

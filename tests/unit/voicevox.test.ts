@@ -7,9 +7,9 @@ import path from 'node:path';
 import type { Video } from '../../content';
 import { MissingError, UsageError } from '../../scripts/lib/args';
 import { outDirs } from '../../scripts/stages/timeline/emit';
+import { metaJson, readMeta } from '../../scripts/stages/voice/store';
 import { kanaOf, timeoutFromEnv, voicevox } from '../../scripts/stages/voice/voicevox';
 import { type Ctx, synthVideos } from '../../scripts/synth';
-import { metaJson, readMeta } from '../../scripts/stages/voice/store';
 import { recipeIn, ttsKeysIn, voicevoxRecipe } from '../../scripts/voices';
 import { course, lecture } from '../fixtures/content/invalid/_base';
 

@@ -1,5 +1,4 @@
 import { comedyCast } from '../_shared/comedy';
-import { SOURCES } from './sources';
 import type { Course } from '../types';
 import { S01 } from './S01';
 import { S02 } from './S02';
@@ -7,6 +6,7 @@ import { S03 } from './S03';
 import { S04 } from './S04';
 import { S05 } from './S05';
 import { S06 } from './S06';
+import { SOURCES } from './sources';
 
 /**
  * DeepSeek Harness チームの記事「Exploring Super-agent Design」を読み解くお笑い版（全 6 章）。

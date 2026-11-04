@@ -1,9 +1,9 @@
 import { comedyCast } from '../_shared/comedy';
-import { SOURCES } from './sources';
 import type { Course } from '../types';
 import { G01 } from './G01';
 import { G02 } from './G02';
 import { G03 } from './G03';
+import { SOURCES } from './sources';
 
 /**
  * GA4（Google アナリティクス 4）のお笑い版（全 3 章・短め）。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、

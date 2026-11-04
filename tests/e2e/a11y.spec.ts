@@ -1,10 +1,10 @@
-import { required } from '../support/required';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import type { SiteSession } from './site';
+import { required } from '../support/required';
 import { expect, test } from './fixtures';
+import type { SiteSession } from './site';
 
 // アクセシビリティの検査（axe-core の既定の規則）。合成の講座（project ci）のページで見る（本物の講座は中身が増えると結果が変わる）。
 // 今ある違反は tests/fixtures/a11y-known/<ページ>.json に並べて許し、新しい違反が出たら落ちる。直したら一覧から消す。

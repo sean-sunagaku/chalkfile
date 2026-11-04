@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -11,30 +10,31 @@ import {
   captionLines,
   formatIssue,
   freePrefixes,
+  type Issue,
   SFX_IDS,
+  type TimelineShape,
+  VOICE_IDS,
   validateCourse,
   validateCourses,
   validateLecture,
   validateTheme,
   validateTimeline,
-  VOICE_IDS,
-  type Issue,
-  type TimelineShape,
 } from '../../engine/core/validate';
-import { mediaFilename, type MediaEntry, type MediaManifest } from '../../site/media-shared';
 import { PAGE_VERSION_MARK } from '../../scripts/site-version';
 import {
   materialProblems,
   mediaProblems,
+  type PublishIssue,
   posterProblems,
   publishIssues,
   readSiteConfig,
   registryProblems,
   siteProblems,
   validateAll,
-  type PublishIssue,
 } from '../../scripts/validate';
-import { course, lecture, say, type Expected } from '../fixtures/content/invalid/_base';
+import { type MediaEntry, type MediaManifest, mediaFilename } from '../../site/media-shared';
+import { course, type Expected, lecture, say } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const brief = (xs: Issue[]) => xs.map((x) => `${x.level} ${x.rule} ${x.where}`).sort();

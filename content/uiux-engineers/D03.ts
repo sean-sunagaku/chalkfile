@@ -1,6 +1,6 @@
 import { flow, goals } from '../_shared/scenes';
-import { docsOf } from './sources';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 /** この章で新しく足す出典（講座の sources.ts に無いものだけ。第 2 章で足した出典は D02_SOURCES にある） */
 

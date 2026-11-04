@@ -41,7 +41,9 @@ export const partsOf = ({ key: id, course, lecture: lec }: Video, root = ROOT): 
     to: `${id}.captioned.mp4`,
     how: `CAPTIONS=1 npm run render -- ${id}`,
   };
-  const poster = existsSync(path.join(root, posterFile(course.id, id))) ? posterFile(course.id, id) : `site/media/${id}.jpg`;
+  const poster = existsSync(path.join(root, posterFile(course.id, id)))
+    ? posterFile(course.id, id)
+    : `site/media/${id}.jpg`;
   const need: Part[] = [
     {
       from: `site/media/${id}.mp4`,
@@ -53,7 +55,13 @@ export const partsOf = ({ key: id, course, lecture: lec }: Video, root = ROOT): 
     // 字幕（.vtt・.srt）は、サイトの台本と字幕の時刻から作る
     { from: `site/data/${id}.json`, to: '', how: `npm run synth -- ${id}。台詞を変えていなければ --cached-only` },
     ...(lec.material
-      ? [{ from: `docs/courses/${course.id}/${lec.material.id}.md`, to: `${lec.material.id}.md`, how: 'npm run build:materials' }]
+      ? [
+          {
+            from: `docs/courses/${course.id}/${lec.material.id}.md`,
+            to: `${lec.material.id}.md`,
+            how: 'npm run build:materials',
+          },
+        ]
       : []),
   ];
   // 掛け合いの講座は、誰が言ったかが分からないと笑えないので、字幕を焼き込んだ版も要る（comedy.md の「字幕」）
@@ -81,11 +89,15 @@ const main = (argv: string[]) => {
   const { values, positionals: ids } = readArgs(argv, {}, { positionals: true });
   if (values.help) return showHelp(import.meta.filename);
   if (!ids.length) throw new UsageError('レクチャー ID を渡す（例: bun scripts/export_deliverables.ts N01 D01 M01）');
-  for (const id of ids) if (!VIDEOS.some((v) => v.key === id)) throw new UsageError(`動画が無い: ${id}（例: N01、S01.en）`);
+  for (const id of ids)
+    if (!VIDEOS.some((v) => v.key === id)) throw new UsageError(`動画が無い: ${id}（例: N01、S01.en）`);
   const videos = [...new Set(ids)].map(videoOf);
   // 書く前に、全部の動画の要るファイルを確かめる（1 つでも無ければ、何も書かない）
   const lacking = lackingParts(videos);
-  if (lacking.length) throw new MissingError(`納品物に要るファイルが ${lacking.length} 個無い（何も書いていない）:\n  ${lacking.join('\n  ')}`);
+  if (lacking.length)
+    throw new MissingError(
+      `納品物に要るファイルが ${lacking.length} 個無い（何も書いていない）:\n  ${lacking.join('\n  ')}`,
+    );
   for (const video of videos) {
     const { key: id, lecture: lec, course, lang } = video;
     // 字幕のファイル名: 日本語は <id>.ja.vtt（今までどおり）、訳は <id>.vtt（名前に言語が入っている）
@@ -102,8 +114,14 @@ const main = (argv: string[]) => {
       got.push(p.to);
     }
     const cues = (JSON.parse(readFileSync(path.join(ROOT, 'site/data', `${id}.json`), 'utf8')) as { cues: Cue[] }).cues;
-    writeFileSync(path.join(dir, `${sub}.vtt`), `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${stamp(c.start, '.')} --> ${stamp(c.end, '.')}\n${c.text}\n`).join('\n')}`);
-    writeFileSync(path.join(dir, `${sub}.srt`), cues.map((c, i) => `${i + 1}\n${stamp(c.start, ',')} --> ${stamp(c.end, ',')}\n${c.text}\n`).join('\n'));
+    writeFileSync(
+      path.join(dir, `${sub}.vtt`),
+      `WEBVTT\n\n${cues.map((c, i) => `${i + 1}\n${stamp(c.start, '.')} --> ${stamp(c.end, '.')}\n${c.text}\n`).join('\n')}`,
+    );
+    writeFileSync(
+      path.join(dir, `${sub}.srt`),
+      cues.map((c, i) => `${i + 1}\n${stamp(c.start, ',')} --> ${stamp(c.end, ',')}\n${c.text}\n`).join('\n'),
+    );
     got.push(`${sub}.vtt`, `${sub}.srt`);
     writeFileSync(
       path.join(dir, 'README.md'),

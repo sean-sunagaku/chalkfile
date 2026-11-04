@@ -2,7 +2,7 @@
 // 形と指紋は engine/core/timeline.ts、置き場所は engine/core/generated.ts。Remotion は src/project.ts が同じものを集める
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { entriesByKey, timelineEntry, type TimelineEntry } from '../engine/core/timeline';
+import { entriesByKey, type TimelineEntry, timelineEntry } from '../engine/core/timeline';
 import { ROOT } from './lib/paths';
 
 /** 置いてある timeline のファイル（リポジトリの直下からのパス・名前の順）。root を渡すと、ほかの checkout を読む */

@@ -178,7 +178,8 @@ const build = (theme: Theme, lang: Lang): Palette => {
   // まとめの番号は、グラデーションの真ん中に乗る。onAccent で読めなければ、見出しの色と白の読めるほう
   const middle = gradientMiddle(theme.gradient);
   const readable = (fg: string) => Math.min(...middle.map((g) => contrastRatio(fg, g)));
-  const onGrad = readable(c.onAccent) >= CONTRAST_MIN.large ? c.onAccent : readable(c.ink) >= readable(WHITE) ? c.ink : WHITE;
+  const onGrad =
+    readable(c.onAccent) >= CONTRAST_MIN.large ? c.onAccent : readable(c.ink) >= readable(WHITE) ? c.ink : WHITE;
   return {
     THEME: theme,
     C: {

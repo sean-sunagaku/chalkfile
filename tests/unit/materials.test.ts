@@ -1,5 +1,5 @@
 // 素材のブランチの出し入れ（scripts/materials.ts）を、一時の bare リポジトリと clone で確かめる。本物の origin には触れない
-import { required } from '../support/required';
+
 import { afterAll, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -18,26 +18,27 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Video } from '../../content';
+import { speechIn } from '../../content/voices';
 import {
   AUDIO,
+  type Convert,
+  type CourseKeys,
   check,
   ffmpegConvertWith,
   gc,
   keepAt,
+  type Measure,
   parseDurations,
   pull,
   pullDurations,
   push,
-  type Convert,
-  type CourseKeys,
-  type Measure,
   type Repo,
 } from '../../scripts/materials';
 import { outDirs } from '../../scripts/stages/timeline/emit';
 import { durationsFind, synthVideos } from '../../scripts/synth';
-import { speechIn } from '../../content/voices';
 import { ttsKeysIn } from '../../scripts/voices';
 import { course as courseOf, lecture } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const sandbox = mkdtempSync(path.join(tmpdir(), 'chalkfile-materials-test-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
@@ -855,7 +856,8 @@ test('長さと読みだけの取り出し（音声と ffmpeg は要らない）
   const a = withCache(cloneOf(remote, 'a'), cacheA);
   audio(a);
   // 前の名前（v1）の声。長さはフレームの境目をまたぐもの
-  for (const [i, keys] of lines.entries()) realVoice(cacheA, required(keys[1]), required([1.234567, 2.000021, 0.987654][i]), i + 1);
+  for (const [i, keys] of lines.entries())
+    realVoice(cacheA, required(keys[1]), required([1.234567, 2.000021, 0.987654][i]), i + 1);
   await push(a, [{ id: c.id, langs: ['ja'], lines, about: '見本（1 レクチャー・ja）' }], real().opts);
 
   // 音声から作る（ふつうの --cached-only）

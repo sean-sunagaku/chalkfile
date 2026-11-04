@@ -1,6 +1,11 @@
 // 保存対象は、このサイトが生成した公開教材と MP4・ポスターだけ。大きさの上限の正本は site/limits.ts
 import { FOLDER_PATTERN } from '../content/langs';
-import { OFFLINE_COURSE_MAX_BYTES, OFFLINE_COURSE_MAX_FILES, OFFLINE_FILE_MAX_BYTES, OFFLINE_PAGE_MAX_BYTES } from './limits';
+import {
+  OFFLINE_COURSE_MAX_BYTES,
+  OFFLINE_COURSE_MAX_FILES,
+  OFFLINE_FILE_MAX_BYTES,
+  OFFLINE_PAGE_MAX_BYTES,
+} from './limits';
 import { parseMediaPath } from './media-shared';
 
 // 1 つの bytes の Range の読み方は site/lib/http-range.ts（再生の応答の組み立てと一緒）。前からここを読むもの（旧 Pages の移行の SW）のために、ここからも出す
@@ -46,8 +51,29 @@ const MEDIA_NAME = `([A-Za-z0-9][A-Za-z0-9_-]*(?:\\.${FOLDER_PATTERN})?)(\\.cc)?
 
 /** 保存できないものを見つけたときのエラー。code は保存機能の文字（site/i18n/<言語>.ts の sw.errors）を選ぶ */
 export type OfflineErrorCode =
-  | 'manifest' | 'format' | 'origin' | 'page' | 'media' | 'incomplete' | 'unpublished' | 'fetchManifest' | 'tooLarge' | 'integrity'
-  | 'fetchFile' | 'changed' | 'corrupt' | 'quota' | 'busy' | 'busyDelete' | 'verify' | 'cancelled' | 'noSpace' | 'pick' | 'unknownOp' | 'storage' | 'timeout';
+  | 'manifest'
+  | 'format'
+  | 'origin'
+  | 'page'
+  | 'media'
+  | 'incomplete'
+  | 'unpublished'
+  | 'fetchManifest'
+  | 'tooLarge'
+  | 'integrity'
+  | 'fetchFile'
+  | 'changed'
+  | 'corrupt'
+  | 'quota'
+  | 'busy'
+  | 'busyDelete'
+  | 'verify'
+  | 'cancelled'
+  | 'noSpace'
+  | 'pick'
+  | 'unknownOp'
+  | 'storage'
+  | 'timeout';
 export class OfflineError extends Error {
   constructor(readonly code: OfflineErrorCode) {
     super(code);
@@ -61,10 +87,26 @@ export class OfflineError extends Error {
  * legacyMedia は、旧 Pages の頃に訳の言語の動画を置いた、同じ origin の別のサイト（言語 → パス）。旧 Pages の移行の SW（site/legacy-sw.ts）
  * だけが渡し、その SW を消すときに一緒に消す。今の SW は渡さない
  */
-export function validateManifest(value: unknown, id: string, scope: string, legacyMedia: Record<string, string> = {}): CourseManifest {
+export function validateManifest(
+  value: unknown,
+  id: string,
+  scope: string,
+  legacyMedia: Record<string, string> = {},
+): CourseManifest {
   const m = value as CourseManifest;
-  if (!m || m.schema !== 1 || !COURSE_ID.test(id) || m.id !== id || typeof m.title !== 'string' || m.title.length > 300 ||
-      !HASH.test(m.pageVersion) || !HASH.test(m.revision) || !Array.isArray(m.files) || m.files.length < 3 || m.files.length > OFFLINE_COURSE_MAX_FILES) {
+  if (
+    !m ||
+    m.schema !== 1 ||
+    !COURSE_ID.test(id) ||
+    m.id !== id ||
+    typeof m.title !== 'string' ||
+    m.title.length > 300 ||
+    !HASH.test(m.pageVersion) ||
+    !HASH.test(m.revision) ||
+    !Array.isArray(m.files) ||
+    m.files.length < 3 ||
+    m.files.length > OFFLINE_COURSE_MAX_FILES
+  ) {
     throw new OfflineError('manifest');
   }
   const origin = new URL(scope).origin;
@@ -75,20 +117,35 @@ export function validateManifest(value: unknown, id: string, scope: string, lega
   let bytes = 0;
   const media = new Map<string, Set<string>>();
   for (const f of m.files) {
-    if (!f || typeof f.url !== 'string' || urls.has(f.url) || !HASH.test(f.sha256) ||
-        !Number.isSafeInteger(f.bytes) || f.bytes <= 0 || f.bytes > MAX_FILE_BYTES) throw new OfflineError('format');
+    if (
+      !f ||
+      typeof f.url !== 'string' ||
+      urls.has(f.url) ||
+      !HASH.test(f.sha256) ||
+      !Number.isSafeInteger(f.bytes) ||
+      f.bytes <= 0 ||
+      f.bytes > MAX_FILE_BYTES
+    )
+      throw new OfflineError('format');
     urls.add(f.url);
     const url = new URL(f.url, scope);
     const inScope = url.href.startsWith(scope);
     const inMedia = !!legacyRoot && url.href.startsWith(legacyRoot);
-    if (url.origin !== origin || (!inScope && !inMedia) || url.hash || url.username || url.password) throw new OfflineError('origin');
+    if (url.origin !== origin || (!inScope && !inMedia) || url.hash || url.username || url.password)
+      throw new OfflineError('origin');
     if (f.url === `${id}/`) {
       if (f.type !== 'text/html' || f.bytes > OFFLINE_PAGE_MAX_BYTES) throw new OfflineError('page');
     } else {
       // 同じoriginの /media/ を先に判定。通常版・字幕版とも本文のhashとパスのhashを一致させる（パスの読み方は media-shared.ts の parseMediaPath。query の付いたものは読まない）
       const hashed = parseMediaPath(f.url);
       if (hashed) {
-        if (hashed.lang !== (lang || 'ja') || hashed.course !== slug || hashed.sha256 !== f.sha256 || f.type !== 'video/mp4') throw new OfflineError('media');
+        if (
+          hashed.lang !== (lang || 'ja') ||
+          hashed.course !== slug ||
+          hashed.sha256 !== f.sha256 ||
+          f.type !== 'video/mp4'
+        )
+          throw new OfflineError('media');
         const key = `${hashed.lecture}${lang ? `.${lang}` : ''}`;
         const types = media.get(key) ?? new Set<string>();
         types.add(hashed.kind === 'captioned' ? 'cc' : 'mp4');
@@ -97,11 +154,20 @@ export function validateManifest(value: unknown, id: string, scope: string, lega
         continue;
       }
       const rest = inMedia ? url.href.slice(legacyRoot.length) : url.href.slice(scope.length);
-      const match = new RegExp(`^${inMedia ? '' : `${lang ? `${lang}\\/` : ''}`}([A-Za-z0-9][A-Za-z0-9_-]*)\\/${inMedia ? '' : 'media\\/'}${MEDIA_NAME}\\?v=([a-f0-9]{64})$`).exec(rest) as (RegExpExecArray & { 2: string }) | null;
+      const match = new RegExp(
+        `^${inMedia ? '' : `${lang ? `${lang}\\/` : ''}`}([A-Za-z0-9][A-Za-z0-9_-]*)\\/${inMedia ? '' : 'media\\/'}${MEDIA_NAME}\\?v=([a-f0-9]{64})$`,
+      ).exec(rest) as (RegExpExecArray & { 2: string }) | null;
       // 正規表現の捕捉群 2（名前）と 4（拡張子）は、一致したときは必ずある。
       // 訳の講座の動画は、名前の終わりに講座の言語が付く（S01.en）。日本語の講座は付かない（S01）
       const nameLang = match?.[2].includes('.') ? match[2]!.split('.')[1] : '';
-      if (!match || match[1] !== slug || nameLang !== lang || match[5] !== m.pageVersion || f.type !== (match[4] === 'mp4' ? 'video/mp4' : 'image/jpeg') || (match[3] && match[4] !== 'mp4')) {
+      if (
+        !match ||
+        match[1] !== slug ||
+        nameLang !== lang ||
+        match[5] !== m.pageVersion ||
+        f.type !== (match[4] === 'mp4' ? 'video/mp4' : 'image/jpeg') ||
+        (match[3] && match[4] !== 'mp4')
+      ) {
         throw new OfflineError('media');
       }
       // 字幕を焼き込んだ版（.cc.mp4）は、同じレクチャーの動画とポスターに足すもの
@@ -111,8 +177,14 @@ export function validateManifest(value: unknown, id: string, scope: string, lega
     }
     bytes += f.bytes;
   }
-  if (!urls.has(`${id}/`) || media.size === 0 || [...media.values()].some((x) => !x.has('mp4') || !x.has('jpg')) ||
-      bytes !== m.bytes || bytes > OFFLINE_COURSE_MAX_BYTES) throw new OfflineError('incomplete');
+  if (
+    !urls.has(`${id}/`) ||
+    media.size === 0 ||
+    [...media.values()].some((x) => !x.has('mp4') || !x.has('jpg')) ||
+    bytes !== m.bytes ||
+    bytes > OFFLINE_COURSE_MAX_BYTES
+  )
+    throw new OfflineError('incomplete');
   return m;
 }
 
@@ -138,10 +210,12 @@ export function parseRecord(value: unknown, id: string, scope: string, prefix: s
 /** 読めない記録が指していた Cache の名前（隔離する）。記録の形が壊れていて分からなければ null（その講座の Cache を全部隔離する） */
 export function recordCaches(value: unknown, id: string, prefix: string): string[] | null {
   const versions = (value as { versions?: unknown } | null | undefined)?.versions;
-  const names = Array.isArray(versions) ? versions.flatMap((v) => {
-    const cache = (v as { cache?: unknown } | null)?.cache;
-    return typeof cache === 'string' && cache.startsWith(`${prefix}course:${id}:`) ? [cache] : [];
-  }) : [];
+  const names = Array.isArray(versions)
+    ? versions.flatMap((v) => {
+        const cache = (v as { cache?: unknown } | null)?.cache;
+        return typeof cache === 'string' && cache.startsWith(`${prefix}course:${id}:`) ? [cache] : [];
+      })
+    : [];
   return names.length ? names : null;
 }
 
@@ -176,10 +250,14 @@ export type CleanupInput = {
  * 記録が指さない講座の Cache（途中で終わった保存の仮領域・更新で外れた版）は消す。読めない記録が指す Cache は消さずに印を付け、
  * 印から 30 日たったら中身ごと消す。読めるように戻った・記録が消えた（保存し直し・削除）ときは印を外す。未来の時刻の印（端末の時計のずれ）は付け直す
  */
-export function planCleanup({ names, prefix, keep, held, oldShell, now }: CleanupInput): { remove: string[]; create: string[] } {
+export function planCleanup({ names, prefix, keep, held, oldShell, now }: CleanupInput): {
+  remove: string[];
+  create: string[];
+} {
   const DAY = 24 * 60 * 60 * 1000;
   const course = `${prefix}course:`;
-  const isHeld = (name: string) => held.caches.has(name) || [...held.ids].some((id) => name.startsWith(`${course}${id}:`));
+  const isHeld = (name: string) =>
+    held.caches.has(name) || [...held.ids].some((id) => name.startsWith(`${course}${id}:`));
   const exists = new Set(names);
   const marks = new Map<string, { name: string; at: number }[]>();
   for (const name of names) {
@@ -191,7 +269,10 @@ export function planCleanup({ names, prefix, keep, held, oldShell, now }: Cleanu
   for (const name of names) {
     if (keep.has(name) || parseQuarantineName(name)) continue;
     if (name.startsWith(course)) {
-      if (!isHeld(name)) { remove.add(name); continue; }
+      if (!isHeld(name)) {
+        remove.add(name);
+        continue;
+      }
       const at = (marks.get(name) ?? []).filter((m) => m.at <= now + DAY).map((m) => m.at);
       if (!at.length) create.push(quarantineName(name, now));
       else if (now - Math.min(...at) >= QUARANTINE_DAYS * DAY) remove.add(name);
@@ -205,7 +286,9 @@ export function planCleanup({ names, prefix, keep, held, oldShell, now }: Cleanu
 }
 
 export async function sha256(data: ArrayBuffer): Promise<string> {
-  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), (x) => x.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), (x) =>
+    x.toString(16).padStart(2, '0'),
+  ).join('');
 }
 
 /*

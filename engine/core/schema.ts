@@ -1,10 +1,10 @@
-import type { THEME_IDS } from './project-settings';
 // 講座の台本と画面構成のデータ型（台本の形）。台本（content/<講座>/）は content/types.ts から読む（ここを再 export しているだけ）。
 // 画面の要素は `at`（その場面の何番目の台詞の頭で出すか、0 始まり）でナレーションに同期させる。
 // at は台詞の番号のほかに、同じ場面の台詞の id（Line の id）でも書ける（At）。id で書いた台本の型は AuthoredLecture・AuthoredCourse。
 // 読み込むとき（content/index.ts。直し方は engine/core/lines.ts）に id を番号に直すので、描く側・声を作る側が受け取るのは、at が番号の Lecture・Course だけ
 import type { Lang } from './i18n';
 import type { IconName } from './icons';
+import type { THEME_IDS } from './project-settings';
 import type { SfxId } from './sfx';
 
 /**
@@ -24,10 +24,8 @@ export type Tone = 'pink' | 'violet' | 'cyan' | 'mint' | 'amber' | 'coral' | 'sl
 export type VoiceId = 'narrator' | 'announcer' | 'zundamon' | 'zundamon-cry' | 'tsukkomi' | 'tennokoe';
 
 /** 効果音の名前。一覧（名前・ミックスの音量・何の音か）は engine/core/sfx.ts の SFX で、型はそこから作る */
-export type { SfxId };
-
 /** 台本の icon に書ける名前。一覧は engine/core/icons.ts の ICON_NAMES（名前は lucide-react の名前ではなく、短い独自の名前。描くアイコンとの対応は src/components/icons.ts の ICONS） */
-export type { IconName };
+export type { IconName, SfxId };
 
 export type Line = {
   /**
@@ -246,7 +244,17 @@ export type BigScene<A extends At = number> = Base & {
 
 export type NumbersScene<A extends At = number> = Base & {
   kind: 'numbers';
-  items: { label: string; value: number; prefix?: string; suffix?: string; decimals?: number; at: A; tone: Tone; note?: string; op?: '' | '−' | '＝' }[];
+  items: {
+    label: string;
+    value: number;
+    prefix?: string;
+    suffix?: string;
+    decimals?: number;
+    at: A;
+    tone: Tone;
+    note?: string;
+    op?: '' | '−' | '＝';
+  }[];
   footnote?: { text: string; at: A };
 };
 
@@ -315,7 +323,16 @@ export type PhoneScene<A extends At = number> = Base & {
 export type MockBlock = { id?: string } & (
   | { type: 'title'; text: string; weak?: boolean }
   | { type: 'text'; text: string; weak?: boolean; small?: boolean }
-  | { type: 'field'; label?: string; placeholder?: string; value?: string; error?: string; hint?: string; required?: boolean; weak?: boolean }
+  | {
+      type: 'field';
+      label?: string;
+      placeholder?: string;
+      value?: string;
+      error?: string;
+      hint?: string;
+      required?: boolean;
+      weak?: boolean;
+    }
   | { type: 'button'; text: string; variant: 'primary' | 'secondary' | 'link' | 'danger'; weak?: boolean }
   | { type: 'buttons'; items: { text: string; variant: 'primary' | 'secondary' | 'link' | 'danger'; weak?: boolean }[] }
   | { type: 'alert'; text: string; tone: 'error' | 'info' | 'warn' | 'success' }

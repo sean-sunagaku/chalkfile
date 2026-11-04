@@ -1,7 +1,7 @@
 // 時刻の計算（scripts/stages/timeline/compute.ts。純粋な関数）を、決まった長さの声で流し、正解の値（手で確かめた値）と比べる。
 // 出力（scripts/stages/timeline/emit.ts）は一時のフォルダに書き、計算した形とそのまま同じかを見る。
 // 間の取り方（engine/core/timeline.ts の TIMING）や丸め方を変えたら、ここの値も直す（全部の動画の timeline が変わる）
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -21,6 +21,7 @@ import {
 } from '../../scripts/stages/timeline/compute';
 import { emitVideo, outDirs } from '../../scripts/stages/timeline/emit';
 import { course, lecture } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-synth-compute-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));

@@ -9,7 +9,7 @@
 // まだ公開しない言語の動画・まだ公開していない動画・作り直した動画は、知らせるだけ。止めたら 1 で終える。
 // 比べる相手の台本は git archive で一時フォルダに取り出して読む（content/ と engine/core/ と scripts/voices.ts だけ。content/ が実行時に読むのは
 // content/ と engine/core/ だけで、engine/core/ はその外を読まない。Biome の noRestrictedImports が止める。engine/core/ を読む前の版は content/ だけで読める）
-import { readSiteConfig } from './lib/config';
+
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,7 +18,8 @@ import { parseArgs } from 'node:util';
 import type { Video } from '../content';
 import type { Lang } from '../content/i18n';
 import type { Line } from '../content/types';
-import { mediaKey, type MediaManifest } from '../site/media-shared';
+import { type MediaManifest, mediaKey } from '../site/media-shared';
+import { readSiteConfig } from './lib/config';
 import { readCourseMedia } from './media-lists';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -142,7 +143,14 @@ const baseReadings = async (commit: string): Promise<{ readings: VideoReading[];
     const paths = ['content', 'scripts/voices.ts', ...archivePaths(commit, ['engine/core'])];
     const r = spawnSync(
       'bash',
-      ['-c', 'set -eo pipefail; ref=$1; dest=$2; shift 2; git archive "$ref" -- "$@" | tar -x -C "$dest"', 'bash', commit, dir, ...paths],
+      [
+        '-c',
+        'set -eo pipefail; ref=$1; dest=$2; shift 2; git archive "$ref" -- "$@" | tar -x -C "$dest"',
+        'bash',
+        commit,
+        dir,
+        ...paths,
+      ],
       { cwd: ROOT, encoding: 'utf8' },
     );
     if (r.status !== 0)

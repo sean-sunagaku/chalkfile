@@ -19,7 +19,7 @@ import config from '../chalkfile.config';
 import { THEMES } from '../content/themes';
 import { docOutputs, projectOutputs } from './gen';
 import { MATERIALS_REGISTRY, materialsRegistry } from './gen_materials_registry';
-import { readArgs, runMain, showHelp, EXIT } from './lib/args';
+import { EXIT, readArgs, runMain, showHelp } from './lib/args';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -150,7 +150,11 @@ export const OLD_WORDS: { rx: RegExp; word: string; now: string }[] = [
     now: `公開先は ${config.origin}`,
   },
   // github.com/sean-sunagaku/chalkfile/ のような、リポジトリの URL の中のものは除く
-  { rx: /(?<![\w.-])\/chalkfile\//, word: '/chalkfile/', now: `旧 Pages のパス。今のサイトは ${new URL(config.origin).hostname} の直下` },
+  {
+    rx: /(?<![\w.-])\/chalkfile\//,
+    word: '/chalkfile/',
+    now: `旧 Pages のパス。今のサイトは ${new URL(config.origin).hostname} の直下`,
+  },
   {
     rx: /GitHub Pages に(?:出す|出し|置|そのまま)/,
     word: 'GitHub Pages に出す',
@@ -163,7 +167,11 @@ export const OLD_WORDS: { rx: RegExp; word: string; now: string }[] = [
     now: '動画は Releases に置く。gh-pages は旧 Pages の案内だけ',
   },
   { rx: /deploy_pages\.sh で公開/, word: 'deploy_pages.sh で公開', now: 'deploy_pages.sh は旧 Pages の移行の案内だけ' },
-  { rx: /scripts\/deploy_pages\.sh/, word: 'scripts/deploy_pages.sh', now: '旧 Pages の道具は scripts/legacy/deploy_pages.sh' },
+  {
+    rx: /scripts\/deploy_pages\.sh/,
+    word: 'scripts/deploy_pages.sh',
+    now: '旧 Pages の道具は scripts/legacy/deploy_pages.sh',
+  },
   { rx: /dist-media/, word: 'dist-media', now: '動画は Releases に置き、/media/ で配る（media.ts push）' },
   { rx: /npm install/, word: 'npm install', now: '依存は npm ci --ignore-scripts で入れる' },
   // 動かした生成物の前の場所
@@ -211,26 +219,42 @@ export const ALLOW_OLD: OldAllow[] = [
     words: ['github.io', '/chalkfile/'],
     why: '旧 Pages の保存の記録を取る（互換のテストの入力を作る）',
   },
-  { rx: /^tests\/unit\/legacy-migration\.test\.ts$/, words: ['/chalkfile/'], why: '旧 Pages のパスを新しいサイトへ移す変換のテスト' },
+  {
+    rx: /^tests\/unit\/legacy-migration\.test\.ts$/,
+    words: ['/chalkfile/'],
+    why: '旧 Pages のパスを新しいサイトへ移す変換のテスト',
+  },
   {
     rx: /^tests\/unit\/offline-compat\.test\.ts$/,
     words: ['/chalkfile/'],
     why: '旧 Pages の頃の保存の名前を、今の読み込みが受け入れるかのテスト',
   },
-  { rx: /^tools\/verify\/verify-production\.ts$/, words: ['github.io'], why: '公開したあとに、旧 Pages からの移行を確かめる' },
+  {
+    rx: /^tools\/verify\/verify-production\.ts$/,
+    words: ['github.io'],
+    why: '公開したあとに、旧 Pages からの移行を確かめる',
+  },
   // 動かした生成物の前の場所を、わざと読むか止めるコード
   {
     rx: /^scripts\/stills-compare\.ts$/,
     words: ['src/generated/*.json'],
     why: '基準の版が前の形（1 つの timeline）でも比べる',
   },
-  { rx: /^tests\/unit\/timeline\.test\.ts$/, words: ['src/generated/*.json'], why: '前の場所の timeline を止めることのテスト' },
+  {
+    rx: /^tests\/unit\/timeline\.test\.ts$/,
+    words: ['src/generated/*.json'],
+    why: '前の場所の timeline を止めることのテスト',
+  },
   { rx: /^\.gitignore$/, words: ['dist-media'], why: '前の組み立ての出力が手元に残っていても、Git に入れない' },
   // この点検そのもの
   { rx: /^scripts\/check_docs\.ts$/, why: 'この点検（古い言葉の一覧）' },
   { rx: /^tests\/unit\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
   { rx: /^CHANGELOG\.md$/, words: ['render.sh'], why: '変更の記録（当時の道具の名前をそのまま残す）' },
-  { rx: /^tests\/unit\/render\.test\.ts$/, words: ['render.sh'], why: '前の書き出しの道具と同じ値で書き出すかのテスト' },
+  {
+    rx: /^tests\/unit\/render\.test\.ts$/,
+    words: ['render.sh'],
+    why: '前の書き出しの道具と同じ値で書き出すかのテスト',
+  },
   // 直す担当が決まっている、コードの古い説明と前の形の処理（直したら、この行を消す）
 ];
 
@@ -325,16 +349,32 @@ const checkTables = (read: (file: string) => string | null, out: Finding[]) => {
  * 生成した表（README の講座の表・docs/guide/new-course.md の頭文字の表）が、npm run gen が今作るものと同じか。
  * 手で書いた表と実装の突き合わせ（上の一覧）の代わりに、作り直して比べる（ずれたら npm run gen で作り直す）
  */
-export const checkGenerated = (read: (file: string) => string | null, out: Finding[], outputs: () => Map<string, string> = () => new Map([...docOutputs(), ...projectOutputs(), [MATERIALS_REGISTRY, materialsRegistry()]])) => {
+export const checkGenerated = (
+  read: (file: string) => string | null,
+  out: Finding[],
+  outputs: () => Map<string, string> = () =>
+    new Map([...docOutputs(), ...projectOutputs(), [MATERIALS_REGISTRY, materialsRegistry()]]),
+) => {
   let expected: Map<string, string>;
   try {
     expected = outputs();
   } catch (e) {
-    out.push({ level: 'error', check: '生成の表', where: 'README.md', what: `表を作れない: ${e instanceof Error ? e.message : String(e)}` });
+    out.push({
+      level: 'error',
+      check: '生成の表',
+      where: 'README.md',
+      what: `表を作れない: ${e instanceof Error ? e.message : String(e)}`,
+    });
     return;
   }
   for (const [file, text] of expected) {
-    if (read(file) !== text) out.push({ level: 'error', check: '生成の表', where: file, what: '生成した表が、作り直したものと違う（npm run gen で作り直す。手で直さない）' });
+    if (read(file) !== text)
+      out.push({
+        level: 'error',
+        check: '生成の表',
+        where: file,
+        what: '生成した表が、作り直したものと違う（npm run gen で作り直す。手で直さない）',
+      });
   }
 };
 

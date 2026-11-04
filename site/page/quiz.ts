@@ -1,6 +1,6 @@
 // 確認クイズのタブ: 選ぶとすぐ答えと解説を出し、答えをこの端末に残す。「もう一度」で、そのレクチャーの答えを消す。
 // 答えたときは、その問いの選択肢の class だけを変えて解説を足し、フォーカスを解説へ移す（作り直すと、押したボタンが消えてフォーカスが飛ぶ）
-import { type Page, lectureOf } from './context';
+import { lectureOf, type Page } from './context';
 import type { LectureData } from './data';
 import { byId, closest, h, put } from './dom';
 

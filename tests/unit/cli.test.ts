@@ -111,7 +111,7 @@ describe('流すコマンド（--dry-run は出すだけ）', () => {
     const before = readFileSync(file, 'utf8');
     const result = chalk('i18n', 'scaffold', 'P01.en', '--stdout');
     expect(result.code).toBe(0);
-    expect(result.stdout).toStartWith("import type { LectureL10n }");
+    expect(result.stdout).toStartWith('import type { LectureL10n }');
     expect(result.stdout).toContain('export const P01: LectureL10n = {');
     expect(readFileSync(file, 'utf8')).toBe(before);
   });

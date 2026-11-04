@@ -4,28 +4,34 @@
 // workflow は「形」（ジョブの数・名前・手順の順番・on の種類）では縛らず、「性質」（下の WORKFLOW_RULES）で確かめる。
 // CI を組み直しても、性質を守っていれば通り、1 つでも破れば止まる。性質の一覧と理由は docs/operations/ci.md の「点検する性質」。
 // Worker の許可リスト（npm run gen が作る worker/src/generated/media-manifest.json）があれば、講座ごとの動画の一覧と同じかも見る
-import config from '../chalkfile.config';
+
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { type ParseError, parse as parseJsonc, printParseErrorCode } from 'jsonc-parser';
+import config from '../chalkfile.config';
 import { WORKERS_ASSET_MAX_BYTES, WORKERS_MAX_ASSETS } from '../site/limits';
 import { retainedWarnings } from '../site/media-shared';
 import { checkSecrets } from './check_content';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { readMediaManifest } from './media';
 import { mediaManifestJson } from './media-lists';
-import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
 /* ───────────── Worker の設定 ───────────── */
 
 export function validateWorkerConfig(value: any) {
-  if (value.name !== 'chalkfile' || value.assets?.directory !== './site/dist' ||
-      JSON.stringify(value.assets?.run_worker_first) !== JSON.stringify(['/media/*']) || value.assets?.not_found_handling !== '404-page') {
+  if (
+    value.name !== 'chalkfile' ||
+    value.assets?.directory !== './site/dist' ||
+    JSON.stringify(value.assets?.run_worker_first) !== JSON.stringify(['/media/*']) ||
+    value.assets?.not_found_handling !== '404-page'
+  ) {
     throw new Error('静的サイトをWorkerへ通さない配信設定が不正です。');
   }
   // /media/* の失敗を Workers Logs で見えるようにしておく（W-13）。logs.enabled があれば、そちらが優先する。
-  if ((value.observability?.logs?.enabled ?? value.observability?.enabled) !== true) throw new Error('Workers Logs（observability）が有効ではありません。');
+  if ((value.observability?.logs?.enabled ?? value.observability?.enabled) !== true)
+    throw new Error('Workers Logs（observability）が有効ではありません。');
 }
 
 /** JSONC（コメントと末尾のカンマを許す JSON。wrangler.jsonc の書き方）を読む。読めなければ、どこで読めないかを出して止める */
@@ -188,8 +194,30 @@ const needsOf = (job: Obj | undefined): string[] => {
 /** npm ci の書き方（--ignore-scripts を付ければ使ってよい）と、CI で使わない npm のコマンド（依存を入れる・取ってきて動かす） */
 const NPM_CI = new Set(['ci', 'clean-install', 'ic', 'install-clean', 'isntall-clean']);
 const NPM_FORBIDDEN = new Set([
-  'install', 'i', 'in', 'ins', 'inst', 'insta', 'instal', 'isnt', 'isnta', 'isntal', 'isntall', 'add',
-  'update', 'up', 'upgrade', 'udpate', 'install-test', 'it', 'install-ci-test', 'cit', 'exec', 'x', 'rebuild', 'rb',
+  'install',
+  'i',
+  'in',
+  'ins',
+  'inst',
+  'insta',
+  'instal',
+  'isnt',
+  'isnta',
+  'isntal',
+  'isntall',
+  'add',
+  'update',
+  'up',
+  'upgrade',
+  'udpate',
+  'install-test',
+  'it',
+  'install-ci-test',
+  'cit',
+  'exec',
+  'x',
+  'rebuild',
+  'rb',
 ]);
 /** run の中の、依存のインストール時スクリプトを動かしうる書き方の一覧 */
 export const installProblems = (run: string): string[] => {
@@ -199,8 +227,10 @@ export const installProblems = (run: string): string[] => {
       if (!/(^|\s)--ignore-scripts(?=\s|$)/.test(m[2]!)) out.push(`npm ${m[1]!} に --ignore-scripts を付ける`);
     } else if (NPM_FORBIDDEN.has(m[1]!)) out.push(`npm ${m[1]!} を使わない（依存は npm ci --ignore-scripts で入れる）`);
   }
-  if (/\bnpx\b(?!\s+--no-install\b)/.test(run)) out.push('npx には --no-install を付ける（入れていない版を取ってきて動かさない）');
-  if (/\bbunx\b|\bbun\s+(x|install|i|add|update|link)\b/.test(run)) out.push('bun で依存を入れない・取ってきて動かさない');
+  if (/\bnpx\b(?!\s+--no-install\b)/.test(run))
+    out.push('npx には --no-install を付ける（入れていない版を取ってきて動かさない）');
+  if (/\bbunx\b|\bbun\s+(x|install|i|add|update|link)\b/.test(run))
+    out.push('bun で依存を入れない・取ってきて動かさない');
   return out;
 };
 
@@ -229,14 +259,20 @@ export function workflowFindings(
   const ids = Object.keys(jobs);
   const events = eventsOf(wf.on);
   const production = ids.filter((id) => isProductionJob(jobs[id]!));
-  const stepsOf = (id: string): Obj[] => (Array.isArray(jobs[id]!.steps) ? jobs[id]!.steps : []).map((s) => (isObj(s) ? s : {}));
-  const isDeploy = (id: string, step: Obj) => production.includes(id) && step.name === DEPLOY_STEP && step.uses === undefined;
+  const stepsOf = (id: string): Obj[] =>
+    (Array.isArray(jobs[id]!.steps) ? jobs[id]!.steps : []).map((s) => (isObj(s) ? s : {}));
+  const isDeploy = (id: string, step: Obj) =>
+    production.includes(id) && step.name === DEPLOY_STEP && step.uses === undefined;
 
   // ── secret は Deploy の手順だけ: production のジョブの Deploy の手順の env のほかで、secrets を読まない
   const walkSecrets = (node: unknown, where: string, expression: boolean) => {
     if (typeof node === 'string') {
       if (readsSecrets(node, expression))
-        add('secrets', where, 'secrets を読んでいる（secret を渡すのは、production のジョブの Deploy の手順の env だけ）');
+        add(
+          'secrets',
+          where,
+          'secrets を読んでいる（secret を渡すのは、production のジョブの Deploy の手順の env だけ）',
+        );
     } else if (Array.isArray(node)) {
       for (const [i, n] of node.entries()) walkSecrets(n, `${where}[${i}]`, false);
     } else if (isObj(node)) for (const [k, v] of Object.entries(node)) walkSecrets(v, `${where}.${k}`, k === 'if');
@@ -270,7 +306,11 @@ export function workflowFindings(
       const action = load(uses);
       const runs = isObj(action) && isObj(action.runs) ? action.runs : null;
       if (runs?.using !== 'composite') {
-        add('pinned', at, `${uses} を、リポジトリの中の composite action（action.yml の runs.using: composite）として読めない`);
+        add(
+          'pinned',
+          at,
+          `${uses} を、リポジトリの中の composite action（action.yml の runs.using: composite）として読めない`,
+        );
         return list;
       }
       if (!opened.has(uses)) {
@@ -280,22 +320,33 @@ export function workflowFindings(
       return [...list, ...flatten(runs.steps, `${at} → ${uses}`, [...chain, uses])];
     });
   };
-  const flat: Record<string, Flat[]> = Object.fromEntries(ids.map((id) => [id, flatten(jobs[id]!.steps, `jobs.${id}`, [])]));
+  const flat: Record<string, Flat[]> = Object.fromEntries(
+    ids.map((id) => [id, flatten(jobs[id]!.steps, `jobs.${id}`, [])]),
+  );
 
   // Deploy の手順: production のジョブにだけ置き、固定の版の Wrangler を run で流す。token は env で受け、空なら止まる
   for (const id of ids)
     stepsOf(id).forEach((step, i) => {
       if (step.name !== DEPLOY_STEP) return;
       const where = `jobs.${id}.steps[${i}]（${DEPLOY_STEP}）`;
-      if (!production.includes(id)) add('secrets', where, `${DEPLOY_STEP} の手順は、environment が production のジョブにだけ置く`);
+      if (!production.includes(id))
+        add('secrets', where, `${DEPLOY_STEP} の手順は、environment が production のジョブにだけ置く`);
       if (step.uses !== undefined)
-        add('secrets', where, `${DEPLOY_STEP} の手順で、action（uses）に secret を渡さない（固定の版の Wrangler を run で流す）`);
+        add(
+          'secrets',
+          where,
+          `${DEPLOY_STEP} の手順で、action（uses）に secret を渡さない（固定の版の Wrangler を run で流す）`,
+        );
       const env = isObj(step.env) ? step.env : {};
       if (
         env.CLOUDFLARE_API_TOKEN !== '${{ secrets.CLOUDFLARE_API_TOKEN }}' ||
         env.CLOUDFLARE_ACCOUNT_ID !== '${{ vars.CLOUDFLARE_ACCOUNT_ID }}'
       )
-        add('secrets', where, 'token は env で受ける（CLOUDFLARE_API_TOKEN は secrets、CLOUDFLARE_ACCOUNT_ID は vars から）');
+        add(
+          'secrets',
+          where,
+          'token は env で受ける（CLOUDFLARE_API_TOKEN は secrets、CLOUDFLARE_ACCOUNT_ID は vars から）',
+        );
       const run = typeof step.run === 'string' ? step.run : '';
       if (!run.includes('-z "$CLOUDFLARE_API_TOKEN"') || !/\bexit 1\b/.test(run))
         add('secrets', where, 'token が空なら、何も出さずに止める（[ -z "$CLOUDFLARE_API_TOKEN" ] … exit 1）');
@@ -327,7 +378,8 @@ export function workflowFindings(
     for (const { step, where } of flat[id]!) {
       if (step.uses === undefined) continue;
       const u = String(step.uses);
-      if (!u.startsWith('./') && !PINNED.test(u)) add('pinned', where, `${u} を、40 桁の commit の SHA で固定する（版は注に書く）`);
+      if (!u.startsWith('./') && !PINNED.test(u))
+        add('pinned', where, `${u} を、40 桁の commit の SHA で固定する（版は注に書く）`);
     }
   }
 
@@ -363,7 +415,11 @@ export function workflowFindings(
   for (const id of ids)
     for (const { step, where } of flat[id]!)
       if (usesAction(step, 'actions/checkout') && !(isObj(step.with) && isFalse(step.with['persist-credentials'])))
-        add('credentials', where, 'actions/checkout には persist-credentials: false を付ける（あとの手順に GITHUB_TOKEN を残さない）');
+        add(
+          'credentials',
+          where,
+          'actions/checkout には persist-credentials: false を付ける（あとの手順に GITHUB_TOKEN を残さない）',
+        );
 
   // ── インストール時スクリプトを動かさない
   for (const id of ids)
@@ -394,7 +450,11 @@ export function workflowFindings(
     for (const n of up) {
       if (!jobs[n]) add('needs', `jobs.${id}.needs`, `${n} というジョブが無い`);
       else if (jobs[n]['continue-on-error'] !== undefined && !isFalse(jobs[n]['continue-on-error']))
-        add('needs', `jobs.${n}.continue-on-error`, '公開が待つジョブに continue-on-error を付けない（失敗しても公開が動く）');
+        add(
+          'needs',
+          `jobs.${n}.continue-on-error`,
+          '公開が待つジョブに continue-on-error を付けない（失敗しても公開が動く）',
+        );
     }
     const condition = jobs[id]!.if;
     if (typeof condition === 'string' && /\b(always|failure|cancelled)\s*\(/.test(condition))
@@ -416,7 +476,12 @@ export function workflowFindings(
     const gen = runAt(/\bbun\s+scripts\/gen\.ts\b/);
     const delivery = runAt(/\bbun\s+scripts\/check_delivery\.ts\b/);
     if (install < 0) add('checked', where, `${DEPLOY_STEP} の前に、依存を npm ci --ignore-scripts で入れる`);
-    if (gen < 0) add('checked', where, `${DEPLOY_STEP} の前に、secret の無い手順で Worker の許可リストを作る（bun scripts/gen.ts）`);
+    if (gen < 0)
+      add(
+        'checked',
+        where,
+        `${DEPLOY_STEP} の前に、secret の無い手順で Worker の許可リストを作る（bun scripts/gen.ts）`,
+      );
     else if (gen < install) add('checked', where, 'Worker の許可リストは、依存を入れたあとに作る');
     if (delivery < 0) add('checked', where, `${DEPLOY_STEP} の前に、公開物を点検する（bun scripts/check_delivery.ts）`);
     else if (delivery < gen) add('checked', where, '公開物の点検は、Worker の許可リストを作ったあとに流す');
@@ -424,8 +489,13 @@ export function workflowFindings(
     if (download >= 0) {
       const verify = runAt(/\bbun\s+scripts\/dist_digest\.ts\s+verify\b/);
       if (verify < download)
-        add('checked', where, '取った artifact は、build が出した一覧の sha256 と照らしてから出す（bun scripts/dist_digest.ts verify）');
-      else if (verify < gen) add('checked', where, '一覧と照らすのは、Worker の許可リストを作ったあと（一覧に許可リストも入っている）');
+        add(
+          'checked',
+          where,
+          '取った artifact は、build が出した一覧の sha256 と照らしてから出す（bun scripts/dist_digest.ts verify）',
+        );
+      else if (verify < gen)
+        add('checked', where, '一覧と照らすのは、Worker の許可リストを作ったあと（一覧に許可リストも入っている）');
     }
   }
 
@@ -434,16 +504,25 @@ export function workflowFindings(
     const wc = wf.concurrency;
     const cancel = isObj(wc) ? wc['cancel-in-progress'] : undefined;
     if (cancel !== undefined && !isFalse(cancel) && !(typeof cancel === 'string' && squash(cancel) === CANCEL_ONLY_PR))
-      add('serial', 'concurrency.cancel-in-progress', `取り消してよいのは PR の実行だけ（${CANCEL_ONLY_PR}）。main の公開を途中で止めない`);
+      add(
+        'serial',
+        'concurrency.cancel-in-progress',
+        `取り消してよいのは PR の実行だけ（${CANCEL_ONLY_PR}）。main の公開を途中で止めない`,
+      );
     const group = (c: unknown) => (typeof c === 'string' ? c : isObj(c) ? c.group : undefined);
     const keeps = (c: unknown) =>
-      typeof c === 'string' || (isObj(c) && (c['cancel-in-progress'] === undefined || isFalse(c['cancel-in-progress'])));
+      typeof c === 'string' ||
+      (isObj(c) && (c['cancel-in-progress'] === undefined || isFalse(c['cancel-in-progress'])));
     for (const id of production) {
       const jc = jobs[id]!.concurrency;
       const serial =
         jc === undefined ? group(wc) === PRODUCTION_GROUP && keeps(wc) : group(jc) === PRODUCTION_GROUP && keeps(jc);
       if (!serial)
-        add('serial', `jobs.${id}.concurrency`, `公開は concurrency の group「${PRODUCTION_GROUP}」で 1 つずつ流し、取り消さない`);
+        add(
+          'serial',
+          `jobs.${id}.concurrency`,
+          `公開は concurrency の group「${PRODUCTION_GROUP}」で 1 つずつ流し、取り消さない`,
+        );
     }
   }
 
@@ -454,7 +533,8 @@ export function workflowFindings(
       if (usesAction(step, 'actions/cache')) add('noCache', where, 'actions/cache を使わない');
       if (usesAction(step, 'actions/setup-node') && (!isFalse(w['package-manager-cache']) || w.cache !== undefined))
         add('noCache', where, 'setup-node は package-manager-cache: false にし、cache を書かない');
-      if (usesAction(step, 'oven-sh/setup-bun') && !isTrue(w['no-cache'])) add('noCache', where, 'setup-bun は no-cache: true にする');
+      if (usesAction(step, 'oven-sh/setup-bun') && !isTrue(w['no-cache']))
+        add('noCache', where, 'setup-bun は no-cache: true にする');
       if (usesAction(step, 'astral-sh/setup-uv') && !isFalse(w['enable-cache']))
         add('noCache', where, 'setup-uv は enable-cache: false にする');
     }
@@ -479,7 +559,11 @@ export const pinNoteFindings = (text: string, file: string): WorkflowFinding[] =
     const m = /^\s*(?:-\s+)?uses:\s*['"]?([^\s'"#]+)['"]?\s*(#.*)?$/.exec(line);
     if (!m || !/@[0-9a-f]{40}$/.test(m[1]!) || (m[2] && /#\s*v?\d+(\.\d+)*\b/.test(m[2]!))) return [];
     return [
-      { rule: WORKFLOW_RULES.pinned, where: `${file}:${i + 1}`, what: `${m[1]!.split('@')[0]} の SHA の横に、版の注（# v1.2.3）を書く` },
+      {
+        rule: WORKFLOW_RULES.pinned,
+        where: `${file}:${i + 1}`,
+        what: `${m[1]!.split('@')[0]} の SHA の横に、版の注（# v1.2.3）を書く`,
+      },
     ];
   });
 
@@ -498,7 +582,8 @@ export function validateWorkflows(root = ROOT): number {
   for (const name of existsSync(actions) ? readdirSync(actions).sort() : [])
     for (const base of ['action.yml', 'action.yaml']) {
       const file = path.join(actions, name, base);
-      if (existsSync(file)) findings.push(...pinNoteFindings(readFileSync(file, 'utf8'), `.github/actions/${name}/${base}`));
+      if (existsSync(file))
+        findings.push(...pinNoteFindings(readFileSync(file, 'utf8'), `.github/actions/${name}/${base}`));
     }
   if (findings.length) throw new Error(formatFindings(findings));
   return files.length;
@@ -512,15 +597,21 @@ export function checkArtifact(dir: string) {
   const inspect = (folder: string) => {
     for (const f of readdirSync(folder, { withFileTypes: true })) {
       const file = path.join(folder, f.name);
-      if (f.isSymbolicLink() || /^(\.env(?:\..*)?|\.dev\.vars(?:\..*)?|.*\.(pem|key|local))$/.test(f.name)) throw new Error('公開物にローカル設定か認証ファイルがあります。');
-      if (f.isDirectory()) { inspect(file); continue; }
-      if (f.name.endsWith('.mp4') || statSync(file).size > WORKERS_ASSET_MAX_BYTES) throw new Error('静的公開物に動画か大きすぎるファイルがあります。');
+      if (f.isSymbolicLink() || /^(\.env(?:\..*)?|\.dev\.vars(?:\..*)?|.*\.(pem|key|local))$/.test(f.name))
+        throw new Error('公開物にローカル設定か認証ファイルがあります。');
+      if (f.isDirectory()) {
+        inspect(file);
+        continue;
+      }
+      if (f.name.endsWith('.mp4') || statSync(file).size > WORKERS_ASSET_MAX_BYTES)
+        throw new Error('静的公開物に動画か大きすぎるファイルがあります。');
       count++;
       if (!/\.(png|jpg|jpeg|webp|ico)$/.test(f.name)) checkSecrets(readFileSync(file, 'utf8'), file, findings);
     }
   };
   inspect(dir);
-  if (count > WORKERS_MAX_ASSETS || findings.length) throw new Error('公開物の件数か機密情報の点検に失敗しました。値は表示しません。');
+  if (count > WORKERS_MAX_ASSETS || findings.length)
+    throw new Error('公開物の件数か機密情報の点検に失敗しました。値は表示しません。');
   return count;
 }
 
@@ -537,9 +628,14 @@ async function main(argv: string[]) {
   }
   // Worker の許可リストは、講座ごとの動画の一覧をつないだものと同じでなければ公開しない（古いまま配らない）
   const worker = path.join(ROOT, 'worker/src/generated/media-manifest.json');
-  if (existsSync(worker) && readFileSync(worker, 'utf8') !== mediaManifestJson(manifest)) throw new Error('Worker の許可リスト（worker/src/generated/media-manifest.json）が、講座ごとの動画の一覧と違います。npm run gen で作り直してください。');
+  if (existsSync(worker) && readFileSync(worker, 'utf8') !== mediaManifestJson(manifest))
+    throw new Error(
+      'Worker の許可リスト（worker/src/generated/media-manifest.json）が、講座ごとの動画の一覧と違います。npm run gen で作り直してください。',
+    );
   if (!existsSync(worker)) console.log('Worker の許可リストはまだ無い（wrangler の前に npm run gen が作る）。');
   const dir = path.resolve(positionals[0] ?? path.join(ROOT, 'site/dist'));
-  console.log(`公開の手順（workflow ${workflows} 本）の性質と、静的公開物 ${checkArtifact(dir)} files を確認。機密情報・MP4の混入なし。`);
+  console.log(
+    `公開の手順（workflow ${workflows} 本）の性質と、静的公開物 ${checkArtifact(dir)} files を確認。機密情報・MP4の混入なし。`,
+  );
 }
 if (import.meta.main) await runMain(main);

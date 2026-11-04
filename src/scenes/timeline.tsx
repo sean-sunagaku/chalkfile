@@ -1,5 +1,5 @@
 // 場面「timeline」: 時間の流れ
-import React from 'react';
+import type React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import type { TimelineScene } from '../../engine/core/schema';
 import { Glass, Pill, Smart } from '../components/ui';
@@ -9,6 +9,7 @@ import { TYPE } from '../video.config';
 
 /** これより狭い列は、題と説明をひと回り小さくする（px） */
 const NARROW = 330;
+
 import { defineScene } from './define';
 
 const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: number; focus: number }> = ({
@@ -64,7 +65,15 @@ const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: num
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {kicker ? (
-              <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: TYPE.label.timelineKicker, color: tt.text, letterSpacing: 2 }}>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontWeight: 700,
+                  fontSize: TYPE.label.timelineKicker,
+                  color: tt.text,
+                  letterSpacing: 2,
+                }}
+              >
                 {kicker}
               </div>
             ) : null}
@@ -73,13 +82,25 @@ const TimeCard: React.FC<{ it: TimelineScene['items'][number]; x: number; w: num
             </Pill>
           </div>
           <div
-            style={{ fontFamily: SANS, fontWeight: 900, fontSize: w < NARROW ? TYPE.title.timelineTitleNarrow : TYPE.title.timelineTitle, color: C.ink, lineHeight: 1.3 }}
+            style={{
+              fontFamily: SANS,
+              fontWeight: 900,
+              fontSize: w < NARROW ? TYPE.title.timelineTitleNarrow : TYPE.title.timelineTitle,
+              color: C.ink,
+              lineHeight: 1.3,
+            }}
           >
             <Smart text={title} t={it.tone} />
           </div>
           {it.detail ? (
             <div
-              style={{ fontFamily: SANS, fontWeight: 500, fontSize: w < NARROW ? TYPE.body.timelineDetailNarrow : TYPE.body.timelineDetail, color: C.sub, lineHeight: 1.55 }}
+              style={{
+                fontFamily: SANS,
+                fontWeight: 500,
+                fontSize: w < NARROW ? TYPE.body.timelineDetailNarrow : TYPE.body.timelineDetail,
+                color: C.sub,
+                lineHeight: 1.55,
+              }}
             >
               <Smart text={it.detail} t={it.tone} />
             </div>

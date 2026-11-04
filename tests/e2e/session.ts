@@ -3,7 +3,7 @@
 // 状態はセッションごとに持つので、ほかのテストの差し込みが混ざらない（Playwright の workers を 2 以上にできる）。
 // 旧 Pages（scope は site/legacy-config.json）は、前の公開（tests/fixtures/legacy-pages）と、公開済みの移行の案内（tests/fixtures/legacy-migration）を配る。
 // 移行の案内は凍結した公開物をそのまま使い、今のソース（site/legacy-sw.ts・scripts/build_migration.ts）から作り直さない
-import { required } from '../support/required';
+
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -17,6 +17,7 @@ import {
 } from '../../scripts/site/serve-files';
 import legacyConfig from '../../site/legacy-config.json';
 import type { CourseManifest } from '../../site/offline-shared';
+import { required } from '../support/required';
 import { type Control, UPDATE_NEWS } from './site';
 import type { PreparedSite } from './sites';
 
@@ -42,8 +43,20 @@ export const DEFAULT_CONTROL: Control = {
 
 /** テストが読む数（保存の動画の全体の取得の回数とバイト数・保存の manifest の取得と、その失敗の回数） */
 /** 数えたもの。mediaRequests は /media/ への要求の全部（Range の要求も。本番では Worker の回数の枠を使う） */
-export type Stats = { fullVideoDownloads: number; fullVideoBytes: number; manifestRequests: number; manifestFailures: number; mediaRequests: number };
-const NO_STATS: Stats = { fullVideoDownloads: 0, fullVideoBytes: 0, manifestRequests: 0, manifestFailures: 0, mediaRequests: 0 };
+export type Stats = {
+  fullVideoDownloads: number;
+  fullVideoBytes: number;
+  manifestRequests: number;
+  manifestFailures: number;
+  mediaRequests: number;
+};
+const NO_STATS: Stats = {
+  fullVideoDownloads: 0,
+  fullVideoBytes: 0,
+  manifestRequests: 0,
+  manifestFailures: 0,
+  mediaRequests: 0,
+};
 
 /** 応答はキャッシュさせない（障害の差し込みを変えたら、すぐ効くように） */
 const NO_STORE: ServeHeaders = { 'Cache-Control': 'no-store' };
@@ -122,7 +135,9 @@ export class Session {
       found.entry.lecture === this.site.course.faultLecture &&
       found.entry.kind === 'standard';
     if (!whole || !target) return bodyResponse(req, Bun.file(found.file), headers);
-    return (await this.faultOf(req, readFileSync(found.file), headers)) ?? bodyResponse(req, Bun.file(found.file), headers);
+    return (
+      (await this.faultOf(req, readFileSync(found.file), headers)) ?? bodyResponse(req, Bun.file(found.file), headers)
+    );
   }
 
   /** Control の mode の失敗の応答（失敗を差し込まないときは null。delay は待ってから、そのまま返す） */
@@ -135,7 +150,10 @@ export class Session {
     if (mode === 'partial') {
       return new Response(new Blob([data.slice(0, 100)]), {
         status: 206,
-        headers: { 'Content-Type': headers['Content-Type'] ?? 'application/octet-stream', 'Content-Range': `bytes 0-99/${data.length}` },
+        headers: {
+          'Content-Type': headers['Content-Type'] ?? 'application/octet-stream',
+          'Content-Range': `bytes 0-99/${data.length}`,
+        },
       });
     }
     if (mode === 'corrupt') {
@@ -182,13 +200,19 @@ export class Session {
       return fileResponse(req, target.file, Buffer.from(JSON.stringify(this.variant().manifest)), NO_STORE);
     }
     // オフラインの案内のページを取るのは SW の install だけ。遅らせると、SW が動き出すまでの間が長くなる
-    if (target.rel === 'offline/index.html' && this.control.installDelay > 0) await Bun.sleep(this.control.installDelay);
+    if (target.rel === 'offline/index.html' && this.control.installDelay > 0)
+      await Bun.sleep(this.control.installDelay);
     if (target.rel === 'sw.js' && this.control.workerUpdate) {
       const data = Buffer.concat([readFileSync(target.file), Buffer.from('\n// worker更新テスト\n')]);
       return fileResponse(req, target.file, data, NO_STORE);
     }
     if (target.rel === 'sw.js' && this.control.disabledRevisions.length) {
-      return fileResponse(req, target.file, Buffer.from(withDisabled(readFileSync(target.file, 'utf8'), this.control.disabledRevisions)), NO_STORE);
+      return fileResponse(
+        req,
+        target.file,
+        Buffer.from(withDisabled(readFileSync(target.file, 'utf8'), this.control.disabledRevisions)),
+        NO_STORE,
+      );
     }
     // faultLecture のポスターの全体の取得（Range の無い GET）に、Control の mode の失敗を差し込む（faultTarget が poster のとき）
     if (

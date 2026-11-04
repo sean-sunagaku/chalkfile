@@ -1,6 +1,6 @@
-import { Z, T, TEN } from '../_shared/comedy';
-import { docsOf } from './sources';
+import { T, TEN, Z } from '../_shared/comedy';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
 

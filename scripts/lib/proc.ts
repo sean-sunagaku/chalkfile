@@ -35,7 +35,9 @@ const shown = (cmd: string, args: string[]) =>
 /** 失敗したときの stderr を、--verbose なら全部出す（伏せてから） */
 const traceFailure = (cmd: string, r: RunResult) => {
   if (!verbose || (r.code === 0 && !r.timedOut)) return;
-  trace(`${cmd}: ${r.timedOut ? '時間切れで止めた' : `終了コード ${r.code}`}${r.stderr.trim() ? `。stderr:\n${r.stderr.trimEnd()}` : ''}`);
+  trace(
+    `${cmd}: ${r.timedOut ? '時間切れで止めた' : `終了コード ${r.code}`}${r.stderr.trim() ? `。stderr:\n${r.stderr.trimEnd()}` : ''}`,
+  );
 };
 
 /** 空でないコマンド行。先頭はプログラム、その後ろは引数 */
@@ -181,9 +183,7 @@ export const runInherit = (
     throw new MissingError(`${cmd} が見つからない（入れてから流す。docs/guide/quickstart.md の「前提の道具」）`);
   }
   if (code === 'ETIMEDOUT')
-    throw new Error(
-      `${opts.what ?? cmd} が ${Math.round((opts.timeoutMs ?? 0) / 1000)} 秒で終わらなかったので止めた`,
-    );
+    throw new Error(`${opts.what ?? cmd} が ${Math.round((opts.timeoutMs ?? 0) / 1000)} 秒で終わらなかったので止めた`);
   if (r.error) throw r.error;
   return r.status ?? 1;
 };

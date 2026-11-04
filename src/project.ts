@@ -4,8 +4,9 @@
 // 動画ごとの timeline（content/<講座>/generated/timeline/<key>.json。scripts/synth.ts が書く）を、Remotion のバンドラ（webpack）の
 // require.context で集める。講座や動画を足しても、ここは触らない（ファイルを置けば入る）。形と指紋は engine/core/timeline.ts。
 // require.context は webpack にしか無いので、bun（scripts・tests）からは読まない（bun の道具は scripts/timelines.ts で読む）
-import { VIDEOS, videoOf } from '../content/videos';
+
 import { themeOf } from '../content/themes';
+import { VIDEOS, videoOf } from '../content/videos';
 import { entriesByKey, type TimelineEntry, timelineEntry } from '../engine/core/timeline';
 import type { VideoProject } from './video-project';
 

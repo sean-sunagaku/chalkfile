@@ -10,12 +10,13 @@
 // - 確かめのコマンドには、Cloudflare の token と account ID を渡さない（環境変数から外して流す）
 // - --main を付けると、main の先頭がその commit でないときは何も出さずに終える（古い実行を流し直して、古い版を出さない）
 // - --drill は preview だけ。確かめをわざと失敗させて、rollback が動くかを試す（docs/operations/recovery.md の「rollback を試す（preview）」）
-import type { CommandLine } from './lib/proc';
-import config from '../chalkfile.config';
+
 import { spawn } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import config from '../chalkfile.config';
+import type { CommandLine } from './lib/proc';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 const WRANGLER = ['npx', '--no-install', 'wrangler'] as const;

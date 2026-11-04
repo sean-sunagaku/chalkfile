@@ -14,10 +14,11 @@
 //   3 前提が足りない（timeline が無い＝台本に無い動画か、まだ synth していない）
 // Node で動かすので、型だけを読むときは import type にする（型を取り除いたあとに import が残らない）。
 // scripts/lib/ の部品は、拡張子まで書いて読む（Node は拡張子を補わない）
-import { bundle } from '@remotion/bundler';
-import { renderStill, selectComposition } from '@remotion/renderer';
+
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
+import { bundle } from '@remotion/bundler';
+import { renderStill, selectComposition } from '@remotion/renderer';
 import type { TimelineFile } from '../engine/core/timeline';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args.ts';
 import { ROOT } from './lib/paths.ts';
@@ -32,13 +33,17 @@ const timelineOf = (key: string): TimelineFile => {
     .filter((d) => d.isDirectory())
     .map((d) => path.join(content, d.name, 'generated', 'timeline', `${key}.json`))
     .filter((f) => existsSync(f));
-  if (!found.length) throw new MissingError(`${key} の timeline が無い（台本に無い動画か、まだ synth していない。先に npm run synth -- ${key}）`);
+  if (!found.length)
+    throw new MissingError(
+      `${key} の timeline が無い（台本に無い動画か、まだ synth していない。先に npm run synth -- ${key}）`,
+    );
   if (found.length > 1) throw new Error(`${key} の timeline が 2 つ以上の講座にある: ${found.join(' ')}`);
   return JSON.parse(readFileSync(found[0]!, 'utf8')) as TimelineFile;
 };
 
 /** 受け取る動画の形: 動画（L01・P01.en）・場面で絞る（L03:3,6。場面は 1 始まり）・フレームを決める（L01@120）。場面とフレームは、どちらか 1 つ */
-const TARGET = /^(?<id>[A-Za-z0-9][A-Za-z0-9_-]*(?:\.[a-z]{2})?)(?:@(?<frame>\d+)|:(?<scenes>[1-9]\d*(?:,[1-9]\d*)*))?$/;
+const TARGET =
+  /^(?<id>[A-Za-z0-9][A-Za-z0-9_-]*(?:\.[a-z]{2})?)(?:@(?<frame>\d+)|:(?<scenes>[1-9]\d*(?:,[1-9]\d*)*))?$/;
 /** --theme の形（content/themes.ts のテーマの ID。空なら講座のテーマ） */
 const THEME_ID = /^[a-z0-9-]*$/;
 
@@ -51,10 +56,14 @@ export type Target = { id: string; frame: number | null; scenes: number[] | null
 export const parseTargets = (targets: string[], find: (key: string) => TimelineFile = timelineOf): Target[] =>
   targets.map((t) => {
     const g = TARGET.exec(t)?.groups;
-    if (!g) throw new UsageError(`動画の形が違う: ${t}（例: L01・L03:3,6・L01@120・P01.en:3。場面とフレームは、どちらか 1 つ）`);
+    if (!g)
+      throw new UsageError(
+        `動画の形が違う: ${t}（例: L01・L03:3,6・L01@120・P01.en:3。場面とフレームは、どちらか 1 つ）`,
+      );
     const timeline = find(g.id!);
     const scenes = g.scenes ? g.scenes.split(',').map(Number) : null;
-    if (scenes?.some((n) => n > timeline.scenes.length)) throw new UsageError(`${g.id} の場面は 1〜${timeline.scenes.length}: ${t}`);
+    if (scenes?.some((n) => n > timeline.scenes.length))
+      throw new UsageError(`${g.id} の場面は 1〜${timeline.scenes.length}: ${t}`);
     const frame = g.frame === undefined ? null : Number(g.frame);
     if (frame !== null && frame >= timeline.durationInFrames) {
       throw new UsageError(`${g.id} のフレームは 0〜${timeline.durationInFrames - 1}: ${t}`);
@@ -65,7 +74,12 @@ export const parseTargets = (targets: string[], find: (key: string) => TimelineF
 const main = async (argv: string[]) => {
   const { values, positionals: targets } = readArgs(
     argv,
-    { mid: { type: 'boolean' }, scale: { type: 'string', default: '0.5' }, theme: { type: 'string', default: '' }, captions: { type: 'boolean' } },
+    {
+      mid: { type: 'boolean' },
+      scale: { type: 'string', default: '0.5' },
+      theme: { type: 'string', default: '' },
+      captions: { type: 'boolean' },
+    },
     { positionals: true },
   );
   if (values.help) return showHelp(import.meta.filename);
@@ -73,7 +87,8 @@ const main = async (argv: string[]) => {
   const { mid = false, theme, captions = false } = values;
   const scale = Number(values.scale);
   if (!(Number.isFinite(scale) && scale > 0)) throw new UsageError(`--scale は 0 より大きい数: ${values.scale}`);
-  if (!THEME_ID.test(theme)) throw new UsageError(`--theme は content/themes.ts のテーマの ID（英小文字・数字・-）: ${theme}`);
+  if (!THEME_ID.test(theme))
+    throw new UsageError(`--theme は content/themes.ts のテーマの ID（英小文字・数字・-）: ${theme}`);
   // 重い前処理（バンドル）の前に、全部の動画を確かめる
   const wanted = parseTargets(targets);
   const outDir = path.join(ROOT, 'out/stills');
@@ -87,17 +102,31 @@ const main = async (argv: string[]) => {
     const inputProps = { id, audio: false, theme, captions };
     // 訳の動画 P01.en のコンポジションは P01-en（content/i18n.ts の compositionId）
     const composition = await selectComposition({ serveUrl, id: id.replace(/\./g, '-'), inputProps });
-    const frames: { f: number; name: string }[] = frame !== null
-      ? [{ f: frame, name: `f${frame}` }]
-      : tl.scenes.flatMap((s, i) => {
-          if (only && !only.includes(i + 1)) return [];
-          const list = [{ f: s.start + s.duration - 14, name: `s${String(i + 1).padStart(2, '0')}-end` }];
-          if (mid) list.unshift({ f: s.start + Math.round(s.duration * 0.45), name: `s${String(i + 1).padStart(2, '0')}-mid` });
-          return list;
-        });
+    const frames: { f: number; name: string }[] =
+      frame !== null
+        ? [{ f: frame, name: `f${frame}` }]
+        : tl.scenes.flatMap((s, i) => {
+            if (only && !only.includes(i + 1)) return [];
+            const list = [{ f: s.start + s.duration - 14, name: `s${String(i + 1).padStart(2, '0')}-end` }];
+            if (mid)
+              list.unshift({
+                f: s.start + Math.round(s.duration * 0.45),
+                name: `s${String(i + 1).padStart(2, '0')}-mid`,
+              });
+            return list;
+          });
     for (const { f, name } of frames) {
       const output = path.join(outDir, `${id}-${name}${theme ? `-${theme}` : ''}${captions ? '-cc' : ''}.jpg`);
-      await renderStill({ composition, serveUrl, output, frame: f, inputProps, imageFormat: 'jpeg', jpegQuality: 82, scale });
+      await renderStill({
+        composition,
+        serveUrl,
+        output,
+        frame: f,
+        inputProps,
+        imageFormat: 'jpeg',
+        jpegQuality: 82,
+        scale,
+      });
       console.log(output);
     }
   }

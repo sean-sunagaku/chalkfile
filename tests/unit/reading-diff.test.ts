@@ -1,6 +1,6 @@
 // 読みの差分（scripts/reading-diff.ts）。比べる相手と今の台本の読みを比べ、公開する言語の公開中の動画で読みが変わったのに
 // 動画を作り直していなければ止める
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -8,7 +8,8 @@ import path from 'node:path';
 import { VIDEOS } from '../../content';
 import { speechIn } from '../../content/voices';
 import { around, judge, mediaHashes, readingChanges, readingsOf, type VideoReading } from '../../scripts/reading-diff';
-import { mediaFilename, mediaKey, type MediaEntry } from '../../site/media-shared';
+import { type MediaEntry, mediaFilename, mediaKey } from '../../site/media-shared';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 
