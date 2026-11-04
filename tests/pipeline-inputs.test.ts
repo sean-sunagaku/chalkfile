@@ -21,6 +21,7 @@ import {
   LECTURE_FIELDS,
   publishedChecks,
   RENDER_CODE,
+  RENDER_DEPS,
   readTimelineJson,
   scriptDigest,
   srcDigest,
@@ -204,6 +205,19 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
     put(root, 'package-lock.json', JSON.stringify({ packages: { 'node_modules/remotion': { version: '4.0.540' } } }));
     expect(src(root)).not.toBe(before);
   });
+  test('手元の書体を読む道具と文字幅を測る道具の更新も、書き出しの指紋を変える', () => {
+    for (const name of ['@remotion/fonts', '@remotion/layout-utils']) {
+      const root = world();
+      const lockFile = path.join(root, 'package-lock.json');
+      const lock = JSON.parse(readFileSync(lockFile, 'utf8'));
+      lock.packages[`node_modules/${name}`] = { version: '4.0.539' };
+      put(root, 'package-lock.json', JSON.stringify(lock));
+      const before = src(root);
+      lock.packages[`node_modules/${name}`].version = '4.0.540';
+      put(root, 'package-lock.json', JSON.stringify(lock));
+      expect(src(root), name).not.toBe(before);
+    }
+  });
   test('講座の登録・台本のデータ・ほかの道具・サイトのひな形・ほかの依存では変わらない（CI の注意を増やさない）', () => {
     for (const f of ['content/courses.ts', 'content/ga4-comedy/G01.ts', 'scripts/mix.py', 'site/template.html']) {
       const root = world();
@@ -221,6 +235,17 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
       }),
     );
     expect(src(root)).toBe(before);
+  });
+  test('動画とエンジンが読む外のパッケージを、依存の指紋に入れる', () => {
+    const packages = new Set<string>();
+    for (const file of listFiles(ROOT, ['src', 'engine']).filter((f) => /\.tsx?$/.test(f))) {
+      const text = readFileSync(path.join(ROOT, file), 'utf8');
+      for (const hit of text.matchAll(/from\s*['"]([^.'"][^'"]*)['"]/g)) {
+        const parts = hit[1].split('/');
+        packages.add(parts[0].startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]);
+      }
+    }
+    expect([...packages].filter((name) => !(RENDER_DEPS as readonly string[]).includes(name))).toEqual([]);
   });
   test('本物の作業フォルダでは、src/ と engine/ の全部の追跡ファイルを入れる', () => {
     const files = listFiles(ROOT, RENDER_CODE);
