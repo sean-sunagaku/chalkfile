@@ -3,7 +3,7 @@
 // bundle（講座のページの画面・offline-client・sw.js）・アイコンの PNG・ハッシュと大きさは、Bun の版で変わるので正規化してから比べる。
 // わざと出力を変えたときは、UPDATE_SITE_SNAPSHOT=1 bun test tests/unit/site-build.test.ts で作り直す（本物の講座の site/dist が変わる直しなら、
 // サイトの版が変わる。保存した人に「新しい版」が出るので、まとめて出す回に入れる）
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseModule, HeroSnippet } from '../../content/course-module';
 import * as REGISTRY from '../../content/courses';
+import { resolveCourse } from '../../content/lines';
 import type { Course } from '../../content/types';
 import { bundle } from '../../scripts/pwa';
 import { type BuildSiteOptions, buildSite, disabledRevisionProblems } from '../../scripts/site/build';
@@ -18,8 +19,8 @@ import { heroSnippetOf } from '../../scripts/site/config';
 import { scriptHash, WWW_REDIRECT_SCRIPT } from '../../scripts/site/csp';
 import { nearestNotFound, staticResponse } from '../../scripts/site/serve-files';
 import { type MediaEntry, mediaFilename } from '../../site/media-shared';
-import { resolveCourse } from '../../content/lines';
 import SAMPLE from '../fixtures/content/site-sample';
+import { required } from '../support/required';
 
 /** 合成の講座（台本に書いたままの形を、番号に直したもの） */
 const SAMPLE_COURSE = resolveCourse(SAMPLE.course);
@@ -113,7 +114,9 @@ const heroDrift = (snippet: HeroSnippet): string | null => {
     return cut ? line.startsWith(`${cut}, `) : line === want;
   };
   const lines = snippet.lines.map((l) => l.trim());
-  const start = src.findIndex((_, i) => lines.every((want, j) => src[i + j] !== undefined && same(required(src[i + j]), want)));
+  const start = src.findIndex((_, i) =>
+    lines.every((want, j) => src[i + j] !== undefined && same(required(src[i + j]), want)),
+  );
   return start < 0 ? `${snippet.file} に、この続きの行が無い: ${lines.join(' / ')}` : null;
 };
 
@@ -186,7 +189,10 @@ describe('講座サイトの組み立て（合成の講座）', () => {
       title: '見本 __DOCS_NOTE__ の講座',
       headline: '{{tabQuiz}} と __COURSE_JSON__',
       docsNote: '__HEADLINE__ と </script><script>alert(1)</script>',
-      lectures: [{ ...required(SAMPLE_COURSE.lectures[0]), title: '__TITLE__ {{sep}}' }, required(SAMPLE_COURSE.lectures[1])],
+      lectures: [
+        { ...required(SAMPLE_COURSE.lectures[0]), title: '__TITLE__ {{sep}}' },
+        required(SAMPLE_COURSE.lectures[1]),
+      ],
     };
     const { outDir } = await buildSample({ courses: { ja: [tricky], en: [], zh: [] } });
     const page = readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8');

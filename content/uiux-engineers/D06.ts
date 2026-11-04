@@ -1,6 +1,6 @@
 import { goals } from '../_shared/scenes';
-import { docsOf } from './sources';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 /** この章で新しく足す出典（講座の sources.ts に無いものだけ）。waic-wcag22-ja は講座の sources.ts にある。waic-wcag22-ja-update-2026 は第 7 章でも使う */
 

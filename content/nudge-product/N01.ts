@@ -1,7 +1,7 @@
 import { goals } from '../_shared/scenes';
+import type { Lecture } from '../types';
 import { N01_LEARNING } from './N01.learning';
 import { docsOf } from './sources';
-import type { Lecture } from '../types';
 
 export const N01: Lecture = {
   id: 'N01',

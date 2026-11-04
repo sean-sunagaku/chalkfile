@@ -88,7 +88,12 @@ export const fileResponse = (
 ) => bodyResponse(req, body, { 'Content-Type': contentTypeOf(file) ?? 'application/octet-stream', ...extra });
 
 /** 静的なファイルを返す。無いものは、いちばん近いフォルダの 404.html を 404 で返す（無ければ素の 404） */
-export async function staticResponse(req: Request, root: string, prefix = '/', extra: ServeHeaders = {}): Promise<Response> {
+export async function staticResponse(
+  req: Request,
+  root: string,
+  prefix = '/',
+  extra: ServeHeaders = {},
+): Promise<Response> {
   const target = findStatic(root, new URL(req.url).pathname, prefix);
   if (target.kind === 'file') return fileResponse(req, target.file, undefined, extra);
   return notFoundResponse(target, root, extra);

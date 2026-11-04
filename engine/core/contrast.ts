@@ -55,7 +55,8 @@ export const themeContrast = (theme: Theme): ContrastPair[] => {
     pairs.push([`onGrad/gradient:${i}`, C.onGrad, g, L]);
   });
   // 明るい地の、チョークでないテーマの強調（tone を書かないとき）は、主役の色の文字（src/components/ui.tsx の emphasis）
-  if (theme.scheme === 'light' && theme.decor !== 'chalk') pairs.push(['accent/bg', c.accent, c.bg, L], ['accent/surface', c.accent, c.surface, L]);
+  if (theme.scheme === 'light' && theme.decor !== 'chalk')
+    pairs.push(['accent/bg', c.accent, c.bg, L], ['accent/surface', c.accent, c.surface, L]);
   const soft = theme.scheme === 'dark' ? 0.15 : 0.1;
   for (const t of Object.keys(theme.tones) as Tone[]) {
     const { main, text, strong, on } = TONES[t];

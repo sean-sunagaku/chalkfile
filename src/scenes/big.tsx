@@ -1,5 +1,5 @@
 // 場面「big」: 大きな一文
-import React from 'react';
+import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { BigScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
@@ -49,7 +49,8 @@ const Big: React.FC<{ s: BigScene }> = ({ s }) => {
           fontWeight: 900,
           // 長い文（大きい文字で 2 行近くになる文）は、ひと回り小さくする
           fontSize:
-            textWidth(s.text.replace(/\*\*/g, ''), TYPE.display.statement, { fontFamily: SANS, fontWeight: 900 }) > LONG_STATEMENT
+            textWidth(s.text.replace(/\*\*/g, ''), TYPE.display.statement, { fontFamily: SANS, fontWeight: 900 }) >
+            LONG_STATEMENT
               ? TYPE.display.statementLong
               : TYPE.display.statement,
           lineHeight: 1.28,

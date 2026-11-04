@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { stampSource } from '../../scripts/lib/i18n-source';
 import { translationRows } from '../../scripts/i18n';
+import { stampSource } from '../../scripts/lib/i18n-source';
 
 const HASH = 'abcdef012345';
 

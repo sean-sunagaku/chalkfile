@@ -1,7 +1,7 @@
 // 場面「states」: 状態の図
-import React from 'react';
+import type React from 'react';
 import type { StatesScene } from '../../engine/core/schema';
-import { Edge, type Box } from '../components/edge';
+import { type Box, Edge } from '../components/edge';
 import { textWidth } from '../components/fit';
 import { Pill } from '../components/ui';
 import { alpha, usePalette } from '../theme';
@@ -11,6 +11,7 @@ import { TYPE } from '../video.config';
 /** 状態の札の幅の下限と、文字のほかの幅（左右の余白と枠） */
 const MIN_W = 250;
 const INNER = 64;
+
 import { defineScene } from './define';
 
 const States: React.FC<{ s: StatesScene }> = ({ s }) => {
@@ -20,7 +21,10 @@ const States: React.FC<{ s: StatesScene }> = ({ s }) => {
   const boxes = new Map(
     s.nodes.map((n) => {
       const start = n.variant === 'start';
-      const code = textWidth(n.code, start ? TYPE.label.stateStart : TYPE.label.stateCode, { fontFamily: start ? SANS : MONO, fontWeight: start ? 900 : 700 });
+      const code = textWidth(n.code, start ? TYPE.label.stateStart : TYPE.label.stateCode, {
+        fontFamily: start ? SANS : MONO,
+        fontWeight: start ? 900 : 700,
+      });
       const ja = textWidth(n.ja, TYPE.label.stateReading, { fontFamily: SANS, fontWeight: 500 });
       return [n.key, { x: n.x, y: n.y, w: Math.max(MIN_W, Math.ceil(Math.max(code, ja)) + INNER), h: 104 } as Box];
     }),
@@ -84,7 +88,9 @@ const StateNode: React.FC<{ n: StatesScene['nodes'][number]; box: Box; focus: nu
         >
           {n.code}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.stateReading, color: tt.text }}>{n.ja}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.stateReading, color: tt.text }}>
+          {n.ja}
+        </div>
       </div>
       {n.badge ? (
         <div style={{ position: 'absolute', right: -6, top: -18 }}>

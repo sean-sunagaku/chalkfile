@@ -1,14 +1,15 @@
 // 読みの辞書（content/reading.ts の共通の辞書と、content/<講座>/reading.ts の講座の辞書）。講座の辞書は、その講座の台詞にだけ効く
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, SHARED_LINES } from '../../content';
-import * as REGISTRY from '../../content/courses';
 import type { CourseModule } from '../../content/course-module';
-import { readingOf, toSpeech, useReading, type Reading } from '../../content/reading';
+import * as REGISTRY from '../../content/courses';
+import { type Reading, readingOf, toSpeech, useReading } from '../../content/reading';
 import type { Line } from '../../content/types';
 import { speechOf } from '../../content/voices';
+import { required } from '../support/required';
 
 const MODULES = Object.values(REGISTRY) as CourseModule[];
 const ROOT = path.resolve(import.meta.dir, '../..');

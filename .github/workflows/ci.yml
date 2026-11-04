@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 2
       - uses: ./.github/actions/setup
       - run: npm run lint
-      # 全体の整形は、開いている講座の PR が 0 の日に 1 回で行う。それまでは、足したファイルだけを整った形で入れる
+      # 全体の整形は npm run lint が確かめる。足したファイルも同じ書き方にそろえる
       - name: 足したファイルの整形
         if: github.event_name == 'pull_request'
         run: bun scripts/format_new.ts --base HEAD^1
@@ -49,6 +49,8 @@ jobs:
         env:
           RUFF_OUTPUT_FORMAT: github
         run: npm run lint:py
+      - name: Python の整形（ruff）
+        run: npm run format:py:check
       - name: シェルの lint（shellcheck）
         run: |
           command -v shellcheck >/dev/null || { sudo apt-get update && sudo apt-get install -y --no-install-recommends shellcheck; }

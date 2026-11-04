@@ -27,7 +27,10 @@ const main = (argv: string[]) => {
   const base = values.base;
 
   const found = run('git', ['merge-base', base, 'HEAD'], { cwd: ROOT });
-  if (found.code !== 0) throw new MissingError(`比べる相手 ${base} が見つかりません（git fetch origin main のあとで流すか、--base で指す）`);
+  if (found.code !== 0)
+    throw new MissingError(
+      `比べる相手 ${base} が見つかりません（git fetch origin main のあとで流すか、--base で指す）`,
+    );
   const from = found.stdout.trim();
   const files = [
     ...new Set([

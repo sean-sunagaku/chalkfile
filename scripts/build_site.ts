@@ -15,16 +15,17 @@ import type { CourseModule } from '../content/course-module';
 import * as REGISTRY from '../content/courses';
 import { LANGS, type Lang } from '../content/i18n';
 import type { Course } from '../content/types';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { checkMedia, readMediaManifest } from './media';
 import { buildSite } from './site/build';
 import { heroSnippetOf, SITE_DIR, siteLangs } from './site/config';
 import { readSiteConfig } from './validate';
-import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 
 async function main(argv: string[]) {
   const { values, positionals } = readArgs(argv, { strict: { type: 'boolean' } }, { positionals: true });
   if (values.help) return showHelp(import.meta.filename);
-  for (const id of positionals) if (!Object.values(REGISTRY).some((module) => module.course.id === id)) throw new UsageError(`講座が無い: ${id}`);
+  for (const id of positionals)
+    if (!Object.values(REGISTRY).some((module) => module.course.id === id)) throw new UsageError(`講座が無い: ${id}`);
   const strict = !!values.strict;
   const config = readSiteConfig();
   const langs = siteLangs(process.env.SITE_LANGS, config);

@@ -1,12 +1,11 @@
-import { required } from '../support/required';
-import { chromium, type Page, type APIRequestContext } from '@playwright/test';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { type APIRequestContext, chromium, type Page } from '@playwright/test';
 import type { CourseStatus } from '../../site/offline-shared';
+import { required } from '../support/required';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test, waitForSaved } from './fixtures';
 import type { Control } from './site';
-import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
-import { waitForSaved } from './fixtures';
 
 // 保存の状態の案内を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座）
 

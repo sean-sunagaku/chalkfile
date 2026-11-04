@@ -10,7 +10,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { LANGS } from '../content/i18n';
 import { mediaListFile, parseMediaListFile } from '../engine/core/generated';
-import { allMediaEntries, mediaKey, validateMediaManifest, type MediaEntry, type MediaManifest } from '../site/media-shared';
+import {
+  allMediaEntries,
+  type MediaEntry,
+  type MediaManifest,
+  mediaKey,
+  validateMediaManifest,
+} from '../site/media-shared';
 import { ROOT } from './lib/paths';
 
 /** 書き出したときの入力の指紋（16 字の 16 進）。script は台本の側、src は描き方の側 */
@@ -35,7 +41,8 @@ export type CourseMediaFile = {
 /** 一覧の JSON を読む（1 か 2 の版）。inputs を外して、1 の形の確かめ（validateMediaManifest）に通す */
 export const parseCourseMedia = (value: unknown): Omit<CourseMediaFile, 'file'> => {
   const v = (value ?? {}) as { schema?: unknown; entries?: unknown; retained?: unknown };
-  if (v.schema !== 1 && v.schema !== 2) throw new Error(`動画の一覧の形の版が違う（${JSON.stringify(v.schema)}。1 か 2）`);
+  if (v.schema !== 1 && v.schema !== 2)
+    throw new Error(`動画の一覧の形の版が違う（${JSON.stringify(v.schema)}。1 か 2）`);
   const inputs = new Map<string, MediaInputs>();
   const strip = (list: unknown): unknown =>
     Array.isArray(list)
@@ -43,7 +50,8 @@ export const parseCourseMedia = (value: unknown): Omit<CourseMediaFile, 'file'> 
           if (!e || typeof e !== 'object' || !('inputs' in e)) return e;
           const { inputs: x, ...rest } = e as MediaEntry & { inputs: unknown };
           if (v.schema === 1) throw new Error(`版 1 の一覧に inputs がある（inputs を書くのは版 2）: ${rest.filename}`);
-          if (!isMediaInputs(x)) throw new Error(`inputs の形が違う（{ script, src } の 16 字の 16 進）: ${rest.filename}`);
+          if (!isMediaInputs(x))
+            throw new Error(`inputs の形が違う（{ script, src } の 16 字の 16 進）: ${rest.filename}`);
           inputs.set(rest.filename, x);
           return rest;
         })

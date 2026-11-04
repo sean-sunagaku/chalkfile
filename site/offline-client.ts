@@ -1,6 +1,14 @@
-import type { CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineOperation, OfflineReply, OfflineResults } from './offline-shared';
 import type { ClientText, ClientTextBase } from './i18n';
 import { texts } from './lib/text';
+import type {
+  CourseManifest,
+  CourseStatus,
+  DownloadProgress,
+  OfflineBroadcast,
+  OfflineOperation,
+  OfflineReply,
+  OfflineResults,
+} from './offline-shared';
 import { OFFLINE_STATE, type OfflineState } from './page/events';
 
 type AppData = {
@@ -44,7 +52,8 @@ function installed() {
   $('installState').textContent = T.ocInstalled;
 }
 window.addEventListener('appinstalled', installed);
-if (matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone) installed();
+if (matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone)
+  installed();
 $('pwaInstall').addEventListener('click', async () => {
   if (!installPrompt) return;
   const prompt = installPrompt;
@@ -54,23 +63,40 @@ $('pwaInstall').addEventListener('click', async () => {
     await prompt.prompt();
     const choice = await prompt.userChoice;
     $('installState').textContent = choice.outcome === 'accepted' ? T.ocInstallAccepted : T.ocInstallDismissed;
-  } catch { $('installState').textContent = T.ocInstallMenu; }
+  } catch {
+    $('installState').textContent = T.ocInstallMenu;
+  }
 });
 
 /** SW に頼み、答えを待つ（SAVE の途中の進み具合は progress に渡す）。頼みごとと答えの形は offline-shared.ts の OfflineRequest・OfflineReply */
-function request<K extends OfflineOperation>(type: K, id?: string, progress?: (p: DownloadProgress) => void): Promise<OfflineResults[K]>;
-function request(type: OfflineOperation, id?: string, progress?: (p: DownloadProgress) => void): Promise<OfflineResults[OfflineOperation]> {
+function request<K extends OfflineOperation>(
+  type: K,
+  id?: string,
+  progress?: (p: DownloadProgress) => void,
+): Promise<OfflineResults[K]>;
+function request(
+  type: OfflineOperation,
+  id?: string,
+  progress?: (p: DownloadProgress) => void,
+): Promise<OfflineResults[OfflineOperation]> {
   return new Promise((resolve, reject) => {
     const worker = navigator.serviceWorker.controller ?? registration?.active;
-    if (!worker) { reject(new Error(T.ocNoWorker)); return; }
+    if (!worker) {
+      reject(new Error(T.ocNoWorker));
+      return;
+    }
     const channel = new MessageChannel();
     let timer: ReturnType<typeof setTimeout>;
     const finish = (error?: Error, value?: OfflineResults[OfflineOperation]) => {
       clearTimeout(timer);
       channel.port1.close();
-      if (error) reject(error); else resolve(value!);
+      if (error) reject(error);
+      else resolve(value!);
     };
-    const extend = () => { clearTimeout(timer); timer = setTimeout(() => finish(new Error(T.ocTimeout)), 150000); };
+    const extend = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error(T.ocTimeout)), 150000);
+    };
     channel.port1.onmessage = (event: MessageEvent<OfflineReply>) => {
       extend();
       if (event.data.progress) progress?.(event.data.progress);
@@ -114,7 +140,9 @@ function storageMessage() {
  * そのときは版が同じで、ふつうの保存版として扱う
  */
 function openedPublished(status: CourseStatus | undefined) {
-  return !!app.course && !!status?.saved && !!status.disabled && status.saved.manifest.pageVersion !== app.course.pageVersion;
+  return (
+    !!app.course && !!status?.saved && !!status.disabled && status.saved.manifest.pageVersion !== app.course.pageVersion
+  );
 }
 /**
  * 新しい版で変わったこと（教材情報の news のうち、保存した日より後の日付のもの）。新しい版が見つかったときだけ出す。
@@ -123,28 +151,40 @@ function openedPublished(status: CourseStatus | undefined) {
 let newsShown = '';
 function drawNews(saved: CourseStatus['saved'] | undefined) {
   const since = saved?.savedAt.slice(0, 10) ?? '';
-  const news = saved && latest && saved.manifest.revision !== latest.revision && Array.isArray(latest.news) ? latest.news : [];
-  const items = news.filter((n) => typeof n?.date === 'string' && typeof n.text === 'string' && n.date >= since).slice(0, 3);
+  const news =
+    saved && latest && saved.manifest.revision !== latest.revision && Array.isArray(latest.news) ? latest.news : [];
+  const items = news
+    .filter((n) => typeof n?.date === 'string' && typeof n.text === 'string' && n.date >= since)
+    .slice(0, 3);
   const key = JSON.stringify(items);
   if (key === newsShown) return;
   newsShown = key;
   $('offlineNews').hidden = !items.length;
-  $('offlineNewsList').replaceChildren(...items.map((n) => {
-    const li = document.createElement('li');
-    li.textContent = `${n.date}　${n.text}`;
-    return li;
-  }));
+  $('offlineNewsList').replaceChildren(
+    ...items.map((n) => {
+      const li = document.createElement('li');
+      li.textContent = `${n.date}　${n.text}`;
+      return li;
+    }),
+  );
 }
-function canShowStatus() { return !busy && !locallyDownloading && !states.some((s) => s.progress); }
+function canShowStatus() {
+  return !busy && !locallyDownloading && !states.some((s) => s.progress);
+}
 function drawProgress(p?: DownloadProgress | null) {
   const bar = $<HTMLProgressElement>('offlineProgress');
   bar.hidden = !p;
   if (!p) return;
   bar.max = p.total || 1;
   bar.value = p.loaded;
-  const pct = p.total ? Math.floor(p.loaded / p.total * 100) : 0;
+  const pct = p.total ? Math.floor((p.loaded / p.total) * 100) : 0;
   // 読み上げの段: 始め（教材情報の確認）が -1、保存中は 10% ごとに 0〜10
-  message(p.total ? tt('ocProgress', { pct, loaded: mb(p.loaded), total: mb(p.total), file: p.file, count: p.count }) : T.ocProgressStart, p.total ? Math.floor(pct / 10) : -1);
+  message(
+    p.total
+      ? tt('ocProgress', { pct, loaded: mb(p.loaded), total: mb(p.total), file: p.file, count: p.count })
+      : T.ocProgressStart,
+    p.total ? Math.floor(pct / 10) : -1,
+  );
 }
 
 function render() {
@@ -156,7 +196,15 @@ function render() {
   const processing = busy || !!anyProgress;
   if (app.course) {
     const saved = status?.saved;
-    $('savedState').textContent = saved ? tt('ocSavedState', { size: mb(saved.manifest.bytes), at: new Date(saved.savedAt).toLocaleString(app.locale), old: status?.incomplete ? T.ocSavedStateOld : '' }) : status?.incomplete ? T.ocIncomplete : T.ocUnsavedState;
+    $('savedState').textContent = saved
+      ? tt('ocSavedState', {
+          size: mb(saved.manifest.bytes),
+          at: new Date(saved.savedAt).toLocaleString(app.locale),
+          old: status?.incomplete ? T.ocSavedStateOld : '',
+        })
+      : status?.incomplete
+        ? T.ocIncomplete
+        : T.ocUnsavedState;
     const same = saved?.manifest.revision === latest?.revision;
     const save = $<HTMLButtonElement>('offlineSave');
     save.textContent = saved && latest && !same ? T.ocSaveUpdate : status?.incomplete ? T.ocSaveRetry : T.offSave;
@@ -173,14 +221,23 @@ function render() {
     if (changed) message(T.ocSwitched);
     drawNews(saved);
     // 講座のページの画面（site/course-page.ts の player）が、再生の状態の文に使う
-    window.dispatchEvent(new CustomEvent<OfflineState>(OFFLINE_STATE, { detail: {
-      saved: !!saved, pageVersion: saved?.manifest.pageVersion, incomplete: status?.incomplete, disabled, online: navigator.onLine,
-    } }));
+    window.dispatchEvent(
+      new CustomEvent<OfflineState>(OFFLINE_STATE, {
+        detail: {
+          saved: !!saved,
+          pageVersion: saved?.manifest.pageVersion,
+          incomplete: status?.incomplete,
+          disabled,
+          online: navigator.onLine,
+        },
+      }),
+    );
   }
   const list = $('savedCourses');
   list.replaceChildren();
   const courses = [...app.courses];
-  for (const s of states) if (s.saved && !courses.some((c) => c.id === s.id)) courses.push({ id: s.id, title: s.saved.manifest.title });
+  for (const s of states)
+    if (s.saved && !courses.some((c) => c.id === s.id)) courses.push({ id: s.id, title: s.saved.manifest.title });
   for (const course of courses) {
     const s = states.find((v) => v.id === course.id);
     const li = document.createElement('li');
@@ -188,7 +245,13 @@ function render() {
     a.href = new URL(`${course.id}/`, root).href;
     a.textContent = course.title;
     const label = document.createElement('span');
-    label.textContent = s?.progress ? T.ocLibSaving : s?.saved ? tt('ocLibSaved', { size: mb(s.saved.manifest.bytes) }) : s?.incomplete ? T.ocLibIncomplete : T.ocLibNone;
+    label.textContent = s?.progress
+      ? T.ocLibSaving
+      : s?.saved
+        ? tt('ocLibSaved', { size: mb(s.saved.manifest.bytes) })
+        : s?.incomplete
+          ? T.ocLibIncomplete
+          : T.ocLibNone;
     li.append(a, label);
     list.append(li);
   }
@@ -204,22 +267,29 @@ async function capacity() {
   try {
     const estimate = await navigator.storage?.estimate?.();
     const persistent = await navigator.storage?.persisted?.();
-    $('storageState').textContent = `${estimate?.quota ? tt('ocUsage', { usage: mb(estimate.usage ?? 0), quota: mb(estimate.quota) }) : T.ocUsageUnknown}${persistent ? T.ocPersisted : T.ocNotPersisted}`;
+    $('storageState').textContent =
+      `${estimate?.quota ? tt('ocUsage', { usage: mb(estimate.usage ?? 0), quota: mb(estimate.quota) }) : T.ocUsageUnknown}${persistent ? T.ocPersisted : T.ocNotPersisted}`;
     $<HTMLButtonElement>('offlinePersist').disabled = !navigator.storage?.persist || !!persistent;
-  } catch { $('storageState').textContent = T.ocNoEstimate; }
+  } catch {
+    $('storageState').textContent = T.ocNoEstimate;
+  }
 }
 async function refresh() {
   if (!registration || refreshInProgress) return false;
   refreshInProgress = true;
   try {
     states = (await request('STATUS')).courses ?? [];
-    render(); await capacity();
+    render();
+    await capacity();
     // 初期案内だけを確定する。進捗・操作結果・通信エラーは状態確認で上書きしない。
     if (messageRevision === 0 && canShowStatus()) message(storageMessage());
     return true;
+  } catch (error) {
+    message((error as Error).message);
+    return false;
+  } finally {
+    refreshInProgress = false;
   }
-  catch (error) { message((error as Error).message); return false; }
-  finally { refreshInProgress = false; }
 }
 async function check() {
   if (!app.course || !navigator.onLine || !registration) return;
@@ -230,7 +300,16 @@ async function check() {
     const status = states.find((s) => s.id === app.course!.id);
     const saved = status?.saved;
     const newer = !!saved && saved.manifest.revision !== latest?.revision;
-    if (status && before === messageRevision && canShowStatus()) message(status.incomplete || openedPublished(status) ? storageMessage() : newer ? T.ocNewVersion : saved ? T.ocSameVersion : storageMessage());
+    if (status && before === messageRevision && canShowStatus())
+      message(
+        status.incomplete || openedPublished(status)
+          ? storageMessage()
+          : newer
+            ? T.ocNewVersion
+            : saved
+              ? T.ocSameVersion
+              : storageMessage(),
+      );
   } catch (error) {
     // 確認を待つ間に始まった保存や、別操作の結果を遅い応答で置き換えない。
     if (before === messageRevision && canShowStatus()) {
@@ -251,14 +330,22 @@ $('offlineSave').addEventListener('click', async () => {
   try {
     await request('SAVE', app.course.id, drawProgress);
     message(T.ocSaved);
-  } catch (error) { message(tt('ocSaveFailed', { error: (error as Error).message })); }
-  finally { busy = false; locallyDownloading = false; drawProgress(); await refresh(); }
+  } catch (error) {
+    message(tt('ocSaveFailed', { error: (error as Error).message }));
+  } finally {
+    busy = false;
+    locallyDownloading = false;
+    drawProgress();
+    await refresh();
+  }
 });
 $('offlineCancel').addEventListener('click', async () => {
   try {
     await request('CANCEL', workingId ?? app.course?.id);
     message(T.ocCancelAccepted);
-  } catch (error) { message((error as Error).message); }
+  } catch (error) {
+    message((error as Error).message);
+  }
 });
 $('offlineDelete').addEventListener('click', async () => {
   if (!app.course || busy) return;
@@ -267,22 +354,39 @@ $('offlineDelete').addEventListener('click', async () => {
   try {
     await request('DELETE', app.course.id);
     message(T.ocDeleted);
-  } catch (error) { message((error as Error).message); }
-  finally { busy = false; await refresh(); }
+  } catch (error) {
+    message((error as Error).message);
+  } finally {
+    busy = false;
+    await refresh();
+  }
 });
-$('offlineCheck').addEventListener('click', () => { void check(); });
+$('offlineCheck').addEventListener('click', () => {
+  void check();
+});
 $('offlineReload').addEventListener('click', () => location.reload());
 $('offlinePersist').addEventListener('click', async () => {
   try {
     const granted = await navigator.storage.persist();
     message(granted ? T.ocPersistGranted : T.ocPersistDenied);
     await capacity();
-  } catch { message(T.ocPersistError); }
+  } catch {
+    message(T.ocPersistError);
+  }
 });
-window.addEventListener('online', () => { render(); void check(); });
-window.addEventListener('offline', () => { render(); });
-window.addEventListener('pageshow', () => { void refresh(); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) void refresh(); });
+window.addEventListener('online', () => {
+  render();
+  void check();
+});
+window.addEventListener('offline', () => {
+  render();
+});
+window.addEventListener('pageshow', () => {
+  void refresh();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) void refresh();
+});
 network();
 
 async function init() {
@@ -295,17 +399,31 @@ async function init() {
     if (event.data?.protocol === 1 && event.data?.type === 'CHANGED') void refresh();
   });
   try {
-    const registered = await navigator.serviceWorker.register(new URL('sw.js', root), { scope: root.pathname, updateViaCache: 'none' });
-    await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error(T.ocSwTimeout)), 30000))]);
+    const registered = await navigator.serviceWorker.register(new URL('sw.js', root), {
+      scope: root.pathname,
+      updateViaCache: 'none',
+    });
+    await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(T.ocSwTimeout)), 30000)),
+    ]);
     // ここから問い合わせる（pageshow・visibilitychange・CHANGED の知らせ・online が先に来ても、refresh と check は待つ）
     registration = registered;
-    const updateNotice = () => { if (registered.waiting) $('appUpdate').hidden = false; };
+    const updateNotice = () => {
+      if (registered.waiting) $('appUpdate').hidden = false;
+    };
     updateNotice();
-    registered.addEventListener('updatefound', () => registered.installing?.addEventListener('statechange', updateNotice));
+    registered.addEventListener('updatefound', () =>
+      registered.installing?.addEventListener('statechange', updateNotice),
+    );
     await refresh();
     await check();
     // 別タブでの保存・キャンセルも反映する。通常時はフォーカスを戻したときに確認。
-    setInterval(() => { if (!document.hidden && (workingId || busy)) void refresh(); }, 2000);
-  } catch { message(T.ocSwFailed); }
+    setInterval(() => {
+      if (!document.hidden && (workingId || busy)) void refresh();
+    }, 2000);
+  } catch {
+    message(T.ocSwFailed);
+  }
 }
 void init();

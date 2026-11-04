@@ -4,10 +4,11 @@
 //   @remotion/renderer は、自分の版に合う Chrome Headless Shell を cwd の node_modules/.remotion に置いて使う。
 //   1 つのプロセスで両側を書き出すと、依存の違いが静止画に出ない。そこで bundler と renderer を、その側の node_modules から読む
 // 終了コード: 0 書き出した（書き出せない静止画は結果に書く）・1 バンドルか Chrome が動かない・2 使い方の誤り
-import type * as Bundler from '@remotion/bundler';
-import type * as Renderer from '@remotion/renderer';
+
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import type * as Bundler from '@remotion/bundler';
+import type * as Renderer from '@remotion/renderer';
 import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { pool } from './lib/pool';
 
@@ -36,7 +37,8 @@ const main = async (argv: string[]) => {
   const { values, positionals } = readArgs(argv, {}, { positionals: true });
   if (values.help) return showHelp(import.meta.filename);
   const jobPath = positionals[0];
-  if (!jobPath || positionals.length > 1) throw new UsageError('使い方: bun scripts/stills-compare-side.ts <job.json>（stills-compare.ts が流す）');
+  if (!jobPath || positionals.length > 1)
+    throw new UsageError('使い方: bun scripts/stills-compare-side.ts <job.json>（stills-compare.ts が流す）');
   const job: SideJob = JSON.parse(readFileSync(jobPath, 'utf8'));
   const result = await renderSide(job);
   writeFileSync(jobPath.replace(/\.json$/, '.result.json'), JSON.stringify(result));

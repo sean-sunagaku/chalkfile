@@ -1,9 +1,11 @@
 // 前提: Chrome と、Cloudflare のログを読む認証。副作用: wrangler tail・公開サイトへの検証要求・専用 profile と証跡の保存。権限: Cloudflare のログ読み取り・ネットワーク・ローカルへの書き込み。持ち主が手動で流す。
-import config from '../../chalkfile.config';
+
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 // Cloudflare側で検証用ヘッダーを持つ自分の要求だけを抽出する。生ログは表示・保存しない。
 import { chromium, expect } from '@playwright/test';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
+import config from '../../chalkfile.config';
+
 const root = path.resolve(import.meta.dir, '../..');
 const evidence = path.join(root, '.work/evidence');
 mkdirSync(evidence, { recursive: true });
@@ -97,7 +99,7 @@ try {
     headless: true,
     extraHTTPHeaders: { 'X-Chalkfile-Verify': marker },
   });
-  const page = context.pages()[0] ?? await context.newPage();
+  const page = context.pages()[0] ?? (await context.newPage());
   await page.goto(new URL('rive-comedy/', config.origin).href, { waitUntil: 'domcontentloaded' });
   const video = page.locator('video');
   await expect

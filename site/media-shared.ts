@@ -2,6 +2,7 @@
 import { LANG_PATTERN } from '../content/langs';
 import { MEDIA_LIST_MAX_ENTRIES, RELEASE_ASSET_MAX_BYTES } from './limits';
 // npm run gen が chalkfile.config.ts から書く。
+// biome-ignore format: npm run gen が書く値の形を保つ
 export const MEDIA_REPOSITORY = "sean-sunagaku/chalkfile";
 export type MediaEntry = {
   lang: string;
@@ -31,10 +32,14 @@ export const mediaFilename = (entry: Pick<MediaEntry, 'lecture' | 'kind' | 'sha2
   `${entry.lecture}${entry.kind === 'captioned' ? '.cc' : ''}.${entry.sha256}.mp4`;
 export const mediaPath = (entry: MediaEntry) => `/media/${entry.lang}/${entry.course}/${entry.filename}`;
 /** 配るパス（/media/<言語>/<講座>/<レクチャー>[.cc].<SHA-256>.mp4。mediaPath の形）を読む。形が違えば null（query の付いたものも null） */
-export const parseMediaPath = (pathname: string): Pick<MediaEntry, 'lang' | 'course' | 'lecture' | 'kind' | 'sha256'> | null => {
+export const parseMediaPath = (
+  pathname: string,
+): Pick<MediaEntry, 'lang' | 'course' | 'lecture' | 'kind' | 'sha256'> | null => {
   const m = MEDIA_PATH.exec(pathname);
   // 一致すれば捕捉群 1/2/3/5 は必ずある（4 の字幕版の印だけ省略可）。
-  return m ? { lang: m[1]!, course: m[2]!, lecture: m[3]!, kind: m[4] ? 'captioned' : 'standard', sha256: m[5]! } : null;
+  return m
+    ? { lang: m[1]!, course: m[2]!, lecture: m[3]!, kind: m[4] ? 'captioned' : 'standard', sha256: m[5]! }
+    : null;
 };
 /** 単体で保存するときのファイルの名前（字幕を焼き込んだ版は .captioned）。Worker・SW・手元の配信が同じ名前を付ける */
 export const downloadName = (entry: Pick<MediaEntry, 'lecture' | 'kind'>) =>
@@ -52,33 +57,59 @@ const isDay = (value: unknown) => {
   return Number.isFinite(time) && utcDay(new Date(time)) === value;
 };
 // retained に入れる日から数えた期限（YYYY-MM-DD・UTC）。
-export const retainDeadline = (today: Date, days = RETAIN_DAYS) => utcDay(new Date(today.getTime() + days * 24 * 60 * 60 * 1000));
+export const retainDeadline = (today: Date, days = RETAIN_DAYS) =>
+  utcDay(new Date(today.getTime() + days * 24 * 60 * 60 * 1000));
 export const expiredRetained = (manifest: MediaManifest, today = new Date()) =>
   (manifest.retained ?? []).filter((e) => e.retainedUntil !== undefined && e.retainedUntil < utcDay(today));
 // media check と check_delivery が同じ文で知らせる（失敗にはしない）。
-export const retainedWarnings = (manifest: MediaManifest, today = new Date()) => expiredRetained(manifest, today).map((e) =>
-  `retained の期限 ${e.retainedUntil} を過ぎた動画が許可リストに残っています: ${mediaPath(e)}。講座の動画の一覧（content/<講座>/generated/media.<言語>.json）の retained から外すか、期限を延ばしてください（Release の asset は消さない）。`);
+export const retainedWarnings = (manifest: MediaManifest, today = new Date()) =>
+  expiredRetained(manifest, today).map(
+    (e) =>
+      `retained の期限 ${e.retainedUntil} を過ぎた動画が許可リストに残っています: ${mediaPath(e)}。講座の動画の一覧（content/<講座>/generated/media.<言語>.json）の retained から外すか、期限を延ばしてください（Release の asset は消さない）。`,
+  );
 
 export function validateMediaManifest(value: unknown): MediaManifest {
   const m = value as MediaManifest;
-  if (!m || m.schema !== 1 || !Array.isArray(m.entries) || !m.entries.length ||
-      (m.retained !== undefined && !Array.isArray(m.retained)) || allMediaEntries(m).length > MEDIA_LIST_MAX_ENTRIES) throw new Error('動画マニフェストの形式が不正です。');
+  if (
+    !m ||
+    m.schema !== 1 ||
+    !Array.isArray(m.entries) ||
+    !m.entries.length ||
+    (m.retained !== undefined && !Array.isArray(m.retained)) ||
+    allMediaEntries(m).length > MEDIA_LIST_MAX_ENTRIES
+  )
+    throw new Error('動画マニフェストの形式が不正です。');
   const keys = new Set<string>();
   const paths = new Set<string>();
   for (const e of allMediaEntries(m)) {
-    if (!e || !LANG.test(e.lang) || !ID.test(e.course) || !ID.test(e.lecture) ||
-        !['standard', 'captioned'].includes(e.kind) || !HASH.test(e.sha256) ||
-        !Number.isSafeInteger(e.bytes) || e.bytes <= 0 || e.bytes > RELEASE_ASSET_MAX_BYTES ||
-        e.tag !== `media-${e.lang}-${e.course}` || e.filename !== mediaFilename(e) || paths.has(mediaPath(e)) || (m.entries.includes(e) && keys.has(mediaKey(e)))) {
+    if (
+      !e ||
+      !LANG.test(e.lang) ||
+      !ID.test(e.course) ||
+      !ID.test(e.lecture) ||
+      !['standard', 'captioned'].includes(e.kind) ||
+      !HASH.test(e.sha256) ||
+      !Number.isSafeInteger(e.bytes) ||
+      e.bytes <= 0 ||
+      e.bytes > RELEASE_ASSET_MAX_BYTES ||
+      e.tag !== `media-${e.lang}-${e.course}` ||
+      e.filename !== mediaFilename(e) ||
+      paths.has(mediaPath(e)) ||
+      (m.entries.includes(e) && keys.has(mediaKey(e)))
+    ) {
       throw new Error('動画の名前・サイズ・ハッシュ・タグが不正か重複しています。');
     }
     keys.add(mediaKey(e));
     paths.add(mediaPath(e));
   }
-  for (const e of allMediaEntries(m)) if (e.kind === 'captioned' && !keys.has(mediaKey({ ...e, kind: 'standard' }))) {
-    throw new Error('字幕焼き込み版の通常動画がありません。');
-  }
-  if (m.entries.some((e) => 'retainedUntil' in e) || (m.retained ?? []).some((e) => e.retainedUntil !== undefined && !isDay(e.retainedUntil))) {
+  for (const e of allMediaEntries(m))
+    if (e.kind === 'captioned' && !keys.has(mediaKey({ ...e, kind: 'standard' }))) {
+      throw new Error('字幕焼き込み版の通常動画がありません。');
+    }
+  if (
+    m.entries.some((e) => 'retainedUntil' in e) ||
+    (m.retained ?? []).some((e) => e.retainedUntil !== undefined && !isDay(e.retainedUntil))
+  ) {
     throw new Error('retainedUntil は retained の項目にだけ、YYYY-MM-DD の日付で付けてください。');
   }
   return m;

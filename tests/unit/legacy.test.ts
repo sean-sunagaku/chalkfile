@@ -1,10 +1,10 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { VIDEOS } from '../../content';
 import type { Scene } from '../../content/types';
 import { legacyUses, upgradeLecture, upgradeScene } from '../../engine/core/legacy';
 import { validateLecture } from '../../engine/core/validate';
 import { course, lecture, say, W } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const lines = say('一つ目です。', '二つ目です。');
 

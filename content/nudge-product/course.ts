@@ -1,6 +1,5 @@
-import { NUDGE_SECTIONS } from './course.shared';
-import { SOURCES } from './sources';
 import type { Course } from '../types';
+import { NUDGE_SECTIONS } from './course.shared';
 import { N01 } from './N01';
 import { N02 } from './N02';
 import { N03 } from './N03';
@@ -8,6 +7,7 @@ import { N04 } from './N04';
 import { N05 } from './N05';
 import { N06 } from './N06';
 import { N07 } from './N07';
+import { SOURCES } from './sources';
 import { NUDGE_SYLLABUS } from './syllabus';
 
 /** ナッジ理論をプロダクト改善に活かす（選択アーキテクチャ・デフォルト・フレーミング・社会的規範・フィードバック・手間・倫理と検証） */

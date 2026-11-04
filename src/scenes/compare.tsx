@@ -1,5 +1,5 @@
 // 場面「compare」: 左右の比較
-import React from 'react';
+import type React from 'react';
 import type { CompareScene, CompareSide } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { fitSize } from '../components/fit';
@@ -15,6 +15,7 @@ const ICON = 76;
 const ICON_GAP = 22;
 /** 1 枚のカードの題の幅 */
 const titleWidth = (icon: boolean) => (W - PAD * 2 - GAP) / 2 - INNER - (icon ? ICON + ICON_GAP : 0);
+
 import { defineScene } from './define';
 
 const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) => {
@@ -53,7 +54,15 @@ const SideCard: React.FC<{ side: CompareSide; dir: -1 | 1 }> = ({ side, dir }) =
               <Smart text={side.title} t={side.tone} />
             </div>
             {side.sub ? (
-              <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.compareSub, color: tt.text, marginTop: 4 }}>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontWeight: 500,
+                  fontSize: TYPE.label.compareSub,
+                  color: tt.text,
+                  marginTop: 4,
+                }}
+              >
                 <Smart text={side.sub} t={side.tone} />
               </div>
             ) : null}
@@ -95,7 +104,9 @@ const SideItem: React.FC<{ text: string; at: number; k: number; t: CompareSide['
           boxShadow: `0 0 12px ${tt.main}`,
         }}
       />
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.body.compareItem, color: C.ink, lineHeight: 1.45 }}>
+      <div
+        style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.body.compareItem, color: C.ink, lineHeight: 1.45 }}
+      >
         <Smart text={text} t={t} />
       </div>
     </div>
@@ -133,7 +144,15 @@ const Compare: React.FC<{ s: CompareScene }> = ({ s }) => {
               }}
             >
               <Icon name="check" size={44} color={vt.main} stroke={3} />
-              <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: TYPE.title.verdict, color: C.ink, lineHeight: 1.4 }}>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontWeight: 900,
+                  fontSize: TYPE.title.verdict,
+                  color: C.ink,
+                  lineHeight: 1.4,
+                }}
+              >
                 <Smart text={s.verdict.text} t={s.verdict.tone} />
               </div>
             </div>

@@ -1,7 +1,7 @@
 // 動画の一覧の版 2（項目の inputs。書き出したときの台本と描き方の指紋）。版 1 も読めること・Worker の許可リストが変わらないこと・
 // media push が書き出しの記録から inputs を書くこと・台本が変わった動画を置く前に止めること・CI の確かめ（validate）の誤り・注意・知らせ。
 // gh は偽物で、ファイルは一時のフォルダにだけ書く（Releases には何も置かない）
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, spyOn, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -24,6 +24,7 @@ import { STATE_SCHEMA, writeState } from '../../scripts/stages/pipeline/state';
 import { currentInputs, type PublishedCheck, srcDigest } from '../../scripts/stages/video/inputs';
 import { mediaInputProblems } from '../../scripts/validate';
 import type { MediaEntry } from '../../site/media-shared';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 // 版 1 の互換性は、公開中の一覧が版 2 に進んでも同じ見本で確かめる。

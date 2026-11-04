@@ -23,7 +23,10 @@ export const createWorker = (manifest: unknown, settings: { origin: string }) =>
   const media = createMediaHandler(allMediaEntries(validateMediaManifest(manifest)));
   const api = createApiHandler();
   const routes: Route[] = [
-    { prefix: '/media/', handle: (request, url) => (url.hostname === `www.${origin.hostname}` ? toApex(url) : media(request)) },
+    {
+      prefix: '/media/',
+      handle: (request, url) => (url.hostname === `www.${origin.hostname}` ? toApex(url) : media(request)),
+    },
     { prefix: '/api/', handle: (request) => api(request) },
   ];
   return {

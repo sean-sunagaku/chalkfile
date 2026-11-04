@@ -171,7 +171,9 @@ def bgm_cuts(n: int, scenes: list[dict]) -> np.ndarray:
             b = int(round(((back["start"] - 0.25) if back else scene["end"]) * RATE))
             if b <= a:
                 continue
-            g *= fade(n, a, a + int(BGM_CUT_FADE * RATE), rising=False) + fade(n, b, b + int(BGM_BACK_FADE * RATE), rising=True)
+            g *= fade(n, a, a + int(BGM_CUT_FADE * RATE), rising=False) + fade(
+                n, b, b + int(BGM_BACK_FADE * RATE), rising=True
+            )
     return np.clip(g, 0.0, 1.0)
 
 

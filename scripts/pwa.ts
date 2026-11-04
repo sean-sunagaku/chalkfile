@@ -1,10 +1,10 @@
 // PWA の静的ファイルと、テーマの色から作る自前のアイコン。外部画像は使わない。
 import { createHash } from 'node:crypto';
-import { deflateSync } from 'node:zlib';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import type { Theme } from '../content/types';
+import { deflateSync } from 'node:zlib';
 import { isLang, LANG_INFO, LANGS, type Lang } from '../content/i18n';
+import type { Theme } from '../content/types';
 import { LOCALES } from '../site/i18n';
 import { mimeOf } from '../site/mime';
 import type { Asset } from '../site/offline-shared';
@@ -20,10 +20,12 @@ const chunk = (name: string, data: Buffer) => {
   let crc = 0xffffffff;
   for (const byte of Buffer.concat([type, data])) {
     crc ^= byte;
-    for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+    for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
   }
-  const length = Buffer.alloc(4); length.writeUInt32BE(data.length);
-  const checksum = Buffer.alloc(4); checksum.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
   return Buffer.concat([length, type, data, checksum]);
 };
 /** アイコンの黒板の位置（幅と高さに対する割合）と、チョークの線の始まり */
@@ -37,19 +39,31 @@ const BOARD: Board = { u0: 0.18, u1: 0.82, v0: 0.25, v1: 0.75, line: 0.63 };
 const MASKABLE: Board = { u0: 0.26, u1: 0.74, v0: 0.3125, v1: 0.6875, line: 0.5975 };
 function icon(size: number, t: Theme, b: Board = BOARD): Buffer {
   const rgb = (hex: string) => [1, 3, 5].map((p) => parseInt(hex.slice(p, p + 2), 16));
-  const bg = rgb(t.color.bg), board = rgb(t.color.code), chalk = rgb(t.color.accent);
+  const bg = rgb(t.color.bg),
+    board = rgb(t.color.code),
+    chalk = rgb(t.color.accent);
   const row = size * 3 + 1;
   const pixels = Buffer.alloc(row * size);
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const u = x / size, v = y / size;
-    const rect = u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1;
-    const line = rect && v >= b.line;
-    const color = line ? chalk : rect ? board : bg;
-    for (let c = 0; c < 3; c++) pixels[y * row + 1 + x * 3 + c] = color[c]!;
-  }
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const u = x / size,
+        v = y / size;
+      const rect = u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1;
+      const line = rect && v >= b.line;
+      const color = line ? chalk : rect ? board : bg;
+      for (let c = 0; c < 3; c++) pixels[y * row + 1 + x * 3 + c] = color[c]!;
+    }
   const header = Buffer.alloc(13);
-  header.writeUInt32BE(size, 0); header.writeUInt32BE(size, 4); header[8] = 8; header[9] = 2;
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('IDAT', deflateSync(pixels)), chunk('IEND', Buffer.alloc(0))]);
+  header.writeUInt32BE(size, 0);
+  header.writeUInt32BE(size, 4);
+  header[8] = 8;
+  header[9] = 2;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(pixels)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }
 
 /**
@@ -85,13 +99,30 @@ export type PwaOptions = {
 export const webManifest = (lang: Lang, o: Pick<PwaOptions, 'brand' | 'series'>) => {
   const up = '../'.repeat(LANG_INFO[lang].path.split('/').filter(Boolean).length);
   return {
-    id: './', name: o.series, short_name: o.series, lang: LANG_INFO[lang].html, start_url: './', scope: up || './', display: 'standalone',
-    background_color: o.brand.color.bg, theme_color: o.brand.color.bg,
+    id: './',
+    name: o.series,
+    short_name: o.series,
+    lang: LANG_INFO[lang].html,
+    start_url: './',
+    scope: up || './',
+    display: 'standalone',
+    background_color: o.brand.color.bg,
+    theme_color: o.brand.color.bg,
     description: LOCALES[lang].app.description,
     // ふつうのアイコンと、形を切り抜くアイコンを分ける（1 つの画像に any と maskable を付けると、どちらかで端が欠けるか小さく見える）
     icons: [
-      ...[192, 512].map((s) => ({ src: `${up}icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any' })),
-      ...[192, 512].map((s) => ({ src: `${up}icons/maskable-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'maskable' })),
+      ...[192, 512].map((s) => ({
+        src: `${up}icons/icon-${s}.png`,
+        sizes: `${s}x${s}`,
+        type: 'image/png',
+        purpose: 'any',
+      })),
+      ...[192, 512].map((s) => ({
+        src: `${up}icons/maskable-${s}.png`,
+        sizes: `${s}x${s}`,
+        type: 'image/png',
+        purpose: 'maskable',
+      })),
     ],
   };
 };
@@ -101,7 +132,11 @@ export async function buildPwa(site: string, dist: string, o: PwaOptions) {
   const disabledRevisions = o.disabledRevisions ?? [];
   mkdirSync(path.join(dist, 'icons'), { recursive: true });
   for (const [name, size, board] of [
-    ['icon', 180, BOARD], ['icon', 192, BOARD], ['icon', 512, BOARD], ['maskable', 192, MASKABLE], ['maskable', 512, MASKABLE],
+    ['icon', 180, BOARD],
+    ['icon', 192, BOARD],
+    ['icon', 512, BOARD],
+    ['maskable', 192, MASKABLE],
+    ['maskable', 512, MASKABLE],
   ] as const) {
     const bytes = icon(size, brand, board);
     const url = `icons/${name}-${size}.png`;
@@ -121,7 +156,9 @@ export async function buildPwa(site: string, dist: string, o: PwaOptions) {
     const [lang, key] = k.split('.');
     return isLang(lang!) && key ? textOf(LOCALES[lang!].offlinePage)(key) : undefined;
   };
-  const offline = Buffer.from(fillTemplate(readFileSync(path.join(site, 'offline.html'), 'utf8'), { text, keep: ['ROOT'] }, 'site/offline.html'));
+  const offline = Buffer.from(
+    fillTemplate(readFileSync(path.join(site, 'offline.html'), 'utf8'), { text, keep: ['ROOT'] }, 'site/offline.html'),
+  );
   // Workers の HTML 正規化による転送を避け、redirect:error の保存取得で読める正規 URL を使う。
   rmSync(path.join(dist, 'offline.html'), { force: true });
   mkdirSync(path.join(dist, 'offline'), { recursive: true });
@@ -132,7 +169,9 @@ export async function buildPwa(site: string, dist: string, o: PwaOptions) {
   // （ページは自分の言語を SW に送る。公開をやめた言語の保存版のページも、その言語で答える）
   const messages = Object.fromEntries(LANGS.map((l) => [l, LOCALES[l].sw]));
   const result = await Bun.build({
-    entrypoints: [path.join(site, 'sw.ts')], target: 'browser', minify: true,
+    entrypoints: [path.join(site, 'sw.ts')],
+    target: 'browser',
+    minify: true,
     define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, disabledRevisions, messages }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));

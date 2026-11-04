@@ -1,5 +1,5 @@
 // 道具の部品（scripts/lib/）の単体テスト。ファイルは一時のフォルダにだけ書く
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,6 +12,7 @@ import { sha256File } from '../../scripts/lib/hash';
 import { pool } from '../../scripts/lib/pool';
 import { redact, run, runAsync, runInherit, runOrThrow, setVerbose, tailOf, trace } from '../../scripts/lib/proc';
 import { wavSeconds } from '../../scripts/lib/wav';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-lib-test-'));

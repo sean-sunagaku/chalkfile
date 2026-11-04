@@ -140,7 +140,9 @@ def main() -> None:
         for ln in data["lines"]:
             if ln["file"] not in heard:
                 # 音声は、共有のキャッシュ → .work/tts の順に探す（記録の鍵は、場所に縛られない名前のまま）
-                segs, _ = asr.transcribe(read16k(voice_file(ROOT, ln["file"])), language=lang, beam_size=1, condition_on_previous_text=False)
+                segs, _ = asr.transcribe(
+                    read16k(voice_file(ROOT, ln["file"])), language=lang, beam_size=1, condition_on_previous_text=False
+                )
                 heard[ln["file"]] = "".join(s.text for s in segs).strip()
                 # 一時の名前に書いてから置き換える（途中で止めても、聞き取りの記録が壊れない）
                 write_atomic(cache_file, json.dumps(heard, ensure_ascii=False))
@@ -156,6 +158,7 @@ def main() -> None:
                     x = re.sub(r"\d+", lambda m: an2cn(m.group()), x)
                     x = re.sub(r"[\W_A-Za-z0-9]+", "", x)
                     return lazy_pinyin(x)
+
                 ref, got = han(ln["t"]), han(t2s.convert(hyp))
             else:
                 ref, got = norm_en(ln["speech"]), norm_en(hyp)
@@ -164,7 +167,9 @@ def main() -> None:
         rows.sort(key=lambda r: -r[0])
         bad = [r for r in rows if r[0] > LIMIT]
         worst_all += len(bad)
-        out = [f"{key}: {len(rows)} 台詞・要確認 {len(bad)}（{'文字' if lang != 'zh' else '拼音の音節'}の誤り率 > {LIMIT}）"]
+        out = [
+            f"{key}: {len(rows)} 台詞・要確認 {len(bad)}（{'文字' if lang != 'zh' else '拼音の音節'}の誤り率 > {LIMIT}）"
+        ]
         for err, ln, hyp in rows[: max(12, len(bad))]:
             mark = "要確認" if err > LIMIT else "      "
             out.append(f"{mark} {err:.2f} {ln['at']} [{ln['voice']}] {ln['speech']}\n          聞き取り: {hyp}")
@@ -178,7 +183,7 @@ def main() -> None:
                     continue
                 for i, ch in enumerate(text):
                     if ch in POLY:
-                        seen.setdefault(f"{text[max(0, i - 2): i + 3]}", f"{ch}={py[i][0]}")
+                        seen.setdefault(f"{text[max(0, i - 2) : i + 3]}", f"{ch}={py[i][0]}")
             out.append("多音字の読み（違っていたら content/reading.ts の ZH_PHRASES へ）:")
             out.extend(f"  {ctx}  {r}" for ctx, r in seen.items())
         text = "\n".join(out)

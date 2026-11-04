@@ -1,5 +1,5 @@
 // 場面「concepts」: 用語のカード
-import React from 'react';
+import type React from 'react';
 import type { ConceptsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { fitSize } from '../components/fit';
@@ -11,9 +11,14 @@ import { TYPE } from '../video.config';
 /** カードの間と、カードの中の左右の余白（枠を含む） */
 const GAP = 28;
 const INNER = 64;
+
 import { defineScene } from './define';
 
-const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean; width: number }> = ({ card, active, width }) => {
+const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: boolean; width: number }> = ({
+  card,
+  active,
+  width,
+}) => {
   const { C, SANS, tone } = usePalette();
   const p = useAppear(card.at);
   const tt = tone(card.tone);
@@ -45,7 +50,13 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
             fontFamily: SANS,
             fontWeight: 900,
             // 英語の名前は 1 行に入るまで縮める（題の下限まで。それでも入らなければ折り返す）
-            fontSize: fitSize(card.en, { role: 'title', max: TYPE.title.conceptTerm, width: width - INNER, fontFamily: SANS, fontWeight: 900 }),
+            fontSize: fitSize(card.en, {
+              role: 'title',
+              max: TYPE.title.conceptTerm,
+              width: width - INNER,
+              fontFamily: SANS,
+              fontWeight: 900,
+            }),
             color: C.ink,
             lineHeight: 1.15,
             marginTop: 6,
@@ -53,8 +64,12 @@ const ConceptCardView: React.FC<{ card: ConceptsScene['cards'][number]; active: 
         >
           {card.en}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.label.conceptReading, color: tt.text }}>{card.ja}</div>
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.conceptDesc, color: C.sub, lineHeight: 1.5 }}>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.label.conceptReading, color: tt.text }}>
+          {card.ja}
+        </div>
+        <div
+          style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.conceptDesc, color: C.sub, lineHeight: 1.5 }}
+        >
           {card.desc}
         </div>
       </Glass>

@@ -4,15 +4,26 @@
 // 場面・カード・表の行などは、日本語の台本と同じ順番・同じ数で上書きする（色・アイコン・座標・URL は日本語の台本のものを使う）。
 // 台詞（lines）だけは丸ごと置き換える（お笑いは直訳せず、言語ごとに作り直すので、数も変わってよい）。
 // 日本語の台本の at が台詞の id なら、訳の台詞に同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい（重ねたあとで番号に直す。engine/core/lines.ts）
-import { AT_KEYS, COURSE_FIELDS, fieldShape, isListShape, keyFieldOf, LECTURE_FIELDS, type Shape, sceneShape, type Visit, walkCourse, walkLecture } from './fields';
+import {
+  AT_KEYS,
+  COURSE_FIELDS,
+  fieldShape,
+  isListShape,
+  keyFieldOf,
+  LECTURE_FIELDS,
+  type Shape,
+  sceneShape,
+  type Visit,
+  walkCourse,
+  walkLecture,
+} from './fields';
 import { isLang, type Lang, type TranslatedLang } from './langs';
 import { resolveLecture } from './lines';
 import type { At, AuthoredCourse, AuthoredLecture, Course, Lecture, Line, Scene, Source, VoiceId } from './schema';
 
-export { AT_KEYS };
-
 // 言語の一覧と名前の正本は ./langs（Service Worker と Worker にも入るので、ほかのファイルを読まないファイルにする）。台本と道具は、今までどおりここから読む
 export { isLang, LANG_INFO, LANGS, type Lang, TRANSLATED_LANGS, type TranslatedLang } from './langs';
+export { AT_KEYS };
 
 /** 動画 1 本の名前。日本語はレクチャー ID のまま（S01）、ほかは言語を付ける（S01.en）。timeline・音・字幕・動画のファイル名に使う */
 export const videoKey = (lectureId: string, lang: Lang) => (lang === 'ja' ? lectureId : `${lectureId}.${lang}`);
@@ -30,13 +41,19 @@ export const compositionId = (key: string) => key.replace(/\./g, '-');
 
 type Primitive = string | number | boolean | null | undefined;
 /** 上書き。オブジェクトは一部だけ書けばよく、配列は日本語の台本と同じ数で、順に重ねる */
-export type Override<T> = T extends Primitive ? T : T extends (infer U)[] ? Override<U>[] : { [K in keyof T]?: Override<T[K]> };
+export type Override<T> = T extends Primitive
+  ? T
+  : T extends (infer U)[]
+    ? Override<U>[]
+    : { [K in keyof T]?: Override<T[K]> };
 
 /**
  * 場面の上書き。kind は日本語の台本の場面と同じものを書く（取り違えを止める）。台詞は丸ごと書く。
  * at は台詞の番号か、訳の台詞の id（台本と同じく At）
  */
-export type SceneL10n = { [K in Scene['kind']]: Omit<Override<Extract<Scene<At>, { kind: K }>>, 'kind' | 'lines'> & { kind: K; lines: Line[] } }[Scene['kind']];
+export type SceneL10n = {
+  [K in Scene['kind']]: Omit<Override<Extract<Scene<At>, { kind: K }>>, 'kind' | 'lines'> & { kind: K; lines: Line[] };
+}[Scene['kind']];
 
 export type LectureL10n = {
   /** 訳したときの、日本語の台本の指紋（bun scripts/i18n.ts stamp が書く）。台本が変わると bun scripts/i18n.ts status が知らせる */
@@ -104,32 +121,54 @@ type Ctx = { problems: L10nProblem[]; linesDiffer: boolean };
 const numericAts = (base: unknown, where: string, ctx: Ctx, top = false) => {
   if (!ctx.linesDiffer) return;
   if (Array.isArray(base)) {
-    base.forEach((b, i) => { numericAts(b, `${where}[${i}]`, ctx); });
+    base.forEach((b, i) => {
+      numericAts(b, `${where}[${i}]`, ctx);
+    });
     return;
   }
   if (!isObj(base)) return;
   for (const [k, v] of Object.entries(base)) {
     if (top && k === 'lines') continue;
-    if (AT_KEYS.includes(k) && typeof v === 'number') ctx.problems.push({ where: `${where}.${k}`, message: MISSING_AT });
+    if (AT_KEYS.includes(k) && typeof v === 'number')
+      ctx.problems.push({ where: `${where}.${k}`, message: MISSING_AT });
     else numericAts(v, `${where}.${k}`, ctx);
   }
 };
-const MISSING_AT = '台詞の数が日本語と違う場面なので、画面の要素の at（何番目の台詞で出すか）も訳に書く（日本語の台本の at を台詞の id で書けば、訳の台詞に同じ id を付けるだけでよい）';
+const MISSING_AT =
+  '台詞の数が日本語と違う場面なので、画面の要素の at（何番目の台詞で出すか）も訳に書く（日本語の台本の at を台詞の id で書けば、訳の台詞に同じ id を付けるだけでよい）';
 
 /** key で重ねる配列（訳の項目の key で、日本語の台本の項目を引く。並びは日本語の台本のまま） */
-const mergeByKey = (base: unknown[], over: unknown[], key: string, where: string, item: Shape | undefined, ctx: Ctx): unknown[] => {
+const mergeByKey = (
+  base: unknown[],
+  over: unknown[],
+  key: string,
+  where: string,
+  item: Shape | undefined,
+  ctx: Ctx,
+): unknown[] => {
   const index = new Map<unknown, number>();
-  base.forEach((b, i) => { if (isObj(b) && b[key] !== undefined && !index.has(b[key])) index.set(b[key], i); });
+  base.forEach((b, i) => {
+    if (isObj(b) && b[key] !== undefined && !index.has(b[key])) index.set(b[key], i);
+  });
   const byBase = new Map<number, unknown>();
   over.forEach((o, i) => {
     const k = isObj(o) ? o[key] : undefined;
     const at = index.get(k);
-    if (at === undefined) ctx.problems.push({ where: `${where}[${i}].${key}`, message: `${key}「${String(k)}」が、日本語の台本に無い（あるのは ${[...index.keys()].join('・') || 'なし'}）` });
-    else if (byBase.has(at)) ctx.problems.push({ where: `${where}[${i}].${key}`, message: `${key}「${String(k)}」を、訳に 2 回書いている` });
+    if (at === undefined)
+      ctx.problems.push({
+        where: `${where}[${i}].${key}`,
+        message: `${key}「${String(k)}」が、日本語の台本に無い（あるのは ${[...index.keys()].join('・') || 'なし'}）`,
+      });
+    else if (byBase.has(at))
+      ctx.problems.push({ where: `${where}[${i}].${key}`, message: `${key}「${String(k)}」を、訳に 2 回書いている` });
     else byBase.set(at, o);
   });
   const missing = base.filter((_, i) => !byBase.has(i)).map((b) => String(isObj(b) ? b[key] : b));
-  if (missing.length) ctx.problems.push({ where, message: `訳に無い ${key}: ${missing.join('・')}（key で重ねる配列は、日本語の台本の項目を全部書く）` });
+  if (missing.length)
+    ctx.problems.push({
+      where,
+      message: `訳に無い ${key}: ${missing.join('・')}（key で重ねる配列は、日本語の台本の項目を全部書く）`,
+    });
   return base.map((b, i) => {
     if (byBase.has(i)) return merge(b, byBase.get(i), `${where}[${i}]`, item, ctx);
     numericAts(b, `${where}[${i}]`, ctx);
@@ -137,7 +176,14 @@ const mergeByKey = (base: unknown[], over: unknown[], key: string, where: string
   });
 };
 
-const merge = (base: unknown, over: unknown, where: string, shape: Shape | undefined, ctx: Ctx, top = false): unknown => {
+const merge = (
+  base: unknown,
+  over: unknown,
+  where: string,
+  shape: Shape | undefined,
+  ctx: Ctx,
+  top = false,
+): unknown => {
   if (over === undefined) {
     numericAts(base, where, ctx, top);
     return base;
@@ -149,7 +195,10 @@ const merge = (base: unknown, over: unknown, where: string, shape: Shape | undef
     const keyed = key ? over.filter((o) => isObj(o) && o[key] !== undefined).length : 0;
     if (key && keyed) {
       if (keyed === over.length) return mergeByKey(base, over, key, where, list?.$list, ctx);
-      ctx.problems.push({ where, message: `訳の項目の ${key} は、全部に書くか、全部に書かない（書いた項目は ${key} で、書かない項目は位置で重ねるので、混ぜると決まらない）` });
+      ctx.problems.push({
+        where,
+        message: `訳の項目の ${key} は、全部に書くか、全部に書かない（書いた項目は ${key} で、書かない項目は位置で重ねるので、混ぜると決まらない）`,
+      });
       return base;
     }
     if (over.length !== base.length) {
@@ -167,7 +216,8 @@ const merge = (base: unknown, over: unknown, where: string, shape: Shape | undef
         if (ctx.linesDiffer) ctx.problems.push({ where: `${where}.${k}`, message: MISSING_AT });
       } else numericAts(v, `${where}.${k}`, ctx);
     }
-    for (const [k, v] of Object.entries(over)) if (v !== undefined) out[k] = merge(base[k], v, `${where}.${k}`, fieldShape(shape, base, k), ctx);
+    for (const [k, v] of Object.entries(over))
+      if (v !== undefined) out[k] = merge(base[k], v, `${where}.${k}`, fieldShape(shape, base, k), ctx);
     return out;
   }
   return over;
@@ -178,7 +228,11 @@ export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, course: 
   const problems: L10nProblem[] = [];
   const ctx = (linesDiffer: boolean): Ctx => ({ problems, linesDiffer });
   const sameCount = tr.scenes.length === base.scenes.length;
-  if (!sameCount) problems.push({ where: 'scenes', message: `場面の数が日本語の台本と合わない（台本 ${base.scenes.length}・訳 ${tr.scenes.length}）` });
+  if (!sameCount)
+    problems.push({
+      where: 'scenes',
+      message: `場面の数が日本語の台本と合わない（台本 ${base.scenes.length}・訳 ${tr.scenes.length}）`,
+    });
   const scenes = base.scenes.map((s, i): Scene<At> => {
     const o = tr.scenes[i];
     const where = `場面 ${i + 1} ${s.kind}`;
@@ -193,8 +247,10 @@ export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, course: 
     }
     return merge(s, o, where, sceneShape(s.kind), ctx(o.lines.length !== s.lines.length), true) as Scene<At>;
   });
-  if (base.caution && !tr.caution) problems.push({ where: 'caution', message: '日本語の台本に注意書き（caution）があるので、訳も書く' });
-  const sectionTitle = tr.section?.title ?? course.sections.find((x) => x.no === base.section.no)?.title ?? base.section.title;
+  if (base.caution && !tr.caution)
+    problems.push({ where: 'caution', message: '日本語の台本に注意書き（caution）があるので、訳も書く' });
+  const sectionTitle =
+    tr.section?.title ?? course.sections.find((x) => x.no === base.section.no)?.title ?? base.section.title;
   const lecture = resolveLecture({
     ...base,
     title: tr.title,
@@ -216,10 +272,18 @@ export const localizeLecture = (base: AuthoredLecture, tr: LectureL10n, course: 
 /** 講座の訳。日本語の講座（at の id を番号に直す前のもの）に訳を重ねる */
 export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: TranslatedLang): Course => {
   const problems: L10nProblem[] = [];
-  if (tr.sections.length !== base.sections.length) problems.push({ where: 'sections', message: `セクションの数が合わない（講座 ${base.sections.length}・訳 ${tr.sections.length}）` });
+  if (tr.sections.length !== base.sections.length)
+    problems.push({
+      where: 'sections',
+      message: `セクションの数が合わない（講座 ${base.sections.length}・訳 ${tr.sections.length}）`,
+    });
   const sections = base.sections.map((s, i) => ({ no: s.no, title: tr.sections[i]?.title ?? s.title }));
   const cast = base.cast
-    ? Object.fromEntries(Object.entries(base.cast).flatMap(([v, c]) => (c ? [[v, { ...c, name: tr.cast?.[v as VoiceId]?.name ?? c.name }]] : [])))
+    ? Object.fromEntries(
+        Object.entries(base.cast).flatMap(([v, c]) =>
+          c ? [[v, { ...c, name: tr.cast?.[v as VoiceId]?.name ?? c.name }]] : [],
+        ),
+      )
     : undefined;
   const knownSources = new Set(base.sources?.map((source) => source.id) ?? []);
   for (const id of Object.keys(tr.sources ?? {})) {
@@ -239,15 +303,21 @@ export const localizeCourse = (base: AuthoredCourse, tr: CourseL10n, lang: Trans
     standalone: tr.standalone ?? base.standalone,
     cast,
     ui: { ...(base.ui ?? {}), ...(tr.ui ?? {}) },
-    links: base.links ? (merge(base.links, tr.links, 'links', COURSE_FIELDS.links, { problems, linesDiffer: false }) as Course['links']) : undefined,
+    links: base.links
+      ? (merge(base.links, tr.links, 'links', COURSE_FIELDS.links, { problems, linesDiffer: false }) as Course['links'])
+      : undefined,
     sources,
     // 章の計画（準備中の章）と読む教材は、まだ日本語だけ
     syllabus: undefined,
     lectures: [],
   };
   // filter で訳がある ID に絞ったので、map の参照は存在する。
-  shell.lectures = base.lectures.filter((l) => tr.lectures[l.id]).map((l) => localizeLecture(l, tr.lectures[l.id]!, shell));
-  for (const id of Object.keys(tr.lectures)) if (!base.lectures.some((l) => l.id === id)) problems.push({ where: `lectures.${id}`, message: `日本語の講座に無いレクチャーの訳: ${id}` });
+  shell.lectures = base.lectures
+    .filter((l) => tr.lectures[l.id])
+    .map((l) => localizeLecture(l, tr.lectures[l.id]!, shell));
+  for (const id of Object.keys(tr.lectures))
+    if (!base.lectures.some((l) => l.id === id))
+      problems.push({ where: `lectures.${id}`, message: `日本語の講座に無いレクチャーの訳: ${id}` });
   if (problems.length) PROBLEMS.set(shell, problems);
   return shell;
 };
@@ -268,11 +338,21 @@ const CJK_PUNCT = /[　-〿！-･]/;
 export const untranslated = (course: Course, lang: TranslatedLang, base?: AuthoredCourse): string[] => {
   const out: string[] = [];
   const hanCount = (s: string) => s.match(new RegExp(HAN.source, 'g'))?.length ?? 0;
-  const bad = (s: string, ja: unknown) => KANA.test(s) || (lang === 'en' && (HAN.test(s) || CJK_PUNCT.test(s))) || (lang === 'zh' && s === ja && hanCount(s) >= 3);
+  const bad = (s: string, ja: unknown) =>
+    KANA.test(s) ||
+    (lang === 'en' && (HAN.test(s) || CJK_PUNCT.test(s))) ||
+    (lang === 'zh' && s === ja && hanCount(s) >= 3);
   const visit: Visit = (role, v, ja, path) => {
-    if ((role === 'text' || role === undefined) && typeof v === 'string' && bad(v, ja)) out.push(`${path}: ${v.slice(0, 60)}`);
+    if ((role === 'text' || role === undefined) && typeof v === 'string' && bad(v, ja))
+      out.push(`${path}: ${v.slice(0, 60)}`);
   };
   walkCourse(course, base, `${course.id}.${lang}`, visit);
-  for (const lec of course.lectures) walkLecture(lec, base?.lectures.find((l) => l.id === lec.id), `${course.id}.${lang}/${lec.id}`, visit);
+  for (const lec of course.lectures)
+    walkLecture(
+      lec,
+      base?.lectures.find((l) => l.id === lec.id),
+      `${course.id}.${lang}/${lec.id}`,
+      visit,
+    );
   return out;
 };

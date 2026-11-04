@@ -87,7 +87,10 @@ def level(x: np.ndarray, sr: int) -> np.ndarray:
 
 def main() -> None:
     if len(sys.argv) != 3 or any(a.startswith("-") for a in sys.argv[1:]):
-        stop(USAGE, "使い方: uv run --locked --script scripts/tts_kokoro.py <jobs.json> <出力フォルダ>（synth.ts が流す。--help で説明）")
+        stop(
+            USAGE,
+            "使い方: uv run --locked --script scripts/tts_kokoro.py <jobs.json> <出力フォルダ>（synth.ts が流す。--help で説明）",
+        )
     try:
         jobs = read_kokoro_jobs(Path(sys.argv[1]))
     except HandoffError as e:
@@ -113,7 +116,9 @@ def main() -> None:
                 if g2p == "z":
                     # 中国語の文の中の英語（Super-agent など）は、英語の読みで補う
                     en = KPipeline(lang_code="a", repo_id=repo, model=False)
-                    pipes[g2p] = KPipeline(lang_code="z", repo_id=repo, model=model, en_callable=lambda t: next(en(t)).phonemes)
+                    pipes[g2p] = KPipeline(
+                        lang_code="z", repo_id=repo, model=model, en_callable=lambda t: next(en(t)).phonemes
+                    )
                 else:
                     pipes[g2p] = KPipeline(lang_code=g2p, repo_id=repo, model=model)
             return pipes[g2p]

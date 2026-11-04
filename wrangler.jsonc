@@ -12,6 +12,7 @@
     "run_worker_first": ["/media/*"],
     "not_found_handling": "404-page"
   },
+  // biome-ignore format: npm run gen が書く値の形を保つ
   "routes": [
     { "pattern": "chalkfile.com", "custom_domain": true },
     { "pattern": "www.chalkfile.com", "custom_domain": true }

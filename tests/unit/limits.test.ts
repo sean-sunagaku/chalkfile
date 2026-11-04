@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -16,6 +15,7 @@ import {
 } from '../../site/limits';
 import { type MediaEntry, mediaFilename, validateMediaManifest } from '../../site/media-shared';
 import { type Asset, MAX_FILE_BYTES, OfflineError, validateManifest } from '../../site/offline-shared';
+import { required } from '../support/required';
 
 // 上限の正本（site/limits.ts）と、それを使う確かめが、境目の値で合うか（その値までは通し、1 つ超えたら止める）。
 // 保存の上限を厳しくすると、利用者が保存した講座が読めなくなる（tests/unit/offline-compat.test.ts）。緩める方向だけにする

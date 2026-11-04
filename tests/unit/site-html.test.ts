@@ -1,8 +1,9 @@
 // サイトの HTML を安全に組み立てる部品（scripts/site/html.ts）。エスケープが既定・raw() で外す・印の 1 回の置き換え・テーマの色の形
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { cspHead, scriptHash, WWW_REDIRECT_SCRIPT } from '../../scripts/site/csp';
 import {
   cssColor,
   esc,
@@ -15,7 +16,7 @@ import {
   raw,
   styleText,
 } from '../../scripts/site/html';
-import { cspHead, scriptHash, WWW_REDIRECT_SCRIPT } from '../../scripts/site/csp';
+import { required } from '../support/required';
 
 describe('html`…` と raw()', () => {
   test('文字と数はエスケープし、Html はそのまま、配列はつなぐ', () => {

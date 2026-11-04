@@ -1,5 +1,5 @@
 // 場面「opening」: タイトル（ジングルの「ドン」で番号と題が出る）
-import React from 'react';
+import type React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { OpeningScene } from '../../engine/core/schema';
 import { CourseMark, unitOf } from '../components/chrome';
@@ -139,9 +139,7 @@ const Opening: React.FC<{ s: OpeningScene }> = ({ s }) => {
                 lineHeight: 1.18,
                 color: C.ink,
                 whiteSpace: 'nowrap',
-                ...(i === 0 && titleLines.length > 1
-                  ? gradientText(DISPLAY)
-                  : {}),
+                ...(i === 0 && titleLines.length > 1 ? gradientText(DISPLAY) : {}),
               }}
             >
               {ln}

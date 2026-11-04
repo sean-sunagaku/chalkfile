@@ -6,8 +6,8 @@ import { courseLinks } from '../../content/_shared/links';
 import { THEMES } from '../../content/themes';
 import { flow, goals } from '../../engine/core/authoring';
 import { THEME_IDS } from '../../engine/core/project-settings';
-import { defineSources, uniqueSources } from '../../engine/core/sources';
 import type { Source } from '../../engine/core/schema';
+import { defineSources, uniqueSources } from '../../engine/core/sources';
 
 const source: Source = {
   id: 'spec',

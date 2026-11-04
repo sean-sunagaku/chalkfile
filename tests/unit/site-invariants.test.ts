@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { afterEach, describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
@@ -11,6 +10,7 @@ import { PAGE_VERSION_MARK } from '../../scripts/site-version';
 import { OFFLINE_FILE_MAX_BYTES, WORKERS_ASSET_MAX_BYTES } from '../../site/limits';
 import { type MediaEntry, mediaFilename, mediaPath } from '../../site/media-shared';
 import type { CourseManifest } from '../../site/offline-shared';
+import { required } from '../support/required';
 
 // 組み立てたサイトの決まり（scripts/site-invariants.ts）。決まりを守った小さなサイト（講座 1 つ・動画 1 本）を一時フォルダに作り、
 // 1 か所ずつ壊して、壊した所だけを過不足なく見つけるかを見る

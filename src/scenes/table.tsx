@@ -1,5 +1,5 @@
 // 場面「table」: 表
-import React from 'react';
+import type React from 'react';
 import type { TableScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
@@ -9,6 +9,7 @@ import { TYPE, TYPE_MIN } from '../video.config';
 
 /** 等幅で出す列は、本文よりひと回り小さくする（等幅の英数字は幅が広い）。コードの下限より小さくしない */
 const monoSize = (size: number) => Math.max(TYPE_MIN.code, size * 0.92);
+
 import { defineScene } from './define';
 
 const Row: React.FC<{

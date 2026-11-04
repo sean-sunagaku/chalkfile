@@ -31,14 +31,14 @@ import { speechIn } from '../../../content/voices';
 import { posterFile, timelineFile } from '../../../engine/core/generated';
 import { timelineFingerprint } from '../../../engine/core/timeline';
 import { readSiteConfig } from '../../lib/config';
-import { runInherit, type CommandLine } from '../../lib/proc';
+import { type CommandLine, runInherit } from '../../lib/proc';
 import { wavFileSamples } from '../../lib/wav';
 import { readMediaManifest } from '../../media';
 import { mediaManifestJson, readCourseMediaFile } from '../../media-lists';
 import { ttsKeysIn } from '../../voices';
-import { findVoice, type VoiceStore } from '../voice/store';
 import { readTimelineJson, scriptDigest, srcDigest } from '../video/inputs';
 import { videoFiles } from '../video/plan';
+import { findVoice, type VoiceStore } from '../voice/store';
 import { codeFiles, commandVersion, digest, filesDigest, listFiles, sha256Text } from './digest';
 import type { Ctx, Recorded, RunOptions, Stage } from './runner';
 

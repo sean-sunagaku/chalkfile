@@ -1,5 +1,5 @@
 // 動画ごとの timeline（content/<講座>/generated/timeline/<key>.json）の形・書き方・指紋と、置いてあるファイルの確かめ
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -19,6 +19,7 @@ import {
 import { validateTimeline, validateTimelineFiles } from '../../engine/core/validate';
 import { readTimelineEntries, timelineFiles } from '../../scripts/timelines';
 import { course, lecture, say } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const brief = (xs: { level: string; rule: string; where: string }[]) =>
@@ -239,7 +240,9 @@ describe('台本と照らし合わせる（validateTimeline・validateTimelineFi
     const gap = file();
     required(gap.scenes[2]).start = 310;
     expect(required(validateTimeline(lec, c, gap)[0]).message).toContain('前の場面の終わり（300）と続いていない');
-    expect(required(validateTimeline(lec, c, file({ durationInFrames: 401 }))[0]).message).toContain('動画の長さ（401）');
+    expect(required(validateTimeline(lec, c, file({ durationInFrames: 401 }))[0]).message).toContain(
+      '動画の長さ（401）',
+    );
   });
   test('ファイルが無ければ注意、2 つ以上・置き場所が違う・読めないときは誤り', () => {
     expect(brief(validateTimelineFiles(lec, c, []))).toEqual(['warning timeline invalid-sample/X01 timeline']);
@@ -247,7 +250,9 @@ describe('台本と照らし合わせる（validateTimeline・validateTimelineFi
       '2 つ以上の講座のフォルダにある',
     );
     expect(required(validateTimelineFiles(lec, c, [entry({}, 'other')])[0]).message).toContain('置き場所が違う');
-    expect(required(validateTimelineFiles(lec, c, [entry({ schema: 9 as 1 })])[0]).message).toContain('schema が 1 でない');
+    expect(required(validateTimelineFiles(lec, c, [entry({ schema: 9 as 1 })])[0]).message).toContain(
+      'schema が 1 でない',
+    );
   });
 });
 

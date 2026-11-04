@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { LANGS } from '../../content/i18n';
 import { CHALKFILE, isThemeId, NIGHT, THEMES } from '../../content/themes';
@@ -10,6 +9,7 @@ import { validateTheme } from '../../engine/core/validate';
 import { formatInteger, VIDEO_TEXT } from '../../src/i18n';
 import { lineEnd, lineStart } from '../../src/timing';
 import paletteJson from '../fixtures/palette/themes.json';
+import { required } from '../support/required';
 
 describe('台詞の番号からフレーム（src/timing.tsx の lineStart・lineEnd）', () => {
   const lines = [
@@ -92,7 +92,12 @@ describe('パレット（engine/core/theme.ts の derivePalette）', () => {
           deep: set.deep,
         });
       }
-      expect<Pick<Recorded, 'GRAD' | 'DISPLAY' | 'SYNTAX' | 'MESH'>>({ GRAD: p.GRAD, DISPLAY: p.DISPLAY, SYNTAX: p.SYNTAX, MESH: p.MESH }).toEqual({
+      expect<Pick<Recorded, 'GRAD' | 'DISPLAY' | 'SYNTAX' | 'MESH'>>({
+        GRAD: p.GRAD,
+        DISPLAY: p.DISPLAY,
+        SYNTAX: p.SYNTAX,
+        MESH: p.MESH,
+      }).toEqual({
         GRAD: want.GRAD,
         DISPLAY: want.DISPLAY,
         SYNTAX: want.SYNTAX as typeof p.SYNTAX,

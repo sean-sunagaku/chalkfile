@@ -42,12 +42,18 @@ export const videoPalette = (theme: Theme, lang: Lang = 'ja'): VideoPalette => {
 const PaletteContext = createContext<VideoPalette | null>(null);
 
 /** 子の部品に、このテーマと言語のパレットを渡す */
-export const ThemeProvider: React.FC<{ theme: Theme; lang: Lang; children: React.ReactNode }> = ({ theme, lang, children }) =>
-  React.createElement(PaletteContext.Provider, { value: videoPalette(theme, lang) }, children);
+export const ThemeProvider: React.FC<{ theme: Theme; lang: Lang; children: React.ReactNode }> = ({
+  theme,
+  lang,
+  children,
+}) => React.createElement(PaletteContext.Provider, { value: videoPalette(theme, lang) }, children);
 
 /** 今描いているテーマのパレット */
 export const usePalette = (): VideoPalette => {
   const p = useContext(PaletteContext);
-  if (!p) throw new Error('ThemeProvider の外で usePalette が使われた（src/Lecture.tsx の LectureVideo が ThemeProvider で包む）');
+  if (!p)
+    throw new Error(
+      'ThemeProvider の外で usePalette が使われた（src/Lecture.tsx の LectureVideo が ThemeProvider で包む）',
+    );
   return p;
 };

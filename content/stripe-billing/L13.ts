@@ -1,5 +1,5 @@
-import { docsOf } from './sources';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 export const L13: Lecture = {
   id: 'L13',

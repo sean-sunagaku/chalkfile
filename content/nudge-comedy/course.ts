@@ -1,8 +1,8 @@
 import { comedyCast } from '../_shared/comedy';
 import { courseLinks } from '../_shared/links';
 import { NUDGE_SECTIONS } from '../nudge-product/course.shared';
-import { SOURCES } from './sources';
 import type { Course } from '../types';
+import { SOURCES } from './sources';
 import { W01 } from './W01';
 
 /**

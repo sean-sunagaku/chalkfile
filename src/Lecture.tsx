@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
 import { LANG_INFO, type Lang } from '../engine/core/i18n';
 import { upgradeLecture } from '../engine/core/legacy';
@@ -19,7 +19,11 @@ const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
   return <Body s={s} />;
 };
 
-const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string | undefined }> = ({ s, duration, caution }) => {
+const SceneFrame: React.FC<{ s: Scene; duration: number; caution?: string | undefined }> = ({
+  s,
+  duration,
+  caution,
+}) => {
   const frame = useCurrentFrame();
   const o = fadeInOut(frame, duration, s.kind === 'opening' ? 1 : 10, s.kind === 'ending' ? 20 : 9);
   const body = s.kind !== 'opening' && s.kind !== 'ending';
@@ -56,10 +60,31 @@ const Captions: React.FC<{ cues: Cue[]; lang: Lang }> = ({ cues, lang }) => {
   const show = cue && frame <= until;
   // 帯の 2 行に入らない台詞は、入るまで縮める（CAPTION.minSize まで。折り返した行の数を測って決める）。名前札があれば、その分だけ行が短い。
   // 縮めても入らない台詞（台本の検証が注意にする）は、行の間を詰めて帯の中に収める
-  const wrap = { fontFamily: SANS, fontWeight: 700, letterSpacing: CAPTION.spacing, lineHeight: CAPTION_LINE_HEIGHT, lang: LANG_INFO[lang].html, wrap: WRAP[lang] };
-  const tag = show && cue?.who ? textWidth(cue.who.name, CAPTION.nameSize, { fontFamily: SANS, fontWeight: 900 }) + CAPTION.namePadX * 2 + CAPTION.gap : 0;
+  const wrap = {
+    fontFamily: SANS,
+    fontWeight: 700,
+    letterSpacing: CAPTION.spacing,
+    lineHeight: CAPTION_LINE_HEIGHT,
+    lang: LANG_INFO[lang].html,
+    wrap: WRAP[lang],
+  };
+  const tag =
+    show && cue?.who
+      ? textWidth(cue.who.name, CAPTION.nameSize, { fontFamily: SANS, fontWeight: 900 }) +
+        CAPTION.namePadX * 2 +
+        CAPTION.gap
+      : 0;
   const room = W - CAPTION.sidePad * 2 - tag;
-  const size = show && cue ? fitLines(cue.text, CAPTION.lines, { ...wrap, role: 'body', max: CAPTION.size, min: CAPTION.minSize, width: room }) : CAPTION.size;
+  const size =
+    show && cue
+      ? fitLines(cue.text, CAPTION.lines, {
+          ...wrap,
+          role: 'body',
+          max: CAPTION.size,
+          min: CAPTION.minSize,
+          width: room,
+        })
+      : CAPTION.size;
   const rows = show && cue ? wrappedLines(cue.text, size, room, wrap) : 1;
   const lineHeight = Math.min(CAPTION_LINE_HEIGHT, (CAPTION_BAND - 7 - 8) / (Math.max(rows, CAPTION.lines) * size));
   return (
@@ -161,7 +186,12 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
   const cast = course.cast ?? {};
   const cues: Cue[] = captions
     ? lecture.scenes.flatMap((s, i) =>
-        s.lines.map((ln, k) => ({ start: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.start, end: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.end, text: ln.t, who: cast[ln.v ?? 'narrator'] })),
+        s.lines.map((ln, k) => ({
+          start: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.start,
+          end: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.end,
+          text: ln.t,
+          who: cast[ln.v ?? 'narrator'],
+        })),
       )
     : [];
   return (
@@ -170,7 +200,9 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
         <Background />
         {!ready ? null : captions ? (
           <>
-            <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>{scenes}</AbsoluteFill>
+            <AbsoluteFill style={{ transform: `scale(${CAPTION_SCALE})`, transformOrigin: '50% 0%' }}>
+              {scenes}
+            </AbsoluteFill>
             <Captions cues={cues} lang={lang} />
           </>
         ) : (

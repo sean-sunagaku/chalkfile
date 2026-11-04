@@ -172,7 +172,16 @@ const seedBrowser = (dir: string) => {
 };
 
 /** 絵に効く依存と Chrome の版（書き出したあとに読む）。報告に出して、どの版どうしを比べたかを確かめられるようにする */
-const PACKAGES = ['remotion', '@remotion/renderer', '@remotion/google-fonts', '@remotion/fonts', '@remotion/layout-utils', 'react', 'react-dom', 'lucide-react'];
+const PACKAGES = [
+  'remotion',
+  '@remotion/renderer',
+  '@remotion/google-fonts',
+  '@remotion/fonts',
+  '@remotion/layout-utils',
+  'react',
+  'react-dom',
+  'lucide-react',
+];
 const versionsAt = (dir: string) => {
   const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
   const out: Record<string, string> = {};
@@ -210,7 +219,8 @@ const main = async (argv: string[]) => {
 
   const targets = positionals.length ? positionals.flatMap(parseTarget) : defaultTargets();
   const themes = opt.theme ? opt.theme.split(',') : Object.keys(THEMES);
-  for (const t of themes) if (!isThemeId(t)) throw new UsageError(`テーマが無い: ${t}（${Object.keys(THEMES).join('・')}）`);
+  for (const t of themes)
+    if (!isThemeId(t)) throw new UsageError(`テーマが無い: ${t}（${Object.keys(THEMES).join('・')}）`);
 
   /* ───────────── 実行 ───────────── */
 
@@ -349,7 +359,12 @@ const main = async (argv: string[]) => {
   const sec = Math.round((Date.now() - started) / 1000);
   const count = (s: Row['status']) => rows.filter((r) => r.status === s).length;
   const db = (p: number | null) => (p === null ? '—' : p === Infinity ? 'inf' : p.toFixed(1));
-  const LABEL: Record<Row['status'], string> = { same: '同じ', diff: '差あり', new: '基準に無い', error: '書き出せない' };
+  const LABEL: Record<Row['status'], string> = {
+    same: '同じ',
+    diff: '差あり',
+    new: '基準に無い',
+    error: '書き出せない',
+  };
   const DEPS_LABEL: Record<Deps, string> = {
     copy: '今の作業フォルダの node_modules を写した',
     ci: 'その版の package-lock.json で npm ci した',

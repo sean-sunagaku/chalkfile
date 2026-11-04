@@ -1,7 +1,7 @@
 // 場面「flow」: 流れの図（箱と矢印）
-import React from 'react';
+import type React from 'react';
 import type { FlowScene, Tone } from '../../engine/core/schema';
-import { Edge, type Box } from '../components/edge';
+import { type Box, Edge } from '../components/edge';
 import { fitSize } from '../components/fit';
 import { Glass, IconBadge, Smart } from '../components/ui';
 import { alpha, usePalette } from '../theme';
@@ -69,7 +69,15 @@ const NodeCard: React.FC<{
             {label}
           </div>
           {sub ? (
-            <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.label.nodeSub, color: C.sub, lineHeight: 1.35 }}>
+            <div
+              style={{
+                fontFamily: SANS,
+                fontWeight: 500,
+                fontSize: TYPE.label.nodeSub,
+                color: C.sub,
+                lineHeight: 1.35,
+              }}
+            >
               <Smart text={sub} t={t} />
             </div>
           ) : null}

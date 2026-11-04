@@ -1,5 +1,5 @@
 // 場面「points」: 要点のカード
-import React from 'react';
+import type React from 'react';
 import type { PointsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, IconBadge, Smart } from '../components/ui';
@@ -46,16 +46,40 @@ const PointCard: React.FC<{
             <div />
           )}
           {numbered ? (
-            <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: tall ? TYPE.display.pointNo : TYPE.display.pointNoCompact, color: tt.strong, opacity: 0.85 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontWeight: 700,
+                fontSize: tall ? TYPE.display.pointNo : TYPE.display.pointNoCompact,
+                color: tt.strong,
+                opacity: 0.85,
+              }}
+            >
               {String(index + 1).padStart(2, '0')}
             </div>
           ) : null}
         </div>
-        <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: tall ? TYPE.title.pointTitle : TYPE.title.pointTitleCompact, lineHeight: 1.3, color: C.ink }}>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontWeight: 900,
+            fontSize: tall ? TYPE.title.pointTitle : TYPE.title.pointTitleCompact,
+            lineHeight: 1.3,
+            color: C.ink,
+          }}
+        >
           <Smart text={item.title} t={item.tone} />
         </div>
         {item.body ? (
-          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: tall ? TYPE.body.pointBody : TYPE.body.pointBodyCompact, lineHeight: 1.55, color: C.sub }}>
+          <div
+            style={{
+              fontFamily: SANS,
+              fontWeight: 500,
+              fontSize: tall ? TYPE.body.pointBody : TYPE.body.pointBodyCompact,
+              lineHeight: 1.55,
+              color: C.sub,
+            }}
+          >
             <Smart text={item.body} t={item.tone} />
           </div>
         ) : null}

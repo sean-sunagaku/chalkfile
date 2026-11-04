@@ -3,18 +3,19 @@
 //   - 差し込み（{name}）の名前が、日本語と同じ組（数で形の変わる文字は、日本語の名前の中から）
 //   - 使われていないキーが無い（表ごとに、読むファイルのどこかで使う）
 //   - 差し込みの名前の取り違えと、訳の表の足りないキーは、型のエラーになる（@ts-expect-error。npm run typecheck が見る）
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { THEMES } from '../../content/themes';
 import { FOLDER_PATTERN, isLangFolder, LANG_INFO, LANG_PATTERN, LANGS, TRANSLATED_LANGS } from '../../content/langs';
+import { THEMES } from '../../content/themes';
 import { type CourseTextBase, courseText, LOCALES } from '../../site/i18n';
 import { defineLocale } from '../../site/i18n/define';
 import type { ja } from '../../site/i18n/ja';
 import { fill, type Plural, plural, texts } from '../../site/lib/text';
 import { parseMediaPath } from '../../site/media-shared';
 import { COURSE_ID } from '../../site/offline-shared';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const read = (file: string) => readFileSync(path.join(ROOT, file), 'utf8');

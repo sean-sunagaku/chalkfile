@@ -1,25 +1,14 @@
-import { required } from '../support/required';
 import { describe, expect, spyOn, test } from 'bun:test';
-import {
-  RETAIN_DAYS,
-  allMediaEntries,
-  expiredRetained,
-  mediaFilename,
-  mediaPath,
-  releaseUrl,
-  retainDeadline,
-  retainedWarnings,
-  validateMediaManifest,
-  type MediaEntry,
-} from '../../site/media-shared';
 import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES } from '../../content';
 import { mediaListFile, posterFile } from '../../engine/core/generated';
+import type { RunOptions, RunResult } from '../../scripts/lib/proc';
 import { redact } from '../../scripts/lib/proc';
 import {
+  type Gh,
   ghTimeoutMs,
   ghWith,
   mediaLimitProblems,
@@ -29,9 +18,7 @@ import {
   retainEntries,
   verifyReleaseAssets,
   warnExpiredRetained,
-  type Gh,
 } from '../../scripts/media';
-import type { RunOptions, RunResult } from '../../scripts/lib/proc';
 import { mediaListFiles, readMediaLists } from '../../scripts/media-lists';
 import {
   OFFLINE_COURSE_MAX_BYTES,
@@ -39,6 +26,20 @@ import {
   OFFLINE_FILE_MAX_BYTES,
   RELEASE_MAX_ASSETS,
 } from '../../site/limits';
+import {
+  allMediaEntries,
+  expiredRetained,
+  type MediaEntry,
+  mediaFilename,
+  mediaPath,
+  RETAIN_DAYS,
+  releaseUrl,
+  retainDeadline,
+  retainedWarnings,
+  validateMediaManifest,
+} from '../../site/media-shared';
+import { required } from '../support/required';
+
 const entry: MediaEntry = {
   lang: 'ja',
   course: 'sample',

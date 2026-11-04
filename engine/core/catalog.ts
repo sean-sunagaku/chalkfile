@@ -1,16 +1,16 @@
 // 講座の登録から、台本・訳・動画の一覧を作る。教材を付けるかは呼ぶ側で決める。
 import type { CourseModule } from './course-module';
 import {
+  type CourseL10n,
   LANGS,
+  type Lang,
   localizeCourse,
   parseVideoKey,
-  videoKey,
-  type CourseL10n,
-  type Lang,
   type TranslatedLang,
+  videoKey,
 } from './i18n';
 import { resolveCourse } from './lines';
-import { useReading, type Reading } from './reading';
+import { type Reading, useReading } from './reading';
 import type { AuthoredCourse, Course, Lecture, Video } from './schema';
 
 // 同じ登録から教材付きと動画専用の一覧を作っても、台詞に付ける辞書の同一性を保つ。

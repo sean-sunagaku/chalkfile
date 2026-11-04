@@ -30,7 +30,8 @@ const JA_MIN = 10;
 const JA_PAGE_MIN = 300;
 
 /** ひらがな・カタカナ・漢字・全角の記号 */
-const isJa = (cp: number) => (cp >= 0x3041 && cp <= 0x30ff) || (cp >= 0x3400 && cp <= 0x9fff) || (cp >= 0xff01 && cp <= 0xff60);
+const isJa = (cp: number) =>
+  (cp >= 0x3041 && cp <= 0x30ff) || (cp >= 0x3400 && cp <= 0x9fff) || (cp >= 0xff01 && cp <= 0xff60);
 const jaCount = (s: string) => {
   let n = 0;
   for (const ch of s) if (isJa(ch.codePointAt(0) ?? 0)) n++;
@@ -77,7 +78,13 @@ const pageText = (html: string) =>
 
 /* ───────────── 英語の訳: 単語の並びで比べる ───────────── */
 const compareEnglish = (course: Course, pages: Map<string, string>, urls: string[], n: number): number => {
-  const words = (x: string) => x.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const words = (x: string) =>
+    x
+      .toLowerCase()
+      .replace(/[’']/g, "'")
+      .replace(/[^a-z0-9' ]+/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean);
   const strings: { lecture: string; w: string[] }[] = [];
   const collect = (v: unknown, lecture: string): void => {
     if (typeof v === 'string') strings.push({ lecture, w: words(v) });
@@ -85,7 +92,8 @@ const compareEnglish = (course: Course, pages: Map<string, string>, urls: string
       v.forEach((x) => {
         collect(x, lecture);
       });
-    } else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'docs' && k !== 'url') collect(x, lecture);
+    } else if (v && typeof v === 'object')
+      for (const [k, x] of Object.entries(v)) if (k !== 'docs' && k !== 'url') collect(x, lecture);
   };
   for (const l of course.lectures) collect(l, l.id);
   const grams = new Map<string, [number, number][]>();
@@ -97,7 +105,12 @@ const compareEnglish = (course: Course, pages: Map<string, string>, urls: string
   });
   const hits = new Map<string, { lecture: string; pages: Set<string> }>();
   for (const [u, html] of pages) {
-    const d = words(html.replace(JSON_ESCAPE, (_, h: string) => String.fromCharCode(parseInt(h, 16))).replace(/<[^>]+>/g, ' ').replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, decodeEntity));
+    const d = words(
+      html
+        .replace(JSON_ESCAPE, (_, h: string) => String.fromCharCode(parseInt(h, 16)))
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, decodeEntity),
+    );
     for (let k = 0; k + n <= d.length; k++) {
       for (const [i, a] of grams.get(d.slice(k, k + n).join(' ')) ?? []) {
         // grams の添字は、この strings の列挙から作ったもの。
@@ -111,14 +124,23 @@ const compareEnglish = (course: Course, pages: Map<string, string>, urls: string
       }
     }
   }
-  const spans = [...hits.keys()].sort((a, b) => b.length - a.length).filter((x, i, all) => !all.slice(0, i).some((y) => y.includes(x)));
-  console.log(`${course.title}: 英語の訳の文字列 ${strings.length} 個と、出典のページ ${pages.size}/${urls.length} 本を突き合わせた（${n} 語以上の同じ並び）`);
+  const spans = [...hits.keys()]
+    .sort((a, b) => b.length - a.length)
+    .filter((x, i, all) => !all.slice(0, i).some((y) => y.includes(x)));
+  console.log(
+    `${course.title}: 英語の訳の文字列 ${strings.length} 個と、出典のページ ${pages.size}/${urls.length} 本を突き合わせた（${n} 語以上の同じ並び）`,
+  );
   if (!spans.length) console.log('言い回しが続けて同じところは無い');
-  for (const x of spans) console.log(`- ${hits.get(x)!.lecture}（${x.split(' ').length} 語）: ${x}\n    ${[...hits.get(x)!.pages].join('\n    ')}`);
-  if (pages.size < urls.length) console.log(`取れなかったページ ${urls.length - pages.size} 本は比べていない（X の記事などログインが要るページ）。訳して写していないかを人が読んで確かめる`);
+  for (const x of spans)
+    console.log(
+      `- ${hits.get(x)!.lecture}（${x.split(' ').length} 語）: ${x}\n    ${[...hits.get(x)!.pages].join('\n    ')}`,
+    );
+  if (pages.size < urls.length)
+    console.log(
+      `取れなかったページ ${urls.length - pages.size} 本は比べていない（X の記事などログインが要るページ）。訳して写していないかを人が読んで確かめる`,
+    );
   return spans.length ? 1 : 0;
 };
-
 
 const main = async (argv: string[]) => {
   const { values, positionals } = readArgs(
@@ -137,7 +159,11 @@ const main = async (argv: string[]) => {
   if (!isLang(lang)) throw new UsageError(`--lang は ja・en・zh: ${lang}`);
   const course = coursesIn(lang).find((c) => c.id === positionals[0]);
   if (!course || positionals.length > 1) {
-    throw new UsageError(`講座 ID を 1 つ渡してください（${lang} の講座）: ${coursesIn(lang).map((c) => c.id).join(', ')}`);
+    throw new UsageError(
+      `講座 ID を 1 つ渡してください（${lang} の講座）: ${coursesIn(lang)
+        .map((c) => c.id)
+        .join(', ')}`,
+    );
   }
   const min = Number(values.min);
   const query = values.query;
@@ -202,13 +228,18 @@ const main = async (argv: string[]) => {
 
   // 長い一致に含まれる短い一致は落とす
   const spans: string[] = [];
-  for (const s of [...found.keys()].sort((a, b) => b.length - a.length)) if (!spans.some((x) => x.includes(s))) spans.push(s);
+  for (const s of [...found.keys()].sort((a, b) => b.length - a.length))
+    if (!spans.some((x) => x.includes(s))) spans.push(s);
 
-  console.log(`${course.title}: 台本の文字列 ${texts.length} 個と、公式ページ ${pages.size}/${urls.length} 本を突き合わせた（空白を除いて ${min} 文字以上）`);
+  console.log(
+    `${course.title}: 台本の文字列 ${texts.length} 個と、公式ページ ${pages.size}/${urls.length} 本を突き合わせた（空白を除いて ${min} 文字以上）`,
+  );
   if (spans.length === 0) {
     console.log('言い回しが続けて同じところは無い');
   } else {
-    console.log(`言い回しが続けて同じところ ${spans.length} か所。自分の言葉に書き直す（引用なら「」で分けて出典を言う）`);
+    console.log(
+      `言い回しが続けて同じところ ${spans.length} か所。自分の言葉に書き直す（引用なら「」で分けて出典を言う）`,
+    );
     for (const s of spans) {
       const hit = found.get(s)!;
       console.log(`- ${hit.lecture}（${s.length} 文字）: ${s}`);
@@ -216,7 +247,9 @@ const main = async (argv: string[]) => {
     }
   }
   if (englishOnly.length) {
-    console.log(`日本語がほとんど無いページ ${englishOnly.length} 本。--query で日本語版を取れないか試し、取れないなら訳して写していないかを人が読んで確かめる:`);
+    console.log(
+      `日本語がほとんど無いページ ${englishOnly.length} 本。--query で日本語版を取れないか試し、取れないなら訳して写していないかを人が読んで確かめる:`,
+    );
     for (const u of englishOnly) console.log(`  ${u}`);
   }
   if (pages.size < urls.length) console.log(`取れなかったページ ${urls.length - pages.size} 本は比べていない`);

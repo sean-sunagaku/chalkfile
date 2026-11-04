@@ -1,13 +1,18 @@
 // BASE_URL の公開ページを読み、画面の準備・CSP・SW の scope を確かめる。動画の保存はしない。
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { COURSES } from '../../content';
 
 test('全ページの表示・CSP・SW scope', async ({ page, context, baseURL }, testInfo) => {
   const violations: { directive: string; blocked: string }[] = [];
   const errors: string[] = [];
-  const pages: { path: string; status: number | undefined; cacheControl: string | undefined; transformed: boolean | undefined }[] = [];
+  const pages: {
+    path: string;
+    status: number | undefined;
+    cacheControl: string | undefined;
+    transformed: boolean | undefined;
+  }[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await context.exposeFunction('recordCspViolation', (directive: string, blocked: string) =>
     violations.push({ directive, blocked }),

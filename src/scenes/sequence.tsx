@@ -13,6 +13,7 @@ import { LEAD, TYPE } from '../video.config';
 const ACTOR_INNER = 22 * 2 + 4;
 const ACTOR_ICON = 64;
 const ACTOR_GAP = 18;
+
 import { defineScene } from './define';
 
 const Sequence: React.FC<{ s: SequenceScene }> = ({ s }) => {
@@ -125,9 +126,21 @@ const Actor: React.FC<{ a: SequenceScene['actors'][number]; x: number; w: number
   const p = useAppear(0);
   // 名前と補足は 1 行。札の幅に入るまで縮める（札の下限まで）
   const room = w - ACTOR_INNER - ACTOR_ICON - ACTOR_GAP;
-  const labelSize = fitSize(a.label, { role: 'label', max: TYPE.label.actorLabel, width: room, fontFamily: SANS, fontWeight: 900 });
+  const labelSize = fitSize(a.label, {
+    role: 'label',
+    max: TYPE.label.actorLabel,
+    width: room,
+    fontFamily: SANS,
+    fontWeight: 900,
+  });
   const subSize = a.sub
-    ? fitSize(a.sub, { role: 'label', max: TYPE.label.actorSub, width: room, fontFamily: a.subMono ? MONO : SANS, fontWeight: 500 })
+    ? fitSize(a.sub, {
+        role: 'label',
+        max: TYPE.label.actorSub,
+        width: room,
+        fontFamily: a.subMono ? MONO : SANS,
+        fontWeight: 500,
+      })
     : TYPE.label.actorSub;
   return (
     <div

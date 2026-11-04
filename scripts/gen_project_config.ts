@@ -82,7 +82,7 @@ export const wranglerSettings = (source: string, settings = config): string => {
   const hosts = [host, `www.${host}`];
   let at = 0;
   const result = source.replace(
-    /("pattern": ")[^"]+(\", "custom_domain": true)/g,
+    /("pattern": ")[^"]+(", "custom_domain": true)/g,
     (_match, before: string, after: string) => `${before}${hosts[at++]}${after}`,
   );
   if (at !== hosts.length) throw new Error('wrangler の公開先は origin と www の 2 つにする');
