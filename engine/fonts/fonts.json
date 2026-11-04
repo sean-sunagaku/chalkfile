@@ -19,9 +19,9 @@
           "weights": [
             500
           ],
-          "sha256": "5f462ea86f95bf35aceeeeaeb83c931a5d3af5c748836ebc77b47a5d5f3b3509",
-          "bytes": 249916,
-          "chars": 1353,
+          "sha256": "255047f8ec4f3699ea9087dcabcbbc5cc796d6869789ec611709aa952a7f62f0",
+          "bytes": 250544,
+          "chars": 1356,
           "missing": "≈－",
           "source": {
             "path": "ofl/zenmarugothic/ZenMaruGothic-Medium.ttf",
@@ -36,9 +36,9 @@
           "weights": [
             700
           ],
-          "sha256": "ea29ac6641702c98ff01f1d8dd41496c3d04a4437a270f8713f43d13ec0a5f48",
-          "bytes": 253796,
-          "chars": 1353,
+          "sha256": "d460c78cfa730eaefefdc282fb6174c69cb5751fbe4492ae885cc196b688564a",
+          "bytes": 254200,
+          "chars": 1356,
           "missing": "≈－",
           "source": {
             "path": "ofl/zenmarugothic/ZenMaruGothic-Bold.ttf",
@@ -53,9 +53,9 @@
           "weights": [
             900
           ],
-          "sha256": "754c389538cbe4bba11bf68205d30501fe4f2863cfd083b48497aae049d45136",
-          "bytes": 252272,
-          "chars": 1353,
+          "sha256": "899fdf899aaee2656b4a266622781ded70b74dde4f1c24abcb17cbe70ca1c572",
+          "bytes": 252764,
+          "chars": 1356,
           "missing": "≈－",
           "source": {
             "path": "ofl/zenmarugothic/ZenMaruGothic-Black.ttf",
@@ -80,9 +80,9 @@
             700,
             900
           ],
-          "sha256": "cd0b7bd3447729491bd5f0c0a5b370b8a1f0ab42ce930fe3f34567fee425c18a",
-          "bytes": 461984,
-          "chars": 1354,
+          "sha256": "1245baa969fba5612255596d0a1f0df21e8639a03ad8bb70e1bb00949d38e66a",
+          "bytes": 462920,
+          "chars": 1357,
           "missing": "≒",
           "source": {
             "path": "ofl/notosansjp/NotoSansJP[wght].ttf",
