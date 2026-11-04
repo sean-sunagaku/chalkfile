@@ -1,6 +1,36 @@
 {
-  "schema": 1,
+  "schema": 2,
   "entries": [
+    {
+      "lang": "ja",
+      "course": "rive-comedy",
+      "lecture": "R01",
+      "kind": "standard",
+      "bytes": 11999201,
+      "sha256": "d626f7688bc45e627ad6235fa4f9cb22c7e47e061b70cda0105d4486e5bf96b5",
+      "filename": "R01.d626f7688bc45e627ad6235fa4f9cb22c7e47e061b70cda0105d4486e5bf96b5.mp4",
+      "tag": "media-ja-rive-comedy",
+      "inputs": {
+        "script": "eff092eb669f83c8",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "rive-comedy",
+      "lecture": "R01",
+      "kind": "captioned",
+      "bytes": 12280667,
+      "sha256": "2e304ad4cb1534d359bb760a8244ebb5368d3188651d9f0bf97f7987f3bf0a96",
+      "filename": "R01.cc.2e304ad4cb1534d359bb760a8244ebb5368d3188651d9f0bf97f7987f3bf0a96.mp4",
+      "tag": "media-ja-rive-comedy",
+      "inputs": {
+        "script": "eff092eb669f83c8",
+        "src": "d36176fc0028daac"
+      }
+    }
+  ],
+  "retained": [
     {
       "lang": "ja",
       "course": "rive-comedy",
@@ -9,7 +39,8 @@
       "bytes": 11470413,
       "sha256": "76697f1e9e816913f6524af7feb4e650ad5f23c6ee1a17b190594890f15f1e3f",
       "filename": "R01.76697f1e9e816913f6524af7feb4e650ad5f23c6ee1a17b190594890f15f1e3f.mp4",
-      "tag": "media-ja-rive-comedy"
+      "tag": "media-ja-rive-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -19,7 +50,8 @@
       "bytes": 11990846,
       "sha256": "31cb0481c99a81112040cea7cfa6ab3ff464e0a9ea67bd3b5b86f6f3ce81fd64",
       "filename": "R01.cc.31cb0481c99a81112040cea7cfa6ab3ff464e0a9ea67bd3b5b86f6f3ce81fd64.mp4",
-      "tag": "media-ja-rive-comedy"
+      "tag": "media-ja-rive-comedy",
+      "retainedUntil": "2027-02-02"
     }
   ]
 }

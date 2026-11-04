@@ -1,6 +1,36 @@
 {
-  "schema": 1,
+  "schema": 2,
   "entries": [
+    {
+      "lang": "ja",
+      "course": "nudge-comedy",
+      "lecture": "W01",
+      "kind": "standard",
+      "bytes": 16515758,
+      "sha256": "7f1cb164170d2a2a93125dbcb0d391954b160954e7b81433f7584a47f749b116",
+      "filename": "W01.7f1cb164170d2a2a93125dbcb0d391954b160954e7b81433f7584a47f749b116.mp4",
+      "tag": "media-ja-nudge-comedy",
+      "inputs": {
+        "script": "3ab6db8bf40c3d8a",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "nudge-comedy",
+      "lecture": "W01",
+      "kind": "captioned",
+      "bytes": 17336171,
+      "sha256": "c5b51541eaece4911c48dbad28375a95be4db94ff6852293d27331d6f7b5cb78",
+      "filename": "W01.cc.c5b51541eaece4911c48dbad28375a95be4db94ff6852293d27331d6f7b5cb78.mp4",
+      "tag": "media-ja-nudge-comedy",
+      "inputs": {
+        "script": "3ab6db8bf40c3d8a",
+        "src": "d36176fc0028daac"
+      }
+    }
+  ],
+  "retained": [
     {
       "lang": "ja",
       "course": "nudge-comedy",
@@ -9,7 +39,8 @@
       "bytes": 17009496,
       "sha256": "04ae52122745da5b0808bc369911af670921cb75fca295376ecbfdbc00ba457a",
       "filename": "W01.04ae52122745da5b0808bc369911af670921cb75fca295376ecbfdbc00ba457a.mp4",
-      "tag": "media-ja-nudge-comedy"
+      "tag": "media-ja-nudge-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -19,7 +50,8 @@
       "bytes": 17953347,
       "sha256": "d409d95c81ca27d58db7e0159d14064786597daed9d9da8fff877fc33ce5f474",
       "filename": "W01.cc.d409d95c81ca27d58db7e0159d14064786597daed9d9da8fff877fc33ce5f474.mp4",
-      "tag": "media-ja-nudge-comedy"
+      "tag": "media-ja-nudge-comedy",
+      "retainedUntil": "2027-02-02"
     }
   ]
 }

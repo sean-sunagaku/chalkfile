@@ -21,6 +21,26 @@ Chalkfile のエンジン（動画・講座サイト・配信の Worker・作る
 - 講座を直す Pull Request が、その講座のフォルダの中だけで済むように、講座の記録はここに集めない
 - 初めて公開したときの記録は書かない。確かめた日は、講座の `docsNote` と `sourceNote` にある
 
+## 2026-11-04（ページと動画の更新）
+
+### 足した
+
+- 講座の更新案内、言語ごとの 404 と Web App Manifest、sitemap.xml と robots.txt。講座のページは JavaScript が動く前も、概要・カリキュラム・クレジットを読める（[#71]）
+- 動画の書き出し記録と入力の指紋、古い生成物を見つける `npm run chalk -- status`。書き出しは TypeScript から Remotion を呼び、出力を確かめてから置き換える（[#68]・[#69]）
+
+### 変えた
+
+- 全 9 講座の日本語の動画 60 本（字幕版を含む）と、ポスター 48 枚を更新する。書体・文字の大きさ・コントラスト・長い文字の収め方・図の枠・コードの色分けを見直した。台詞と音声は同じ（[#70]・[#71]）
+- 書体をサイト内のファイルから読み、通信なしで使えるよう起動用の保存に含める。Google Fonts への接続をなくした（[#71]）
+- 講座の画面の処理を TypeScript に分け、キーボードと読み上げで使いやすくした。開いただけでは動画を読まず、再生や時刻の選択時に読み始める（[#71]）
+- 保存の更新では、変わっていない動画を前の保存から写す。ただし今回の更新は全部の動画が変わるため、保存した講座の動画をすべて取り直す。進み具合・メモ・確認クイズの答えは引き継ぐ（[#66]・[#71]）
+
+### 直した
+
+- 初めて開いたとき、Service Worker の準備前に保存状態を問い合わせ、エラーの案内が残る問題（[#71]）
+- 保存時の MIME の照合、更新と検証の状態管理、無効にした保存版の更新案内。保存の不完全なものを成功として扱わない（[#66]・[#71]）
+- 講座と一覧のクレジットを、実際に使った声から作る（[#71]）
+
 ## 2026-11-03
 
 ### 足した
@@ -126,3 +146,8 @@ Chalkfile のエンジン（動画・講座サイト・配信の Worker・作る
 [#49]: https://github.com/sean-sunagaku/chalkfile/pull/49
 [#52]: https://github.com/sean-sunagaku/chalkfile/pull/52
 [#53]: https://github.com/sean-sunagaku/chalkfile/pull/53
+[#66]: https://github.com/sean-sunagaku/chalkfile/pull/66
+[#68]: https://github.com/sean-sunagaku/chalkfile/pull/68
+[#69]: https://github.com/sean-sunagaku/chalkfile/pull/69
+[#70]: https://github.com/sean-sunagaku/chalkfile/pull/70
+[#71]: https://github.com/sean-sunagaku/chalkfile/pull/71
