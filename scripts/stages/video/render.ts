@@ -151,7 +151,7 @@ export const planJobs = (
     checkKey(v.key);
     const files = videoFiles(v, publishLangs);
     const entries = timelines.get(v.key) ?? [];
-    const timeline = entries.length === 1 ? entries[0].timeline : undefined;
+    const timeline = entries.length === 1 ? entries[0]!.timeline : undefined;
     if (!entries.length) missing.push(`${v.key}: timeline が無い（先に npm run synth -- ${v.key}）`);
     else {
       const errors = [
@@ -160,10 +160,10 @@ export const planJobs = (
       ].filter((x) => x.level === 'error');
       const stale = errors.filter((x) => x.rule === 'timeline');
       if (stale.length)
-        missing.push(`${v.key}: timeline が台本と合わない（先に npm run synth -- ${v.key}）: ${stale[0].message}`);
+        missing.push(`${v.key}: timeline が台本と合わない（先に npm run synth -- ${v.key}）: ${stale[0]!.message}`);
       else if (errors.length)
         broken.push(
-          `${v.key}: 台本に誤りが ${errors.length} 件ある（npm run validate）: ${errors[0].where}  ${errors[0].message}`,
+          `${v.key}: 台本に誤りが ${errors.length} 件ある（npm run validate）: ${errors[0]!.where}  ${errors[0]!.message}`,
         );
     }
     if (!existsSync(path.join(root, files.mix)))
@@ -239,8 +239,8 @@ const renderMaster = async (
     const parts = ranges.map((_, k) => partOf(job.files, k, captions));
     const list = partsListOf(job.files, captions);
     for (const [k, range] of ranges.entries()) {
-      meta = await session.render({ captions, out: parts[k], frameRange: range });
-      if (!existsSync(path.join(root, parts[k])) || sizeOf(root, parts[k]) === 0)
+      meta = await session.render({ captions, out: parts[k]!, frameRange: range });
+      if (!existsSync(path.join(root, parts[k]!)) || sizeOf(root, parts[k]!) === 0)
         throw new Error(`部品が空（${range[0]}-${range[1]}）`);
     }
     writeFileSync(path.join(root, list), concatList(parts));

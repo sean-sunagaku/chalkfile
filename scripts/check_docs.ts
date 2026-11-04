@@ -34,12 +34,12 @@ export const withoutFences = (md: string): string[] => {
   return md.split('\n').map((line) => {
     const m = line.match(/^\s{0,3}(`{3,}|~{3,})/);
     if (fence) {
-      if (m && m[1][0] === fence[0] && m[1].length >= fence.length && !line.trim().slice(m[1].length).trim())
+      if (m && m[1]![0] === fence[0] && m[1]!.length >= fence.length && !line.trim().slice(m[1]!.length).trim())
         fence = null;
       return '';
     }
     if (m) {
-      fence = m[1];
+      fence = m[1]!;
       return '';
     }
     return line;
@@ -73,12 +73,12 @@ export const anchorsOf = (md: string): Set<string> => {
   for (const line of withoutFrontMatter(withoutFences(md))) {
     const h = line.match(/^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$/);
     if (h) {
-      const base = slug(h[1]);
+      const base = slug(h[1]!);
       const n = seen.get(base) ?? 0;
       seen.set(base, n + 1);
       out.add(n ? `${base}-${n}` : base);
     }
-    for (const m of line.matchAll(/<a\s[^>]*(?:id|name)="([^"]+)"/g)) out.add(m[1]);
+    for (const m of line.matchAll(/<a\s[^>]*(?:id|name)="([^"]+)"/g)) out.add(m[1]!);
   }
   return out;
 };
@@ -89,11 +89,11 @@ export const linksOf = (md: string): { target: string; line: number }[] => {
   withoutFrontMatter(withoutFences(md)).forEach((raw, i) => {
     const line = withoutInlineCode(raw);
     for (const m of line.matchAll(/\]\(\s*(<[^>]*>|[^)\s]+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g)) {
-      out.push({ target: m[1].replace(/^<|>$/g, ''), line: i + 1 });
+      out.push({ target: m[1]!.replace(/^<|>$/g, ''), line: i + 1 });
     }
     const def = line.match(/^\s{0,3}\[[^\]]+\]:\s*(<[^>]*>|\S+)/);
-    if (def) out.push({ target: def[1].replace(/^<|>$/g, ''), line: i + 1 });
-    for (const m of line.matchAll(/(?:href|src)="([^"]+)"/g)) out.push({ target: m[1], line: i + 1 });
+    if (def) out.push({ target: def[1]!.replace(/^<|>$/g, ''), line: i + 1 });
+    for (const m of line.matchAll(/(?:href|src)="([^"]+)"/g)) out.push({ target: m[1]!, line: i + 1 });
   });
   return out;
 };
@@ -211,7 +211,7 @@ export const ALLOW_OLD: OldAllow[] = [
     words: ['github.io', '/chalkfile/'],
     why: '旧 Pages の保存の記録を取る（互換のテストの入力を作る）',
   },
-  { rx: /^tests\/unit\/delivery\.test\.ts$/, words: ['/chalkfile/'], why: '旧 Pages のパスを新しいサイトへ移す変換のテスト' },
+  { rx: /^tests\/unit\/legacy-migration\.test\.ts$/, words: ['/chalkfile/'], why: '旧 Pages のパスを新しいサイトへ移す変換のテスト' },
   {
     rx: /^tests\/unit\/offline-compat\.test\.ts$/,
     words: ['/chalkfile/'],
@@ -315,7 +315,8 @@ const checkTables = (read: (file: string) => string | null, out: Finding[]) => {
       });
       continue;
     }
-    const ids = rows.map((r) => r[0].match(/`([^`]+)`/)?.[1] ?? r[0]);
+    // tableUnder の各行は split で作るので、空のセルでも 1 列目がある。
+    const ids = rows.map((r) => r[0]!.match(/`([^`]+)`/)?.[1] ?? r[0]!);
     compareSets(t.file, `テーマの表（content/themes.ts の THEMES は ${themes.length} 個）`, ids, themes, out);
   }
 };
@@ -347,7 +348,7 @@ export const descriptionOf = (md: string): string | null => {
   const head = lines.slice(1, end < 0 ? undefined : end);
   const at = head.findIndex((l) => /^description:/.test(l));
   if (at < 0) return null;
-  const value = head[at].replace(/^description:\s*/, '');
+  const value = head[at]!.replace(/^description:\s*/, '');
   const block = value.match(/^([|>])[-+]?\s*$/);
   if (!block) return value.replace(/^(["'])([\s\S]*)\1$/, '$2').trim();
   const rest: string[] = [];
@@ -397,12 +398,12 @@ export const headOf = (file: string, text: string): string[] => {
   let i = lines[0]?.startsWith('#!') ? 1 : 0;
   const comment = file.endsWith('.ts') ? /^\s*\/\// : /^\s*#/;
   for (; i < lines.length; i++) {
-    const l = lines[i];
+    const l = lines[i]!;
     if (file.endsWith('.ts') && head.length === 0 && /^\s*\/\*/.test(l)) {
       // /** ... */ のかたまり
       for (; i < lines.length; i++) {
-        head.push(lines[i]);
-        if (lines[i].includes('*/')) break;
+        head.push(lines[i]!);
+        if (lines[i]!.includes('*/')) break;
       }
       continue;
     }
@@ -410,12 +411,12 @@ export const headOf = (file: string, text: string): string[] => {
     head.push(l);
   }
   if (file.endsWith('.py')) {
-    while (i < lines.length && !lines[i].trim()) i++;
+    while (i < lines.length && !lines[i]!.trim()) i++;
     const quote = lines[i]?.trim().match(/^("""|''')/)?.[1];
     if (quote) {
       for (let j = i; j < lines.length; j++) {
-        head.push(lines[j]);
-        if ((j > i || lines[j].trim().length > 3) && lines[j].trim().endsWith(quote)) break;
+        head.push(lines[j]!);
+        if ((j > i || lines[j]!.trim().length > 3) && lines[j]!.trim().endsWith(quote)) break;
       }
     }
   }

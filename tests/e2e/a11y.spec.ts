@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
@@ -156,7 +157,8 @@ test('キーボードだけで講座のページを使える（本文へ飛ぶ�
   await video.evaluate((v: HTMLVideoElement) => v.pause());
 
   // レクチャーの移動: 右の欄のボタンを Enter で開く。再生して進み具合が書き換わっても、フォーカスは同じボタンのまま
-  const [first, second] = site.course.lectures;
+  const first = required(site.course.lectures[0]);
+  const second = required(site.course.lectures[1]);
   await tabTo(page, '.lec[data-i="1"]');
   await page.keyboard.press('Enter');
   await expect(page.locator('.lec[data-i="1"]')).toHaveAttribute('aria-current', 'true');

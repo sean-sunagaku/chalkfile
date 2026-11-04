@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { byteRange, COURSE_ID, validateManifest } from '../../site/offline-shared';
 
@@ -39,8 +40,8 @@ const manifest = () => ({
 const scope = 'https://example.com/chalkfile/';
 test('/media/ の通常版と字幕版を、言語・講座・本文hashが一致するときだけ保存する', () => {
   const m = manifest();
-  m.files[1].url = `/media/ja/sample/S01.${hash}.mp4`;
-  m.files.push({ ...m.files[1], url: `/media/ja/sample/S01.cc.${hash}.mp4`, bytes: 15 });
+  required(m.files[1]).url = `/media/ja/sample/S01.${hash}.mp4`;
+  m.files.push({ ...required(m.files[1]), url: `/media/ja/sample/S01.cc.${hash}.mp4`, bytes: 15 });
   m.bytes += 15;
   expect(validateManifest(m, 'sample', 'https://example.com/').files).toHaveLength(4);
   for (const url of [
@@ -51,7 +52,7 @@ test('/media/ の通常版と字幕版を、言語・講座・本文hashが一�
     `https://example.com/media/ja/sample/S01.${hash}.mp4`,
   ]) {
     const bad = structuredClone(m);
-    bad.files[1].url = url;
+    required(bad.files[1]).url = url;
     expect(() => validateManifest(bad, 'sample', 'https://example.com/')).toThrow();
   }
 });
@@ -69,7 +70,7 @@ for (const url of [
 ]) {
   test(`保存対象外の URL: ${url}`, () => {
     const m = manifest();
-    m.files[1].url = url;
+    required(m.files[1]).url = url;
     expect(() => validateManifest(m, 'sample', scope)).toThrow();
   });
 }
@@ -81,13 +82,13 @@ test('サイズの不足・大きすぎるファイル・重複・違う講座�
   ];
   for (const value of cases) expect(() => validateManifest(value, 'sample', scope)).toThrow();
   const tooLarge = manifest();
-  tooLarge.files[1].bytes = 40 * 1024 * 1024;
+  required(tooLarge.files[1]).bytes = 40 * 1024 * 1024;
   expect(() => validateManifest(tooLarge, 'sample', scope)).toThrow();
   const duplicate = manifest();
-  duplicate.files.push(duplicate.files[1]);
+  duplicate.files.push(required(duplicate.files[1]));
   expect(() => validateManifest(duplicate, 'sample', scope)).toThrow();
   const partial = manifest();
-  partial.files[1].type = 'application/vnd.apple.mpegurl';
+  required(partial.files[1]).type = 'application/vnd.apple.mpegurl';
   expect(() => validateManifest(partial, 'sample', scope)).toThrow();
 });
 
@@ -109,7 +110,7 @@ describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
       file(`sample/media/S01.jpg?v=${hash}`, 'image/jpeg'),
       file(`sample/media/S01.cc.mp4?v=${hash}`),
     ]);
-    m.files[0].type = 'text/html';
+    required(m.files[0]).type = 'text/html';
     expect(validateManifest(m, 'sample', scope).files.length).toBe(4);
   });
   test('訳の講座は、/media/<言語>/<講座>/ にある自分の言語の動画と、講座のフォルダのポスターだけ保存対象にできる', () => {
@@ -119,7 +120,7 @@ describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
       file(`en/sample/media/S01.en.jpg?v=${hash}`, 'image/jpeg'),
       file(`/media/en/sample/S01.cc.${hash}.mp4`),
     ]);
-    m.files[0].type = 'text/html';
+    required(m.files[0]).type = 'text/html';
     expect(validateManifest(m, 'en/sample', 'https://example.com/').files.length).toBe(4);
   });
   for (const [name, files] of [
@@ -132,7 +133,7 @@ describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
         file('sample/'),
         ...files.map((f) => file(`${f}?v=${hash}`, f.endsWith('.jpg') ? 'image/jpeg' : 'video/mp4')),
       ]);
-      m.files[0].type = 'text/html';
+      required(m.files[0]).type = 'text/html';
       expect(() => validateManifest(m, 'sample', scope)).toThrow();
     });
   for (const [name, files] of [
@@ -154,7 +155,7 @@ describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
         file('en/sample/'),
         ...files.map((f) => file(f, f.includes('.jpg') ? 'image/jpeg' : 'video/mp4')),
       ]);
-      m.files[0].type = 'text/html';
+      required(m.files[0]).type = 'text/html';
       expect(() => validateManifest(m, 'en/sample', 'https://example.com/')).toThrow();
     });
   test('旧 Pages の移行の SW（site/legacy-sw.ts）が渡す、その頃の動画のサイトの動画は、移行の SW を消すまで受け入れる', () => {
@@ -164,7 +165,7 @@ describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
       file(`/chalkfile-media-en/sample/S01.en.mp4?v=${hash}`),
       file(`/chalkfile-media-en/sample/S01.en.jpg?v=${hash}`, 'image/jpeg'),
     ]);
-    m.files[0].type = 'text/html';
+    required(m.files[0]).type = 'text/html';
     expect(validateManifest(m, 'en/sample', legacy, { en: '/chalkfile-media-en/' }).files.length).toBe(3);
     expect(() => validateManifest(m, 'en/sample', legacy, { zh: '/chalkfile-media-zh/' })).toThrow();
   });

@@ -144,7 +144,7 @@ export const codeFiles = (root: string, entries: readonly string[]): string[] =>
     if (!/\.(?:ts|tsx|js|mjs)$/.test(rel)) continue;
     const text = readFileSync(abs, 'utf8');
     for (const m of text.matchAll(IMPORT_RX)) {
-      const spec = m[1] ?? m[2];
+      const spec = (m[1] ?? m[2])!; // どちらかの import の捕捉群が必ずある
       const base = path.normalize(path.join(path.dirname(rel), spec));
       if (base.startsWith('..') || base.split(path.sep).includes('node_modules')) continue;
       const hit = EXTS.map((e) => `${base}${e}`).find(

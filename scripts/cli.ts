@@ -15,6 +15,7 @@ import path from 'node:path';
 import type { ParseArgsConfig } from 'node:util';
 import { VIDEOS, type Video } from '../content';
 import { isLang, LANGS } from '../content/i18n';
+import type { CommandLine } from './lib/proc';
 import { THEMES } from '../content/themes';
 import { EXIT, headerOf, readArgs, runMain, UsageError } from './lib/args';
 import { readSiteConfig } from './lib/config';
@@ -24,7 +25,7 @@ import { runInherit } from './lib/proc';
 type Options = NonNullable<ParseArgsConfig['options']>;
 type Values = Record<string, string | boolean | string[] | undefined>;
 /** 子のプロセスで流す 1 つ（show は --dry-run と -v で出す形） */
-type Step = { argv: string[]; show: string; env?: Record<string, string> };
+type Step = { argv: CommandLine; show: string; env?: Record<string, string> };
 type Ctx = { values: Values; positionals: string[] };
 /** 1 つのコマンド */
 export type Command = {
@@ -54,11 +55,11 @@ const bun = (file: string, ...args: string[]): Step => ({
   show: ['bun', file, ...args].join(' '),
 });
 const uvScript = (file: string, ...args: string[]): Step => {
-  const argv = ['uv', 'run', '--locked', '--script', file, ...args];
+  const argv: CommandLine = ['uv', 'run', '--locked', '--script', file, ...args];
   return { argv, show: argv.join(' ') };
 };
 const uvAudio = (file: string, ...args: string[]): Step => {
-  const argv = ['uv', 'run', '--locked', '--group', 'audio', 'python', file, ...args];
+  const argv: CommandLine = ['uv', 'run', '--locked', '--group', 'audio', 'python', file, ...args];
   return { argv, show: argv.join(' ') };
 };
 const sh = (file: string, args: string[], env: Record<string, string> = {}): Step => ({
@@ -67,7 +68,7 @@ const sh = (file: string, args: string[], env: Record<string, string> = {}): Ste
   env,
 });
 const node = (file: string, ...args: string[]): Step => {
-  const argv = ['node', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', file, ...args];
+  const argv: CommandLine = ['node', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', file, ...args];
   return { argv, show: ['node', file, ...args].join(' ') };
 };
 /** 段の記録（scripts/pipeline.ts record）。記録できなくても 0 で終わるので、道具を止めない */
@@ -146,7 +147,7 @@ const pickCourses = (values: Values): string[] => {
 const oneCourse = (values: Values): string => {
   const ids = pickCourses(values);
   if (ids.length !== 1) throw new UsageError('--course <講座 ID> を 1 つ渡す');
-  return ids[0];
+  return ids[0]!; // 直前に長さが 1 であることを確かめた
 };
 
 /**
@@ -682,9 +683,9 @@ export const COMMANDS: Command[] = [
     options: {},
     positionals: true,
     steps: ({ positionals }) => {
-      if (positionals.length !== 1 || !['plan', 'apply'].includes(positionals[0]))
+      if (positionals.length !== 1 || !['plan', 'apply'].includes(positionals[0]!))
         throw new UsageError('plan か apply を 1 つ渡す');
-      return [bun('scripts/setup_cloudflare_ci.ts', positionals[0])];
+      return [bun('scripts/setup_cloudflare_ci.ts', positionals[0]!)];
     },
   },
 ];

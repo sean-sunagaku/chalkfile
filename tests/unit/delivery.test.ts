@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { migrationHtml, migrationUrl } from '../../scripts/build_migration';
 import {
   actionLoader,
   checkArtifact,
@@ -20,6 +19,7 @@ import {
   workflowFindings,
 } from '../../scripts/check_delivery';
 import { tableUnder } from '../../scripts/check_docs';
+import { required } from '../support/required';
 
 type WranglerConfig = { assets: Record<string, unknown>; observability?: unknown; [key: string]: unknown };
 test('Workerを先に通すのは/media/だけで、静的404もassetsに任せる', () => {
@@ -83,9 +83,9 @@ const NPM_INSTALL = ['npm', 'install'].join(' ');
 const SECRET = '${{ secrets.CLOUDFLARE_API_TOKEN }}';
 const isProd = (job: Job) =>
   (typeof job.environment === 'string' ? job.environment : job.environment?.name) === 'production';
-const prodId = (v: Workflow) => Object.keys(v.jobs).find((id) => isProd(v.jobs[id])) as string;
-const prod = (v: Workflow) => v.jobs[prodId(v)];
-const deployStep = (v: Workflow) => prod(v).steps.find((s) => s.name === 'Deploy') as Step;
+const prodId = (v: Workflow) => required(Object.keys(v.jobs).find((id) => isProd(required(v.jobs[id]))));
+const prod = (v: Workflow) => required(v.jobs[prodId(v)]);
+const deployStep = (v: Workflow) => required(prod(v).steps.find((s) => s.name === 'Deploy'));
 const needsOf = (job: Job | undefined) => [job?.needs ?? []].flat();
 const stepRunning = (steps: Step[], rx: RegExp) => steps.find((s) => rx.test(s.run ?? '')) as Step;
 const indexRunning = (steps: Step[], rx: RegExp) => steps.findIndex((s) => rx.test(s.run ?? ''));
@@ -446,7 +446,7 @@ const BREAKS: Case[] = [
     name: '待つジョブの失敗を見逃す',
     applies: hasNeeds,
     mutate: (v) => {
-      v.jobs[leaves(v)[0]]['continue-on-error'] = true;
+      required(v.jobs[required(leaves(v)[0])])['continue-on-error'] = true;
     },
   },
   // 公開の前に点検する
@@ -783,7 +783,7 @@ describe('リポジトリの中の composite action は、中の手順まで同�
 
 test('CI の説明（docs/operations/ci.md）の表は、点検する性質と ci.yml のジョブと同じ', () => {
   const md = readFileSync('docs/operations/ci.md', 'utf8');
-  const names = (heading: string) => (tableUnder(md, heading) ?? []).map((row) => row[0].replaceAll('`', ''));
+  const names = (heading: string) => (tableUnder(md, heading) ?? []).map((row) => required(row[0]).replaceAll('`', ''));
   expect(names('点検する性質')).toEqual(Object.values(WORKFLOW_RULES));
   expect(names('ジョブ（ci.yml）')).toEqual(Object.keys(read('ci.yml').jobs));
 });
@@ -857,18 +857,4 @@ test('公開物から機密情報・認証ファイル・MP4を拒否し、値�
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-});
-test('旧URLのパス・query・hashを保持し、移行先originは固定する', () => {
-  expect(migrationUrl('/chalkfile/nudge-product/?from=old#N01')).toBe(
-    'https://chalkfile.com/nudge-product/?from=old#N01',
-  );
-  expect(migrationUrl('/chalkfile///evil.example/path?url=https://elsewhere.example/#section')).toBe(
-    'https://chalkfile.com/evil.example/path?url=https://elsewhere.example/#section',
-  );
-  const html = migrationHtml('nudge-product/');
-  expect(html).toContain('<link rel="canonical" href="https://chalkfile.com/nudge-product/">');
-  expect(html).toContain('http-equiv="refresh"');
-  const script = /<script>([\s\S]+)<\/script>/.exec(html)![1];
-  expect(() => new Function(script)).not.toThrow();
-  expect(script).toContain('next.search=location.search;next.hash=location.hash;');
 });

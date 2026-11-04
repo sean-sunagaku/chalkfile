@@ -96,17 +96,18 @@ const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
   const f = useFocus(s.focus);
   const n = s.items.length;
   const colW = (W - PAD * 2) / n;
+  // 項目があることは描画前に検証済み。xs は items と同じ長さで作る。
   const xs = s.items.map((_, i) => PAD + (i + 0.5) * colW);
   const fi = f ? s.items.findIndex((it) => it.key === f.key) : -1;
-  const target = fi >= 0 ? xs[fi] : xs[0];
+  const target = fi >= 0 ? xs[fi]! : xs[0]!;
   const fill = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: 'clamp' });
   return (
     <>
       <div
         style={{
           position: 'absolute',
-          left: xs[0],
-          width: xs[n - 1] - xs[0],
+          left: xs[0]!,
+          width: xs[n - 1]! - xs[0]!,
           top: 436,
           height: 8,
           borderRadius: 9,
@@ -117,8 +118,8 @@ const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
       <div
         style={{
           position: 'absolute',
-          left: xs[0],
-          width: Math.max(0, target - xs[0]),
+          left: xs[0]!,
+          width: Math.max(0, target - xs[0]!),
           top: 436,
           height: 8,
           borderRadius: 9,
@@ -127,7 +128,7 @@ const Timeline: React.FC<{ s: TimelineScene }> = ({ s }) => {
         }}
       />
       {s.items.map((it, i) => (
-        <TimeCard key={it.key} it={it} x={xs[i]} w={colW - 28} focus={!f ? 0 : i === fi ? 1 : -1} />
+        <TimeCard key={it.key} it={it} x={xs[i]!} w={colW - 28} focus={!f ? 0 : i === fi ? 1 : -1} />
       ))}
     </>
   );

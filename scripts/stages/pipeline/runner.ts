@@ -36,7 +36,7 @@ export type Recorded = Pick<UnitState, 'parts' | 'outputs'> & { partial?: boolea
 /** 対象（動画の名前。段ごとの単位は、ここから決める） */
 export type Target = { keys: readonly string[] };
 
-export type RunOptions = { cachedOnly?: boolean; jobs?: number };
+export type RunOptions = { cachedOnly?: boolean; jobs?: number | undefined };
 
 /** 段 1 つ */
 export type Stage = {

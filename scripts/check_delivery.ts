@@ -100,7 +100,7 @@ export const actionLoader =
 /** 手順が、その action を使うか（actions/cache なら actions/cache/restore・actions/cache/save も） */
 const usesAction = (step: Obj, action: string) => {
   if (typeof step.uses !== 'string') return false;
-  const name = step.uses.split('@')[0];
+  const name = step.uses.split('@')[0]!;
   return name === action || name.startsWith(`${action}/`);
 };
 
@@ -108,7 +108,7 @@ const usesAction = (step: Obj, action: string) => {
 const readsSecrets = (text: string, expression: boolean) =>
   expression
     ? /\bsecrets\b/.test(text)
-    : [...text.matchAll(/\$\{\{([\s\S]*?)\}\}/g)].some((m) => /\bsecrets\b/.test(m[1]));
+    : [...text.matchAll(/\$\{\{([\s\S]*?)\}\}/g)].some((m) => /\bsecrets\b/.test(m[1]!));
 
 /** 式の各文字の、括弧の深さ（その文字を読む前の深さ）。文字列（'...'。中の '' は ' 1 文字）の中の文字は -1 */
 const depths = (s: string): number[] => {
@@ -195,9 +195,9 @@ const NPM_FORBIDDEN = new Set([
 export const installProblems = (run: string): string[] => {
   const out: string[] = [];
   for (const m of run.matchAll(/\bnpm\s+([a-z-]+)([^\n;&|]*)/g)) {
-    if (NPM_CI.has(m[1])) {
-      if (!/(^|\s)--ignore-scripts(?=\s|$)/.test(m[2])) out.push(`npm ${m[1]} に --ignore-scripts を付ける`);
-    } else if (NPM_FORBIDDEN.has(m[1])) out.push(`npm ${m[1]} を使わない（依存は npm ci --ignore-scripts で入れる）`);
+    if (NPM_CI.has(m[1]!)) {
+      if (!/(^|\s)--ignore-scripts(?=\s|$)/.test(m[2]!)) out.push(`npm ${m[1]!} に --ignore-scripts を付ける`);
+    } else if (NPM_FORBIDDEN.has(m[1]!)) out.push(`npm ${m[1]!} を使わない（依存は npm ci --ignore-scripts で入れる）`);
   }
   if (/\bnpx\b(?!\s+--no-install\b)/.test(run)) out.push('npx には --no-install を付ける（入れていない版を取ってきて動かさない）');
   if (/\bbunx\b|\bbun\s+(x|install|i|add|update|link)\b/.test(run)) out.push('bun で依存を入れない・取ってきて動かさない');
@@ -225,10 +225,11 @@ export function workflowFindings(
   const jobs: Record<string, Obj> = isObj(wf.jobs)
     ? Object.fromEntries(Object.entries(wf.jobs).map(([id, job]) => [id, isObj(job) ? job : {}]))
     : {};
+  // id は jobs のキーから作る。production はその部分集合、flat も同じキーを全て作る。
   const ids = Object.keys(jobs);
   const events = eventsOf(wf.on);
-  const production = ids.filter((id) => isProductionJob(jobs[id]));
-  const stepsOf = (id: string): Obj[] => (Array.isArray(jobs[id].steps) ? jobs[id].steps : []).map((s) => (isObj(s) ? s : {}));
+  const production = ids.filter((id) => isProductionJob(jobs[id]!));
+  const stepsOf = (id: string): Obj[] => (Array.isArray(jobs[id]!.steps) ? jobs[id]!.steps : []).map((s) => (isObj(s) ? s : {}));
   const isDeploy = (id: string, step: Obj) => production.includes(id) && step.name === DEPLOY_STEP && step.uses === undefined;
 
   // ── secret は Deploy の手順だけ: production のジョブの Deploy の手順の env のほかで、secrets を読まない
@@ -242,9 +243,9 @@ export function workflowFindings(
   };
   for (const [k, v] of Object.entries(wf)) if (k !== 'jobs') walkSecrets(v, k, false);
   for (const id of ids) {
-    if (jobs[id].secrets !== undefined)
+    if (jobs[id]!.secrets !== undefined)
       add('secrets', `jobs.${id}.secrets`, '呼び出す workflow に secret を渡さない（secrets: inherit も）');
-    for (const [k, v] of Object.entries(jobs[id]))
+    for (const [k, v] of Object.entries(jobs[id]!))
       if (k !== 'steps' && k !== 'secrets') walkSecrets(v, `jobs.${id}.${k}`, k === 'if');
     stepsOf(id).forEach((step, i) => {
       for (const [k, v] of Object.entries(step))
@@ -279,7 +280,7 @@ export function workflowFindings(
       return [...list, ...flatten(runs.steps, `${at} → ${uses}`, [...chain, uses])];
     });
   };
-  const flat: Record<string, Flat[]> = Object.fromEntries(ids.map((id) => [id, flatten(jobs[id].steps, `jobs.${id}`, [])]));
+  const flat: Record<string, Flat[]> = Object.fromEntries(ids.map((id) => [id, flatten(jobs[id]!.steps, `jobs.${id}`, [])]));
 
   // Deploy の手順: production のジョブにだけ置き、固定の版の Wrangler を run で流す。token は env で受け、空なら止まる
   for (const id of ids)
@@ -309,9 +310,9 @@ export function workflowFindings(
       if (!PRODUCTION_EVENTS.includes(e))
         add('main', `on.${e}`, `production のジョブがある workflow は、${PRODUCTION_EVENTS.join('・')} だけで動かす`);
   for (const id of production) {
-    if (environmentOf(jobs[id]) !== PRODUCTION)
+    if (environmentOf(jobs[id]!) !== PRODUCTION)
       add('main', `jobs.${id}.environment`, 'environment を式で決めない（production かどうかを確かめられない）');
-    const parts = conjuncts(jobs[id].if);
+    const parts = conjuncts(jobs[id]!.if);
     if (!parts) add('main', `jobs.${id}.if`, 'if が無いか、いちばん外に || がある（main 以外でも公開が動きうる）');
     else
       for (const need of MAIN_ONLY)
@@ -320,10 +321,10 @@ export function workflowFindings(
 
   // ── uses は SHA で固定（リポジトリの中の composite action と workflow は許す。composite の中も見る）
   for (const id of ids) {
-    const uses = jobs[id].uses;
+    const uses = jobs[id]!.uses;
     if (typeof uses === 'string' && !uses.startsWith('./.github/workflows/'))
       add('pinned', `jobs.${id}.uses`, `${uses}: ほかのリポジトリの workflow を呼ばない`);
-    for (const { step, where } of flat[id]) {
+    for (const { step, where } of flat[id]!) {
       if (step.uses === undefined) continue;
       const u = String(step.uses);
       if (!u.startsWith('./') && !PINNED.test(u)) add('pinned', where, `${u} を、40 桁の commit の SHA で固定する（版は注に書く）`);
@@ -334,7 +335,7 @@ export function workflowFindings(
   if (JSON.stringify(wf.permissions) !== JSON.stringify({ contents: 'read' }))
     add('permissions', 'permissions', 'workflow の permissions は contents: read だけにする');
   for (const id of ids) {
-    const p = jobs[id].permissions;
+    const p = jobs[id]!.permissions;
     if (p === undefined) continue;
     if (!isObj(p)) {
       add('permissions', `jobs.${id}.permissions`, 'read-all・write-all にしない（使う範囲だけを書く）');
@@ -348,7 +349,7 @@ export function workflowFindings(
         events.length > 0 &&
         events.every((e) => WRITE_EVENTS.includes(e)) &&
         !production.includes(id) &&
-        !flat[id].some(({ step }) => usesAction(step, 'actions/checkout'));
+        !flat[id]!.some(({ step }) => usesAction(step, 'actions/checkout'));
       if (!opensIssues)
         add(
           'permissions',
@@ -360,26 +361,26 @@ export function workflowFindings(
 
   // ── checkout は認証を残さない
   for (const id of ids)
-    for (const { step, where } of flat[id])
+    for (const { step, where } of flat[id]!)
       if (usesAction(step, 'actions/checkout') && !(isObj(step.with) && isFalse(step.with['persist-credentials'])))
         add('credentials', where, 'actions/checkout には persist-credentials: false を付ける（あとの手順に GITHUB_TOKEN を残さない）');
 
   // ── インストール時スクリプトを動かさない
   for (const id of ids)
-    for (const { step, where } of flat[id])
+    for (const { step, where } of flat[id]!)
       if (typeof step.run === 'string') for (const problem of installProblems(step.run)) add('install', where, problem);
 
   // ── run に外から来る文字を埋め込まない（PR の題・branch の名前・commit の文などは env で受け、"$名前" で使う）
   for (const id of ids)
-    for (const { step, where } of flat[id])
+    for (const { step, where } of flat[id]!)
       if (typeof step.run === 'string')
         for (const m of step.run.matchAll(/\$\{\{([\s\S]*?)\}\}/g))
-          if (/\bgithub\.(event|head_ref)\b/.test(m[1]))
+          if (/\bgithub\.(event|head_ref)\b/.test(m[1]!))
             add('injection', where, `run に ${squash(m[0])} を埋め込まない（env で受けて "$名前" で使う）`);
 
   // ── 公開は前のジョブを待つ: 公開のあとに流すジョブのほかは、全部 needs で待つ。失敗を越えて動かない
   const upstream = (id: string, seen = new Set<string>()): Set<string> => {
-    for (const n of needsOf(jobs[id]))
+    for (const n of needsOf(jobs[id]!))
       if (!seen.has(n)) {
         seen.add(n);
         if (jobs[n]) upstream(n, seen);
@@ -395,14 +396,14 @@ export function workflowFindings(
       else if (jobs[n]['continue-on-error'] !== undefined && !isFalse(jobs[n]['continue-on-error']))
         add('needs', `jobs.${n}.continue-on-error`, '公開が待つジョブに continue-on-error を付けない（失敗しても公開が動く）');
     }
-    const condition = jobs[id].if;
+    const condition = jobs[id]!.if;
     if (typeof condition === 'string' && /\b(always|failure|cancelled)\s*\(/.test(condition))
       add('needs', `jobs.${id}.if`, 'always()・failure()・cancelled() を使わない（前のジョブが失敗しても公開が動く）');
   }
 
   // ── 公開の前に点検する: Deploy の前に、secret の無い手順で、依存 → Worker の許可リスト → 公開物の点検（artifact なら一覧と照らす）
   for (const id of production) {
-    const steps = flat[id];
+    const steps = flat[id]!;
     const where = `jobs.${id}`;
     const deploy = steps.findIndex(({ step, nested }) => !nested && step.name === DEPLOY_STEP);
     if (deploy < 0) {
@@ -438,7 +439,7 @@ export function workflowFindings(
     const keeps = (c: unknown) =>
       typeof c === 'string' || (isObj(c) && (c['cancel-in-progress'] === undefined || isFalse(c['cancel-in-progress'])));
     for (const id of production) {
-      const jc = jobs[id].concurrency;
+      const jc = jobs[id]!.concurrency;
       const serial =
         jc === undefined ? group(wc) === PRODUCTION_GROUP && keeps(wc) : group(jc) === PRODUCTION_GROUP && keeps(jc);
       if (!serial)
@@ -448,7 +449,7 @@ export function workflowFindings(
 
   // ── 公開のジョブはキャッシュを使わない: ほかの実行が書いたもの（実行ファイル）を、secret のあるジョブで動かさない
   for (const id of production)
-    for (const { step, where } of flat[id]) {
+    for (const { step, where } of flat[id]!) {
       const w = isObj(step.with) ? step.with : {};
       if (usesAction(step, 'actions/cache')) add('noCache', where, 'actions/cache を使わない');
       if (usesAction(step, 'actions/setup-node') && (!isFalse(w['package-manager-cache']) || w.cache !== undefined))
@@ -476,9 +477,9 @@ export function validateWorkflow(value: unknown, opts: { file?: string; loadActi
 export const pinNoteFindings = (text: string, file: string): WorkflowFinding[] =>
   text.split('\n').flatMap((line, i) => {
     const m = /^\s*(?:-\s+)?uses:\s*['"]?([^\s'"#]+)['"]?\s*(#.*)?$/.exec(line);
-    if (!m || !/@[0-9a-f]{40}$/.test(m[1]) || (m[2] && /#\s*v?\d+(\.\d+)*\b/.test(m[2]))) return [];
+    if (!m || !/@[0-9a-f]{40}$/.test(m[1]!) || (m[2] && /#\s*v?\d+(\.\d+)*\b/.test(m[2]!))) return [];
     return [
-      { rule: WORKFLOW_RULES.pinned, where: `${file}:${i + 1}`, what: `${m[1].split('@')[0]} の SHA の横に、版の注（# v1.2.3）を書く` },
+      { rule: WORKFLOW_RULES.pinned, where: `${file}:${i + 1}`, what: `${m[1]!.split('@')[0]} の SHA の横に、版の注（# v1.2.3）を書く` },
     ];
   });
 

@@ -25,15 +25,15 @@ const NAME = /^([a-z]+)\/([a-z0-9][a-z0-9-]*)$/;
 export type Plan = { branch: string; slug: string; dir: string; base: string };
 
 /** <type>/<slug> と、作る場所を確かめる（git には触らない） */
-export const planOf = (name: string | undefined, opts: { base?: string; dir?: string } = {}, root = ROOT): Plan => {
+export const planOf = (name: string | undefined, opts: { base?: string | undefined; dir?: string | undefined } = {}, root = ROOT): Plan => {
   const m = NAME.exec(name ?? '');
   if (!name || !m)
     throw new UsageError(
       `作業の名前は <type>/<slug>（例: feat/new-course。slug は英小文字・数字・-）: ${name ?? '（無い）'}`,
     );
-  if (!TYPES.includes(m[1])) throw new UsageError(`<type> は ${TYPES.join('・')} のどれか: ${m[1]}`);
-  const dir = path.resolve(root, opts.dir ?? path.join('..', `chalkfile-${m[2]}`));
-  return { branch: name, slug: m[2], dir, base: opts.base ?? 'origin/main' };
+  if (!TYPES.includes(m[1]!)) throw new UsageError(`<type> は ${TYPES.join('・')} のどれか: ${m[1]!}`);
+  const dir = path.resolve(root, opts.dir ?? path.join('..', `chalkfile-${m[2]!}`));
+  return { branch: name, slug: m[2]!, dir, base: opts.base ?? 'origin/main' };
 };
 
 const git = (...args: string[]) => runOrThrow('git', args, { cwd: ROOT }).trim();

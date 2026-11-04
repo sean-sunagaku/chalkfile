@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { chromium, type Page, type APIRequestContext } from '@playwright/test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -40,7 +41,7 @@ test('保存状態の初期案内と進捗・エラーの保護', async ({ reque
   const evidence = evidenceDir('offline-status');
   mkdirSync(evidence, { recursive: true });
   const profile = mkdtempSync(path.join(tmpdir(), 'chalkfile-offline-status-'));
-  const options = { channel, headless: true, baseURL, viewport: { width: 1440, height: 1000 } };
+  const options = { channel, headless: true, baseURL: required(baseURL), viewport: { width: 1440, height: 1000 } };
   let context = await chromium.launchPersistentContext(profile, options);
   const browser = context.browser()!.version();
   const observations: { name: string; message: string | null }[] = [];

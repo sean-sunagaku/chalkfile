@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, spyOn, test } from 'bun:test';
 import {
   RETAIN_DAYS,
@@ -191,7 +192,7 @@ describe('動画の一覧が、保存と Releases の上限に収まるか（med
   test('講座の保存のファイルの数（ページとポスターも数える）が上限を超えたら止める', () => {
     const fits = lectures((OFFLINE_COURSE_MAX_FILES - 1) / 2);
     expect(mediaLimitProblems({ schema: 1, entries: fits })).toEqual([]);
-    const cc = { ...fits[0], kind: 'captioned' as const };
+    const cc = { ...required(fits[0]), kind: 'captioned' as const };
     expect(mediaLimitProblems({ schema: 1, entries: [...fits, { ...cc, filename: mediaFilename(cc) }] })).toEqual([
       `講座の保存のファイルの数が、上限（${OFFLINE_COURSE_MAX_FILES}）を超えています: ja/sample（ページとポスターを入れて ${OFFLINE_COURSE_MAX_FILES + 1}）`,
     ]);
@@ -257,9 +258,9 @@ describe('media push --course（その講座だけを手元から作り、ほか
         return JSON.stringify([releases.find((r) => r.id === Number(assets[1]))?.assets ?? []]);
       if (cmd === 'release' && rest[0] === 'create') {
         releases.push({
-          tag: rest[1],
+          tag: required(rest[1]),
           id: releases.length + 1,
-          target: rest[rest.indexOf('--target') + 1],
+          target: required(rest[rest.indexOf('--target') + 1]),
           assets: [],
         });
         return '';
@@ -335,7 +336,7 @@ describe('media push --course（その講座だけを手元から作り、ほか
         if (f !== file) expect(`${f} ${box.read(f) === text}`).toBe(`${f} true`);
       // Release は作り直さず（もうある）、新しい 2 本だけを置く。前の asset は消さない
       expect(calls.some((c) => c[0] === 'release' && c[1] === 'create')).toBe(false);
-      expect(releases[0].assets).toHaveLength(old.length + 2);
+      expect(required(releases[0]).assets).toHaveLength(old.length + 2);
       expect(box.read(posterFile('rive-comedy', 'R01'))).toBe('ポスター');
       expect(warned.join('\n')).toContain('手元の動画が一覧と違う（push していない）: ja/nudge-comedy/W01/standard');
       expect(lines.join('\n')).toContain(`${file} を書き直した（動画 2 本・retained ${old.length} 本）`);
@@ -384,7 +385,7 @@ describe('media push --course（その講座だけを手元から作り、ほか
     expect(out).toContain('https://objects.githubusercontent.com/x?［伏せた］');
   });
   test('gh の呼び出しには時間切れを付け、読むだけの API は一時の失敗なら待って 3 回まで試す（書き換える呼び出しは流し直さない）', () => {
-    const calls: { args: string[]; timeoutMs?: number }[] = [];
+    const calls: { args: string[]; timeoutMs: number | undefined }[] = [];
     const waits: number[] = [];
     const warned: string[] = [];
     /** 決まった順に結果を返す偽の gh */
@@ -442,7 +443,7 @@ describe('media push --course（その講座だけを手元から作り、ほか
     expect(ghTimeoutMs(['api', 'repos/x'])).toBe(2 * 60_000);
     reset();
     make([{ stdout: 'ok' }])(['release', 'download', 't']);
-    expect(calls[0].timeoutMs).toBe(60 * 60_000);
+    expect(required(calls[0]).timeoutMs).toBe(60 * 60_000);
     expect(readOnlyGh(['api', '--paginate', '--slurp', 'repos/x/releases?per_page=100'])).toBe(true);
     expect(readOnlyGh(['api', 'repos/x', '-f', 'a=b'])).toBe(false);
   });

@@ -58,7 +58,7 @@ describe('/media/ の中継', () => {
       expect([...new Uint8Array(await response.arrayBuffer())]).toEqual([0, 1]);
     });
   test('Range / If-Range だけを手動302の先まで維持する。毎回元URLから開始', async () => {
-    const calls: { url: string; headers: [string, string][]; method?: string }[] = [];
+    const calls: { url: string; headers: [string, string][]; method: string | undefined }[] = [];
     const handle = createMediaHandler([entry], async (url, init) => {
       calls.push({ url, headers: [...new Headers(init.headers)], method: init.method });
       return url === releaseUrl(entry)
@@ -359,7 +359,7 @@ describe('Worker の入口（app.ts の createWorker）', () => {
       ['/media', 'GET'],
       ['/mediax/file.mp4', 'GET'],
       ['/no-such-page/', 'GET'],
-    ]) {
+    ] as const) {
       const request = new Request(`https://chalkfile.com${route}`, { method });
       expect((await worker.fetch(request, env)).headers.get('X-From')).toBe('assets');
       expect(seen.at(-1)).toBe(request);

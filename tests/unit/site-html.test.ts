@@ -1,4 +1,5 @@
 // サイトの HTML を安全に組み立てる部品（scripts/site/html.ts）。エスケープが既定・raw() で外す・印の 1 回の置き換え・テーマの色の形
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -88,7 +89,7 @@ describe('CSP（scripts/site/csp.ts）', () => {
   });
   test('講座のページのテンプレートに、動く script を書かない（画面は site/course-page.ts。組み立てが __PAGE_SCRIPT__ の所に入れる）', () => {
     const template = readFileSync(path.join(import.meta.dir, '../../site/template.html'), 'utf8');
-    const scripts = [...template.matchAll(/<script\b([^>]*)>/gi)].map((m) => m[1].trim());
+    const scripts = [...template.matchAll(/<script\b([^>]*)>/gi)].map((m) => required(m[1]).trim());
     expect(scripts).toEqual(['id="course-data" type="application/json"']);
     expect(template.split('__PAGE_SCRIPT__')).toHaveLength(2);
   });

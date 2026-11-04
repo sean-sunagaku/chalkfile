@@ -153,7 +153,7 @@ export const durationsFind = async (
     );
     if (!stale.length) return { find, durationsOnly: true };
     log(
-      `素材のブランチの DURATIONS.json に、長さが無いか古い台詞が ${stale.length} 本ある（例: ${stale[0].join(' か ')}）。今までどおり音声を取り出してから作る`,
+      `素材のブランチの DURATIONS.json に、長さが無いか古い台詞が ${stale.length} 本ある（例: ${stale[0]!.join(' か ')}）。今までどおり音声を取り出してから作る`,
     );
   } else log('素材のブランチに DURATIONS.json がまだ無い。今までどおり音声を取り出してから作る（ffmpeg が要る）');
   await pull(repo, ids, { ...pullOpts, log });

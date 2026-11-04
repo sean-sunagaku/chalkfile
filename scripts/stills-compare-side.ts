@@ -30,7 +30,7 @@ export type SideJob = {
 /** 書き出せなかった静止画（名前 → 理由）。バンドルか Chrome が動かないときは fatal */
 export type SideResult = { failed: Record<string, string>; fatal?: string };
 
-const firstLine = (e: unknown) => (e instanceof Error ? e.message : String(e)).split('\n')[0];
+const firstLine = (e: unknown) => (e instanceof Error ? e.message : String(e)).split('\n')[0]!;
 
 const main = async (argv: string[]) => {
   const { values, positionals } = readArgs(argv, {}, { positionals: true });

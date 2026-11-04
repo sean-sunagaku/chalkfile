@@ -141,12 +141,13 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
   const frame = useCurrentFrame();
   const { lines } = useScene();
   const appear = useAppear(0);
+  // starts は screens と同じ長さ。cur はこの配列の走査で得る添字。
   const starts = s.screens.map((sc) => lineStart(lines, sc.at) - LEAD.appear);
   let cur = -1;
   starts.forEach((st, i) => {
     if (frame >= st) cur = i;
   });
-  const enter = cur >= 0 ? ramp(frame - starts[cur], 0, 14) : 0;
+  const enter = cur >= 0 ? ramp(frame - starts[cur]!, 0, 14) : 0;
   const pw = 450;
   const ph = 772;
   const px = PAD + 120;

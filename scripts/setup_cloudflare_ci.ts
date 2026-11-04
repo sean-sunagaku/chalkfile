@@ -22,11 +22,11 @@ export function tokenPolicies(groups: Group[], zoneId: string) {
   if (!/^[a-f0-9]{32}$/.test(zoneId)) throw new Error('対象zoneのIDが不正です');
   const choose = (name: string, scope: string) => {
     const candidates = groups.filter((g) => g.name === name && g.scopes.includes(scope) && g.is_selectable !== false);
-    if (candidates.length !== 1 || !/^[a-f0-9]{32}$/.test(candidates[0].id)) throw new Error('必要な最小権限を一意に選べません');
-    return { id: candidates[0].id };
+    if (candidates.length !== 1 || !/^[a-f0-9]{32}$/.test(candidates[0]!.id)) throw new Error('必要な最小権限を一意に選べません');
+    return { id: candidates[0]!.id };
   };
   return [
-    { effect: 'allow', permission_groups: [choose(required[0], 'com.cloudflare.api.account')], resources: { [`com.cloudflare.api.account.${ACCOUNT}`]: '*' } },
+    { effect: 'allow', permission_groups: [choose(required[0]!, 'com.cloudflare.api.account')], resources: { [`com.cloudflare.api.account.${ACCOUNT}`]: '*' } },
     { effect: 'allow', permission_groups: required.slice(1).map((name) => choose(name, 'com.cloudflare.api.account.zone')), resources: { [`com.cloudflare.api.account.zone.${zoneId}`]: '*' } },
   ];
 }

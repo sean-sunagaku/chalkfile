@@ -362,7 +362,7 @@ export type ScreensScene<A extends At = number> = Base & {
    */
   zoom?: number;
   left: MockScreen<A>;
-  right?: MockScreen<A>;
+  right?: MockScreen<A> | undefined;
 };
 
 /** 端末の出力の色。書かなければ薄い色（コードのコメントの色）。ok: 成功した行（文字列の色）、info: 目を向けてほしい行（関数の色） */
@@ -460,7 +460,7 @@ export type Figure = {
   caption: string;
   evidence: Evidence;
   /** 表。1 行目が見出し */
-  table?: string[][];
+  table?: [string[], ...string[][]];
   /** 流れ（左から右へ進む手順）。Markdown では Mermaid の図にもする */
   flow?: string[];
   /** コードの例 */
@@ -564,10 +564,11 @@ export type Lecture<A extends At = number> = {
   /** 講座サイトに出す、このレクチャーで実装に効くメモ */
   takeaways: string[];
   /** 動画の右下に出し続け、サイトにも出す注意書き（法律・税・規約など、判断を専門家や公式に委ねる話のとき） */
-  caution?: string;
+  // 訳を重ねる際、この注意書きと読む教材は undefined を明示して消せる。
+  caution?: string | undefined;
   scenes: Scene<A>[];
   /** 読む教材・実践課題・AI チャットの質問例（講座サイトのタブと docs/ の Markdown に出る） */
-  material?: ChapterMaterial;
+  material?: ChapterMaterial | undefined;
 };
 
 /** 台本に書く形の動画（at に台詞の id も書ける）。id で at を書く台本は、この型にする。読み込むと Lecture になる */
@@ -602,21 +603,22 @@ export type Course<A extends At = number> = {
   /** フッターのクレジットの後ろに足す、台本のもと */
   sourceNote: string;
   /** 講座サイトの見出しの横に出すリンク（関連する講座など）。GitHub へのリンクは chalkfile.config.ts から足す */
-  links?: { label: string; url: string }[];
+  // 講座の訳で省くメタデータは、undefined を明示した従来の重ね方も受け入れる。
+  links?: { label: string; url: string }[] | undefined;
   /** 動画と講座サイトのテーマ（content/themes.ts の id）。省略すると Chalkfile の既定のテーマ */
   theme?: ThemeId;
   /** 動画のはじめと終わり、サイトの見出しの下に出す注意書き（実在の会社や製品を扱う講座では「非公式」と書く） */
-  disclaimer?: string;
+  disclaimer?: string | undefined;
   /** 掛け合いの講座の配役（声ごとの名前と色）。字幕の帯と、サイトの台本・字幕に名前を付ける */
-  cast?: Partial<Record<VoiceId, { name: string; tone: Tone }>>;
+  cast?: Partial<Record<VoiceId, { name: string; tone: Tone }>> | undefined;
   /** 1 本の動画の呼び名（動画の見出しとサイトに出す）。既定は LECTURE。章立ての講座は CHAPTER */
   unitLabel?: 'LECTURE' | 'CHAPTER';
   /** 1 本だけで完結する解説動画。動画に番号（オープニングの 01 と 01 / 1、見出しの上の LECTURE 01、クイズの 1 / 1、終わりの 1 / 1 完了）を出さない */
-  standalone?: boolean;
+  standalone?: boolean | undefined;
   /** 講座の設計（全体の目次・到達目標・動画構成）。まだ作っていない章もサイトのカリキュラムに「準備中」で出る */
-  syllabus?: Syllabus;
+  syllabus?: Syllabus | undefined;
   /** 出典の一覧（教材と台本から id で引く） */
-  sources?: Source[];
+  sources?: Source[] | undefined;
   /** サイトの言葉を講座に合わせる */
   ui?: {
     /** 概要タブの要点の見出し（既定: 実装に効くメモ） */
@@ -682,11 +684,11 @@ export type Theme = {
   /** カードの影（CSS の box-shadow） */
   shadow: string;
   /** 見出しの下線・進み具合の線（2 色以上） */
-  gradient: string[];
+  gradient: [string, string, ...string[]];
   /** オープニングとエンディングの大きな数字・文字の塗り（2 色以上。地に対して十分濃く） */
-  display: string[];
-  /** 背景の飾りに使う色（3〜4 色） */
-  mesh: string[];
+  display: [string, string, ...string[]];
+  /** 背景の飾りに使う色（band は 2 色以上、ほかは 4 色以上） */
+  mesh: [string, string, ...string[]];
   /** 図の要素の色。薄い面と文字色はここから作る */
   tones: Record<Tone, string>;
   /** コードの色分け（code の面の上で読める色） */

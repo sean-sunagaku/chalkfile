@@ -3,6 +3,7 @@
 //   - 差し込み（{name}）の名前が、日本語と同じ組（数で形の変わる文字は、日本語の名前の中から）
 //   - 使われていないキーが無い（表ごとに、読むファイルのどこかで使う）
 //   - 差し込みの名前の取り違えと、訳の表の足りないキーは、型のエラーになる（@ts-expect-error。npm run typecheck が見る）
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -63,7 +64,7 @@ describe('全部の言語の網羅', () => {
       src.indexOf('export type OfflineErrorCode ='),
       src.indexOf(';', src.indexOf('export type OfflineErrorCode =')),
     );
-    const codes = [...union.matchAll(/'(\w+)'/g)].map((m) => m[1]).sort();
+    const codes = [...union.matchAll(/'(\w+)'/g)].map((m) => m[1]!).sort();
     expect(codes.length).toBeGreaterThan(20);
     for (const lang of LANGS) expect(Object.keys(LOCALES[lang].sw.errors).sort()).toEqual(codes);
   });
@@ -143,7 +144,7 @@ describe('使われていないキー', () => {
   for (const [section, files] of Object.entries(READERS)) {
     test(`${section}: どのキーも、読むファイル（${files.join('・')}）で使う`, () => {
       const text = sources(files);
-      const table = (LOCALES.ja as unknown as Record<string, Tree>)[section];
+      const table = required((LOCALES.ja as unknown as Record<string, Tree>)[section]);
       const unused = leaves(table)
         .map(([where]) => where)
         // 保存機能のエラーは、エラーの種類（e.code）で引く（全部があることは、上の網羅のテストが見る）

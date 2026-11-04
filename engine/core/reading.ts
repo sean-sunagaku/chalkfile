@@ -208,7 +208,8 @@ const word = (w: string, course?: Reading): string => {
   const hit = lookup(course?.words, lower) ?? lookup(WORDS, lower);
   if (hit) return hit;
   const m = /^([A-Z]+)(\d+)$/.exec(w);
-  if (m) return [...m[1]].map((c) => LETTERS[c]).join('') + [...m[2]].map((d) => DIGITS[Number(d)]).join('');
+  // 一致すれば、英字と数字の捕捉群はどちらも空でない。
+  if (m) return [...m[1]!].map((c) => LETTERS[c]).join('') + [...m[2]!].map((d) => DIGITS[Number(d)]).join('');
   if (/^[A-Z]{1,4}$/.test(w)) return [...w].map((c) => LETTERS[c]).join('');
   throw new Error(`読みが未登録の英単語: ${w}`);
 };

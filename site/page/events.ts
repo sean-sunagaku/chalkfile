@@ -9,9 +9,9 @@ export type OfflineState = {
   /** この講座の、そろった保存版がある */
   saved: boolean;
   /** その保存版の教材の版（無ければ undefined） */
-  pageVersion?: string;
+  pageVersion?: string | undefined;
   /** 最新の保存が不完全 */
-  incomplete?: boolean;
+  incomplete?: boolean | undefined;
   /**
    * その保存版を、重大な不具合で無効にした（site/disabled-revisions.ts）ので、SW が保存版ではなく公開中の版のページを開いた（このページは保存版ではない。
    * 動画も、保存版に無いものは公開中のものを使う）。オフラインで保存版を開いたときは false

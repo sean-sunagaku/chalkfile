@@ -1,6 +1,7 @@
 // 段の指紋に入れるもの（scripts/stages/video/inputs.ts・scripts/stages/pipeline/stages.ts）を固定する。入れ忘れた入力の変化を
 // 見逃すのが一番の危険なので、「変えると指紋が変わるもの」と「変えても変わらないもの（サイトと教材だけが使う項目）」を、本物の台本で
 // 確かめる。ファイルは一時のフォルダにだけ書く（声・ミックス・動画は小さい偽物）。本物の道具は流さない
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { parse } from '@babel/parser';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -69,7 +70,7 @@ describe('動画の台本の側の指紋（render の script・動画の一覧�
   });
   test('動画が描くレクチャーと講座の項目・テーマの値・声のクレジット・timeline を変えると変わる', () => {
     const cases: [string, Video][] = [
-      ['場面の見出し', lectureWith((l) => Object.assign(l.scenes[1], { heading: `${l.scenes[1].heading ?? ''}。` }))],
+      ['場面の見出し', lectureWith((l) => Object.assign(required(l.scenes[1]), { heading: `${required(l.scenes[1]).heading ?? ''}。` }))],
       ['注意書き', lectureWith((l) => Object.assign(l, { caution: '注意' }))],
       ['レクチャーの題', lectureWith((l) => Object.assign(l, { title: `${l.title}。` }))],
       ['番号', lectureWith((l) => Object.assign(l, { no: l.no + 1 }))],
@@ -89,7 +90,7 @@ describe('動画の台本の側の指紋（render の script・動画の一覧�
         }),
       ],
       ['テーマの ID', courseWith((c) => Object.assign(c, { theme: 'paper' }))],
-      ['レクチャーの数', courseWith((c) => void c.lectures.push(structuredClone(c.lectures[0])))],
+      ['レクチャーの数', courseWith((c) => void c.lectures.push(required(structuredClone(c.lectures[0]))))],
     ];
     for (const [what, v] of cases) expect(`${what} ${scriptDigest(v, timeline) !== base}`).toBe(`${what} true`);
     const tl = structuredClone(timeline) as { durationInFrames: number };
@@ -127,9 +128,9 @@ describe('動画の台本の側の指紋（render の script・動画の一覧�
       ['サイトの言葉', courseWith((c) => Object.assign(c, { ui: { docs: '資料' } }))],
       ['出典', courseWith((c) => Object.assign(c, { sources: [] }))],
       ['並び', courseWith((c) => Object.assign(c, { order: c.order + 100 }))],
-      ['ほかのレクチャーの中身', courseWith((c) => Object.assign(c.lectures[1], { title: '別の題' }))],
+      ['ほかのレクチャーの中身', courseWith((c) => Object.assign(required(c.lectures[1]), { title: '別の題' }))],
       // 台詞の id は、画面の要素の at を台詞に結ぶ名前（読み込むときに番号に直す）。番号が同じなら動画は同じ
-      ['台詞の id', lectureWith((l) => Object.assign(l.scenes[1].lines[0], { id: 'renamed' }))],
+      ['台詞の id', lectureWith((l) => Object.assign(required(required(l.scenes[1]).lines[0]), { id: 'renamed' }))],
     ];
     for (const [what, v] of cases) expect(`${what} ${scriptDigest(v, timeline) === base}`).toBe(`${what} true`);
   });
@@ -139,12 +140,12 @@ describe('動画の台本の側の指紋（render の script・動画の一覧�
     for (const f of files) {
       const text = readFileSync(path.join(ROOT, f), 'utf8');
       for (const m of text.matchAll(/\b(course|lecture)\??\.([A-Za-z]+)/g))
-        read[m[1] as 'course' | 'lecture'].add(m[2]);
+        read[m[1] as 'course' | 'lecture'].add(required(m[2]));
       // const { title, no } = lecture のような取り出し方
       for (const m of text.matchAll(/\{([^}]+)\}\s*=\s*(course|lecture)\b/g))
-        for (const k of m[1]
+        for (const k of required(m[1])
           .split(',')
-          .map((x) => x.trim().split(/[:\s]/)[0])
+          .map((x) => x.trim().split(/[:\s]/)[0]!)
           .filter(Boolean))
           read[m[2] as 'course' | 'lecture'].add(k);
     }
@@ -253,7 +254,7 @@ describe('動画の描き方の側の指紋（render の src・動画の一覧�
         const name = statement.source?.value;
         if (!name || name.startsWith('.')) continue;
         const parts = name.split('/');
-        packages.add(parts[0].startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]);
+        packages.add(required(parts[0]).startsWith('@') ? parts.slice(0, 2).join('/') : required(parts[0]));
       }
     }
     expect([...packages].filter((name) => !(RENDER_DEPS as readonly string[]).includes(name))).toEqual([]);

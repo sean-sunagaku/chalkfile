@@ -51,7 +51,7 @@ const Row: React.FC<{
         <div
           key={i}
           style={{
-            width: `${widths[i] * 100}%`,
+            width: `${widths[i]! * 100}%`,
             padding: '14px 28px',
             display: 'flex',
             alignItems: 'center',
@@ -75,6 +75,7 @@ const Table: React.FC<{ s: TableScene }> = ({ s }) => {
   const { SANS, TONES } = usePalette();
   const latest = useLatestAt(s.rows);
   const fontSize = s.fontSize ?? TYPE.body.table;
+  // 検証済みの列幅と各行のセルは、columns と同じ数。
   const widths = s.widths ?? s.columns.map(() => 1 / s.columns.length);
   const head = useAppear(0);
   const avail = CONTENT_BOTTOM - CONTENT_TOP - 90;
@@ -87,7 +88,7 @@ const Table: React.FC<{ s: TableScene }> = ({ s }) => {
             <div
               key={i}
               style={{
-                width: `${widths[i] * 100}%`,
+                width: `${widths[i]! * 100}%`,
                 padding: '18px 28px',
                 fontFamily: SANS,
                 fontWeight: 700,

@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -62,7 +63,7 @@ const fake = (f: Fake = {}) => {
     }
     if (text.includes('wrangler deploy')) return { code: f.deploy ?? 0, stdout: '', stderr: '' };
     if (text.includes('wrangler rollback')) {
-      versions.splice(0, versions.length, cmd[4]);
+      versions.splice(0, versions.length, required(cmd[4]));
       return { code: 0, stdout: '', stderr: '' };
     }
     if (text.startsWith('bun '))
@@ -118,10 +119,10 @@ describe('Worker を出して、確かめて、通らなければ前の版に戻
     const { deps, ran } = fake({ checks: [1, 0, 1, 0] });
     expect(await deployWorker(options(), deps)).toBe('rolled-back');
     expect(ran('verify_public')).toHaveLength(2);
-    const [rollback] = ran('rollback');
+    const rollback = required(ran('rollback')[0]);
     expect(rollback.cmd.slice(0, 6)).toEqual(['npx', '--no-install', 'wrangler', 'rollback', 'v-old', '--env=']);
     expect(rollback.cmd).toContain('--yes');
-    expect(rollback.cmd[rollback.cmd.indexOf('--message') + 1].length).toBeLessThanOrEqual(100);
+    expect(required(rollback.cmd[rollback.cmd.indexOf('--message') + 1]).length).toBeLessThanOrEqual(100);
   });
   test('1 回目だけ通らなければ、流し直して通れば戻さない', async () => {
     const { deps, ran } = fake({ checks: [0, 1, 0, 0] });
@@ -148,7 +149,7 @@ describe('Worker を出して、確かめて、通らなければ前の版に戻
   test('wrangler deploy が途中で止まり、版が変わっていれば、前の版に戻す', async () => {
     const { deps, ran } = fake({ deploy: 1, versions: ['v-old', 'v-half'] });
     expect(await deployWorker(options(), deps)).toBe('rolled-back');
-    expect(ran('rollback')[0].cmd[4]).toBe('v-old');
+    expect(required(ran('rollback')[0]).cmd[4]).toBe('v-old');
   });
   test('main の先頭でなければ、何も出さない', async () => {
     const { deps, ran } = fake({ head: 'd'.repeat(40) });
@@ -164,7 +165,7 @@ describe('Worker を出して、確かめて、通らなければ前の版に戻
     const { deps, ran } = fake({ versions: ['v-old', 'error', 'v-old'], checks: [1, 1, 1, 1] });
     expect(await deployWorker(options(), deps)).toBe('rolled-back');
     expect(ran('verify_public')).toHaveLength(2);
-    expect(ran('rollback')[0].cmd[4]).toBe('v-old');
+    expect(required(ran('rollback')[0]).cmd[4]).toBe('v-old');
   });
   test('初めての公開で確かめが通らなければ、戻す版が無いので失敗で終える', async () => {
     const { deps, ran } = fake({ versions: [null, 'v-new'], checks: [1, 1, 1, 1] });
@@ -181,8 +182,8 @@ describe('Worker を出して、確かめて、通らなければ前の版に戻
       drill: true,
     });
     expect(await deployWorker(preview, deps)).toBe('rolled-back');
-    expect(ran('wrangler deploy --env')[0].cmd).toContain('--env=preview');
-    expect(ran('rollback')[0].cmd).toContain('--env=preview');
+    expect(required(ran('wrangler deploy --env')[0]).cmd).toContain('--env=preview');
+    expect(required(ran('rollback')[0]).cmd).toContain('--env=preview');
     expect(ran('git ls-remote')).toHaveLength(0);
   });
 });

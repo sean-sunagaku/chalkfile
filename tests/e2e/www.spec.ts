@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { expect, test } from './fixtures';
 
 test('www は静的HTMLから同じパス・query・hashの apex へ移る', async ({ page, context, request, site }) => {
@@ -9,7 +10,7 @@ test('www は静的HTMLから同じパス・query・hashの apex へ移る', asy
   await context.route('https://chalkfile.com/**', (r) =>
     r.fulfill({ contentType: 'text/html; charset=utf-8', body: '<h1>apex</h1>' }),
   );
-  const hash = site.course.lectures[0].id;
+  const hash = required(site.course.lectures[0]).id;
   await page.goto(`https://www.chalkfile.com${route}?from=www#${hash}`);
   await expect(page).toHaveURL(`https://chalkfile.com${route}?from=www#${hash}`);
 });

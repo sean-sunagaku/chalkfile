@@ -1,5 +1,6 @@
 // 書体（engine/fonts/ のサブセット・engine/core/fonts.ts の一覧・scripts/fonts.ts の点検・scripts/lib/woff2.ts の読み取り）。
 // 書き出しにネットが要らないこと（Google Fonts から読まないこと）も、ここで確かめる
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -29,7 +30,7 @@ import {
   upstreamUrl,
 } from '../../scripts/fonts';
 import { siteFontText } from '../../scripts/site/font-text';
-import { woff2CodePoints } from '../../scripts/lib/woff2';
+import { woff2CodePoints, woff2Tables } from '../../scripts/lib/woff2';
 import { course, lecture, say } from '../fixtures/content/invalid/_base';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
@@ -59,9 +60,9 @@ describe('書体の一覧（engine/core/fonts.ts）と fonts.json', () => {
       expect(m.fonts[id].family).toBe(FONTS[id].family);
       expect(m.fonts[id].licenseFile).toBe(LICENSES[id].file);
       for (const f of m.fonts[id].files) {
-        expect(f.source.url).toBe(upstreamUrl(SOURCES[f.file].path));
+        expect(f.source.url).toBe(upstreamUrl(required(SOURCES[f.file]).path));
         expect(f.source.url).toContain(`/google/fonts/${UPSTREAM.commit}/`);
-        expect(f.source.sha256).toBe(SOURCES[f.file].sha256);
+        expect(f.source.sha256).toBe(required(SOURCES[f.file]).sha256);
         expect(f.bytes).toBe(readFileSync(path.join(ROOT, FONT_DIR, f.file)).length);
         expect(f.chars).toBe(codePoints(f.file).size);
       }
@@ -129,17 +130,17 @@ describe('書体の点検（scripts/fonts.ts の fontIssues）', () => {
     const c = course([lecture([{ kind: 'big', heading: '見出し', text: 'およそ ≈ 半分', lines: say('はい') }])], {
       theme: CHALKFILE.id,
     });
-    const bad: Video = { key: 'X01', lang: 'ja', course: c, lecture: c.lectures[0] };
+    const bad: Video = { key: 'X01', lang: 'ja', course: c, lecture: required(c.lectures[0]) };
     const got = fontIssues({ ...SRC, videos: [bad] }).filter((x) => x.level === 'error');
     expect(got.map((x) => x.where)).toEqual(['invalid-sample/X01']);
-    expect(got[0].message).toContain('≈（U+2248）');
-    expect(got[0].message).toContain('元の書体にも無い');
+    expect(required(got[0]).message).toContain('≈（U+2248）');
+    expect(required(got[0]).message).toContain('元の書体にも無い');
   });
   test('サブセットに入っていない文字は、作り直すように言う（動画の文字なら誤り、台本の文字なら注意）', () => {
     const c = course([lecture([{ kind: 'big', heading: '見出し', text: '鑢', lines: say('はい') }])], {
       theme: CHALKFILE.id,
     });
-    const bad: Video = { key: 'X01', lang: 'ja', course: c, lecture: c.lectures[0] };
+    const bad: Video = { key: 'X01', lang: 'ja', course: c, lecture: required(c.lectures[0]) };
     const got = fontIssues({
       videos: [...VIDEOS, bad],
       coursesIn: (lang) => (lang === 'ja' ? [...coursesIn('ja'), c] : coursesIn(lang)),
@@ -169,10 +170,16 @@ describe('WOFF2 の cmap の読み取り（scripts/lib/woff2.ts）', () => {
   test('日本語・中国語・英字の書体から、入れた文字を読める', () => {
     // 台本にある文字（講座の題）と、どの書体にも入れる英数字
     const jp = codePoints(FONTS.noto.files[0].file);
-    for (const ch of `${coursesIn('ja')[0].title}A0`) expect(jp.has(ch.codePointAt(0) ?? 0)).toBe(true);
+    for (const ch of `${required(coursesIn('ja')[0]).title}A0`) expect(jp.has(ch.codePointAt(0) ?? 0)).toBe(true);
     const sc = codePoints(FONTS['noto-sc'].files[0].file);
-    for (const ch of coursesIn('zh')[0].title) expect(sc.has(ch.codePointAt(0) ?? 0)).toBe(true);
+    for (const ch of required(coursesIn('zh')[0]).title) expect(sc.has(ch.codePointAt(0) ?? 0)).toBe(true);
     expect(codePoints(FONTS.mono.files[0].file).has('{'.codePointAt(0) ?? 0)).toBe(true);
+  });
+  test('WOFF2 のテーブルの印の前で切れたファイルは、読み取り前に止める', () => {
+    const truncated = Buffer.alloc(48);
+    truncated.write('wOF2', 0, 'latin1');
+    truncated.writeUInt16BE(1, 12);
+    expect(() => woff2Tables(truncated)).toThrow('テーブルの印の前でファイルが終わった');
   });
   test('WOFF2 でないファイルは止める', () => {
     expect(() =>

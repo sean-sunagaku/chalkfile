@@ -63,7 +63,7 @@ const defaultTargets = (): Target[] =>
 
 /** L04:3,6 → L04 の場面 3 と 6。番号を省くと、その動画の全部の場面 */
 const parseTarget = (arg: string): Target[] => {
-  const [key, list] = arg.split(':');
+  const [key, list] = arg.split(':') as [string, ...string[]];
   const v = VIDEOS.find((x) => x.key === key);
   if (!v) throw new UsageError(`動画が無い: ${key}（例: L04、S01.en）`);
   const scenes = list ? list.split(',').map(Number) : v.lecture.scenes.map((_, i) => i + 1);

@@ -1,5 +1,6 @@
 // 声の置き場所（scripts/stages/voice/store.ts）と、Kokoro の足りない台詞・声の記録（scripts/stages/voice/kokoro.ts）。
 // ファイルは一時のフォルダにだけ書く。Kokoro そのもの（uv と Python）は流さない
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -123,7 +124,7 @@ describe('Kokoro の足りない台詞と声の記録', () => {
     writeFileSync(path.join(store.local, `${hello1}.kana`), 'həlˈO');
     const jobs = kokoroJobs(store, [video]);
     expect(jobs.map((j) => [j.key, j.text, j.voice, j.speed])).toEqual([[bye2, 'Bye.', 'af_heart', 1]]);
-    expect(jobs[0].recipe as unknown).toEqual(recipeIn('narrator', 'en'));
+    expect(required(jobs[0]).recipe as unknown).toEqual(recipeIn('narrator', 'en'));
     expect(hello2).not.toBe(hello1);
   });
   test('Kokoro が書き終えた声（音声と読みがそろったもの）にだけ、レシピと依存の版の記録を置く', () => {
@@ -132,17 +133,17 @@ describe('Kokoro の足りない台詞と声の記録', () => {
     expect(jobs).toHaveLength(2);
     // 1 本目だけ、Kokoro が書き終えた
     mkdirSync(store.cache, { recursive: true });
-    writeFileSync(path.join(store.cache, `${jobs[0].key}.wav`), wav(1));
-    writeFileSync(path.join(store.cache, `${jobs[0].key}.kana`), 'həlˈO');
+    writeFileSync(path.join(store.cache, `${required(jobs[0]).key}.wav`), wav(1));
+    writeFileSync(path.join(store.cache, `${required(jobs[0]).key}.kana`), 'həlˈO');
     writeMetas(store, jobs, 'kokoro==0.9.4');
-    expect(readMeta(store.cache, jobs[0].key)).toEqual({
+    expect(readMeta(store.cache, required(jobs[0]).key)).toEqual({
       schema: 1,
-      key: jobs[0].key,
-      text: jobs[0].text,
-      recipe: jobs[0].recipe,
+      key: required(jobs[0]).key,
+      text: required(jobs[0]).text,
+      recipe: required(jobs[0]).recipe,
       engineVersion: 'kokoro==0.9.4',
     });
-    expect(readMeta(store.cache, jobs[1].key)).toBeUndefined();
+    expect(readMeta(store.cache, required(jobs[1]).key)).toBeUndefined();
   });
   test.skipIf(!Bun.which('python3'))(
     'Kokoro の仕事のファイルは { schema, jobs } の形で、scripts/audio/handoff.py の read_kokoro_jobs で読める（レシピは渡さない）',
@@ -161,7 +162,7 @@ describe('Kokoro の足りない台詞と声の記録', () => {
         "print(len(jobs), jobs[0]['key'], jobs[0]['voice'])",
       ].join('\n');
       const r = Bun.spawnSync(['python3', '-c', py, file], { cwd: path.resolve(import.meta.dir, '../..') });
-      expect(r.stdout.toString().trim()).toBe(`2 ${jobs[0].key} ${jobs[0].voice}`);
+      expect(r.stdout.toString().trim()).toBe(`2 ${required(jobs[0]).key} ${required(jobs[0]).voice}`);
     },
   );
   test('Kokoro の版は、scripts/tts_kokoro.py の頭書きで固定した依存の版', () => {

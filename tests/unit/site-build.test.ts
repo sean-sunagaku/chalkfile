@@ -3,6 +3,7 @@
 // bundle（講座のページの画面・offline-client・sw.js）・アイコンの PNG・ハッシュと大きさは、Bun の版で変わるので正規化してから比べる。
 // わざと出力を変えたときは、UPDATE_SITE_SNAPSHOT=1 bun test tests/unit/site-build.test.ts で作り直す（本物の講座の site/dist が変わる直しなら、
 // サイトの版が変わる。保存した人に「新しい版」が出るので、まとめて出す回に入れる）
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -112,7 +113,7 @@ const heroDrift = (snippet: HeroSnippet): string | null => {
     return cut ? line.startsWith(`${cut}, `) : line === want;
   };
   const lines = snippet.lines.map((l) => l.trim());
-  const start = src.findIndex((_, i) => lines.every((want, j) => src[i + j] !== undefined && same(src[i + j], want)));
+  const start = src.findIndex((_, i) => lines.every((want, j) => src[i + j] !== undefined && same(required(src[i + j]), want)));
   return start < 0 ? `${snippet.file} に、この続きの行が無い: ${lines.join(' / ')}` : null;
 };
 
@@ -138,7 +139,7 @@ describe('講座サイトの組み立て（合成の講座）', () => {
       );
     }
     expect(result.manifests.map((m) => m.id)).toEqual(['site-sample']);
-    expect(result.manifests[0].files).toHaveLength(5);
+    expect(required(result.manifests[0]).files).toHaveLength(5);
     expect(result.missing).toEqual([]);
   });
 
@@ -164,7 +165,7 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     const { outDir } = await buildSample();
     const { pageScript, offlineClient } = await bundles();
     const scriptSrc = (rel: string) =>
-      /script-src ([^;]+);/.exec(readFileSync(path.join(outDir, rel), 'utf8'))?.[1].split(' ') ?? [];
+      /script-src ([^;]+);/.exec(readFileSync(path.join(outDir, rel), 'utf8'))?.[1]?.split(' ') ?? [];
     expect(scriptSrc('site-sample/index.html')).toEqual(
       [WWW_REDIRECT_SCRIPT, pageScript, offlineClient].map(scriptHash),
     );
@@ -185,7 +186,7 @@ describe('講座サイトの組み立て（合成の講座）', () => {
       title: '見本 __DOCS_NOTE__ の講座',
       headline: '{{tabQuiz}} と __COURSE_JSON__',
       docsNote: '__HEADLINE__ と </script><script>alert(1)</script>',
-      lectures: [{ ...SAMPLE_COURSE.lectures[0], title: '__TITLE__ {{sep}}' }, SAMPLE_COURSE.lectures[1]],
+      lectures: [{ ...required(SAMPLE_COURSE.lectures[0]), title: '__TITLE__ {{sep}}' }, required(SAMPLE_COURSE.lectures[1])],
     };
     const { outDir } = await buildSample({ courses: { ja: [tricky], en: [], zh: [] } });
     const page = readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8');
@@ -199,7 +200,7 @@ describe('講座サイトの組み立て（合成の講座）', () => {
     const json = /<script id="course-data" type="application\/json">([\s\S]*?)<\/script>/.exec(page)?.[1] ?? '';
     const data = JSON.parse(json) as { course: { title: string }; lectures: { title: string }[] };
     expect(data.course.title).toBe('見本 __DOCS_NOTE__ の講座');
-    expect(data.lectures[0].title).toBe('__TITLE__ {{sep}}');
+    expect(required(data.lectures[0]).title).toBe('__TITLE__ {{sep}}');
     const home = readFileSync(path.join(outDir, 'index.html'), 'utf8');
     expect(home).toContain('<h3>見本 &#95;_DOCS_NOTE__ の講座</h3>');
   });
@@ -303,7 +304,7 @@ describe('言語ごとの公開物（無いページ・Web App Manifest・sitema
   test('JS が無くても、最初のレクチャーの要約・要点・チャプターと、カリキュラム・本数と長さ・クレジットを読める', async () => {
     const { outDir } = await buildSample();
     const page = readFileSync(path.join(outDir, 'site-sample/index.html'), 'utf8');
-    const first = SAMPLE_COURSE.lectures[0];
+    const first = required(SAMPLE_COURSE.lectures[0]);
     expect(page).toContain(`<h2 id="nowTitle">${first.title}</h2>`);
     expect(page).toContain(`<p id="summary">${first.summary}</p>`);
     for (const t of first.takeaways) expect(page).toContain(`<li><span>${t}</span></li>`);
@@ -351,7 +352,7 @@ describe('無効にした保存版の一覧（site/disabled-revisions.ts）', ()
       `今公開する版を無効にしている（site-sample）: ${rev('c')}。直した版を公開してから、前の版の revision を入れる`,
     ]);
     const { result } = await buildSample();
-    await expect(buildSample({ disabledRevisions: [result.manifests[0].revision] })).rejects.toThrow(
+    await expect(buildSample({ disabledRevisions: [required(result.manifests[0]).revision] })).rejects.toThrow(
       '今公開する版を無効にしている',
     );
   });

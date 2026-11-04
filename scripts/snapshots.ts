@@ -69,7 +69,7 @@ const byName = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 /** 台詞の 1 行を読む（前の形の、v2 の鍵の無い 4 つの行は、v2 を空にする） */
 const parseLine = (line: string) => {
   const [at, voice, v1, speech, v2 = ''] = line.split(' ');
-  return { at, voice, v1: v1 === '-' ? null : v1, speech, v2 };
+  return { at: at!, voice, v1: v1 === '-' ? null : v1, speech, v2 };
 };
 /** 台詞の 1 行の鍵（v1 と v2。無いものは除く） */
 const keysOfLine = (line: string) => {

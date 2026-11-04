@@ -97,16 +97,17 @@ export function validateManifest(value: unknown, id: string, scope: string, lega
         continue;
       }
       const rest = inMedia ? url.href.slice(legacyRoot.length) : url.href.slice(scope.length);
-      const match = new RegExp(`^${inMedia ? '' : `${lang ? `${lang}\\/` : ''}`}([A-Za-z0-9][A-Za-z0-9_-]*)\\/${inMedia ? '' : 'media\\/'}${MEDIA_NAME}\\?v=([a-f0-9]{64})$`).exec(rest);
+      const match = new RegExp(`^${inMedia ? '' : `${lang ? `${lang}\\/` : ''}`}([A-Za-z0-9][A-Za-z0-9_-]*)\\/${inMedia ? '' : 'media\\/'}${MEDIA_NAME}\\?v=([a-f0-9]{64})$`).exec(rest) as (RegExpExecArray & { 2: string }) | null;
+      // 正規表現の捕捉群 2（名前）と 4（拡張子）は、一致したときは必ずある。
       // 訳の講座の動画は、名前の終わりに講座の言語が付く（S01.en）。日本語の講座は付かない（S01）
-      const nameLang = match?.[2].includes('.') ? match[2].split('.')[1] : '';
+      const nameLang = match?.[2].includes('.') ? match[2]!.split('.')[1] : '';
       if (!match || match[1] !== slug || nameLang !== lang || match[5] !== m.pageVersion || f.type !== (match[4] === 'mp4' ? 'video/mp4' : 'image/jpeg') || (match[3] && match[4] !== 'mp4')) {
         throw new OfflineError('media');
       }
       // 字幕を焼き込んだ版（.cc.mp4）は、同じレクチャーの動画とポスターに足すもの
-      const types = media.get(match[2]) ?? new Set<string>();
-      types.add(match[3] ? 'cc' : match[4]);
-      media.set(match[2], types);
+      const types = media.get(match[2]!) ?? new Set<string>();
+      types.add(match[3] ? 'cc' : match[4]!);
+      media.set(match[2]!, types);
     }
     bytes += f.bytes;
   }
@@ -153,7 +154,7 @@ export const QUARANTINE_DAYS = 30;
 export const quarantineName = (cache: string, at: number) => `quarantine:${at}:${cache}`;
 export function parseQuarantineName(name: string): { at: number; cache: string } | null {
   const m = /^quarantine:(\d{1,16}):(.+)$/.exec(name);
-  return m ? { at: Number(m[1]), cache: m[2] } : null;
+  return m ? { at: Number(m[1]), cache: m[2]! } : null;
 }
 
 export type CleanupInput = {

@@ -13,8 +13,18 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "lib": ["DOM", "ES2022"],
-    "types": []
+    "lib": [
+      "DOM",
+      "ES2022"
+    ],
+    "types": [],
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
   },
-  "include": ["src", "content", "engine", "remotion.config.ts"]
+  "include": [
+    "src",
+    "content",
+    "engine",
+    "remotion.config.ts"
+  ]
 }

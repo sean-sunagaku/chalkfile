@@ -1,6 +1,7 @@
 // 動画の書き出し（scripts/stages/video/render.ts・plan.ts）。ファイルを読み書きしない部分（フレームの範囲・crf・名前・ffmpeg の引数・
 // ffprobe の確かめ・引数と環境変数）と、偽の Remotion・ffmpeg・ffprobe で流す書き出しの順番（一時の名前から置き換える・失敗と
 // Ctrl-C で前の出力を残し、一時のファイルを残さない・記録の前後）を確かめる。本物の書き出しはしない（ファイルは一時のフォルダにだけ書く）
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import {
   existsSync,
@@ -65,7 +66,7 @@ describe('フレームの範囲と crf（純粋な関数）', () => {
       [10.5, 0],
       [10, -1],
       [10, 1.5],
-    ])
+    ] as const)
       expect(() => chunkRanges(total, chunk)).toThrow();
   });
   test('crf は 21 から 2 ずつ 29 まで。6 分（360 秒・切り捨て）より長い動画は 27 から', () => {
@@ -380,7 +381,7 @@ const render = async (fake: Fake = {}) => {
       },
     }),
     ffmpeg: async (args) => {
-      const out = args[args.length - 1];
+      const out = required(args[args.length - 1]);
       calls.push(
         `ffmpeg ${args.includes('concat') ? 'concat' : args.includes('-ss') ? 'poster' : `crf ${args[args.indexOf('-crf') + 1]}`} ${rel(out)}`,
       );

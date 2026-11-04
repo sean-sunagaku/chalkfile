@@ -64,9 +64,10 @@ function load(i: number, autoplay: boolean) {
   if (!Number.isInteger(i) || i < 0 || i >= page.lectures.length) return;
   saveProgress();
   page.current = i;
-  const lec = page.lectures[i];
+  // 上の整数・範囲の検査を通った添字だけを使う。
+  const lec = page.lectures[i]!;
   transcript.reset();
-  const p = progress[lec.id];
+  const p = progress[lec.id]!; // 直前の ??= で初期化済み
   player.open(lec, p && !p.done ? p.t : 0, autoplay);
   // メモの見出しは、続きの時刻にする（動画を読むまで、再生の時刻は進まない）
   notes.label(player.position());
@@ -111,7 +112,7 @@ video.addEventListener('timeupdate', () => {
   player.caption(cue && t <= cue.end + 0.7 ? cue.text : '');
   if (transcript.markCue(k)) overview.markChapter(t);
   progress[lec.id] ??= { t: 0, max: 0, done: false };
-  const p = progress[lec.id];
+  const p = progress[lec.id]!; // 直前の ??= で初期化済み
   p.t = t;
   if (lec.duration) p.max = Math.max(p.max, t / lec.duration);
   if (!p.done && p.max > 0.94) {
@@ -132,7 +133,7 @@ video.addEventListener('ended', () => {
   progress[id].t = 0;
   store.saveProgress(progress);
   curriculum.renderAll();
-  if (page.current < page.lectures.length - 1) player.offerNext(page.lectures[page.current + 1]);
+  if (page.current < page.lectures.length - 1) player.offerNext(page.lectures[page.current + 1]!);
 });
 byId('prevBtn').addEventListener('click', () => load(page.current - 1, true));
 byId('nextBtn').addEventListener('click', () => load(page.current + 1, true));
@@ -178,7 +179,7 @@ if (ui.searchHint) {
 player.setCc(page.learning.prefs.cc);
 curriculum.renderCourseProgress();
 const fromHash = location.hash.replace('#', '');
-const startId = page.lectures.some((l) => l.id === fromHash) ? fromHash : (store.last() ?? page.lectures[0].id);
+const startId = page.lectures.some((l) => l.id === fromHash) ? fromHash : (store.last() ?? page.lectures[0]!.id);
 load(
   Math.max(
     0,

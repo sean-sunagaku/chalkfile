@@ -11,7 +11,7 @@ const iface = process.argv.find((a) => a.startsWith('--disconnect-wifi='))?.spli
 if (iface && !/^en\d+$/.test(iface)) throw new Error('Wi-Fi interfaceの形式が不正です');
 if (process.argv[2] === '--restore-wifi') {
   const restore = process.argv[3];
-  if (!/^en\d+$/.test(restore)) throw new Error('復旧先interfaceが不正です');
+  if (!restore || !/^en\d+$/.test(restore)) throw new Error('復旧先interfaceが不正です');
   await Bun.sleep(45000);
   process.exit(
     Bun.spawnSync(['sudo', '-n', '/usr/sbin/networksetup', '-setairportpower', restore, 'on'], {
@@ -40,10 +40,11 @@ const record = () =>
     JSON.stringify(receipt, null, 2),
   );
 async function command(method: string, route: string, body?: unknown) {
+  const json = body === undefined ? undefined : JSON.stringify(body);
   const response = await fetch(driver + (route === '/session' ? route : `/session/${session}${route}`), {
     method,
     headers: { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    ...(json === undefined ? {} : { body: json }),
     signal: AbortSignal.timeout(60000),
   });
   const { value } = await response.json();

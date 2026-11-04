@@ -1,4 +1,5 @@
 // 道具の部品（scripts/lib/）の単体テスト。ファイルは一時のフォルダにだけ書く
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -91,8 +92,8 @@ for (let i = 0; i < 8; i++)
     const lines = readFileSync(log, 'utf8').trim().split('\n');
     expect(lines).toHaveLength(32);
     for (let i = 0; i < lines.length; i += 2) {
-      expect(lines[i].endsWith(' in')).toBe(true);
-      expect(lines[i + 1]).toBe(lines[i].replace(/ in$/, ' out'));
+      expect(required(lines[i]).endsWith(' in')).toBe(true);
+      expect(lines[i + 1]).toBe(required(lines[i]).replace(/ in$/, ' out'));
     }
     expect(existsSync(lock)).toBe(false);
   });

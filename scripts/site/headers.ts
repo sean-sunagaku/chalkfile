@@ -67,8 +67,8 @@ export const parseHeaders = (text: string): HeaderRule[] => {
     const detach = /^\s+!\s*([A-Za-z0-9-]+)\s*$/.exec(line);
     const header = /^\s+([A-Za-z0-9-]+):\s*(.*?)\s*$/.exec(line);
     if (!rule || (!detach && !header)) throw new Error(`_headers の ${i + 1} 行目が読めない: ${line}`);
-    if (detach) rule.detach.push(detach[1]);
-    else if (header) rule.set[header[1]] = header[2];
+    if (detach) rule.detach.push(detach[1]!);
+    else if (header) rule.set[header[1]!] = header[2]!;
   }
   return rules;
 };

@@ -19,7 +19,7 @@ import { type AppParts, type CoursesIn, favicon, headMeta, langNav, textOf } fro
  */
 export const homePosterOf = (c: Course, root: string, version: string) => {
   const l = (c.lang ?? 'ja') as Lang;
-  const key = videoKey(c.lectures[0].id, l);
+  const key = videoKey(c.lectures[0]!.id, l);
   return `${root}${LANG_INFO[l].path}${c.id}/media/${key}.jpg?v=${version}`;
 };
 
@@ -204,7 +204,7 @@ export const renderHomePage = (p: HomePageInput): string => {
     FONT_LINK: raw(fontLink(p.brand, lang)),
     THEME_CSS: styleText(themeCss(p.brand, lang)),
     SERIES: html`${p.config.series}`,
-    FIRST_COURSE: html`${courses[0] ? `${courses[0].id}/` : `${root}${all[0].id}/`}`,
+    FIRST_COURSE: html`${courses[0] ? `${courses[0].id}/` : `${root}${all[0]!.id}/`}`,
     HERO_FILE: html`${p.hero.file}`,
     HERO_CODE: joinHtml(
       p.hero.lines.map((l) => highlightTs(l, p.brand.syntax)),

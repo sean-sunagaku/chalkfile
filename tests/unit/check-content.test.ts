@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -45,7 +46,7 @@ const ODD = new RegExp(
     [0x2066, 0x2069],
     [0xfeff, 0xfeff],
   ]
-    .map(([a, b]) => `${ch(a)}-${ch(b)}`)
+    .map(([a, b]) => `${ch(required(a))}-${ch(required(b))}`)
     .join('')}]`,
   'g',
 );
@@ -224,8 +225,8 @@ describe('ファイルの中の制御文字を止める（タブ・改行・復�
   test('見つけた所を出すとき、制御文字を端末に流さない', () => {
     const out: Finding[] = [];
     checkFileText('a.ts', `x${ESC}]0;title${ch(7)}`, out, []);
-    expect(out[0].sample).not.toContain(ESC);
-    expect(out[0].sample).toContain('⟨制御文字⟩');
+    expect(required(out[0]).sample).not.toContain(ESC);
+    expect(required(out[0]).sample).toContain('⟨制御文字⟩');
   });
 });
 
@@ -482,7 +483,7 @@ describe('スキルの頭書きに hooks・allowed-tools を書かない', () =>
   test.each(
     named(
       ['allowed-tools: Bash', `hooks:${LF}  PreToolUse: []`].map((s) => [s] as [string]),
-      (s) => s.split(LF)[0],
+      (s) => required(s.split(LF)[0]),
     ),
   )('%s', (_name, line) => {
     expect(of(`---${LF}name: x${LF}${line}${LF}---${LF}本文${LF}`)).toEqual(['claude']);

@@ -32,6 +32,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
   const { C, MONO, SYNTAX, tone } = usePalette();
   const frame = useCurrentFrame();
   const { lines } = useScene();
+  // activeMark は marks の走査で得る添字。注の位置も同じ marks から作る。
   const activeMark = useCurrentIndex(s.marks);
   const codeLines = s.code.split('\n');
   const edTop = CONTENT_TOP + 6;
@@ -99,7 +100,7 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
             })}
             {codeLines.map((ln, i) => {
               const o = ramp(frame - show - i * 1.2, 0, 8);
-              const inMark = activeMark >= 0 && i + 1 >= s.marks[activeMark].from && i + 1 <= s.marks[activeMark].to;
+              const inMark = activeMark >= 0 && i + 1 >= s.marks[activeMark]!.from && i + 1 <= s.marks[activeMark]!.to;
               return (
                 <div
                   key={i}
@@ -138,9 +139,9 @@ const CodeView: React.FC<{ s: CodeScene }> = ({ s }) => {
         ? s.marks.map((m, i) => {
             if (!m.note || (i !== activeMark && i !== activeMark - 1)) return null;
             // ひとつ前の注釈は、次の注釈が出るときに消す
-            const out = i === activeMark - 1 ? lineStart(lines, s.marks[activeMark].at) - LEAD.appear : null;
+            const out = i === activeMark - 1 ? lineStart(lines, s.marks[activeMark]!.at) - LEAD.appear : null;
             return (
-              <Note key={i} m={m} y={notePos[i].y} center={notePos[i].center} left={PAD + edW} out={out} h={noteH} />
+              <Note key={i} m={m} y={notePos[i]!.y} center={notePos[i]!.center} left={PAD + edW} out={out} h={noteH} />
             );
           })
         : null}

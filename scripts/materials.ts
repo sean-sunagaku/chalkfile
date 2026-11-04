@@ -134,7 +134,7 @@ const git = (root: string, args: string[], opts: GitOpts = {}): string => {
   if (r.code !== 0) throw new Error(`git ${args[0]} が失敗した: ${r.err.trim() || `終了コード ${r.code}`}`);
   return r.out.trim();
 };
-/** ファイルの blob の ID（write なら、オブジェクトとして書く） */
+/** ファイルの blob の ID（write なら、オブジェクトとして書く）。git hash-object は入力の順に 1 ファイル 1 行を返す */
 const hashFiles = (root: string, files: string[], write: boolean): string[] =>
   files.length ? git(root, ['hash-object', ...(write ? ['-w'] : []), '--no-filters', '--stdin-paths'], { input: `${files.join('\n')}\n` }).split('\n') : [];
 const hashText = (root: string, text: string, write: boolean): string => git(root, ['hash-object', ...(write ? ['-w'] : []), '--stdin'], { input: text });
@@ -278,7 +278,7 @@ const isSidecar = (rel: string) => rel.endsWith('.kana') || rel.endsWith('.meta.
 /** ブランチの中のパス → 取り出した後の手元のパス（SHA256SUMS に書くパス）。素材でないもの（README など）は undefined */
 const localOf = (p: string): string | undefined => {
   const m = TTS_PATH.exec(p);
-  if (m) return `${TTS}/${m[2]}.${m[3] === 'flac' ? 'wav' : m[3]}`;
+  if (m) return `${TTS}/${m[2]!}.${m[3] === 'flac' ? 'wav' : m[3]}`;
   const a = AUDIO.find((x) => p.startsWith(`${x.inBranch}/`));
   return a && p.endsWith('.flac') ? `${a.local}/${p.slice(a.inBranch.length + 1, -'.flac'.length)}.wav` : undefined;
 };
@@ -286,7 +286,7 @@ const localOf = (p: string): string | undefined => {
 /** 数えるときのまとまり（台詞は .flac・.kana・.meta.json で 1 本）と、その講座（BGM・効果音は audio） */
 const clipOf = (p: string): { clip: string; group: string } | undefined => {
   const m = TTS_PATH.exec(p);
-  if (m) return { clip: `tts/${m[1]}/${m[2]}`, group: m[1] };
+  if (m) return { clip: `tts/${m[1]!}/${m[2]!}`, group: m[1]! };
   return localOf(p) ? { clip: p, group: 'audio' } : undefined;
 };
 
@@ -322,14 +322,14 @@ const parseSums = (text: string): Map<string, string> => {
   for (const line of text.split('\n').filter(Boolean)) {
     const m = /^([0-9a-f]{64}) [ *](.+)$/.exec(line);
     if (!m) throw new Error(`SHA256SUMS が読めない: ${line.slice(0, 80)}`);
-    sums.set(m[2], m[1]);
+    sums.set(m[2]!, m[1]!);
   }
   return sums;
 };
 const sumsText = (sums: Map<string, string>) => `${[...sums].sort(([a], [b]) => byPath(a, b)).map(([rel, h]) => `${h}  ${rel}`).join('\n')}\n`;
 
 /** 素材の README の表から、講座ごとの説明を読む（手元の台本に無い講座の行を、そのまま引き継ぐ） */
-const parseAbout = (readme: string) => new Map([...readme.matchAll(/^\| `tts\/([^/`]+)\/` \| (.+) \| [\d,]+ 本 \| [\d.]+MB \|$/gm)].map((m) => [m[1], m[2]]));
+const parseAbout = (readme: string) => new Map([...readme.matchAll(/^\| `tts\/([^/`]+)\/` \| (.+) \| [\d,]+ 本 \| [\d.]+MB \|$/gm)].map((m) => [m[1]!, m[2]!]));
 
 /** 素材のブランチを取ってきて、木の中身・SHA256SUMS・README の説明を読む */
 const readRemote = (repo: Repo): Remote => {
@@ -339,7 +339,8 @@ const readRemote = (repo: Repo): Remote => {
   for (const row of git(repo.root, ['ls-tree', '-r', '-l', '-z', sha]).split('\0')) {
     const tab = row.indexOf('\t');
     if (tab < 0) continue;
-    const [, type, blob, size] = row.slice(0, tab).split(/ +/);
+    // git ls-tree のヘッダーは mode/type/blob/size の 4 欄。
+    const [, type, blob, size] = row.slice(0, tab).split(/ +/) as [string, string, string, string];
     if (type === 'blob') entries.set(row.slice(tab + 1), { blob, size: Number(size) });
   }
   const text = (p: string) => {
@@ -398,8 +399,8 @@ const durationsFor = (paths: Iterable<string>, sums: Map<string, string>, local:
   let unknown = 0;
   for (const p of paths) {
     const m = TTS_PATH.exec(p);
-    if (!m || m[3] !== 'flac' || seen.has(m[2])) continue;
-    const key = m[2];
+    if (!m || m[3] !== 'flac' || seen.has(m[2]!)) continue;
+    const key = m[2]!;
     seen.add(key);
     const rel = `${TTS}/${key}.wav`;
     const sha = sums.get(rel);
@@ -433,8 +434,8 @@ const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, prev
     total += e.size;
     const m = TTS_PATH.exec(p);
     if (m) {
-      const c = perCourse.get(m[1]) ?? { clips: 0, bytes: 0 };
-      perCourse.set(m[1], { clips: c.clips + (m[3] === 'flac' ? 1 : 0), bytes: c.bytes + e.size });
+      const c = perCourse.get(m[1]!) ?? { clips: 0, bytes: 0 };
+      perCourse.set(m[1]!, { clips: c.clips + (m[3] === 'flac' ? 1 : 0), bytes: c.bytes + e.size });
     } else if (localOf(p)) {
       audio.count++;
       audio.bytes += e.size;
@@ -566,7 +567,8 @@ const readLocal = (repo: Repo, courses: CourseKeys[]): Local => {
   const sha256 = new Map([...present].map(([rel, file]) => [rel, sha256Of(file)]));
   const sidecarFiles = [...present].filter(([rel]) => isSidecar(rel));
   const blobs = hashFiles(repo.root, sidecarFiles.map(([, file]) => file), false);
-  const sidecar = new Map(sidecarFiles.map(([rel, file], i): [string, Entry] => [rel, { blob: blobs[i], size: statSync(file).size }]));
+  // blobs は sidecarFiles と同じ順・同じ数。
+  const sidecar = new Map(sidecarFiles.map(([rel, file], i): [string, Entry] => [rel, { blob: blobs[i]!, size: statSync(file).size }]));
   return { sha256, sidecar, files: present };
 };
 
@@ -607,7 +609,7 @@ const planPush = (remote: Remote, local: Local, courses: CourseKeys[]): Plan => 
     if (remote.sums.get(rel) === hash) {
       // 前の版と同じ音声。置いてある FLAC をそのまま使う（FLAC にし直さない。ffmpeg の版が違っても、木は変わらない）
       if (remote.entries.has(p)) plan.same.add(p);
-      else plan.changes.set(p, { action: 'add', rel, ...(others.length ? remote.entries.get(others[0]) : {}) });
+      else plan.changes.set(p, { action: 'add', rel, ...(others.length ? remote.entries.get(others[0]!) : {}) });
       return;
     }
     // 音声が違うか、前の一覧に無い。FLAC にし直し、同じファイルを指すほかのパスもそろえる
@@ -653,14 +655,16 @@ type Counts = Record<'add' | 'change' | 'same' | 'keep' | 'missing', number>;
 const LABELS: [keyof Counts, string][] = [['add', '足す'], ['change', '変える'], ['same', '同じ'], ['keep', '残す'], ['missing', '手元に無い']];
 const fmt = (c: Counts | undefined) => LABELS.filter(([k]) => c?.[k]).map(([k, label]) => `${label} ${c![k]}`).join('・') || 'なし';
 const RANK = ['keep', 'same', 'change', 'add'] as const;
+type Rank = 0 | 1 | 2 | 3;
 
 /** 台詞（.flac・.kana・.meta.json で 1 本）と BGM・効果音を、講座ごとに「足す・変える・同じ・残す」で数える */
 const tally = (remote: Remote, plan: Plan): Map<string, Counts> => {
-  const status = new Map<string, { group: string; rank: number }>();
+  const status = new Map<string, { group: string; rank: Rank }>();
   for (const p of new Set([...remote.entries.keys(), ...plan.changes.keys()])) {
     const at = clipOf(p);
     if (!at) continue;
-    const rank = RANK.indexOf(plan.changes.get(p)?.action ?? (plan.same.has(p) ? 'same' : 'keep'));
+    // 操作は RANK にある 4 種類だけなので、indexOf は 0〜3。
+    const rank = RANK.indexOf(plan.changes.get(p)?.action ?? (plan.same.has(p) ? 'same' : 'keep')) as Rank;
     if ((status.get(at.clip)?.rank ?? -1) < rank) status.set(at.clip, { group: at.group, rank });
   }
   const groups = new Map<string, Counts>();
@@ -674,7 +678,7 @@ const tally = (remote: Remote, plan: Plan): Map<string, Counts> => {
  * 手元の素材を、素材のブランチに足す（消さない）。リモートの木に足すか上書きした木を、取ってきたコミットを親にして push する。
  * lease は取ってきたコミットの SHA。拒否されたら、取り直してまとめ直し、3 回まで push し直す。木が前と同じなら push しない
  */
-export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { dryRun?: boolean; message?: string } = {}): Promise<Result> => {
+export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { dryRun?: boolean; message?: string | undefined } = {}): Promise<Result> => {
   const log = opts.log ?? console.log;
   const convert = opts.convert ?? ffmpegConvert;
   const measure = opts.measure ?? wavFileSamples;
@@ -738,18 +742,18 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       if (todo.length) {
         log(`FLAC にする: ${todo.length} 本`);
         const files = todo.map((rel) => path.join(tmpDir(), 'flac', rel.replace(/\.wav$/, '.flac')));
-        await convert(todo.map((rel, i): [string, string] => [fileOf(local, rel), files[i]]), 'flac');
+        await convert(todo.map((rel, i): [string, string] => [fileOf(local, rel), files[i]!] ), 'flac');
         const blobs = hashFiles(repo.root, files, true);
         todo.forEach((rel, i) => {
-          flacs.set(rel, { blob: blobs[i], size: statSync(files[i]).size });
+          flacs.set(rel, { blob: blobs[i]!, size: statSync(files[i]!).size });
         });
       }
       for (const c of plan.changes.values()) if (!c.blob) Object.assign(c, flacs.get(c.rel));
       // 読みと声の記録をオブジェクトとして書く（ID は、前に書かずに求めたものと同じになる）
       const sideRels = [...new Set([...plan.changes.values()].map((c) => c.rel).filter((rel) => isSidecar(rel) && !written.has(rel)))];
       hashFiles(repo.root, sideRels.map((rel) => fileOf(local, rel)), true).forEach((blob, i) => {
-        if (blob !== local.sidecar.get(sideRels[i])?.blob) throw new Error(`読みか声の記録のファイルが途中で変わった: ${sideRels[i]}`);
-        written.add(sideRels[i]);
+        if (blob !== local.sidecar.get(sideRels[i]!)?.blob) throw new Error(`読みか声の記録のファイルが途中で変わった: ${sideRels[i]}`);
+        written.add(sideRels[i]!);
       });
 
       const entries = overlay(remote.entries, plan.changes)!;
@@ -815,7 +819,7 @@ const guard = (repo: Repo): string[] => {
  * --keep の ref の台本が使わない台詞の音声（講座ごとのフォルダの .flac・.kana・.meta.json）を一覧にする。BGM・効果音は消さない。
  * confirm のときだけ、消した木を親の無いコミットにして push する（それまでの履歴を切り、消した素材を履歴にも残さない）
  */
-export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boolean; message?: string } = {}): Promise<Result> => {
+export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boolean; message?: string | undefined } = {}): Promise<Result> => {
   const log = opts.log ?? console.log;
   const want = new Map<string, Set<string>>();
   const abouts = new Map<string, string>();
@@ -837,10 +841,10 @@ export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boo
       for (const p of remote.entries.keys()) {
         const m = TTS_PATH.exec(p);
         if (!m) continue;
-        const c = clips.get(m[1]) ?? clips.set(m[1], { keep: new Set(), drop: new Set() }).get(m[1])!;
-        if (want.get(m[1])?.has(m[2])) c.keep.add(m[2]);
+        const c = clips.get(m[1]!) ?? clips.set(m[1]!, { keep: new Set(), drop: new Set() }).get(m[1]!)!;
+        if (want.get(m[1]!)?.has(m[2]!)) c.keep.add(m[2]!);
         else {
-          c.drop.add(m[2]);
+          c.drop.add(m[2]!);
           drop.push(p);
         }
       }

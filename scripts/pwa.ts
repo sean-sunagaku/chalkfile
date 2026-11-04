@@ -45,7 +45,7 @@ function icon(size: number, t: Theme, b: Board = BOARD): Buffer {
     const rect = u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1;
     const line = rect && v >= b.line;
     const color = line ? chalk : rect ? board : bg;
-    for (let c = 0; c < 3; c++) pixels[y * row + 1 + x * 3 + c] = color[c];
+    for (let c = 0; c < 3; c++) pixels[y * row + 1 + x * 3 + c] = color[c]!;
   }
   const header = Buffer.alloc(13);
   header.writeUInt32BE(size, 0); header.writeUInt32BE(size, 4); header[8] = 8; header[9] = 2;
@@ -60,7 +60,7 @@ function icon(size: number, t: Theme, b: Board = BOARD): Buffer {
 export async function bundle(file: string): Promise<string> {
   const result = await Bun.build({ entrypoints: [file], target: 'browser', format: 'iife', minify: true });
   if (!result.success) throw new Error(result.logs.join('\n'));
-  return result.outputs[0].text();
+  return result.outputs[0]!.text();
 }
 
 export type PwaOptions = {
@@ -119,7 +119,7 @@ export async function buildPwa(site: string, dist: string, o: PwaOptions) {
   // __ROOT__ は、SW が配るときにアプリの場所にする（sw.ts の fallback）
   const text = (k: string) => {
     const [lang, key] = k.split('.');
-    return isLang(lang) && key ? textOf(LOCALES[lang].offlinePage)(key) : undefined;
+    return isLang(lang!) && key ? textOf(LOCALES[lang!].offlinePage)(key) : undefined;
   };
   const offline = Buffer.from(fillTemplate(readFileSync(path.join(site, 'offline.html'), 'utf8'), { text, keep: ['ROOT'] }, 'site/offline.html'));
   // Workers の HTML 正規化による転送を避け、redirect:error の保存取得で読める正規 URL を使う。
@@ -136,5 +136,5 @@ export async function buildPwa(site: string, dist: string, o: PwaOptions) {
     define: { __BUILD_CONFIG__: JSON.stringify({ build, courses, shell, disabledRevisions, messages }) },
   });
   if (!result.success) throw new Error(result.logs.join('\n'));
-  writeFileSync(path.join(dist, 'sw.js'), await result.outputs[0].text());
+  writeFileSync(path.join(dist, 'sw.js'), await result.outputs[0]!.text());
 }

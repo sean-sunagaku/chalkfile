@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -78,7 +79,7 @@ describe('保存の確かめ（site/offline-shared.ts の validateManifest）', 
     // 動画を上限の大きさで並べ、最後の 1 本で合計をちょうど上限にする
     const lectures = Math.ceil(OFFLINE_COURSE_MAX_BYTES / OFFLINE_FILE_MAX_BYTES);
     const exact = manifest({ video: OFFLINE_FILE_MAX_BYTES, lectures });
-    const last = exact.files[exact.files.length - 2];
+    const last = required(exact.files[exact.files.length - 2]);
     last.bytes -= exact.files.reduce((n, f) => n + f.bytes, 0) - OFFLINE_COURSE_MAX_BYTES;
     expect(result(exact)).toBe('ok');
     last.bytes += 1;

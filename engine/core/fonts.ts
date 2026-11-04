@@ -31,7 +31,7 @@ export type FontFile = {
 export type FontDef = {
   /** CSS の font-family の名前（元の書体と同じ名前） */
   family: string;
-  files: readonly FontFile[];
+  files: readonly [FontFile, ...FontFile[]];
   /** 文字を集める言語（この言語の台本の文字だけを入れる） */
   langs: readonly Lang[];
   /**

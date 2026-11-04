@@ -29,6 +29,13 @@ export type TimedScene = { kind: Scene['kind']; heading: string; start: number; 
 /** 時刻を決めた動画 1 本（duration は秒） */
 export type Timed = { scenes: TimedScene[]; duration: number };
 
+/** 台本の順に声がそろっているかを確かめて取り出す。ログと受け渡しのファイルにも同じ検査を使う */
+const voiceAt = (voices: LineVoice[][], scene: number, line: number, id: string): LineVoice => {
+  const voice = voices[scene]?.[line];
+  if (!voice) throw new Error(`声が渡されていない: ${id} s${scene + 1}-${line + 1}`);
+  return voice;
+};
+
 /**
  * 場面と台詞の時刻を決める。voices[場面][台詞] はその台詞の声（台本の順）。
  * 台詞の開始はフレームに丸めた時刻を正にする（映像と音を同じ時刻でそろえる）。場面の終わりもフレームに丸める
@@ -43,8 +50,7 @@ export const layout = (lecture: Lecture, voices: LineVoice[][], fps: number, tim
     let cursor = start + (scene.kind === 'opening' ? timing.openingLeadIn : timing.leadIn);
     const lines: TimedLine[] = [];
     for (const [li, line] of scene.lines.entries()) {
-      const voice = voices[si]?.[li];
-      if (!voice) throw new Error(`声が渡されていない: ${lecture.id} s${si + 1}-${li + 1}`);
+      const voice = voiceAt(voices, si, li, lecture.id);
       const ls = toFrame(cursor) / fps;
       // 負の pause は台詞の間を詰める（食い気味のツッコミ）。声が重ならないよう、最短の間は空ける
       const pauseAfter = Math.max(timing.minGap, timing.gap + (line.pause ?? 0));
@@ -151,7 +157,7 @@ export const kanaLogOf = (key: string, lecture: Lecture, lang: Lang, voices: Lin
       scene.lines.map((line, li) => {
         const text = speechIn(line, lang);
         const said = text !== line.t && lang !== 'ja' ? `\n    読み: ${text}` : '';
-        return `${key} s${si + 1}-${li + 1} [${line.v ?? 'narrator'}] ${line.t}${said}\n    ${voices[si][li].kana}`;
+        return `${key} s${si + 1}-${li + 1} [${line.v ?? 'narrator'}] ${line.t}${said}\n    ${voiceAt(voices, si, li, lecture.id).kana}`;
       }),
     )
     .join('\n');
@@ -170,7 +176,7 @@ export const speechFileOf = (key: string, lecture: Lecture, lang: Lang, voices: 
             voice: line.v ?? 'narrator',
             t: line.t,
             speech: speechIn(line, lang),
-            file: voices[si][li].file,
+            file: voiceAt(voices, si, li, lecture.id).file,
           })),
         ),
       };

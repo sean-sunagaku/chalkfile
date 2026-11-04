@@ -21,8 +21,8 @@ export type PlanLine = {
   end: number;
   /** 次の台詞までの間（秒） */
   pauseAfter: number;
-  sfx?: SfxId;
-  sfxAfter?: SfxId;
+  sfx?: SfxId | undefined;
+  sfxAfter?: SfxId | undefined;
   bgm?: Line['bgm'];
 };
 export type PlanScene = { kind: Scene['kind']; start: number; end: number; lines: PlanLine[] };

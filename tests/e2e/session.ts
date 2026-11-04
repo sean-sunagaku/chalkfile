@@ -3,6 +3,7 @@
 // 状態はセッションごとに持つので、ほかのテストの差し込みが混ざらない（Playwright の workers を 2 以上にできる）。
 // 旧 Pages（scope は site/legacy-config.json）は、前の公開（tests/fixtures/legacy-pages）と、公開済みの移行の案内（tests/fixtures/legacy-migration）を配る。
 // 移行の案内は凍結した公開物をそのまま使い、今のソース（site/legacy-sw.ts・scripts/build_migration.ts）から作り直さない
+import { required } from '../support/required';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -71,15 +72,15 @@ export class Session {
       page = page.replaceAll(m.pageVersion, version).replace('</title>', '（更新テスト）</title>');
       m.pageVersion = version;
       for (const f of m.files) if (f.url.includes('?v=')) f.url = f.url.replace(/\?v=.*/, `?v=${version}`);
-      m.files[0].sha256 = sha256(page);
-      m.files[0].bytes = Buffer.byteLength(page);
+      required(m.files[0]).sha256 = sha256(page);
+      required(m.files[0]).bytes = Buffer.byteLength(page);
       m.bytes = m.files.reduce((n, f) => n + f.bytes, 0);
       m.revision = sha256(JSON.stringify(m.files));
       // 新しい版で変わったこと（画面は、保存した日より後の日付のものを出す。テストの日の日付にする）
       m.news = [{ date: new Date().toISOString().slice(0, 10), text: UPDATE_NEWS }, ...(m.news ?? [])];
     }
     if (this.control.mode === 'external') {
-      m.files[1].url = 'https://example.com/restricted.mp4';
+      required(m.files[1]).url = 'https://example.com/restricted.mp4';
       m.revision = sha256(JSON.stringify(m.files));
     }
     return { manifest: m, page };
@@ -139,7 +140,9 @@ export class Session {
     }
     if (mode === 'corrupt') {
       data = Buffer.from(data);
-      data[100] ^= 255;
+      const byte = data[100];
+      if (byte === undefined) throw new Error('破損の検査には 101 バイト以上の動画が要る');
+      data[100] = byte ^ 255;
     }
     if (mode === 'truncated') data = data.subarray(0, Math.floor(data.length / 2));
     if (mode === 'delay') await Bun.sleep(8000);

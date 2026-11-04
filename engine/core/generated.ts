@@ -21,11 +21,13 @@ export const mediaListFile = (courseId: string, lang: string) => `${generatedDir
 /** timeline のファイルのパスから、講座 ID と動画の名前を取り出す（timeline のファイルでなければ null） */
 export const parseTimelineFile = (file: string): { course: string; key: string } | null => {
   const m = /^content\/([^/]+)\/generated\/timeline\/([^/]+)\.json$/.exec(file);
-  return m ? { course: m[1], key: m[2] } : null;
+  // 一致した場合は、正規表現の 2 つの捕捉群が必ずある。
+  return m ? { course: m[1]!, key: m[2]! } : null;
 };
 
 /** 動画の一覧のファイルのパスから、講座 ID と言語を取り出す（動画の一覧のファイルでなければ null） */
 export const parseMediaListFile = (file: string): { course: string; lang: string } | null => {
   const m = /^content\/([^/]+)\/generated\/media\.([^/.]+)\.json$/.exec(file);
-  return m ? { course: m[1], lang: m[2] } : null;
+  // 一致した場合は、正規表現の 2 つの捕捉群が必ずある。
+  return m ? { course: m[1]!, lang: m[2]! } : null;
 };

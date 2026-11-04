@@ -162,7 +162,7 @@ export const ttsKeyV1In = (text: string, voice: VoiceId, lang: Lang, recipe: Rec
  * 台詞の音声を探す鍵（この順に探す。v2、あれば v1）。先頭（v2）が、新しく合成する声の名前。
  * recipe を渡すと、その設定で求める（テストで、声の設定を変えたときの鍵を見る）
  */
-export const ttsKeysIn = (text: string, voice: VoiceId, lang: Lang, recipe: Recipe = recipeIn(voice, lang)): string[] => {
+export const ttsKeysIn = (text: string, voice: VoiceId, lang: Lang, recipe: Recipe = recipeIn(voice, lang)): [string, ...string[]] => {
   const v1 = ttsKeyV1In(text, voice, lang, recipe);
   const v2 = ttsKeyV2(text, recipe);
   return v1 ? [v2, v1] : [v2];

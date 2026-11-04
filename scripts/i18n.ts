@@ -138,7 +138,7 @@ const scaffoldList = (k: string, xs: unknown[], s: Shape, pad: string): string[]
       if (!isObj(x)) return [`${pad}  '',`];
       const inner = scaffoldObject(x, s.$list, `${pad}    `, keyed);
       // 項目が 1 つだけなら 1 行にする（{ text: '' }, // 日本語）
-      const one = inner.length === 1 ? /^\s*(.*?),(?: \/\/ (.*))?$/.exec(inner[0]) : null;
+      const one = inner.length === 1 ? /^\s*(.*?),(?: \/\/ (.*))?$/.exec(inner[0]!) : null;
       if (one) return [`${pad}  { ${one[1]} },${one[2] ? ` // ${one[2]}` : ''}`];
       return inner.length ? [`${pad}  {`, ...inner, `${pad}  },`] : [`${pad}  {},`];
     }),
@@ -261,7 +261,9 @@ async function main(argv: string[]) {
     const shell: Course = { ...course, sections: course.sections.map((x) => ({ ...x, title: `section ${x.no}` })), lectures: [] };
     const lec = localizeLecture(base, tr, shell);
     const merged = l10nProblems(lec).map((p) => `${p.where}  ${p.message}`);
-    const problems = untranslated({ ...shell, lectures: [lec], title: 'x', subtitle: 'x', headline: 'x', docsNote: 'x', sourceNote: 'x', disclaimer: 'x', cast: undefined, sources: undefined, ui: undefined, links: undefined } as Course, lang, { ...course, lectures: [base] });
+    // 講座の UI は、このレクチャー単体の検査から省く。
+    const { ui: _ui, ...withoutUi } = shell;
+    const problems = untranslated({ ...withoutUi, lectures: [lec], title: 'x', subtitle: 'x', headline: 'x', docsNote: 'x', sourceNote: 'x', disclaimer: 'x', cast: undefined, sources: undefined, links: undefined }, lang, { ...course, lectures: [base] });
     const findings: { level: string; where: string; what: string; sample: string }[] = [];
     const walk = (v: unknown, where: string, key = '') => {
       if (typeof v === 'string') return checkText(v, where, !['code', 'cmd', 'out'].includes(key), findings as never);

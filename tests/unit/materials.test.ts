@@ -1,4 +1,5 @@
 // 素材のブランチの出し入れ（scripts/materials.ts）を、一時の bare リポジトリと clone で確かめる。本物の origin には触れない
+import { required } from '../support/required';
 import { afterAll, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -610,7 +611,7 @@ test('ffmpeg の変換は、止まったままなら時間で止め、失敗し�
     expect(performance.now() - t0).toBeLessThan(3000);
     fakeFfmpeg(`echo "in.wav: Invalid data found ghp_${'C'.repeat(36)}" >&2; exit 1`);
     await expect(ffmpegConvertWith()(job, 'flac')).rejects.toThrow(
-      `ffmpeg が失敗した: ${job[0][0]}（終了コード 1）: in.wav: Invalid data found ［伏せた token］`,
+      `ffmpeg が失敗した: ${required(job[0])[0]}（終了コード 1）: in.wav: Invalid data found ［伏せた token］`,
     );
   } finally {
     process.env.PATH = PATH;
@@ -854,7 +855,7 @@ test('長さと読みだけの取り出し（音声と ffmpeg は要らない）
   const a = withCache(cloneOf(remote, 'a'), cacheA);
   audio(a);
   // 前の名前（v1）の声。長さはフレームの境目をまたぐもの
-  for (const [i, keys] of lines.entries()) realVoice(cacheA, keys[1], [1.234567, 2.000021, 0.987654][i], i + 1);
+  for (const [i, keys] of lines.entries()) realVoice(cacheA, required(keys[1]), required([1.234567, 2.000021, 0.987654][i]), i + 1);
   await push(a, [{ id: c.id, langs: ['ja'], lines, about: '見本（1 レクチャー・ja）' }], real().opts);
 
   // 音声から作る（ふつうの --cached-only）
@@ -888,7 +889,7 @@ test('長さと読みだけの取り出し（音声と ffmpeg は要らない）
     ].map((f) => readFileSync(path.join(root, f), 'utf8'));
   expect(files(path.join(base, 'dur'))).toEqual(files(path.join(base, 'wav')));
   // 読みは素材のブランチのもの
-  expect(readFileSync(path.join(base, 'dur/.work/kana/X01.txt'), 'utf8')).toContain(`カナ:${lines[0][1]}`);
+  expect(readFileSync(path.join(base, 'dur/.work/kana/X01.txt'), 'utf8')).toContain(`カナ:${required(lines[0])[1]}`);
 }, 30_000);
 
 test('DURATIONS.json がまだ無い・古いときは、今までどおり音声を取り出してから作る（もどったことを出す）', async () => {
@@ -930,7 +931,7 @@ test('DURATIONS.json がまだ無い・古いときは、今までどおり音�
   const keys = ttsKeysIn('おわりです。', 'narrator', 'ja');
   const c2 = cloneOf(remote, 'c2');
   audio(c2);
-  realVoice(path.join(c2.root, '.work/tts'), keys[1], 1);
+  realVoice(path.join(c2.root, '.work/tts'), required(keys[1]), 1);
   await push(c2, [course('alpha', [], [keys])], real().opts);
   git(t.root, 'pull', '--quiet', 'origin', 'materials');
   writeFileSync(

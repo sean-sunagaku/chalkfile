@@ -38,11 +38,14 @@ const traceFailure = (cmd: string, r: RunResult) => {
   trace(`${cmd}: ${r.timedOut ? '時間切れで止めた' : `終了コード ${r.code}`}${r.stderr.trim() ? `。stderr:\n${r.stderr.trimEnd()}` : ''}`);
 };
 
+/** 空でないコマンド行。先頭はプログラム、その後ろは引数 */
+export type CommandLine = [program: string, ...args: string[]];
+
 export type RunOptions = {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   /** 標準入力に渡す文字 */
-  input?: string;
+  input?: string | undefined;
   /** これより長くかかったら止める（ミリ秒） */
   timeoutMs?: number;
   /** 受け取る出力の上限（バイト。既定 64 MiB） */

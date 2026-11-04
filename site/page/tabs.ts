@@ -43,7 +43,8 @@ export const createTabs = (page: Page) => {
       const at = list.indexOf(t);
       if (!move || at < 0 || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       e.preventDefault();
-      show(list[move(at, list.length)], true);
+      // at >= 0 なので list は空でなく、移動関数はその範囲に収める。
+      show(list[move(at, list.length)]!, true);
     });
   }
 

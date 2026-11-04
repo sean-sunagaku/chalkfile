@@ -1,3 +1,4 @@
+import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -30,7 +31,7 @@ import { ALL_SCENES } from '../fixtures/content/all-scenes/course';
 import { LINE_IDS } from '../fixtures/content/line-ids/course';
 
 // 訳の重ね方（content/i18n.ts）。日本語の台本に、訳の上書きを重ねる
-const cards: ConceptsScene['cards'] = [
+const cards: [ConceptsScene['cards'][number], ConceptsScene['cards'][number]] = [
   { key: 'scene', en: 'Scene', ja: '場面', desc: '画面の 1 まとまり', tone: 'violet', icon: 'layout', at: 0 },
   { key: 'line', en: 'Line', ja: '台詞', desc: '声と字幕の 1 文', tone: 'pink', icon: 'message', at: 1 },
 ];
@@ -135,7 +136,7 @@ describe('訳の重ね方（content/i18n.ts）', () => {
     expect(fingerprint(reordered)).not.toBe(fingerprint(base()));
   });
   test('key で重ねる配列: 日本語に無い key・2 回書いた key・訳に無い key・書いた項目と書かない項目の混ざりは誤り', () => {
-    const check = (cs: ConceptsL10n['cards']) => problems(localize(base(), tr({ scenes: [scene({ cards: cs })] })));
+    const check = (cs: NonNullable<ConceptsL10n['cards']>) => problems(localize(base(), tr({ scenes: [scene({ cards: cs })] })));
     expect(
       check([
         { key: 'scene', ja: 'Scene' },
@@ -177,7 +178,7 @@ describe('訳の重ね方（content/i18n.ts）', () => {
         ],
       }),
     );
-    expect(out.scenes[0].lines).toEqual(lines);
+    expect(required(out.scenes[0]).lines).toEqual(lines);
     expect(first(out).cards.map((c) => c.at)).toEqual([0, 2]);
     expect(problems(out)).toEqual([]);
   });
@@ -251,7 +252,7 @@ describe('講座の訳（content/i18n.ts の localizeCourse）', () => {
     const out = localizeCourse(course([base(), base({ id: 'X02', no: 2 })]), courseTr(), 'en');
     expect(out.lang).toBe('en');
     expect(out.lectures.map((l) => l.id)).toEqual(['X01']);
-    expect(out.lectures[0].section).toEqual({ no: 1, title: 'Introduction' });
+    expect(required(out.lectures[0]).section).toEqual({ no: 1, title: 'Introduction' });
     expect(out.syllabus).toBeUndefined();
   });
   test('日本語に無いレクチャーの訳と、セクションの数の違いは、講座の誤りになる', () => {
@@ -287,7 +288,7 @@ describe('講座の訳（content/i18n.ts の localizeCourse）', () => {
       courseTr({ sources: { spec: { title: 'Specification' }, missing: { note: 'Unknown' } } }),
       'en',
     );
-    expect(out.sources).toEqual([{ ...original.sources[0], title: 'Specification' }]);
+    expect(out.sources).toEqual([{ ...required(original.sources[0]), title: 'Specification' }]);
     expect(l10nProblems(out)).toEqual([{ where: 'sources.missing', message: '日本語の講座に無い出典の訳: missing' }]);
     expect(
       validateCourse(out, { themes: Object.keys(THEMES) })
@@ -298,7 +299,8 @@ describe('講座の訳（content/i18n.ts の localizeCourse）', () => {
   test('誤りは動画ごと: 1 本の訳が壊れていても、ほかの動画の訳は誤りにならない（Studio はその動画だけを止める）', () => {
     const two = course([base(), base({ id: 'X02', no: 2 })]);
     const out = localizeCourse(two, courseTr({ lectures: { X01: tr({ scenes: [] }), X02: tr() } }), 'en');
-    const [broken, fine] = out.lectures;
+    const broken = required(out.lectures[0]);
+    const fine = required(out.lectures[1]);
     expect(
       validateLecture(broken, out)
         .filter((x) => x.rule === 'l10n')
@@ -306,7 +308,7 @@ describe('講座の訳（content/i18n.ts の localizeCourse）', () => {
     ).toEqual(['sample/X01.en scenes']);
     expect(validateLecture(fine, out).filter((x) => x.level === 'error')).toEqual([]);
     // 日本語の動画には誤りが付かない
-    expect(validateLecture(two.lectures[0], two).filter((x) => x.level === 'error')).toEqual([]);
+    expect(validateLecture(required(two.lectures[0]), two).filter((x) => x.level === 'error')).toEqual([]);
   });
   test('訳し残し: 英語の講座に残った日本語の文字を見つける', () => {
     const left = localizeCourse(course(), courseTr({ lectures: { X01: tr({ title: '見本のまま' }) } }), 'en');
@@ -356,7 +358,7 @@ describe('項目の役目（content/fields.ts）', () => {
 describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
   const lec = base();
   const withCard = (patch: Partial<ConceptsScene['cards'][number]>) =>
-    base({ scenes: [{ ...base().scenes[0], cards: [{ ...cards[0], ...patch }, cards[1]] } as ConceptsScene] });
+    base({ scenes: [{ ...required(base().scenes[0]), cards: [{ ...cards[0], ...patch }, cards[1]] } as ConceptsScene] });
   test('訳す文字だけから作る: 色・アイコン・at・読み上げる文・効果音・読む教材を直しても変わらない', () => {
     const same = fingerprint(lec);
     expect(fingerprint(withCard({ tone: 'mint', icon: 'eye', at: 1 }))).toBe(same);
@@ -364,7 +366,7 @@ describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
       fingerprint(
         base({
           scenes: [
-            { ...base().scenes[0], lines: [{ t: '場面です。', s: 'ばめんです。', sfx: 'pop' }, { t: '台詞です。' }] },
+            { ...required(base().scenes[0]), lines: [{ t: '場面です。', s: 'ばめんです。', sfx: 'pop' }, { t: '台詞です。' }] },
           ],
         }),
       ),
@@ -383,9 +385,9 @@ describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
       base({ takeaways: ['要点', '足した要点'] }),
       base({ docs: [{ title: '別の説明', url: 'https://example.com' }] }),
       base({ caution: '注意' }),
-      base({ scenes: [{ ...base().scenes[0], heading: '別の見出し' } as ConceptsScene] }),
+      base({ scenes: [{ ...required(base().scenes[0]), heading: '別の見出し' } as ConceptsScene] }),
       withCard({ desc: '別の説明' }),
-      base({ scenes: [{ ...base().scenes[0], lines: [{ t: '場面です。' }, { t: '台詞を直しました。' }] }] }),
+      base({ scenes: [{ ...required(base().scenes[0]), lines: [{ t: '場面です。' }, { t: '台詞を直しました。' }] }] }),
     ];
     for (const c of changed) expect(fingerprint(c)).not.toBe(now);
   });
@@ -399,7 +401,7 @@ describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
   });
   test('訳す文字の一覧は、場所と文字の組（台詞の t は入り、s は入らない）', () => {
     const texts = lectureTexts(
-      base({ scenes: [{ ...base().scenes[0], lines: [{ t: '場面です。', s: 'よみ' }, { t: '台詞です。' }] }] }),
+      base({ scenes: [{ ...required(base().scenes[0]), lines: [{ t: '場面です。', s: 'よみ' }, { t: '台詞です。' }] }] }),
     );
     expect(texts).toContainEqual(['.scenes[0].lines[0].t', '場面です。']);
     expect(texts.some(([, t]) => t === 'よみ')).toBe(false);
@@ -426,10 +428,10 @@ describe('stale の訳を止める（scripts/i18n.ts の staleNotices）', () =>
       'error content/sample/en/X01.ts',
       'warn content/sample/zh/X01.ts',
     ]);
-    expect(staleNotices(rows, ['ja', 'en'])[0].message).toContain('en は公開する言語なので止める');
+    expect(required(staleNotices(rows, ['ja', 'en'])[0]).message).toContain('en は公開する言語なので止める');
   });
   test('前の作り方の指紋のままの訳は、restamp で付け直すように知らせる', () => {
-    expect(staleNotices([row('en', { old: true })], ['ja'])[0].message).toContain('bun scripts/i18n.ts restamp');
+    expect(required(staleNotices([row('en', { old: true })], ['ja'])[0]).message).toContain('bun scripts/i18n.ts restamp');
   });
   test('今の CI は止まらない（公開する言語は ja だけで、stale も 0 本）', () => {
     expect(staleNotices(translationRows()).filter((n) => n.level === 'error')).toEqual([]);
@@ -441,7 +443,7 @@ describe('訳のひな形（scripts/i18n.ts の scaffold）', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'chalkfile-scaffold-'));
     try {
       writeFileSync(path.join(dir, `${id}.ts`), code);
-      return ((await import(path.join(dir, `${id}.ts`))) as Record<string, LectureL10n>)[id];
+      return required(((await import(path.join(dir, `${id}.ts`))) as Record<string, LectureL10n>)[id]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -457,14 +459,14 @@ describe('訳のひな形（scripts/i18n.ts の scaffold）', () => {
       }
   });
   test('訳す文字は空にして日本語を注釈に入れ、key と台詞の id・声・効果音は写す', () => {
-    const code = scaffold(LINE_IDS.lectures[0], 'en', 'abcdef012345');
+    const code = scaffold(required(LINE_IDS.lectures[0]), 'en', 'abcdef012345');
     expect(code).toContain("source: 'abcdef012345',");
     expect(code).toContain("title: '', // id で書く見本");
     expect(code).toContain("{ id: 'first', t: '', sfx: 'pop' }, // 台詞に id を付けること。");
     expect(code).toContain("{ t: '', v: 'zundamon' }, // [zundamon] それは大変なのだ！");
   });
   test('ひな形の key で重なる: 日本語で項目を並べ替えても、訳の文字は同じ項目に付く', async () => {
-    const [x01] = ALL_SCENES.lectures;
+    const x01 = required(ALL_SCENES.lectures[0]);
     const t = await load(scaffold(x01, 'en', fingerprint(x01)), 'X01');
     // ひな形の文字を、日本語の key の名前で埋める（どの項目に付いたかが分かるように）
     const fill = (v: unknown, keyOf?: string): unknown => {

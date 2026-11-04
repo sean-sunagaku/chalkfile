@@ -4,7 +4,7 @@ import type { CodeScene, Theme } from '../../engine/core/schema';
 
 /** 字句の種類（テーマの syntax の名前。plain は色を付けない文字） */
 export type SyntaxKind = Exclude<keyof Theme['syntax'], 'plain'>;
-export type Token = { text: string; kind?: SyntaxKind };
+export type Token = { text: string; kind?: SyntaxKind | undefined };
 
 /** 言語ごとの規則。正規表現の組の順に、種類を当てる（先の組が勝つ） */
 type Rule = { rx: RegExp; kinds: SyntaxKind[] };

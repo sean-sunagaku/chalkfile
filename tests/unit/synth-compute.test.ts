@@ -1,6 +1,7 @@
 // 時刻の計算（scripts/stages/timeline/compute.ts。純粋な関数）を、決まった長さの声で流し、正解の値（手で確かめた値）と比べる。
 // 出力（scripts/stages/timeline/emit.ts）は一時のフォルダに書き、計算した形とそのまま同じかを見る。
 // 間の取り方（engine/core/timeline.ts の TIMING）や丸め方を変えたら、ここの値も直す（全部の動画の timeline が変わる）
+import { required } from '../support/required';
 import { afterAll, describe, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -45,6 +46,9 @@ const SEC = [[1.234], [2.5, 0.987, 1.6], [3.21]];
 const voices: LineVoice[][] = SEC.map((s, si) =>
   s.map((sec, li) => ({ file: `.work/tts/k${si}${li}.wav`, sec, kana: `カナ${si}${li}` })),
 );
+const openingVoices = required(voices[0]);
+const middleVoices = required(voices[1]);
+const endingVoices = required(voices[2]);
 const FPS = 30;
 
 describe('時刻の計算（layout）', () => {
@@ -77,7 +81,7 @@ describe('時刻の計算（layout）', () => {
     ]);
   });
   test('台詞の声・音声・効果音・BGM の印を、そのまま持つ', () => {
-    const [, big] = t.scenes;
+    const big = required(t.scenes[1]);
     expect(big.lines.map(({ voice, file, sfx, sfxAfter, bgm }) => ({ voice, file, sfx, sfxAfter, bgm }))).toEqual([
       { voice: 'narrator', file: '.work/tts/k10.wav', sfx: 'pop', sfxAfter: undefined, bgm: undefined },
       { voice: 'tsukkomi', file: '.work/tts/k11.wav', sfx: undefined, sfxAfter: undefined, bgm: undefined },
@@ -85,7 +89,12 @@ describe('時刻の計算（layout）', () => {
     ]);
   });
   test('声が足りなければ止める（どの台詞か出す）', () => {
-    expect(() => layout(lec, [voices[0], voices[1].slice(0, 2), voices[2]], FPS)).toThrow('X01 s2-3');
+    expect(() => layout(lec, [openingVoices, middleVoices.slice(0, 2), endingVoices], FPS)).toThrow('X01 s2-3');
+  });
+  test('読みの記録と聞き取りの対応も、声が足りなければ場所を出して止める', () => {
+    const missing = [openingVoices, middleVoices.slice(0, 2), endingVoices];
+    expect(() => kanaLogOf('X01', lec, 'ja', missing)).toThrow('X01 s2-3');
+    expect(() => speechFileOf('X01.en', lec, 'en', missing)).toThrow('X01 s2-3');
   });
 });
 
@@ -167,7 +176,7 @@ describe('出力の形', () => {
       { kind: 'opening', title: 'Sample', lines: [{ t: 'Hello **world**.', v: 'announcer' }] },
       { kind: 'ending', closing: 'Bye', lines: [{ t: 'Bye.', s: 'Good bye.' }] },
     ]);
-    const v = [[voices[0][0]], [voices[2][0]]];
+    const v = [[required(openingVoices[0])], [required(endingVoices[0])]];
     expect(kanaLogOf('X01.en', en, 'en', v).split('\n')).toEqual([
       'X01.en s1-1 [announcer] Hello **world**.',
       '    読み: Hello world.',
