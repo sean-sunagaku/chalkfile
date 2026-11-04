@@ -30,8 +30,9 @@
 | `P` | `pstack-comedy` | 70 |
 | `S` | `superagent-comedy` | 80 |
 | `G` | `ga4-comedy` | 90 |
+| `H` | `deepseek-creator` | 100 |
 
-- 空いている文字: A B C E F H I J K O Q T U V Y Z（X はテストの見本が使う）
+- 空いている文字: A B C E F I J K O Q T U V Y Z（X はテストの見本が使う）
 
 <!-- prefixes:end -->
 

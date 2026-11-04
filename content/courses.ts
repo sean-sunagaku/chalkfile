@@ -10,3 +10,5 @@ export { default as riveComedy } from './rive-comedy';
 export { default as pstackComedy } from './pstack-comedy';
 export { default as superagentComedy } from './superagent-comedy';
 export { default as ga4Comedy } from './ga4-comedy';
+
+export { default as deepseekCreator } from './deepseek-creator';

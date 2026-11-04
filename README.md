@@ -25,6 +25,7 @@ Narrated course videos and an offline course site, built from course scripts wri
 | [笑ってわかる pstack](https://chalkfile.com/pstack-comedy/) | Cursor 向けのスキル集 pstack の考え方と使い方 | `pstack-comedy` | 1 本 | 約 5 分 | 英語・中国語（未公開） |
 | [笑ってわかる Super-agent](https://chalkfile.com/superagent-comedy/) | セッションに縛られないエージェントの設計を、ずんだもんと読み解くお笑い版 | `superagent-comedy` | 6 章 | 約 47 分 | 英語・中国語（未公開） |
 | [笑ってわかる GA4](https://chalkfile.com/ga4-comedy/) | イベント・パラメータ・カスタム ディメンションを、サンプルのサイトの「メールの入口」で | `ga4-comedy` | 3 章 | 約 10 分 | — |
+| [笑ってわかる DeepSeek Harness Creator mode](https://chalkfile.com/deepseek-creator/) | 会話でプラグインを作る仕組みと、迷わないメニュー案内 | `deepseek-creator` | 1 本 | 約 6 分 | — |
 
 <!-- courses:end -->
 
