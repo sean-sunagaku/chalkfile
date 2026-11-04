@@ -22,10 +22,11 @@
 //   （npm run chalk -- status と build が読み、media push が動画の一覧の inputs に写す）。記録できなくても、書き出しは止めない
 // 前提: timeline（先に synth）・ミックスの音（先に mix）・ffmpeg と ffprobe。書き出しの Chrome は Remotion が自分で取ってくる
 // 終了コード: 0 できた・1 失敗・2 使い方の誤り・3 前提が足りない（timeline・ミックスの音・ffmpeg・ffprobe）・130／143／129 止められた（SIGINT／SIGTERM／SIGHUP）
-import type { HeadlessBrowser } from '@remotion/renderer';
+
 import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { HeadlessBrowser } from '@remotion/renderer';
 import { VIDEOS, type Video } from '../../../content';
 import { compositionId } from '../../../content/i18n';
 import type { TimelineEntry } from '../../../engine/core/timeline';

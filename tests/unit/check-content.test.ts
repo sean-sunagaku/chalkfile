@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -6,19 +5,20 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   ALLOWABLE_RULES,
+  type AllowEntry,
   agentImportsOutside,
   checkFiles,
   checkFileText,
   checkLaunch,
   checkPath,
   checkText,
+  type Finding,
   loadDenylist,
   MAX_TRACKED_BYTES,
   parseAllow,
-  type AllowEntry,
-  type Finding,
   type Rule,
 } from '../../scripts/check_content';
+import { required } from '../support/required';
 
 // scripts/check_content.ts の点検の点検。見つけるべき例を見つけ、見逃すべき例を見逃すか（CI は bun scripts/check_content.ts --self-test からも流す）。
 // 見えない文字・制御文字・秘密情報の形は、このファイル自体が点検に引っかからないよう、その場で組み立てる

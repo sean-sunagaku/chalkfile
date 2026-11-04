@@ -46,31 +46,78 @@ import { ROOT } from './lib/paths';
 type Level = 'error' | 'warn';
 /** 規則の名前。出力の［］の中と、scripts/content-allow.json の rule に使う */
 export type Rule =
-  | 'injection' | 'html' | 'invisible' | 'control' | 'secret' | 'denylist' | 'http' | 'email' | 'phone' | 'untranslated' | 'stale'
-  | 'media' | 'size' | 'credential' | 'symlink' | 'autorun' | 'install-script' | 'claude' | 'launch' | 'agents' | 'allow';
+  | 'injection'
+  | 'html'
+  | 'invisible'
+  | 'control'
+  | 'secret'
+  | 'denylist'
+  | 'http'
+  | 'email'
+  | 'phone'
+  | 'untranslated'
+  | 'stale'
+  | 'media'
+  | 'size'
+  | 'credential'
+  | 'symlink'
+  | 'autorun'
+  | 'install-script'
+  | 'claude'
+  | 'launch'
+  | 'agents'
+  | 'allow';
 export type Finding = { level: Level; where: string; what: string; sample: string; rule: Rule };
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 export const checkSecrets = (text: string, where: string, out: Finding[]) => {
-  for (const [rx, what] of SECRETS) if (rx.test(text)) out.push({ level: 'error', where, what, sample: '（伏せる）', rule: 'secret' });
+  for (const [rx, what] of SECRETS)
+    if (rx.test(text)) out.push({ level: 'error', where, what, sample: '（伏せる）', rule: 'secret' });
 };
 
 /* ───────────── 見つける形 ───────────── */
 
 const INJECTION: [RegExp, string][] = [
-  [/\b(ignore|disregard|forget|override)\b[^.\n]{0,40}\b(previous|prior|above|earlier|all|any|these|those)\b[^.\n]{0,24}\b(instructions?|prompts?|rules?|directions?|messages?)\b/i, 'AI への指示文（前の指示を無視させる）'],
-  [/\b(you are now|from now on,? you|act as|pretend (to be|you are))\b[^.\n]{0,48}\b(ai|assistant|chatgpt|claude|gpt|llm|model|agent|system)\b/i, 'AI への指示文（役割を変えさせる）'],
-  [/\b(system|developer|hidden)\s*(prompt|message|instructions?)\s*[:：]/i, 'AI への指示文（システムプロンプトを装う）'],
+  [
+    /\b(ignore|disregard|forget|override)\b[^.\n]{0,40}\b(previous|prior|above|earlier|all|any|these|those)\b[^.\n]{0,24}\b(instructions?|prompts?|rules?|directions?|messages?)\b/i,
+    'AI への指示文（前の指示を無視させる）',
+  ],
+  [
+    /\b(you are now|from now on,? you|act as|pretend (to be|you are))\b[^.\n]{0,48}\b(ai|assistant|chatgpt|claude|gpt|llm|model|agent|system)\b/i,
+    'AI への指示文（役割を変えさせる）',
+  ],
+  [
+    /\b(system|developer|hidden)\s*(prompt|message|instructions?)\s*[:：]/i,
+    'AI への指示文（システムプロンプトを装う）',
+  ],
   [/<\|?\s*(im_start|im_end|system|endoftext|assistant)\s*\|?>/i, 'AI への指示文（会話の区切りを装う）'],
-  [/\b(run|execute|exec)\b[^.\n]{0,32}(rm\s+-rf\s+[/~]|curl\s[^|\n]*\|\s*(ba)?sh|wget\s[^|\n]*\|\s*(ba)?sh|sudo\s)/i, 'AI への指示文（危ないコマンドを実行させる）'],
-  [/(前|上|これまで|以前|先|ここまで)の(指示|命令|プロンプト|ルール|設定)を(すべて|全部)?(無視|忘れ|破棄)/, 'AI への指示文（前の指示を無視させる）'],
-  [/(指示|命令|プロンプト|ルール)を(すべて|全部)?(無視|忘れ)(して|しろ|せよ|すること)/, 'AI への指示文（指示を無視させる）'],
-  [/あなたは(今から|これから|今後|以降)[^。\n]{0,24}(として|になって|になりきって|になれ)/, 'AI への指示文（役割を変えさせる）'],
+  [
+    /\b(run|execute|exec)\b[^.\n]{0,32}(rm\s+-rf\s+[/~]|curl\s[^|\n]*\|\s*(ba)?sh|wget\s[^|\n]*\|\s*(ba)?sh|sudo\s)/i,
+    'AI への指示文（危ないコマンドを実行させる）',
+  ],
+  [
+    /(前|上|これまで|以前|先|ここまで)の(指示|命令|プロンプト|ルール|設定)を(すべて|全部)?(無視|忘れ|破棄)/,
+    'AI への指示文（前の指示を無視させる）',
+  ],
+  [
+    /(指示|命令|プロンプト|ルール)を(すべて|全部)?(無視|忘れ)(して|しろ|せよ|すること)/,
+    'AI への指示文（指示を無視させる）',
+  ],
+  [
+    /あなたは(今から|これから|今後|以降)[^。\n]{0,24}(として|になって|になりきって|になれ)/,
+    'AI への指示文（役割を変えさせる）',
+  ],
   [/(システム|開発者|隠し)(プロンプト|メッセージ|指示)\s*[:：]/, 'AI への指示文（システムプロンプトを装う）'],
-  [/(AI|ＡＩ|エーアイ|アシスタント|モデル|エージェント|Claude|クロード)\s*(へ|に)の(指示|命令)\s*[:：]/i, 'AI への指示文（AI 宛ての命令）'],
+  [
+    /(AI|ＡＩ|エーアイ|アシスタント|モデル|エージェント|Claude|クロード)\s*(へ|に)の(指示|命令)\s*[:：]/i,
+    'AI への指示文（AI 宛ての命令）',
+  ],
 ];
 
 const HTML: [RegExp, string][] = [
-  [/<\s*\/?\s*(script|iframe|frame|object|embed|style|link|meta|base|form|input|button|img|svg|math|video|audio|source|template|a)\b/i, 'HTML のタグ'],
+  [
+    /<\s*\/?\s*(script|iframe|frame|object|embed|style|link|meta|base|form|input|button|img|svg|math|video|audio|source|template|a)\b/i,
+    'HTML のタグ',
+  ],
   [/\bon[a-z]{3,}\s*=\s*["'`]?/i, 'HTML のイベント属性（onerror= など）'],
   [/\b(javascript|vbscript)\s*:/i, 'javascript: のリンク'],
   [/\bdata\s*:\s*(text\/html|image\/svg\+xml|application\/(x-)?javascript)/i, 'data: の HTML・SVG・スクリプト'],
@@ -93,7 +140,10 @@ const SECRETS: [RegExp, string][] = [
   [/\bAIza[0-9A-Za-z_-]{35}\b/, 'Google の API キーの形'],
   [/\bsk-(ant-|proj-)?[0-9A-Za-z_-]{24,}/, 'AI の API キーの形'],
   [/\b(cfk|cfut|cfat|cfoat)_[A-Za-z0-9_-]{24,}\b/, 'Cloudflare の秘密鍵・API/OAuth tokenの形'],
-  [/\b(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CF_API_KEY)["']?\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}/, 'Cloudflare の認証値の直書き'],
+  [
+    /\b(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CF_API_KEY)["']?\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}/,
+    'Cloudflare の認証値の直書き',
+  ],
   [/https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/]{20,}/, 'Slack の Webhook URL'],
   [/\b(password|passwd|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, 'パスワード・キーの直書き'],
 ];
@@ -121,7 +171,9 @@ export const parseAllow = (value: unknown): { entries: AllowEntry[]; problems: s
   value.forEach((v, i) => {
     const at = `${i + 1} 件目`;
     if (typeof v === 'string') {
-      problems.push(`${at}が前の書き方（文字列だけ。含めば、その文字列の全部の点検を飛ばしていた）。外す規則を書いた ${ALLOW_SHAPE} に書き直す`);
+      problems.push(
+        `${at}が前の書き方（文字列だけ。含めば、その文字列の全部の点検を飛ばしていた）。外す規則を書いた ${ALLOW_SHAPE} に書き直す`,
+      );
       return;
     }
     if (!isObject(v)) {
@@ -129,9 +181,11 @@ export const parseAllow = (value: unknown): { entries: AllowEntry[]; problems: s
       return;
     }
     const { text, rule, why, ...rest } = v;
-    if (Object.keys(rest).length) problems.push(`${at}に知らない項目がある（${Object.keys(rest).join('・')}）。書けるのは text・rule・why`);
+    if (Object.keys(rest).length)
+      problems.push(`${at}に知らない項目がある（${Object.keys(rest).join('・')}）。書けるのは text・rule・why`);
     else if (typeof text !== 'string' || !text.trim()) problems.push(`${at}の text が無いか空`);
-    else if (!ALLOWABLE_RULES.includes(rule as AllowRule)) problems.push(`${at}の rule「${String(rule)}」は外せない（外せるのは ${ALLOWABLE_RULES.join('・')}）`);
+    else if (!ALLOWABLE_RULES.includes(rule as AllowRule))
+      problems.push(`${at}の rule「${String(rule)}」は外せない（外せるのは ${ALLOWABLE_RULES.join('・')}）`);
     else if (why !== undefined && typeof why !== 'string') problems.push(`${at}の why が文字列でない`);
     else entries.push({ text, rule: rule as AllowRule, ...(why === undefined ? {} : { why }) });
   });
@@ -182,7 +236,11 @@ const firstHit = (rx: RegExp, text: string, rule: Rule, allow: AllowEntry[]) => 
 export const denylistPaths = (root = ROOT) => {
   let shared: string | undefined;
   try {
-    const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    const common = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
     shared = path.join(path.resolve(root, common), 'info/chalkfile-denylist');
   } catch {
     // Git の外（tarball で取ってきたなど）。共有の場所は無い
@@ -193,7 +251,16 @@ export const denylistPaths = (root = ROOT) => {
 export const loadDenylist = (root = ROOT) => {
   const { shared, local } = denylistPaths(root);
   const files = [shared, local].filter((f): f is string => !!f && existsSync(f));
-  return [...new Set(files.flatMap((f) => readFileSync(f, 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))))];
+  return [
+    ...new Set(
+      files.flatMap((f) =>
+        readFileSync(f, 'utf8')
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l && !l.startsWith('#')),
+      ),
+    ),
+  ];
 };
 // 一覧は最初に使うときに 1 回だけ読む（import しただけでは git を呼ばない）
 let denylist: string[] | undefined;
@@ -209,7 +276,13 @@ const hex = (c: string) => `U+${c.codePointAt(0)!.toString(16).toUpperCase().pad
 type TextOptions = { deny?: string[]; allow?: AllowEntry[] };
 /** 1 つの文字列を調べる。site=true はサイトに HTML として出る文字（HTML の点検をする）。
  *  deny はローカルの禁止語（既定は一覧のファイルから読む）、allow はわざと書いた例の許可（既定は scripts/content-allow.json） */
-export const checkText = (text: string, where: string, site: boolean, out: Finding[], { deny = denylistTerms(), allow = allowList().entries }: TextOptions = {}) => {
+export const checkText = (
+  text: string,
+  where: string,
+  site: boolean,
+  out: Finding[],
+  { deny = denylistTerms(), allow = allowList().entries }: TextOptions = {},
+) => {
   for (const [rx, what] of INJECTION) {
     const m = firstHit(rx, text, 'injection', allow);
     if (m) out.push({ level: 'error', where, what, sample: short(text, m.index), rule: 'injection' });
@@ -222,20 +295,38 @@ export const checkText = (text: string, where: string, site: boolean, out: Findi
   }
   // 見えない文字・制御文字・秘密情報の形・禁止語は、許可があっても外さない
   const inv = INVISIBLE.exec(text);
-  if (inv) out.push({ level: 'error', where, what: `見えない文字 ${hex(inv[0])}`, sample: short(text, inv.index), rule: 'invisible' });
+  if (inv)
+    out.push({
+      level: 'error',
+      where,
+      what: `見えない文字 ${hex(inv[0])}`,
+      sample: short(text, inv.index),
+      rule: 'invisible',
+    });
   const ctl = CONTROL.exec(text);
-  if (ctl) out.push({ level: 'error', where, what: `制御文字 ${hex(ctl[0])}`, sample: short(text, ctl.index), rule: 'control' });
+  if (ctl)
+    out.push({
+      level: 'error',
+      where,
+      what: `制御文字 ${hex(ctl[0])}`,
+      sample: short(text, ctl.index),
+      rule: 'control',
+    });
   checkSecrets(text, where, out);
   for (const term of deny) {
-    if (text.toLowerCase().includes(term.toLowerCase())) out.push({ level: 'error', where, what: 'ローカルの禁止語', sample: '（伏せる）', rule: 'denylist' });
+    if (text.toLowerCase().includes(term.toLowerCase()))
+      out.push({ level: 'error', where, what: 'ローカルの禁止語', sample: '（伏せる）', rule: 'denylist' });
   }
   if (site) {
     const http = firstHit(HTTP, text, 'http', allow);
-    if (http) out.push({ level: 'warn', where, what: 'https でないリンク', sample: short(text, http.index), rule: 'http' });
+    if (http)
+      out.push({ level: 'warn', where, what: 'https でないリンク', sample: short(text, http.index), rule: 'http' });
     for (const m of text.matchAll(EMAIL)) {
-      if (!SAFE_EMAIL_DOMAIN.test(m[0]) && !allowedAt(text, 'email', m.index, m.index + m[0].length, allow)) out.push({ level: 'warn', where, what: 'メールアドレス', sample: '（伏せる）', rule: 'email' });
+      if (!SAFE_EMAIL_DOMAIN.test(m[0]) && !allowedAt(text, 'email', m.index, m.index + m[0].length, allow))
+        out.push({ level: 'warn', where, what: 'メールアドレス', sample: '（伏せる）', rule: 'email' });
     }
-    if (firstHit(PHONE, text, 'phone', allow)) out.push({ level: 'warn', where, what: '電話番号の形', sample: '（伏せる）', rule: 'phone' });
+    if (firstHit(PHONE, text, 'phone', allow))
+      out.push({ level: 'warn', where, what: '電話番号の形', sample: '（伏せる）', rule: 'phone' });
   }
 };
 
@@ -259,10 +350,26 @@ const checkContent = async (out: Finding[]) => {
     }
   }
   // 訳し残し（訳の講座に残った日本語の文字）は止める
-  for (const lang of TRANSLATED_LANGS) for (const c of coursesIn(lang)) for (const u of untranslated(c, lang, COURSES.find((x: { id: string }) => x.id === c.id))) out.push({ level: 'error', where: u.split(':')[0], what: '訳し残し（日本語のまま）', sample: u.slice(u.indexOf(':') + 2), rule: 'untranslated' });
+  for (const lang of TRANSLATED_LANGS)
+    for (const c of coursesIn(lang))
+      for (const u of untranslated(
+        c,
+        lang,
+        COURSES.find((x: { id: string }) => x.id === c.id),
+      ))
+        out.push({
+          level: 'error',
+          where: u.split(':')[0],
+          what: '訳し残し（日本語のまま）',
+          sample: u.slice(u.indexOf(':') + 2),
+          rule: 'untranslated',
+        });
   // 訳したあとに日本語の台本の訳す文字が変わった訳（stale）。公開する言語（chalkfile.config.ts の publishLangs）なら止め、まだ公開しない言語は注意（scripts/i18n.ts の staleNotices）
-  const { staleNotices, translationRows } = (await import(path.join(ROOT, 'scripts/i18n.ts'))) as typeof import('./i18n');
-  for (const n of staleNotices(translationRows())) out.push({ level: n.level, where: n.file, what: n.message, sample: '', rule: 'stale' });
+  const { staleNotices, translationRows } = (await import(
+    path.join(ROOT, 'scripts/i18n.ts')
+  )) as typeof import('./i18n');
+  for (const n of staleNotices(translationRows()))
+    out.push({ level: n.level, where: n.file, what: n.message, sample: '', rule: 'stale' });
 };
 
 /* ───────────── Git に入れるファイル ───────────── */
@@ -278,8 +385,14 @@ const MiB = 1024 ** 2;
 export const MAX_TRACKED_BYTES = 5 * MiB;
 /** 5MiB の上限から外すもの（理由つき）。外したものも LARGE_OK_MAX（GitHub が警告を出す 50MiB）を超えたら止める */
 const LARGE_OK: [RegExp, string][] = [
-  [/^content\/[^/]+\/generated\/posters\/[^/]+\.jpg$/, 'ポスターは公開に要る正本で main に置く（CI はここから組み立てる）。大きさは書き出し（scripts/stages/video/render.config.ts の幅 1280 の JPEG）で決まる'],
-  [/^tests\/fixtures\//, 'テストの入力。保存データの互換や大きさの上限を試すとき、本物と同じ形と大きさのファイルが要ることがある'],
+  [
+    /^content\/[^/]+\/generated\/posters\/[^/]+\.jpg$/,
+    'ポスターは公開に要る正本で main に置く（CI はここから組み立てる）。大きさは書き出し（scripts/stages/video/render.config.ts の幅 1280 の JPEG）で決まる',
+  ],
+  [
+    /^tests\/fixtures\//,
+    'テストの入力。保存データの互換や大きさの上限を試すとき、本物と同じ形と大きさのファイルが要ることがある',
+  ],
 ];
 const LARGE_OK_MAX = 50 * MiB;
 
@@ -293,9 +406,15 @@ const AUTORUN: [RegExp, string][] = [
   [/(^|\/)\.cursor\/hooks\.json$/, 'Cursor の hooks（AI が動くたびにコマンドが動く）'],
   [/(^|\/)\.vscode\/tasks\.json$/, 'VS Code の tasks（runOn: folderOpen で、フォルダを開いただけで動く）'],
   [/\.code-workspace$/, 'VS Code のワークスペース（settings と、開いただけで動く tasks を持てる）'],
-  [/(^|\/)\.devcontainer(\/|\.json$)/, 'Dev Container（initializeCommand は手元で、postCreateCommand などはコンテナで動く）'],
+  [
+    /(^|\/)\.devcontainer(\/|\.json$)/,
+    'Dev Container（initializeCommand は手元で、postCreateCommand などはコンテナで動く）',
+  ],
   [/(^|\/)\.envrc$/, 'direnv（フォルダに入るたびに動く）'],
-  [/(^|\/)(\.?mise(\.[\w-]+)?\.toml$|\.mise\/|\.config\/mise)/, 'mise の設定（hooks と env の source が、フォルダに入るたびに動く。道具の版は .node-version などに書く）'],
+  [
+    /(^|\/)(\.?mise(\.[\w-]+)?\.toml$|\.mise\/|\.config\/mise)/,
+    'mise の設定（hooks と env の source が、フォルダに入るたびに動く。道具の版は .node-version などに書く）',
+  ],
   [/(^|\/)\.husky\//, 'husky（Git の hooks）'],
   [/(^|\/)(\.?lefthook(-local)?\.(yml|yaml|json|toml)$|\.lefthook\/)/, 'lefthook（Git の hooks）'],
   [/(^|\/)\.pre-commit-config\.yaml$/, 'pre-commit（Git の hooks）'],
@@ -326,16 +445,33 @@ export const checkPath = (f: string, bytes: number | undefined, out: Finding[]) 
   if (inv) stop('invisible', `ファイルの名前に見えない文字 ${hex(inv[0])}`);
   const ctl = CONTROL.exec(f);
   if (ctl) stop('control', `ファイルの名前に制御文字 ${hex(ctl[0])}`);
-  if (MEDIA.test(f)) stop('media', '動画・音声は main に入れない（動画は media.ts push で Releases、声と BGM の素材は materials.ts push で materials ブランチ）');
+  if (MEDIA.test(f))
+    stop(
+      'media',
+      '動画・音声は main に入れない（動画は media.ts push で Releases、声と BGM の素材は materials.ts push で materials ブランチ）',
+    );
   if (bytes !== undefined) {
     const large = LARGE_OK.some(([rx]) => rx.test(f));
     const max = large ? LARGE_OK_MAX : MAX_TRACKED_BYTES;
-    if (bytes > max) stop('size', `大きすぎる（${bytes.toLocaleString('en-US')} バイト。上限は ${max / MiB}MiB${large ? '。5MiB の上限からは外しているが、それでも大きすぎる' : '。大きなものは Releases か materials ブランチに置く'}）`);
+    if (bytes > max)
+      stop(
+        'size',
+        `大きすぎる（${bytes.toLocaleString('en-US')} バイト。上限は ${max / MiB}MiB${large ? '。5MiB の上限からは外しているが、それでも大きすぎる' : '。大きなものは Releases か materials ブランチに置く'}）`,
+      );
   }
   for (const [rx, what] of AUTORUN) if (rx.test(f)) stop('autorun', `clone した人の手元で勝手に動く: ${what}`);
-  if (CLAUDE_CONFIG.test(f)) stop('claude', 'Claude Code の設定・hooks は Git に入れない（clone した人の手元でコマンドが動く）');
-  else if (/(^|\/)\.claude\//.test(f) && !CLAUDE_SHARED.test(f)) stop('claude', 'Claude Code のフォルダに入れてよいのは skills/ と launch.json だけ（設定・agents・commands は、開いた人の手元で使われる）');
-  if (AGENT_FILE.test(f) && f.includes('/')) stop('agents', 'AI への指示のファイル（CLAUDE.md・AGENTS.md）は、リポジトリの直下にだけ置く（下のフォルダのものは、そこで作業するときだけ AI が読むので、見落としやすい）');
+  if (CLAUDE_CONFIG.test(f))
+    stop('claude', 'Claude Code の設定・hooks は Git に入れない（clone した人の手元でコマンドが動く）');
+  else if (/(^|\/)\.claude\//.test(f) && !CLAUDE_SHARED.test(f))
+    stop(
+      'claude',
+      'Claude Code のフォルダに入れてよいのは skills/ と launch.json だけ（設定・agents・commands は、開いた人の手元で使われる）',
+    );
+  if (AGENT_FILE.test(f) && f.includes('/'))
+    stop(
+      'agents',
+      'AI への指示のファイル（CLAUDE.md・AGENTS.md）は、リポジトリの直下にだけ置く（下のフォルダのものは、そこで作業するときだけ AI が読むので、見落としやすい）',
+    );
 };
 
 /**
@@ -356,9 +492,13 @@ const LAUNCH_KEYS = ['name', 'runtimeExecutable', 'runtimeArgs', 'port', 'url'];
 const LOCAL_URL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?\/?$/;
 const isPortArgs = (rest: string[]) =>
   !rest.length ||
-  (rest[0] === '--' && ((rest.length === 2 && /^--port=\d{1,5}$/.test(rest[1]!)) || (rest.length === 3 && rest[1] === '--port' && /^\d{1,5}$/.test(rest[2]!))));
+  (rest[0] === '--' &&
+    ((rest.length === 2 && /^--port=\d{1,5}$/.test(rest[1]!)) ||
+      (rest.length === 3 && rest[1] === '--port' && /^\d{1,5}$/.test(rest[2]!))));
 export const checkLaunch = (where: string, text: string, out: Finding[]) => {
-  const stop = (what: string) => { out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' }); };
+  const stop = (what: string) => {
+    out.push({ level: 'error', where, what: `.claude/launch.json: ${what}`, sample: '', rule: 'launch' });
+  };
   let value: unknown;
   try {
     value = Bun.JSONC.parse(text);
@@ -380,14 +520,29 @@ export const checkLaunch = (where: string, text: string, out: Finding[]) => {
     const at = `${i + 1} 番目の設定${isObject(c) && typeof c.name === 'string' ? `（${shown(c.name)}）` : ''}`;
     if (!isObject(c)) return stop(`${at}がオブジェクトでない`);
     const extra = Object.keys(c).filter((k) => !LAUNCH_KEYS.includes(k));
-    if (extra.length) stop(`${at}に知らない項目（${shown(extra.join('・'))}）。書けるのは ${LAUNCH_KEYS.join('・')}（env・cwd などで、決めた一覧の外のものが動きうる）`);
-    if (c.url !== undefined && !(typeof c.url === 'string' && LOCAL_URL.test(c.url))) stop(`${at}の url が手元（localhost）でない`);
+    if (extra.length)
+      stop(
+        `${at}に知らない項目（${shown(extra.join('・'))}）。書けるのは ${LAUNCH_KEYS.join('・')}（env・cwd などで、決めた一覧の外のものが動きうる）`,
+      );
+    if (c.url !== undefined && !(typeof c.url === 'string' && LOCAL_URL.test(c.url)))
+      stop(`${at}の url が手元（localhost）でない`);
     // url だけの設定は、もう動いているサーバーにつなぐだけで、何も起動しない
     if (c.runtimeExecutable === undefined && c.runtimeArgs === undefined) return;
-    const argv = [c.runtimeExecutable, ...(Array.isArray(c.runtimeArgs) ? c.runtimeArgs : c.runtimeArgs === undefined ? [] : [c.runtimeArgs])];
-    const ok = argv.every((a) => typeof a === 'string') &&
-      LAUNCH_COMMANDS.some(({ argv: cmd, port }) => cmd.every((x, k) => argv[k] === x) && (port ? isPortArgs(argv.slice(cmd.length) as string[]) : argv.length === cmd.length));
-    if (!ok) stop(`${at}の起動コマンドが、決めた一覧の外（${shown(argv.map(String).join(' '))}）。起動してよいのは ${LAUNCH_COMMANDS.map((x) => `${x.argv.join(' ')}${x.port ? ' [-- --port <番号>]' : ''}`).join('・')}`);
+    const argv = [
+      c.runtimeExecutable,
+      ...(Array.isArray(c.runtimeArgs) ? c.runtimeArgs : c.runtimeArgs === undefined ? [] : [c.runtimeArgs]),
+    ];
+    const ok =
+      argv.every((a) => typeof a === 'string') &&
+      LAUNCH_COMMANDS.some(
+        ({ argv: cmd, port }) =>
+          cmd.every((x, k) => argv[k] === x) &&
+          (port ? isPortArgs(argv.slice(cmd.length) as string[]) : argv.length === cmd.length),
+      );
+    if (!ok)
+      stop(
+        `${at}の起動コマンドが、決めた一覧の外（${shown(argv.map(String).join(' '))}）。起動してよいのは ${LAUNCH_COMMANDS.map((x) => `${x.argv.join(' ')}${x.port ? ' [-- --port <番号>]' : ''}`).join('・')}`,
+      );
   });
 };
 
@@ -400,7 +555,9 @@ const VSCODE_RISKY: RegExp[] = [
   /(^|\.)\w*(paths?|bin|tsdk|runtime|command\w*|executable\w*|interpreter\w*|shell\w*|env|envfile)$/i,
 ];
 const checkVscodeSettings = (where: string, text: string, out: Finding[]) => {
-  const stop = (what: string) => { out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' }); };
+  const stop = (what: string) => {
+    out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' });
+  };
   let value: unknown;
   try {
     value = Bun.JSONC.parse(text);
@@ -410,12 +567,16 @@ const checkVscodeSettings = (where: string, text: string, out: Finding[]) => {
   if (!isObject(value)) return stop('VS Code の設定がオブジェクトでない');
   // 言語ごとの上書き（"[python]": {…}）の中も見る。ほかの値の中（files.exclude のパターンなど）は設定の名前ではないので見ない
   const keys = Object.entries(value).flatMap(([k, v]) => (/^\[.+\]$/.test(k) && isObject(v) ? Object.keys(v) : [k]));
-  for (const k of keys) if (VSCODE_RISKY.some((rx) => rx.test(k))) stop(`VS Code の設定「${shown(k)}」（シェル・実行ファイルの場所・自動で動く tasks を決める項目）`);
+  for (const k of keys)
+    if (VSCODE_RISKY.some((rx) => rx.test(k)))
+      stop(`VS Code の設定「${shown(k)}」（シェル・実行ファイルの場所・自動で動く tasks を決める項目）`);
 };
 
 /** bunfig.toml で止める項目: preload（bun を使うたびに先に動く。[test] の中も）と plugins。[test] root などは置いてよい */
 const checkBunfig = (where: string, text: string, out: Finding[]) => {
-  const stop = (what: string) => { out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' }); };
+  const stop = (what: string) => {
+    out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: ${what}`, sample: '', rule: 'autorun' });
+  };
   let value: unknown;
   try {
     value = Bun.TOML.parse(text);
@@ -427,7 +588,8 @@ const checkBunfig = (where: string, text: string, out: Finding[]) => {
     if (!isObject(v)) return;
     for (const [k, x] of Object.entries(v)) {
       const key = at ? `${at}.${k}` : k;
-      if (k === 'preload' || k === 'plugins') stop(`bunfig.toml の ${shown(key)}（bun を使うたびに、書いたモジュールが先に動く）`);
+      if (k === 'preload' || k === 'plugins')
+        stop(`bunfig.toml の ${shown(key)}（bun を使うたびに、書いたモジュールが先に動く）`);
       visit(x, key);
     }
   };
@@ -435,7 +597,16 @@ const checkBunfig = (where: string, text: string, out: Finding[]) => {
 };
 
 /** npm と bun が入れるときに動かすスクリプト（dependencies は node_modules が変わるたびに動く） */
-const INSTALL_SCRIPTS = ['preinstall', 'install', 'postinstall', 'preprepare', 'prepare', 'postprepare', 'prepublish', 'dependencies'];
+const INSTALL_SCRIPTS = [
+  'preinstall',
+  'install',
+  'postinstall',
+  'preprepare',
+  'prepare',
+  'postprepare',
+  'prepublish',
+  'dependencies',
+];
 /** 依存のインストール時スクリプトで、Git の hooks を入れる設定 */
 const HOOK_INSTALLERS = ['husky', 'simple-git-hooks'];
 const checkPackageJson = (where: string, text: string, out: Finding[], root: boolean) => {
@@ -443,24 +614,58 @@ const checkPackageJson = (where: string, text: string, out: Finding[], root: boo
   try {
     pkg = JSON.parse(text);
   } catch {
-    out.push({ level: 'error', where, what: 'package.json が JSON として読めない', sample: '', rule: 'install-script' });
+    out.push({
+      level: 'error',
+      where,
+      what: 'package.json が JSON として読めない',
+      sample: '',
+      rule: 'install-script',
+    });
     return;
   }
   if (!isObject(pkg)) return;
   const scripts = isObject(pkg.scripts) ? pkg.scripts : {};
   for (const k of INSTALL_SCRIPTS) {
-    if (scripts[k] !== undefined) out.push({ level: 'error', where, what: `npm のインストール時スクリプト（${k}）は置かない`, sample: shown(String(scripts[k])), rule: 'install-script' });
+    if (scripts[k] !== undefined)
+      out.push({
+        level: 'error',
+        where,
+        what: `npm のインストール時スクリプト（${k}）は置かない`,
+        sample: shown(String(scripts[k])),
+        rule: 'install-script',
+      });
   }
   for (const k of HOOK_INSTALLERS) {
-    if (pkg[k] !== undefined) out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: Git の hooks を入れる設定（${k}）`, sample: '', rule: 'autorun' });
+    if (pkg[k] !== undefined)
+      out.push({
+        level: 'error',
+        where,
+        what: `clone した人の手元で勝手に動く: Git の hooks を入れる設定（${k}）`,
+        sample: '',
+        rule: 'autorun',
+      });
   }
   if (!root) return;
   // .claude/launch.json が npm run で起こす scripts は、決めた中身だけにする。npm がその前後に流す pre・post も置かない
   for (const { argv, script } of LAUNCH_COMMANDS) {
     const name = argv[2];
-    if (scripts[name] !== undefined && scripts[name] !== script) out.push({ level: 'error', where, what: `.claude/launch.json が起こす npm run ${name} の中身が、決めたもの（${script}）と違う。変えるなら scripts/check_content.ts の LAUNCH_COMMANDS も直す`, sample: shown(String(scripts[name])), rule: 'launch' });
+    if (scripts[name] !== undefined && scripts[name] !== script)
+      out.push({
+        level: 'error',
+        where,
+        what: `.claude/launch.json が起こす npm run ${name} の中身が、決めたもの（${script}）と違う。変えるなら scripts/check_content.ts の LAUNCH_COMMANDS も直す`,
+        sample: shown(String(scripts[name])),
+        rule: 'launch',
+      });
     for (const k of [`pre${name}`, `post${name}`]) {
-      if (scripts[k] !== undefined) out.push({ level: 'error', where, what: `.claude/launch.json が起こす npm run ${name} の前後に、npm が流すスクリプト（${k}）は置かない`, sample: shown(String(scripts[k])), rule: 'launch' });
+      if (scripts[k] !== undefined)
+        out.push({
+          level: 'error',
+          where,
+          what: `.claude/launch.json が起こす npm run ${name} の前後に、npm が流すスクリプト（${k}）は置かない`,
+          sample: shown(String(scripts[k])),
+          rule: 'launch',
+        });
     }
   }
 };
@@ -470,7 +675,13 @@ const checkSkill = (where: string, text: string, out: Finding[]) => {
   const head = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)?.[1] ?? '';
   for (const m of head.matchAll(/^["']?(hooks|allowed[-_]?tools)["']?\s*:/gim)) {
     const what = /^hooks$/i.test(m[1]!) ? 'スキルを使う間、コマンドが動く' : '確かめずにツールを使わせる';
-    out.push({ level: 'error', where, what: `clone した人の手元で勝手に動く: スキルの頭書きの ${m[1]}（${what}）`, sample: '', rule: 'claude' });
+    out.push({
+      level: 'error',
+      where,
+      what: `clone した人の手元で勝手に動く: スキルの頭書きの ${m[1]}（${what}）`,
+      sample: '',
+      rule: 'claude',
+    });
   }
 };
 
@@ -478,28 +689,66 @@ const checkSkill = (where: string, text: string, out: Finding[]) => {
 export const checkFileText = (f: string, text: string, out: Finding[], deny: string[]) => {
   const where = shown(f);
   const inv = INVISIBLE.exec(text);
-  if (inv) out.push({ level: 'error', where, what: `見えない文字 ${hex(inv[0])}`, sample: short(text, inv.index), rule: 'invisible' });
+  if (inv)
+    out.push({
+      level: 'error',
+      where,
+      what: `見えない文字 ${hex(inv[0])}`,
+      sample: short(text, inv.index),
+      rule: 'invisible',
+    });
   const ctl = CONTROL.exec(text);
-  if (ctl) out.push({ level: 'error', where, what: `制御文字 ${hex(ctl[0])}`, sample: short(text, ctl.index), rule: 'control' });
+  if (ctl)
+    out.push({
+      level: 'error',
+      where,
+      what: `制御文字 ${hex(ctl[0])}`,
+      sample: short(text, ctl.index),
+      rule: 'control',
+    });
   checkSecrets(text, where, out);
-  for (const term of deny) if (text.toLowerCase().includes(term.toLowerCase())) out.push({ level: 'error', where, what: 'ローカルの禁止語', sample: '（伏せる）', rule: 'denylist' });
+  for (const term of deny)
+    if (text.toLowerCase().includes(term.toLowerCase()))
+      out.push({ level: 'error', where, what: 'ローカルの禁止語', sample: '（伏せる）', rule: 'denylist' });
   if (/(^|\/)\.claude\/launch\.json$/.test(f)) checkLaunch(where, text, out);
   if (/(^|\/)\.vscode\/settings\.json$/.test(f)) checkVscodeSettings(where, text, out);
   if (/(^|\/)\.?bunfig\.toml$/.test(f)) checkBunfig(where, text, out);
   if (/(^|\/)package\.json$/.test(f)) checkPackageJson(where, text, out, f === 'package.json');
   if (/(^|\/)\.claude\/skills\/.+\/SKILL\.md$/.test(f)) checkSkill(where, text, out);
   if (AGENT_FILE.test(f)) {
-    for (const p of agentImportsOutside(text)) out.push({ level: 'error', where, what: 'AI への指示のファイルが、リポジトリの外か Git に入れないファイルを @ で読み込む（開いた人の手元のファイルが AI に渡る）', sample: shown(p), rule: 'agents' });
+    for (const p of agentImportsOutside(text))
+      out.push({
+        level: 'error',
+        where,
+        what: 'AI への指示のファイルが、リポジトリの外か Git に入れないファイルを @ で読み込む（開いた人の手元のファイルが AI に渡る）',
+        sample: shown(p),
+        rule: 'agents',
+      });
   }
 };
 
 /** Git に入れる全部のファイル（追跡しているものと、追跡していないが無視もしていないもの）を調べる。root と deny はテストで変える */
 export const checkFiles = (out: Finding[], { root = ROOT, deny }: { root?: string; deny?: string[] } = {}) => {
   const terms = deny ?? (root === ROOT ? denylistTerms() : loadDenylist(root));
-  const files = [...new Set(execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean))];
+  const files = [
+    ...new Set(
+      execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
+        cwd: root,
+        encoding: 'utf8',
+      })
+        .split('\0')
+        .filter(Boolean),
+    ),
+  ];
   for (const f of files) {
     if (CREDENTIAL.test(f)) {
-      out.push({ level: 'error', where: shown(f), what: '認証ファイルを公開対象に入れない', sample: '（内容は読まない）', rule: 'credential' });
+      out.push({
+        level: 'error',
+        where: shown(f),
+        what: '認証ファイルを公開対象に入れない',
+        sample: '（内容は読まない）',
+        rule: 'credential',
+      });
       continue;
     }
     const full = path.join(root, f);
@@ -512,7 +761,13 @@ export const checkFiles = (out: Finding[], { root = ROOT, deny }: { root?: strin
     checkPath(f, st?.isFile() ? st.size : undefined, out);
     if (!st) continue;
     if (st.isSymbolicLink()) {
-      out.push({ level: 'error', where: shown(f), what: '外部ファイルを指す symlink を公開対象に入れない', sample: '（内容は読まない）', rule: 'symlink' });
+      out.push({
+        level: 'error',
+        where: shown(f),
+        what: '外部ファイルを指す symlink を公開対象に入れない',
+        sample: '（内容は読まない）',
+        rule: 'symlink',
+      });
       continue;
     }
     if (!st.isFile() || BINARY.test(f) || MEDIA.test(f)) continue;
@@ -525,8 +780,17 @@ export const checkFiles = (out: Finding[], { root = ROOT, deny }: { root?: strin
 /** 見つけるべき例を見つけ、見逃すべき例を見逃すか。例と確かめ方は tests/unit/check-content.test.ts にあり、bun test で流す（CI はこの入口から呼ぶ） */
 const SELF_TEST = 'tests/unit/check-content.test.ts';
 const selfTest = (): number => {
-  const r = Bun.spawnSync([process.execPath, 'test', path.join(ROOT, SELF_TEST)], { cwd: ROOT, stdin: 'ignore', stdout: 'inherit', stderr: 'inherit' });
-  console.log(r.exitCode === 0 ? `点検の点検: ${SELF_TEST} の例が全部合った` : `点検の点検: 合わない例がある（${SELF_TEST}。上の bun test の出力を見る）`);
+  const r = Bun.spawnSync([process.execPath, 'test', path.join(ROOT, SELF_TEST)], {
+    cwd: ROOT,
+    stdin: 'ignore',
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
+  console.log(
+    r.exitCode === 0
+      ? `点検の点検: ${SELF_TEST} の例が全部合った`
+      : `点検の点検: 合わない例がある（${SELF_TEST}。上の bun test の出力を見る）`,
+  );
   return r.exitCode === 0 ? 0 : 1;
 };
 
@@ -539,10 +803,18 @@ const main = async (argv: string[]) => {
   // ローカルの禁止語の一覧が無いと、非公開の名前が入っても止まらない。手元でははっきり警告し、CI（一覧を置かない）では注意だけにする
   const ci = process.env.CI === 'true';
   const { shared, local } = denylistPaths();
-  const places = [...(shared ? [`    ${shared}（同じ clone の全部の worktree が読む）`] : []), `    ${local}（この作業フォルダだけ）`];
+  const places = [
+    ...(shared ? [`    ${shared}（同じ clone の全部の worktree が読む）`] : []),
+    `    ${local}（この作業フォルダだけ）`,
+  ];
   const terms = denylistTerms();
   if (!terms.length && values['require-denylist']) {
-    console.error(['止める  ローカルの禁止語の一覧が無いので止めます（--require-denylist）。1 行 1 語の一覧を、次のどちらかに置いてください', ...places].join('\n'));
+    console.error(
+      [
+        '止める  ローカルの禁止語の一覧が無いので止めます（--require-denylist）。1 行 1 語の一覧を、次のどちらかに置いてください',
+        ...places,
+      ].join('\n'),
+    );
     return EXIT.missing;
   }
   const out: Finding[] = [];
@@ -551,21 +823,49 @@ const main = async (argv: string[]) => {
   await checkContent(out);
   checkFiles(out);
   for (const a of allow.entries) {
-    if (!usedAllow.has(a)) out.push({ level: 'warn', where: ALLOW_FILE, what: `使っていない許可（${a.rule}）。台本にもう無いなら消す`, sample: short(a.text), rule: 'allow' });
+    if (!usedAllow.has(a))
+      out.push({
+        level: 'warn',
+        where: ALLOW_FILE,
+        what: `使っていない許可（${a.rule}）。台本にもう無いなら消す`,
+        sample: short(a.text),
+        rule: 'allow',
+      });
   }
-  if (!terms.length) out.push({ level: 'warn', where: '（禁止語の一覧）', what: `ローカルの禁止語の一覧が無いので、禁止語は見ていない${ci ? '（CI には一覧を置かない）' : ''}`, sample: '', rule: 'denylist' });
+  if (!terms.length)
+    out.push({
+      level: 'warn',
+      where: '（禁止語の一覧）',
+      what: `ローカルの禁止語の一覧が無いので、禁止語は見ていない${ci ? '（CI には一覧を置かない）' : ''}`,
+      sample: '',
+      rule: 'denylist',
+    });
   const errors = out.filter((f) => f.level === 'error');
   const warns = out.filter((f) => f.level === 'warn');
-  for (const f of [...errors, ...warns]) console.log(`${f.level === 'error' ? '止める' : '注意  '}  ${f.where}  ${f.what}［${f.rule}］${f.sample ? `  「${f.sample}」` : ''}`);
+  for (const f of [...errors, ...warns])
+    console.log(
+      `${f.level === 'error' ? '止める' : '注意  '}  ${f.where}  ${f.what}［${f.rule}］${f.sample ? `  「${f.sample}」` : ''}`,
+    );
   if (errors.some((f) => (ALLOWABLE_RULES as readonly Rule[]).includes(f.rule))) {
-    console.log(`わざと書いた例なら、${ALLOW_FILE} に ${ALLOW_SHAPE} を足すと、その所でその規則だけを外せる（外せるのは ${ALLOWABLE_RULES.join('・')}。Pull Request に理由を書く）`);
+    console.log(
+      `わざと書いた例なら、${ALLOW_FILE} に ${ALLOW_SHAPE} を足すと、その所でその規則だけを外せる（外せるのは ${ALLOWABLE_RULES.join('・')}。Pull Request に理由を書く）`,
+    );
   }
-  console.log(`台本とファイルの点検: 止める ${errors.length} 件・注意 ${warns.length} 件${terms.length ? `（ローカルの禁止語 ${terms.length} 語も見た）` : ''}`);
+  console.log(
+    `台本とファイルの点検: 止める ${errors.length} 件・注意 ${warns.length} 件${terms.length ? `（ローカルの禁止語 ${terms.length} 語も見た）` : ''}`,
+  );
   if (!terms.length && !ci) {
     const bar = '!'.repeat(72);
-    console.error([bar, '警告: ローカルの禁止語の一覧がありません。非公開の名前が入っていても、この点検では止まりません。',
-      '  1 行 1 語の一覧を、次のどちらかに置く（どちらも Git に入らない）', ...places,
-      '  一覧が無いときに止めるには --require-denylist を付ける（手元から公開物を出す前に使う）', bar].join('\n'));
+    console.error(
+      [
+        bar,
+        '警告: ローカルの禁止語の一覧がありません。非公開の名前が入っていても、この点検では止まりません。',
+        '  1 行 1 語の一覧を、次のどちらかに置く（どちらも Git に入らない）',
+        ...places,
+        '  一覧が無いときに止めるには --require-denylist を付ける（手元から公開物を出す前に使う）',
+        bar,
+      ].join('\n'),
+    );
   }
   return errors.length ? 1 : 0;
 };

@@ -1,9 +1,10 @@
 // 前提: macOS・Safari のリモートオートメーションと safaridriver。副作用: 専用 Safari セッションと証跡を作る。--disconnect-wifi は Wi-Fi を切り、復旧用の子プロセスを起動する。権限: safaridriver の許可。Wi-Fi 操作には sudo networksetup の許可が要る。持ち主が手動で流す。
-import config from '../../chalkfile.config';
+
+import assert from 'node:assert/strict';
 // AppleのsafaridriverへW3C WebDriverで接続する。個人の通常ウィンドウや認証情報を使わない。
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import assert from 'node:assert/strict';
+import config from '../../chalkfile.config';
 import { COURSES } from '../../content';
 
 const root = path.resolve(import.meta.dir, '../..');

@@ -1,6 +1,6 @@
 // 声の置き場所（scripts/stages/voice/store.ts）と、Kokoro の足りない台詞・声の記録（scripts/stages/voice/kokoro.ts）。
 // ファイルは一時のフォルダにだけ書く。Kokoro そのもの（uv と Python）は流さない
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -18,6 +18,7 @@ import {
 } from '../../scripts/stages/voice/store';
 import { recipeIn, ttsKeysIn } from '../../scripts/voices';
 import { course, lecture } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-voice-store-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));

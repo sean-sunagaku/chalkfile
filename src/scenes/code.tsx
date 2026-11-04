@@ -19,7 +19,10 @@ const highlight = (line: string, lang: CodeScene['lang'], SYNTAX: Theme['syntax'
     const key = at;
     at += t.text.length;
     return t.kind ? (
-      <span key={key} style={{ color: SYNTAX[t.kind], fontStyle: italic && t.kind === 'comment' ? 'italic' : undefined }}>
+      <span
+        key={key}
+        style={{ color: SYNTAX[t.kind], fontStyle: italic && t.kind === 'comment' ? 'italic' : undefined }}
+      >
         {t.text}
       </span>
     ) : (

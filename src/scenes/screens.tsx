@@ -21,12 +21,53 @@ const BLOCK_DOT = 34;
 
 type Variant = 'primary' | 'secondary' | 'link' | 'danger';
 
-const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean | undefined; flex?: boolean }> = ({ text, variant, weak, flex }) => {
+const Btn: React.FC<{ text: string; variant: Variant; weak?: boolean | undefined; flex?: boolean }> = ({
+  text,
+  variant,
+  weak,
+  flex,
+}) => {
   if (variant === 'link') {
-    return <div style={{ fontSize: weak ? T.linkWeak : T.link, color: weak ? M.weak : M.primary, textDecoration: 'underline', fontWeight: 600, alignSelf: 'center', padding: '0 6px' }}>{text}</div>;
+    return (
+      <div
+        style={{
+          fontSize: weak ? T.linkWeak : T.link,
+          color: weak ? M.weak : M.primary,
+          textDecoration: 'underline',
+          fontWeight: 600,
+          alignSelf: 'center',
+          padding: '0 6px',
+        }}
+      >
+        {text}
+      </div>
+    );
   }
-  const base: React.CSSProperties = { height: 52, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: T.button, fontWeight: 800, padding: '0 12px', flex: flex ? 1 : undefined, whiteSpace: 'nowrap' };
-  if (variant === 'secondary') return <div style={{ ...base, border: `1.5px solid ${weak ? M.weakLine : M.field}`, color: weak ? M.weak : M.ink, background: M.bg }}>{text}</div>;
+  const base: React.CSSProperties = {
+    height: 52,
+    borderRadius: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: T.button,
+    fontWeight: 800,
+    padding: '0 12px',
+    flex: flex ? 1 : undefined,
+    whiteSpace: 'nowrap',
+  };
+  if (variant === 'secondary')
+    return (
+      <div
+        style={{
+          ...base,
+          border: `1.5px solid ${weak ? M.weakLine : M.field}`,
+          color: weak ? M.weak : M.ink,
+          background: M.bg,
+        }}
+      >
+        {text}
+      </div>
+    );
   if (variant === 'danger') return <div style={{ ...base, background: M.danger, color: M.onPrimary }}>{text}</div>;
   return <div style={{ ...base, background: weak ? M.primaryWeak : M.primary, color: M.onPrimary }}>{text}</div>;
 };
@@ -35,16 +76,28 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
   const required = useText().required;
   switch (b.type) {
     case 'title':
-      return <div style={{ fontSize: T.title, fontWeight: 900, color: b.weak ? M.weak : M.ink, lineHeight: 1.3 }}>{b.text}</div>;
+      return (
+        <div style={{ fontSize: T.title, fontWeight: 900, color: b.weak ? M.weak : M.ink, lineHeight: 1.3 }}>
+          {b.text}
+        </div>
+      );
     case 'text':
-      return <div style={{ fontSize: b.small ? T.textSmall : T.text, color: b.weak ? M.weak : M.sub, lineHeight: 1.5 }}>{b.text}</div>;
+      return (
+        <div style={{ fontSize: b.small ? T.textSmall : T.text, color: b.weak ? M.weak : M.sub, lineHeight: 1.5 }}>
+          {b.text}
+        </div>
+      );
     case 'field':
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {b.label ? (
             <div style={{ fontSize: T.label, fontWeight: 700, color: b.weak ? M.weak : M.ink }}>
               {b.label}
-              {b.required ? <span style={{ marginLeft: 8, fontSize: T.required, color: M.danger, fontWeight: 800 }}>{required}</span> : null}
+              {b.required ? (
+                <span style={{ marginLeft: 8, fontSize: T.required, color: M.danger, fontWeight: 800 }}>
+                  {required}
+                </span>
+              ) : null}
             </div>
           ) : null}
           <div
@@ -63,7 +116,16 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
             {b.value ?? b.placeholder ?? ''}
           </div>
           {b.error ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: T.error, fontWeight: 700, color: M.alert.error.fg }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: T.error,
+                fontWeight: 700,
+                color: M.alert.error.fg,
+              }}
+            >
               <Icon name="alert" size={18} color={M.alert.error.fg} stroke={2.6} />
               {b.error}
             </div>
@@ -84,7 +146,20 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
     case 'alert': {
       const a = M.alert[b.tone];
       return (
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: a.bg, color: a.fg, borderRadius: 10, padding: '11px 14px', fontSize: T.alert, fontWeight: 700, lineHeight: 1.45 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+            background: a.bg,
+            color: a.fg,
+            borderRadius: 10,
+            padding: '11px 14px',
+            fontSize: T.alert,
+            fontWeight: 700,
+            lineHeight: 1.45,
+          }}
+        >
           <div style={{ paddingTop: 2 }}>
             <Icon name={a.icon} size={20} color={a.fg} stroke={2.6} />
           </div>
@@ -99,8 +174,27 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
             <div style={{ fontSize: T.label, fontWeight: 700, color: M.ink }}>{b.label}</div>
             {b.sub ? <div style={{ fontSize: T.sub, color: M.sub, marginTop: 2 }}>{b.sub}</div> : null}
           </div>
-          <div style={{ width: 54, height: 30, borderRadius: 99, background: b.on ? M.primary : M.field, position: 'relative', flexShrink: 0 }}>
-            <div style={{ position: 'absolute', top: 3, left: b.on ? 27 : 3, width: 24, height: 24, borderRadius: 99, background: M.onPrimary }} />
+          <div
+            style={{
+              width: 54,
+              height: 30,
+              borderRadius: 99,
+              background: b.on ? M.primary : M.field,
+              position: 'relative',
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: b.on ? 27 : 3,
+                width: 24,
+                height: 24,
+                borderRadius: 99,
+                background: M.onPrimary,
+              }}
+            />
           </div>
         </div>
       );
@@ -122,7 +216,9 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
           >
             {b.checked ? <Icon name="check" size={16} color={M.onPrimary} stroke={3.2} /> : null}
           </div>
-          <div style={{ fontSize: b.weak ? T.checkWeak : T.check, color: b.weak ? M.weak : M.ink, lineHeight: 1.4 }}>{b.label}</div>
+          <div style={{ fontSize: b.weak ? T.checkWeak : T.check, color: b.weak ? M.weak : M.ink, lineHeight: 1.4 }}>
+            {b.label}
+          </div>
         </div>
       );
     case 'steps':
@@ -152,7 +248,16 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
                   >
                     {done ? <Icon name="check" size={15} color={M.onPrimary} stroke={3.2} /> : i + 1}
                   </div>
-                  <div style={{ fontSize: T.step, fontWeight: on ? 800 : 600, color: on ? M.ink : M.sub, whiteSpace: 'nowrap' }}>{x}</div>
+                  <div
+                    style={{
+                      fontSize: T.step,
+                      fontWeight: on ? 800 : 600,
+                      color: on ? M.ink : M.sub,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {x}
+                  </div>
                 </div>
               </React.Fragment>
             );
@@ -163,15 +268,47 @@ const Block: React.FC<{ b: MockBlock }> = ({ b }) => {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {b.items.map((x, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, fontSize: b.weak ? T.listWeak : T.list, color: b.weak ? M.weak : M.sub, lineHeight: 1.45 }}>
-              <div style={{ width: 6, height: 6, borderRadius: 9, background: b.weak ? M.weak : M.primary, marginTop: 10, flexShrink: 0 }} />
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                gap: 8,
+                fontSize: b.weak ? T.listWeak : T.list,
+                color: b.weak ? M.weak : M.sub,
+                lineHeight: 1.45,
+              }}
+            >
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 9,
+                  background: b.weak ? M.weak : M.primary,
+                  marginTop: 10,
+                  flexShrink: 0,
+                }}
+              />
               {x}
             </div>
           ))}
         </div>
       );
     case 'badge':
-      return <div style={{ alignSelf: 'flex-start', fontSize: T.badge, fontWeight: 800, color: M.badge.fg, background: M.badge.bg, borderRadius: 99, padding: '3px 12px' }}>{b.text}</div>;
+      return (
+        <div
+          style={{
+            alignSelf: 'flex-start',
+            fontSize: T.badge,
+            fontWeight: 800,
+            color: M.badge.fg,
+            background: M.badge.bg,
+            borderRadius: 99,
+            padding: '3px 12px',
+          }}
+        >
+          {b.text}
+        </div>
+      );
     case 'divider':
       return <div style={{ height: 1, background: M.weakLine }} />;
     case 'spacer':
@@ -208,11 +345,25 @@ const NoteDot: React.FC<{ n: number; t: Tone; p: number; size: number }> = ({ n,
 };
 
 /** 画面の中身（図ごと zoom 倍に拡大する。上の帯 bar・部品・部品の右の番号） */
-const ScreenBody: React.FC<{ sc: MockScreen; zoom: number; bar: React.ReactNode; padding: string }> = ({ sc, zoom, bar, padding }) => {
+const ScreenBody: React.FC<{ sc: MockScreen; zoom: number; bar: React.ReactNode; padding: string }> = ({
+  sc,
+  zoom,
+  bar,
+  padding,
+}) => {
   const { SANS } = usePalette();
   return (
     <div style={{ position: 'absolute', inset: 0, background: M.bg, overflow: 'hidden', fontFamily: SANS }}>
-      <div style={{ width: `${100 / zoom}%`, height: `${100 / zoom}%`, transform: `scale(${zoom})`, transformOrigin: '0 0', display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          width: `${100 / zoom}%`,
+          height: `${100 / zoom}%`,
+          transform: `scale(${zoom})`,
+          transformOrigin: '0 0',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {bar}
         <div style={{ flex: 1, padding, display: 'flex', flexDirection: 'column', gap: 14 }}>
           {sc.blocks.map((b, i) => (
@@ -225,11 +376,30 @@ const ScreenBody: React.FC<{ sc: MockScreen; zoom: number; bar: React.ReactNode;
 };
 
 /** 画面 1 枚。スマホは本体の枠（DeviceFrame）、ブラウザは窓の枠（左上の信号とアドレスの欄） */
-const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; h: number; zoom?: number }> = ({ sc, device, w, h, zoom = 1 }) => {
+const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; h: number; zoom?: number }> = ({
+  sc,
+  device,
+  w,
+  h,
+  zoom = 1,
+}) => {
   const { C } = usePalette();
   if (device === 'phone') {
     const bar = (
-      <div style={{ height: 46, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 6, fontSize: T.phoneBar, fontWeight: 800, color: M.sub }}>{sc.title ?? ''}</div>
+      <div
+        style={{
+          height: 46,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          paddingBottom: 6,
+          fontSize: T.phoneBar,
+          fontWeight: 800,
+          color: M.sub,
+        }}
+      >
+        {sc.title ?? ''}
+      </div>
     );
     return (
       <DeviceFrame width={w} height={h} screen={M.bg}>
@@ -238,13 +408,42 @@ const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; 
     );
   }
   const bar = (
-    <div style={{ height: 42, background: M.bar, display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
+    <div
+      style={{ height: 42, background: M.bar, display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}
+    >
       <WindowLights size={12} gap={8} />
-      <div style={{ marginLeft: 22, flex: 1, height: 26, borderRadius: 8, background: M.bg, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: T.browserBar, color: M.sub, fontWeight: 600 }}>{sc.title ?? ''}</div>
+      <div
+        style={{
+          marginLeft: 22,
+          flex: 1,
+          height: 26,
+          borderRadius: 8,
+          background: M.bg,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          fontSize: T.browserBar,
+          color: M.sub,
+          fontWeight: 600,
+        }}
+      >
+        {sc.title ?? ''}
+      </div>
     </div>
   );
   return (
-    <div style={{ width: w, height: h, borderRadius: 16, background: M.bg, border: `1.5px solid ${C.line2}`, boxShadow: C.shadow, overflow: 'hidden', position: 'relative' }}>
+    <div
+      style={{
+        width: w,
+        height: h,
+        borderRadius: 16,
+        background: M.bg,
+        border: `1.5px solid ${C.line2}`,
+        boxShadow: C.shadow,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
       <div style={{ position: 'absolute', inset: 0, borderRadius: 15, overflow: 'hidden' }}>
         <ScreenBody sc={sc} zoom={zoom} bar={bar} padding="24px 40px 24px 32px" />
       </div>
@@ -252,7 +451,11 @@ const Frame: React.FC<{ sc: MockScreen; device: 'browser' | 'phone'; w: number; 
   );
 };
 
-const BlockWithNote: React.FC<{ b: MockBlock; notes: NonNullable<MockScreen['notes']>; t: Tone }> = ({ b, notes, t }) => (
+const BlockWithNote: React.FC<{ b: MockBlock; notes: NonNullable<MockScreen['notes']>; t: Tone }> = ({
+  b,
+  notes,
+  t,
+}) => (
   <div style={{ position: 'relative', ...(b.type === 'spacer' && b.h <= 0 ? { flex: 1 } : {}) }}>
     <Block b={b} />
     {notes.map((n, k) => (
@@ -267,7 +470,15 @@ const NoteOnBlock: React.FC<{ n: NonNullable<MockScreen['notes']>[number]; t: To
   return (
     <>
       {/* 部品を囲む枠と、右上の番号 */}
-      <div style={{ position: 'absolute', inset: -6, borderRadius: 12, border: `3px solid ${alpha(tone(n.tone ?? t).main, 0.85 * p)}`, pointerEvents: 'none' }} />
+      <div
+        style={{
+          position: 'absolute',
+          inset: -6,
+          borderRadius: 12,
+          border: `3px solid ${alpha(tone(n.tone ?? t).main, 0.85 * p)}`,
+          pointerEvents: 'none',
+        }}
+      />
       <div style={{ position: 'absolute', right: -26 + k * 42, top: -18 }}>
         <NoteDot n={n.n} t={n.tone ?? t} p={p} size={BLOCK_DOT} />
       </div>
@@ -287,19 +498,49 @@ const NoteRow: React.FC<{ n: NonNullable<MockScreen['notes']>[number]; t: Tone; 
   const { C, SANS } = usePalette();
   const p = useAppear(n.at);
   return (
-    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', opacity: p, transform: `translateY(${dropY(p, 12)}px)` }}>
+    <div
+      style={{
+        display: 'flex',
+        gap: 14,
+        alignItems: 'flex-start',
+        opacity: p,
+        transform: `translateY(${dropY(p, 12)}px)`,
+      }}
+    >
       <NoteDot n={n.n} t={n.tone ?? t} p={1} size={DOT} />
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: size, lineHeight: 1.4, color: C.ink, paddingTop: size * 0.06 }}>
+      <div
+        style={{
+          fontFamily: SANS,
+          fontWeight: 700,
+          fontSize: size,
+          lineHeight: 1.4,
+          color: C.ink,
+          paddingTop: size * 0.06,
+        }}
+      >
         <Rich text={n.text} t={n.tone ?? t} />
       </div>
     </div>
   );
 };
 
-const Labeled: React.FC<{ sc: MockScreen; children: React.ReactNode; style?: React.CSSProperties }> = ({ sc, children, style }) => {
+const Labeled: React.FC<{ sc: MockScreen; children: React.ReactNode; style?: React.CSSProperties }> = ({
+  sc,
+  children,
+  style,
+}) => {
   const p = useAppear(sc.at);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, opacity: p, transform: `translateY(${dropY(p)}px)`, ...style }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        opacity: p,
+        transform: `translateY(${dropY(p)}px)`,
+        ...style,
+      }}
+    >
       <div>
         <Pill t={sc.tone} size={TYPE.label.pillScreen}>
           {sc.label}
@@ -318,7 +559,18 @@ const Screens: React.FC<{ s: ScreensScene }> = ({ s }) => {
     // 1 枚: 左に画面、右に注の一覧
     const w = device === 'phone' ? 470 : 1000;
     return (
-      <div style={{ position: 'absolute', left: PAD, right: PAD, top, height, display: 'flex', gap: 70, alignItems: 'flex-start' }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: PAD,
+          right: PAD,
+          top,
+          height,
+          display: 'flex',
+          gap: 70,
+          alignItems: 'flex-start',
+        }}
+      >
         <Labeled sc={s.left}>
           <Frame sc={s.left} device={device} w={w} h={height - 66} zoom={s.zoom ?? (device === 'phone' ? 1.3 : 1.15)} />
         </Labeled>

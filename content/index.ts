@@ -1,8 +1,9 @@
 // 全講座の入口。動画だけの台本に、読む教材を付ける。
 import { createCatalog } from '../engine/core/catalog';
 import { materialDecorator } from '../engine/core/materials';
-import { MATERIALS } from './materials';
 import * as REGISTRY from './courses';
+import { MATERIALS } from './materials';
+
 export type { Video } from './types';
 
 const modules = Object.values(REGISTRY);

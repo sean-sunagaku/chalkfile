@@ -1,5 +1,5 @@
 // 場面「numbers」: 数字（数え上げる）
-import React from 'react';
+import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { NumbersScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
@@ -17,7 +17,7 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
   const p = useAppear(it.at);
   const start = lineStart(lines, it.at);
   const c = ramp(frame - start, 0, 26);
-  const eased = 1 - Math.pow(1 - c, 3);
+  const eased = 1 - (1 - c) ** 3;
   const v = it.value * eased;
   const tt = tone(it.tone);
   // 整数は動画の言語の書き方で区切る。小数は toFixed のまま（Intl にすると、数え上げの途中の丸めが変わることがある）
@@ -34,11 +34,26 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
         transform: `translateY(${dropY(p, 14)}px)`,
       }}
     >
-      <div style={{ width: 70, fontFamily: SANS, fontWeight: 900, fontSize: TYPE.display.numberOp, color: tt.strong, textAlign: 'center' }}>
+      <div
+        style={{
+          width: 70,
+          fontFamily: SANS,
+          fontWeight: 900,
+          fontSize: TYPE.display.numberOp,
+          color: tt.strong,
+          textAlign: 'center',
+        }}
+      >
         {it.op}
       </div>
       <div
-        style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: last ? TYPE.body.numberTotalLabel : TYPE.body.numberLabel, color: last ? C.ink : C.sub }}
+        style={{
+          flex: 1,
+          fontFamily: SANS,
+          fontWeight: 700,
+          fontSize: last ? TYPE.body.numberTotalLabel : TYPE.body.numberLabel,
+          color: last ? C.ink : C.sub,
+        }}
       >
         {it.label}
       </div>
@@ -54,7 +69,9 @@ const NumRow: React.FC<{ it: NumbersScene['items'][number]; last: boolean }> = (
       >
         {it.prefix ?? ''}
         {text}
-        <span style={{ fontSize: last ? TYPE.display.numberTotalUnit : TYPE.display.numberUnit, marginLeft: 6 }}>{it.suffix}</span>
+        <span style={{ fontSize: last ? TYPE.display.numberTotalUnit : TYPE.display.numberUnit, marginLeft: 6 }}>
+          {it.suffix}
+        </span>
       </div>
     </div>
   );
@@ -75,7 +92,9 @@ const Numbers: React.FC<{ s: NumbersScene }> = ({ s }) => {
         </Glass>
       </div>
       {s.footnote ? (
-        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.numberFootnote, color: C.muted, opacity: f }}>
+        <div
+          style={{ fontFamily: SANS, fontWeight: 500, fontSize: TYPE.body.numberFootnote, color: C.muted, opacity: f }}
+        >
           {s.footnote.text}
         </div>
       ) : null}

@@ -6,7 +6,7 @@
 // transcript（台本と検索）・notes（ノート）・quiz（クイズ）・material（教材・実践課題・AI に聞く）・tabs（タブ）・keyboard（ショートカット）
 import type { CourseTextBase } from './i18n';
 import { texts } from './lib/text';
-import { type Page, lectureOf } from './page/context';
+import { lectureOf, type Page } from './page/context';
 import { createCurriculum } from './page/curriculum';
 import type { CourseData } from './page/data';
 import { byId, h, put, svg } from './page/dom';

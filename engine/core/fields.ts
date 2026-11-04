@@ -41,7 +41,16 @@ export type FieldsOf<T> = { readonly [K in keyof T]-?: ShapeOf<Exclude<T[K], und
 /* ───────────── 台詞と、どの場面にもある項目 ───────────── */
 
 /** 台詞。s（読み上げる文）は訳の点検と指紋に入れない（読みの直しで、訳を見直さなくてよい） */
-export const LINE_FIELDS: FieldsOf<Line> = { id: 'key', t: 'text', s: 'value', v: 'value', pause: 'value', sfx: 'value', sfxAfter: 'value', bgm: 'value' };
+export const LINE_FIELDS: FieldsOf<Line> = {
+  id: 'key',
+  t: 'text',
+  s: 'value',
+  v: 'value',
+  pause: 'value',
+  sfx: 'value',
+  sfxAfter: 'value',
+  bgm: 'value',
+};
 
 /** どの場面にもある項目。台詞は訳で丸ごと置き換える */
 export const BASE_FIELDS: FieldsOf<SceneBase> = {
@@ -59,7 +68,17 @@ type BlockOf<T extends MockBlock['type']> = Extract<MockBlock, { type: T }>;
 const BLOCK_FIELDS: { readonly [T in MockBlock['type']]: FieldsOf<BlockOf<T>> } = {
   title: { id: 'key', type: 'value', text: 'text', weak: 'value' },
   text: { id: 'key', type: 'value', text: 'text', weak: 'value', small: 'value' },
-  field: { id: 'key', type: 'value', label: 'text', placeholder: 'text', value: 'text', error: 'text', hint: 'text', required: 'value', weak: 'value' },
+  field: {
+    id: 'key',
+    type: 'value',
+    label: 'text',
+    placeholder: 'text',
+    value: 'text',
+    error: 'text',
+    hint: 'text',
+    required: 'value',
+    weak: 'value',
+  },
   button: { id: 'key', type: 'value', text: 'text', variant: 'value', weak: 'value' },
   buttons: { id: 'key', type: 'value', items: { $list: { text: 'text', variant: 'value', weak: 'value' } } },
   alert: { id: 'key', type: 'value', text: 'text', tone: 'value' },
@@ -81,10 +100,25 @@ const MOCK_SCREEN = {
   at: 'at',
 } as const;
 
-const COMPARE_SIDE = { title: 'text', sub: 'text', tone: 'value', icon: 'value', at: 'at', items: { $list: { text: 'text', at: 'at' } } } as const;
+const COMPARE_SIDE = {
+  title: 'text',
+  sub: 'text',
+  tone: 'value',
+  icon: 'value',
+  at: 'at',
+  items: { $list: { text: 'text', at: 'at' } },
+} as const;
 
 /** 矢印（flow・states）の訳さない値 */
-const EDGE_VALUES = { from: 'value', to: 'value', bend: 'value', fromSide: 'value', toSide: 'value', labelDx: 'value', labelDy: 'value' } as const;
+const EDGE_VALUES = {
+  from: 'value',
+  to: 'value',
+  bend: 'value',
+  fromSide: 'value',
+  toSide: 'value',
+  labelDx: 'value',
+  labelDy: 'value',
+} as const;
 
 type Own<K extends Scene['kind']> = Omit<Extract<Scene, { kind: K }>, keyof SceneBase | 'kind'>;
 
@@ -92,9 +126,24 @@ type Own<K extends Scene['kind']> = Omit<Extract<Scene, { kind: K }>, keyof Scen
 export const SCENE_FIELDS: { readonly [K in Scene['kind']]: FieldsOf<Own<K>> } = {
   opening: { section: 'text', title: 'text', titleLines: 'text', subtitle: 'text' },
   goals: { items: { $list: { text: 'text', at: 'at' } } },
-  points: { items: { $list: { title: 'text', body: 'text', at: 'at', tone: 'value', icon: 'value' } }, columns: 'value', numbered: 'value' },
+  points: {
+    items: { $list: { title: 'text', body: 'text', at: 'at', tone: 'value', icon: 'value' } },
+    columns: 'value',
+    numbered: 'value',
+  },
   concepts: {
-    cards: { $list: { key: 'key', en: 'text', ja: 'text', desc: 'text', idPrefix: 'value', tone: 'value', icon: 'value', at: 'at' } },
+    cards: {
+      $list: {
+        key: 'key',
+        en: 'text',
+        ja: 'text',
+        desc: 'text',
+        idPrefix: 'value',
+        tone: 'value',
+        icon: 'value',
+        at: 'at',
+      },
+    },
     columns: 'value',
   },
   sequence: {
@@ -102,13 +151,39 @@ export const SCENE_FIELDS: { readonly [K in Scene['kind']]: FieldsOf<Own<K>> } =
     steps: { $list: { from: 'value', to: 'value', label: 'text', at: 'at', dashed: 'value', tone: 'value' } },
   },
   flow: {
-    nodes: { $list: { key: 'key', label: 'text', sub: 'text', x: 'value', y: 'value', w: 'value', h: 'value', tone: 'value', icon: 'value', at: 'at', mono: 'value' } },
+    nodes: {
+      $list: {
+        key: 'key',
+        label: 'text',
+        sub: 'text',
+        x: 'value',
+        y: 'value',
+        w: 'value',
+        h: 'value',
+        tone: 'value',
+        icon: 'value',
+        at: 'at',
+        mono: 'value',
+      },
+    },
     groups: { $list: { label: 'text', x: 'value', y: 'value', w: 'value', h: 'value', tone: 'value', at: 'at' } },
     edges: { $list: { ...EDGE_VALUES, label: 'text', at: 'at', tone: 'value', dashed: 'value' } },
     focus: { $list: { keys: 'value', at: 'at' } },
   },
   states: {
-    nodes: { $list: { key: 'key', code: 'value', ja: 'text', x: 'value', y: 'value', tone: 'value', at: 'at', badge: 'text', variant: 'value' } },
+    nodes: {
+      $list: {
+        key: 'key',
+        code: 'value',
+        ja: 'text',
+        x: 'value',
+        y: 'value',
+        tone: 'value',
+        at: 'at',
+        badge: 'text',
+        variant: 'value',
+      },
+    },
     edges: { $list: { ...EDGE_VALUES, label: 'text', at: 'at' } },
     focus: { $list: { keys: 'value', at: 'at' } },
   },
@@ -120,15 +195,35 @@ export const SCENE_FIELDS: { readonly [K in Scene['kind']]: FieldsOf<Own<K>> } =
     showAt: 'at',
     fontSize: 'value',
   },
-  table: { columns: 'text', rows: { $list: { cells: 'text', at: 'at', tone: 'value' } }, widths: 'value', mono: 'value', fontSize: 'value' },
+  table: {
+    columns: 'text',
+    rows: { $list: { cells: 'text', at: 'at', tone: 'value' } },
+    widths: 'value',
+    mono: 'value',
+    fontSize: 'value',
+  },
   compare: { left: COMPARE_SIDE, right: COMPARE_SIDE, verdict: { text: 'text', at: 'at', tone: 'value' } },
   big: { kicker: 'text', text: 'text', textAt: 'at', sub: 'text', subAt: 'at', tone: 'value', icon: 'value' },
   numbers: {
-    items: { $list: { label: 'text', value: 'value', prefix: 'text', suffix: 'text', decimals: 'value', at: 'at', tone: 'value', note: 'text', op: 'value' } },
+    items: {
+      $list: {
+        label: 'text',
+        value: 'value',
+        prefix: 'text',
+        suffix: 'text',
+        decimals: 'value',
+        at: 'at',
+        tone: 'value',
+        note: 'text',
+        op: 'value',
+      },
+    },
     footnote: { text: 'text', at: 'at' },
   },
   timeline: {
-    items: { $list: { key: 'key', kicker: 'text', title: 'text', sub: 'text', detail: 'text', at: 'at', tone: 'value' } },
+    items: {
+      $list: { key: 'key', kicker: 'text', title: 'text', sub: 'text', detail: 'text', at: 'at', tone: 'value' },
+    },
     focus: { $list: { key: 'value', at: 'at' } },
   },
   quiz: { no: 'value', question: 'text', answer: 'value', explain: 'text', revealAt: 'at' },
@@ -201,7 +296,18 @@ export const COURSE_FIELDS: FieldsOf<Course> = {
   unitLabel: 'value',
   standalone: 'value',
   syllabus: 'value',
-  sources: { $list: { id: 'key', title: 'text', url: 'value', publisher: 'text', year: 'text', kind: 'value', checked: 'value', note: 'text' } },
+  sources: {
+    $list: {
+      id: 'key',
+      title: 'text',
+      url: 'value',
+      publisher: 'text',
+      year: 'text',
+      kind: 'value',
+      checked: 'value',
+      note: 'text',
+    },
+  },
   ui: { takeaways: 'text', docs: 'text', searchHint: 'text' },
 };
 
@@ -243,15 +349,21 @@ export type Visit = (role: Role | undefined, value: unknown, ja: unknown, path: 
  */
 export const walkShape = (v: unknown, ja: unknown, shape: Shape | undefined, path: string, visit: Visit): void => {
   if (v === undefined) return;
-  const at = (x: unknown, i: number | string) => (Array.isArray(x) || isObj(x) ? (x as Record<string, unknown>)[i] : undefined);
+  const at = (x: unknown, i: number | string) =>
+    Array.isArray(x) || isObj(x) ? (x as Record<string, unknown>)[i] : undefined;
   if (typeof shape === 'string') {
-    if (shape === 'text' && Array.isArray(v)) v.forEach((x, i) => { visit(shape, x, at(ja, i), `${path}[${i}]`); });
+    if (shape === 'text' && Array.isArray(v))
+      v.forEach((x, i) => {
+        visit(shape, x, at(ja, i), `${path}[${i}]`);
+      });
     else visit(shape, v, ja, path);
     return;
   }
   if (Array.isArray(v)) {
     const item = isListShape(shape) ? shape.$list : undefined;
-    v.forEach((x, i) => { walkShape(x, at(ja, i), item, `${path}[${i}]`, visit); });
+    v.forEach((x, i) => {
+      walkShape(x, at(ja, i), item, `${path}[${i}]`, visit);
+    });
     return;
   }
   if (!isObj(v)) {
@@ -272,7 +384,9 @@ export const walkLecture = (lecture: unknown, ja: unknown, path: string, visit: 
   for (const [k, x] of Object.entries(lecture)) {
     if (k === 'scenes' && Array.isArray(x)) {
       const jaScenes = Array.isArray(jaObj?.scenes) ? jaObj.scenes : [];
-      x.forEach((s, i) => { walkScene(s, jaScenes[i], `${path}.scenes[${i}]`, visit); });
+      x.forEach((s, i) => {
+        walkScene(s, jaScenes[i], `${path}.scenes[${i}]`, visit);
+      });
     } else walkShape(x, jaObj?.[k], fieldShape(LECTURE_FIELDS, lecture, k), `${path}.${k}`, visit);
   }
 };
@@ -281,7 +395,8 @@ export const walkLecture = (lecture: unknown, ja: unknown, path: string, visit: 
 export const walkCourse = (course: unknown, ja: unknown, path: string, visit: Visit): void => {
   if (!isObj(course)) return;
   const jaObj = isObj(ja) ? ja : undefined;
-  for (const [k, x] of Object.entries(course)) if (k !== 'lectures') walkShape(x, jaObj?.[k], fieldShape(COURSE_FIELDS, course, k), `${path}.${k}`, visit);
+  for (const [k, x] of Object.entries(course))
+    if (k !== 'lectures') walkShape(x, jaObj?.[k], fieldShape(COURSE_FIELDS, course, k), `${path}.${k}`, visit);
 };
 
 /* ───────────── 形から作る一覧 ───────────── */
@@ -293,7 +408,10 @@ const namesOf = (want: (role: Shape, name: string) => boolean): string[] => {
     if (want(shape, name)) out.add(name);
     if (typeof shape === 'string') return;
     if (isListShape(shape)) return walk(shape.$list, name);
-    if (isUnion(shape)) { for (const v of Object.values(shape.of)) walk(v, name); return; }
+    if (isUnion(shape)) {
+      for (const v of Object.values(shape.of)) walk(v, name);
+      return;
+    }
     if (isRecord(shape)) return walk(shape.$record, name);
     for (const [k, s] of Object.entries(shape)) walk(s, k);
   };

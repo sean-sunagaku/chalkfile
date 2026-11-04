@@ -4,8 +4,8 @@
 import type { Lang } from '../content/i18n';
 import type { Theme } from '../content/types';
 import { alpha, mix } from '../engine/core/color';
-import { derivePalette } from '../engine/core/theme';
 import { FONTS } from '../engine/core/fonts';
+import { derivePalette } from '../engine/core/theme';
 import { readableOn } from './site/contrast';
 
 /** 動画と同じファイルを、太さごとに登録する。保存版でも同じ URL を SW が返す。 */
@@ -13,9 +13,12 @@ export const fontLink = (t: Theme, lang: Lang = 'ja') => {
   const ids = [...derivePalette(t, lang).fonts, 'mono'] as const;
   const faces = ids.flatMap((id) => {
     const font = FONTS[id];
-    return font.files.flatMap((file) => file.weights.map((weight) =>
-      `@font-face{font-family:"${font.family}";font-style:normal;font-weight:${weight};font-display:swap;src:url("/fonts/${file.file}") format("woff2");}`,
-    ));
+    return font.files.flatMap((file) =>
+      file.weights.map(
+        (weight) =>
+          `@font-face{font-family:"${font.family}";font-style:normal;font-weight:${weight};font-display:swap;src:url("/fonts/${file.file}") format("woff2");}`,
+      ),
+    );
   });
   return `<style>${faces.join('')}</style>`;
 };
@@ -26,7 +29,10 @@ const SYSTEM: Record<Lang, string[]> = {
   en: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"'],
   zh: ['"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"'],
 };
-const fontBody = (t: Theme, lang: Lang) => [...derivePalette(t, lang).fonts.map((f) => `"${FONTS[f].family}"`), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
+const fontBody = (t: Theme, lang: Lang) =>
+  [...derivePalette(t, lang).fonts.map((f) => `"${FONTS[f].family}"`), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(
+    ', ',
+  );
 
 /** 背景の飾り（動画の decor と同じ考え方） */
 const decorCss = (t: Theme) => {

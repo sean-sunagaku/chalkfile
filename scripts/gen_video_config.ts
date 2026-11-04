@@ -23,7 +23,9 @@ const main = (argv: string[]) => {
   const now = existsSync(VIDEO_CONFIG_JSON) ? readFileSync(VIDEO_CONFIG_JSON, 'utf8') : null;
   if (values.check) {
     if (now !== want) {
-      console.error(`${rel} が engine/core/video-config.ts と合わない。npm run gen:video-config で作り直してコミットする`);
+      console.error(
+        `${rel} が engine/core/video-config.ts と合わない。npm run gen:video-config で作り直してコミットする`,
+      );
       return 1;
     }
     console.log(`${rel} は engine/core/video-config.ts と合う`);

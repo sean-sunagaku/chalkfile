@@ -1,9 +1,10 @@
 // 声の一覧（日本語は VOICEVOX、英語と中国語は Kokoro の話者と話し方）と、声のクレジット・読み上げる文。
 // 純粋なデータと関数だけを置く（Node・React・Remotion に依存しない）。動画（Remotion）・サイトの組み立て・synth が同じものを読む（content/voices.ts から読んでもよい。再 export）。
 // 台詞ごとの音声ファイルの名前（鍵。合成のレシピから node:crypto で作る）は scripts/voices.ts
+
+import type { Lang, TranslatedLang } from './i18n';
 import type { KokoroVoice, VoicevoxVoice } from './project-config';
 import { KOKORO as SETTINGS_KOKORO, VOICES as SETTINGS_VOICES } from './project-settings';
-import type { Lang, TranslatedLang } from './i18n';
 import { readingOf, toSpeech, toSpeechZh } from './reading';
 import type { Lecture, Line, VoiceId } from './schema';
 
@@ -37,11 +38,14 @@ export const creditsIn = (lang: Lang, voices: Iterable<VoiceId>): string[] => {
   const list = (Object.keys(KOKORO[lang]) as VoiceId[]).filter((v) => used.has(v)).map((v) => KOKORO[lang][v]);
   const byRepo = new Map<string, string[]>();
   for (const v of list) byRepo.set(v.repo, [...new Set([...(byRepo.get(v.repo) ?? []), v.voice])]);
-  return [...byRepo].map(([repo, names]) => `Kokoro-82M${repo.endsWith('v1.1-zh') ? '-v1.1-zh' : ''} (${names.join(', ')})`);
+  return [...byRepo].map(
+    ([repo, names]) => `Kokoro-82M${repo.endsWith('v1.1-zh') ? '-v1.1-zh' : ''} (${names.join(', ')})`,
+  );
 };
 
 /** レクチャーの全部の台詞の声（台詞の順。v が無ければ講師） */
-export const voicesOf = (lecture: Lecture): VoiceId[] => lecture.scenes.flatMap((s) => s.lines.map((l) => l.v ?? 'narrator'));
+export const voicesOf = (lecture: Lecture): VoiceId[] =>
+  lecture.scenes.flatMap((s) => s.lines.map((l) => l.v ?? 'narrator'));
 
 /** 動画の終わりに出すクレジット（その動画で使った声だけ）。訳の動画は、訳を重ねたあとのレクチャーと、その言語を渡す */
 export const lectureCredits = (lecture: Lecture, lang: Lang): string[] => creditsIn(lang, voicesOf(lecture));

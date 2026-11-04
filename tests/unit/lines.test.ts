@@ -1,16 +1,17 @@
 // 台詞の id と at（content/lines.ts）。at を台詞の id で書くと、読み込むときに番号に直る。台詞を足しても並べ替えても、
 // 画面の要素は同じ台詞に付いたまま動く。訳は、日本語の台詞と同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { AUTHORED_COURSES, COURSES } from '../../content';
-import { localizeCourse, type LectureL10n } from '../../content/i18n';
+import { type LectureL10n, localizeCourse } from '../../content/i18n';
 import { AT_KEYS, resolveCourse, resolveLecture } from '../../content/lines';
+import { THEMES } from '../../content/themes';
 import type { At, AuthoredLecture, AuthoredScene, Lecture, Line, Scene } from '../../content/types';
 import { validateCourse, validateLecture } from '../../engine/core/validate';
-import { THEMES } from '../../content/themes';
 import { ALL_SCENES } from '../fixtures/content/all-scenes/course';
 import { LINE_IDS, LINE_IDS_EN, X10_EN } from '../fixtures/content/line-ids/course';
 import { X10 } from '../fixtures/content/line-ids/X10';
+import { required } from '../support/required';
 
 /** 講座の theme が指してよいテーマ（台本の検証に渡す、台本の外の一覧） */
 const CTX = { themes: Object.keys(THEMES) };

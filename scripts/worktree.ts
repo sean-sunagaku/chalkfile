@@ -25,7 +25,11 @@ const NAME = /^([a-z]+)\/([a-z0-9][a-z0-9-]*)$/;
 export type Plan = { branch: string; slug: string; dir: string; base: string };
 
 /** <type>/<slug> と、作る場所を確かめる（git には触らない） */
-export const planOf = (name: string | undefined, opts: { base?: string | undefined; dir?: string | undefined } = {}, root = ROOT): Plan => {
+export const planOf = (
+  name: string | undefined,
+  opts: { base?: string | undefined; dir?: string | undefined } = {},
+  root = ROOT,
+): Plan => {
   const m = NAME.exec(name ?? '');
   if (!name || !m)
     throw new UsageError(

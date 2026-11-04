@@ -1,5 +1,5 @@
 // 場面「ending」: 次の章の予告（最後の動画は「おつかれさまでした」）とクレジット
-import React from 'react';
+import type React from 'react';
 import type { EndingScene } from '../../engine/core/schema';
 import { lectureCredits } from '../../engine/core/voices';
 import { unitOf } from '../components/chrome';
@@ -24,7 +24,14 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
       {s.next ? (
         <>
           <div
-            style={{ fontFamily: MONO, fontWeight: 700, fontSize: TYPE.label.endingNext, letterSpacing: 8, color: C.muted, opacity: p }}
+            style={{
+              fontFamily: MONO,
+              fontWeight: 700,
+              fontSize: TYPE.label.endingNext,
+              letterSpacing: 8,
+              color: C.muted,
+              opacity: p,
+            }}
           >
             {text.next} {unit}
           </div>
@@ -49,7 +56,13 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
                 style={{
                   fontFamily: SANS,
                   fontWeight: 900,
-                  fontSize: fitSize(s.next.title, { role: 'title', max: TYPE.title.nextTitle, width: 1180, fontFamily: SANS, fontWeight: 900 }),
+                  fontSize: fitSize(s.next.title, {
+                    role: 'title',
+                    max: TYPE.title.nextTitle,
+                    width: 1180,
+                    fontFamily: SANS,
+                    fontWeight: 900,
+                  }),
                   color: C.ink,
                   whiteSpace: 'nowrap',
                 }}
@@ -74,7 +87,9 @@ const Ending: React.FC<{ s: EndingScene }> = ({ s }) => {
             {text.done}
           </div>
           {s.closing ? (
-            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.title.closing, color: C.sub, opacity: q }}>{s.closing}</div>
+            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.title.closing, color: C.sub, opacity: q }}>
+              {s.closing}
+            </div>
           ) : null}
         </>
       )}

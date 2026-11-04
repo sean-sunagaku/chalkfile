@@ -82,8 +82,7 @@ export const headerOf = (file: string): string => {
     const body: string[] = [];
     for (let j = i; j < lines.length; j++) {
       const end = lines[j]!.includes('*/');
-      const text = lines[j]!
-        .replace(/^\s*\/\*\*?/, '')
+      const text = lines[j]!.replace(/^\s*\/\*\*?/, '')
         .replace(/\*\/.*$/, '')
         .replace(/^\s*\* ?/, '');
       body.push(text);

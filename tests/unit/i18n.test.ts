@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,20 +14,21 @@ import {
   walkLecture,
 } from '../../content/fields';
 import {
+  type CourseL10n,
+  type LectureL10n,
   l10nProblems,
   localizeCourse,
   localizeLecture,
   TRANSLATED_LANGS,
   untranslated,
-  type CourseL10n,
-  type LectureL10n,
 } from '../../content/i18n';
+import { THEMES } from '../../content/themes';
 import type { ConceptsScene, Course, Lecture } from '../../content/types';
 import { validateCourse, validateLecture } from '../../engine/core/validate';
-import { THEMES } from '../../content/themes';
-import { fingerprint, fingerprintV1, scaffold, staleNotices, translationRows, type Row } from '../../scripts/i18n';
+import { fingerprint, fingerprintV1, type Row, scaffold, staleNotices, translationRows } from '../../scripts/i18n';
 import { ALL_SCENES } from '../fixtures/content/all-scenes/course';
 import { LINE_IDS } from '../fixtures/content/line-ids/course';
+import { required } from '../support/required';
 
 // 訳の重ね方（content/i18n.ts）。日本語の台本に、訳の上書きを重ねる
 const cards: [ConceptsScene['cards'][number], ConceptsScene['cards'][number]] = [
@@ -136,7 +136,8 @@ describe('訳の重ね方（content/i18n.ts）', () => {
     expect(fingerprint(reordered)).not.toBe(fingerprint(base()));
   });
   test('key で重ねる配列: 日本語に無い key・2 回書いた key・訳に無い key・書いた項目と書かない項目の混ざりは誤り', () => {
-    const check = (cs: NonNullable<ConceptsL10n['cards']>) => problems(localize(base(), tr({ scenes: [scene({ cards: cs })] })));
+    const check = (cs: NonNullable<ConceptsL10n['cards']>) =>
+      problems(localize(base(), tr({ scenes: [scene({ cards: cs })] })));
     expect(
       check([
         { key: 'scene', ja: 'Scene' },
@@ -358,7 +359,9 @@ describe('項目の役目（content/fields.ts）', () => {
 describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
   const lec = base();
   const withCard = (patch: Partial<ConceptsScene['cards'][number]>) =>
-    base({ scenes: [{ ...required(base().scenes[0]), cards: [{ ...cards[0], ...patch }, cards[1]] } as ConceptsScene] });
+    base({
+      scenes: [{ ...required(base().scenes[0]), cards: [{ ...cards[0], ...patch }, cards[1]] } as ConceptsScene],
+    });
   test('訳す文字だけから作る: 色・アイコン・at・読み上げる文・効果音・読む教材を直しても変わらない', () => {
     const same = fingerprint(lec);
     expect(fingerprint(withCard({ tone: 'mint', icon: 'eye', at: 1 }))).toBe(same);
@@ -366,7 +369,10 @@ describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
       fingerprint(
         base({
           scenes: [
-            { ...required(base().scenes[0]), lines: [{ t: '場面です。', s: 'ばめんです。', sfx: 'pop' }, { t: '台詞です。' }] },
+            {
+              ...required(base().scenes[0]),
+              lines: [{ t: '場面です。', s: 'ばめんです。', sfx: 'pop' }, { t: '台詞です。' }],
+            },
           ],
         }),
       ),
@@ -401,7 +407,9 @@ describe('訳の指紋（scripts/i18n.ts の fingerprint）', () => {
   });
   test('訳す文字の一覧は、場所と文字の組（台詞の t は入り、s は入らない）', () => {
     const texts = lectureTexts(
-      base({ scenes: [{ ...required(base().scenes[0]), lines: [{ t: '場面です。', s: 'よみ' }, { t: '台詞です。' }] }] }),
+      base({
+        scenes: [{ ...required(base().scenes[0]), lines: [{ t: '場面です。', s: 'よみ' }, { t: '台詞です。' }] }],
+      }),
     );
     expect(texts).toContainEqual(['.scenes[0].lines[0].t', '場面です。']);
     expect(texts.some(([, t]) => t === 'よみ')).toBe(false);
@@ -431,7 +439,9 @@ describe('stale の訳を止める（scripts/i18n.ts の staleNotices）', () =>
     expect(required(staleNotices(rows, ['ja', 'en'])[0]).message).toContain('en は公開する言語なので止める');
   });
   test('前の作り方の指紋のままの訳は、restamp で付け直すように知らせる', () => {
-    expect(required(staleNotices([row('en', { old: true })], ['ja'])[0]).message).toContain('bun scripts/i18n.ts restamp');
+    expect(required(staleNotices([row('en', { old: true })], ['ja'])[0]).message).toContain(
+      'bun scripts/i18n.ts restamp',
+    );
   });
   test('今の CI は止まらない（公開する言語は ja だけで、stale も 0 本）', () => {
     expect(staleNotices(translationRows()).filter((n) => n.level === 'error')).toEqual([]);

@@ -1,12 +1,12 @@
 // 書体（engine/fonts/ のサブセット・engine/core/fonts.ts の一覧・scripts/fonts.ts の点検・scripts/lib/woff2.ts の読み取り）。
 // 書き出しにネットが要らないこと（Google Fonts から読まないこと）も、ここで確かめる
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { coursesIn, VIDEOS } from '../../content';
-import { CHALKFILE, themeOf, THEMES } from '../../content/themes';
+import { CHALKFILE, THEMES, themeOf } from '../../content/themes';
 import type { Video } from '../../content/types';
 import {
   charSet,
@@ -29,9 +29,10 @@ import {
   UPSTREAM,
   upstreamUrl,
 } from '../../scripts/fonts';
-import { siteFontText } from '../../scripts/site/font-text';
 import { woff2CodePoints, woff2Tables } from '../../scripts/lib/woff2';
+import { siteFontText } from '../../scripts/site/font-text';
 import { course, lecture, say } from '../fixtures/content/invalid/_base';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const IDS = Object.keys(FONTS) as FontId[];

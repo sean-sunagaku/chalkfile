@@ -1,5 +1,5 @@
 // ノートのタブ: 今の時刻にメモを残す・時刻へ移る・消す・全部のノートを Markdown でコピーする（この端末のブラウザに保存する）
-import { type Page, lectureOf } from './context';
+import { lectureOf, type Page } from './context';
 import { byId, closest, h, put } from './dom';
 import { clock, pad2 } from './format';
 

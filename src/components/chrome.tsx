@@ -1,8 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
-import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
 import type { Course, Evidence, IconName, Tone } from '../../engine/core/schema';
 import type { VideoText } from '../i18n';
+import { alpha, BLACK, H, PAD, usePalette, W, WHITE } from '../theme';
 import { dropY, ramp, useScene, useText } from '../timing';
 import { HEADING, TYPE } from '../video.config';
 import { fitSize, textWidth } from './fit';
@@ -26,7 +26,17 @@ const Specks: React.FC<{ count: number; glow: boolean; base: number }> = ({ coun
         return (
           <div
             key={i}
-            style={{ position: 'absolute', left: x, top: y, width: r * 2, height: r * 2, borderRadius: 99, background: col, opacity: o, boxShadow: glow ? `0 0 ${r * 6}px ${col}` : undefined }}
+            style={{
+              position: 'absolute',
+              left: x,
+              top: y,
+              width: r * 2,
+              height: r * 2,
+              borderRadius: 99,
+              background: col,
+              opacity: o,
+              boxShadow: glow ? `0 0 ${r * 6}px ${col}` : undefined,
+            }}
           />
         );
       })}
@@ -131,11 +141,25 @@ export const CourseMark: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
         display: 'flex',
         alignItems: 'center',
         gap: 12 * scale,
-        ...(chip ? { background: C.surface, borderRadius: 999, padding: `${8 * scale}px ${18 * scale}px`, boxShadow: C.shadow } : {}),
+        ...(chip
+          ? { background: C.surface, borderRadius: 999, padding: `${8 * scale}px ${18 * scale}px`, boxShadow: C.shadow }
+          : {}),
       }}
     >
-      <div style={{ width: 16 * scale, height: 16 * scale, borderRadius: 6 * scale, background: GRAD, boxShadow: C.glow }} />
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: TYPE.meta.courseMark * scale, color: chip ? C.ink : C.sub, letterSpacing: 1 }}>{course.title}</div>
+      <div
+        style={{ width: 16 * scale, height: 16 * scale, borderRadius: 6 * scale, background: GRAD, boxShadow: C.glow }}
+      />
+      <div
+        style={{
+          fontFamily: SANS,
+          fontWeight: 700,
+          fontSize: TYPE.meta.courseMark * scale,
+          color: chip ? C.ink : C.sub,
+          letterSpacing: 1,
+        }}
+      >
+        {course.title}
+      </div>
     </div>
   );
 };
@@ -195,7 +219,13 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
   // 1 本だけの動画（standalone）は、根拠の札を出さない（お笑い版は表示を少なく。comedy.md）
   const evidence = scene.evidence && !course.standalone ? scene.evidence : null;
   const chipWidth = evidence
-    ? textWidth(text.evidence[evidence], HEADING.chipSize, { fontFamily: SANS, fontWeight: 700, letterSpacing: HEADING.chipSpacing }) + HEADING.chipPad + HEADING.gap
+    ? textWidth(text.evidence[evidence], HEADING.chipSize, {
+        fontFamily: SANS,
+        fontWeight: 700,
+        letterSpacing: HEADING.chipSpacing,
+      }) +
+      HEADING.chipPad +
+      HEADING.gap
     : 0;
   const size = fitSize(heading, {
     role: 'title',
@@ -212,9 +242,19 @@ export const Header: React.FC<{ heading: string }> = ({ heading }) => {
         {course.standalone ? (
           <div />
         ) : (
-          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: TYPE.meta.lectureLabel, letterSpacing: 5, color: C.muted }}>
+          <div
+            style={{
+              fontFamily: MONO,
+              fontWeight: 700,
+              fontSize: TYPE.meta.lectureLabel,
+              letterSpacing: 5,
+              color: C.muted,
+            }}
+          >
             {unitOf(course, text).label} {String(lecture.no).padStart(2, '0')}
-            <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>{lecture.title}</span>
+            <span style={{ fontFamily: SANS, letterSpacing: 2, marginLeft: 18, color: C.sub, fontWeight: 500 }}>
+              {lecture.title}
+            </span>
           </div>
         )}
         <CourseMark />
@@ -250,9 +290,25 @@ export const Footer: React.FC<{ cite?: string | undefined; caution?: string | un
   const { C, SANS } = usePalette();
   const head = useText().cite;
   if (!cite && !caution) return null;
-  const style: React.CSSProperties = { fontFamily: SANS, fontWeight: 500, fontSize: TYPE.meta.cite, color: C.muted, letterSpacing: 0.5 };
+  const style: React.CSSProperties = {
+    fontFamily: SANS,
+    fontWeight: 500,
+    fontSize: TYPE.meta.cite,
+    color: C.muted,
+    letterSpacing: 0.5,
+  };
   return (
-    <div style={{ position: 'absolute', left: PAD, right: PAD, bottom: 24, display: 'flex', alignItems: 'flex-end', gap: 40 }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: PAD,
+        right: PAD,
+        bottom: 24,
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 40,
+      }}
+    >
       <div style={{ ...style, flex: '1 1 auto', minWidth: 0 }}>
         {cite ? (
           <>
@@ -261,7 +317,9 @@ export const Footer: React.FC<{ cite?: string | undefined; caution?: string | un
           </>
         ) : null}
       </div>
-      {caution ? <div style={{ ...style, fontSize: TYPE.meta.caution, flex: 'none', whiteSpace: 'nowrap' }}>{caution}</div> : null}
+      {caution ? (
+        <div style={{ ...style, fontSize: TYPE.meta.caution, flex: 'none', whiteSpace: 'nowrap' }}>{caution}</div>
+      ) : null}
     </div>
   );
 };
@@ -275,7 +333,18 @@ export const Progress: React.FC<{ total: number; marks: number[] }> = ({ total, 
     <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 7, background: C.track }}>
       <div style={{ height: '100%', width: `${p * 100}%`, background: GRAD, boxShadow: C.glow }} />
       {marks.map((m, i) => (
-        <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: `${(m / total) * 100}%`, width: 3, background: C.bg0, opacity: 0.8 }} />
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: `${(m / total) * 100}%`,
+            width: 3,
+            background: C.bg0,
+            opacity: 0.8,
+          }}
+        />
       ))}
     </div>
   );

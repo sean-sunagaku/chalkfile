@@ -1,6 +1,6 @@
 import { goals } from '../_shared/scenes';
-import { docsOf } from './sources';
 import type { Lecture } from '../types';
+import { docsOf } from './sources';
 
 /** この章で新しく足す出典（講座の sources.ts と第 4 章に無いものだけ。nng-visual-hierarchy は D04_SOURCES にある） */
 

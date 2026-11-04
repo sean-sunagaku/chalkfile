@@ -7,16 +7,19 @@ type Selection<K extends string> = K | { id: K; title?: string };
 
 const DETAILS = ['publisher', 'year', 'kind', 'checked', 'note'] as const;
 const fullSource = (source: SourceInput): source is Source => DETAILS.every((key) => typeof source[key] === 'string');
-const sameSource = (source: SourceInput) => JSON.stringify(Object.fromEntries(Object.entries(source).sort(([a], [b]) => a.localeCompare(b))));
+const sameSource = (source: SourceInput) =>
+  JSON.stringify(Object.fromEntries(Object.entries(source).sort(([a], [b]) => a.localeCompare(b))));
 
 /** 出典の表。ID の重複と参照を確かめ、リンクの表示だけを上書きできる。 */
 export const defineSources = <const T extends readonly SourceInput[]>(list: T) => {
   type Id = T[number]['id'];
   const byId = new Map<string, SourceInput>();
   for (const source of list) {
-    if (DETAILS.some((key) => source[key] !== undefined) && !fullSource(source)) throw new Error(`出典の説明が欠けている: ${source.id}`);
+    if (DETAILS.some((key) => source[key] !== undefined) && !fullSource(source))
+      throw new Error(`出典の説明が欠けている: ${source.id}`);
     const previous = byId.get(source.id);
-    if (previous && sameSource(previous) !== sameSource(source)) throw new Error(`同じ ID で中身が違う出典: ${source.id}`);
+    if (previous && sameSource(previous) !== sameSource(source))
+      throw new Error(`同じ ID で中身が違う出典: ${source.id}`);
     if (!previous) byId.set(source.id, source);
   }
   const get = (id: Id): SourceInput => {
@@ -24,11 +27,15 @@ export const defineSources = <const T extends readonly SourceInput[]>(list: T) =
     if (!source) throw new Error(`出典が無い: ${id}`);
     return source;
   };
-  const docs = (ids: readonly Selection<Id>[]): Lecture['docs'] => ids.map((selection) => {
-    const source = get(typeof selection === 'string' ? selection : selection.id);
-    const title = typeof selection === 'string' ? undefined : selection.title;
-    return { title: title ?? (fullSource(source) ? `${source.publisher}（${source.year}）${source.title}` : source.title), url: source.url };
-  });
+  const docs = (ids: readonly Selection<Id>[]): Lecture['docs'] =>
+    ids.map((selection) => {
+      const source = get(typeof selection === 'string' ? selection : selection.id);
+      const title = typeof selection === 'string' ? undefined : selection.title;
+      return {
+        title: title ?? (fullSource(source) ? `${source.publisher}（${source.year}）${source.title}` : source.title),
+        url: source.url,
+      };
+    });
   const all = [...byId.values()];
   // 入れたものは list の要素だけ。ID の型を、別の表で共用するときも保つ。
   return { all: all as T[number][], sources: all.filter(fullSource), get, docs };

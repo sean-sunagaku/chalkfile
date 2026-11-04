@@ -19,8 +19,19 @@ import { type Lang, TRANSLATED_LANGS, videoKey } from '../content/i18n';
 import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
 import { commandTable } from './cli';
-import { CORE_SETTINGS, WORKER_SETTINGS, LANGUAGE_SETTINGS, MEDIA_SETTINGS, mediaSettings, coreSettings, workerSettings, languageSettings, workflowSettings, wranglerSettings } from './gen_project_config';
 import { MATERIALS_REGISTRY, materialsRegistry } from './gen_materials_registry';
+import {
+  CORE_SETTINGS,
+  coreSettings,
+  LANGUAGE_SETTINGS,
+  languageSettings,
+  MEDIA_SETTINGS,
+  mediaSettings,
+  WORKER_SETTINGS,
+  workerSettings,
+  workflowSettings,
+  wranglerSettings,
+} from './gen_project_config';
 import { VIDEO_CONFIG_JSON, videoConfigJson } from './gen_video_config';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { readSiteConfig } from './lib/config';

@@ -36,6 +36,7 @@ import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/arg
 import { readSiteConfig } from './lib/config';
 import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { setVerbose, trace } from './lib/proc';
+import { defaultRepo, type Options as PullOptions, pull, pullDurations, type Repo } from './materials';
 import { emitVideo, type OutDirs, outDirs } from './stages/timeline/emit';
 import { runKokoro } from './stages/voice/kokoro';
 import {
@@ -49,7 +50,6 @@ import {
 } from './stages/voice/store';
 import { timeoutFromEnv, type Voicevox, voicevox } from './stages/voice/voicevox';
 import { timelineFiles } from './timelines';
-import { defaultRepo, type Options as PullOptions, pull, pullDurations, type Repo } from './materials';
 import { recipeIn, ttsKeysIn, type VoicevoxRecipe } from './voices';
 
 /** 書く場所と、合成のしかた（main が引数を確かめてから作る。テストは一時のフォルダと偽の VOICEVOX で作る） */
@@ -129,7 +129,9 @@ export const synthVideos = async (ctx: Ctx, videos: Video[]): Promise<void> => {
 /** 動画の全部の台詞の、探す鍵（v2 → v1） */
 const keysOfVideos = (videos: Video[]): string[][] =>
   videos.flatMap(({ lecture, lang }) =>
-    lecture.scenes.flatMap((scene) => scene.lines.map((line) => ttsKeysIn(speechIn(line, lang), line.v ?? 'narrator', lang))),
+    lecture.scenes.flatMap((scene) =>
+      scene.lines.map((line) => ttsKeysIn(speechIn(line, lang), line.v ?? 'narrator', lang)),
+    ),
   );
 
 /**
@@ -178,7 +180,9 @@ const main = async (argv: string[]) => {
   if (values.help) return showHelp(import.meta.filename);
   setVerbose(values.verbose === true);
   if (values['durations-only'] && !values['cached-only'])
-    throw new UsageError('--durations-only は --cached-only と一緒に使う（声を作らず、素材のブランチの長さと読みだけで時刻を決める）');
+    throw new UsageError(
+      '--durations-only は --cached-only と一緒に使う（声を作らず、素材のブランチの長さと読みだけで時刻を決める）',
+    );
   const courseIds = values.course ?? [];
   for (const id of courseIds) if (!VIDEOS.some((v) => v.course.id === id)) throw new UsageError(`講座が無い: ${id}`);
   for (const w of wanted)
@@ -192,7 +196,9 @@ const main = async (argv: string[]) => {
   const invalid = targets.flatMap((v) => validateLecture(v.lecture, v.course)).filter((x) => x.level === 'error');
   if (invalid.length) {
     console.error(formatIssues(invalid));
-    throw new Error(`台本に誤りが ${invalid.length} 件ある。直してから合成する（全部の講座の一覧は bun scripts/validate.ts）`);
+    throw new Error(
+      `台本に誤りが ${invalid.length} 件ある。直してから合成する（全部の講座の一覧は bun scripts/validate.ts）`,
+    );
   }
 
   const ctx: Ctx = {
@@ -206,7 +212,9 @@ const main = async (argv: string[]) => {
   const durations = values['durations-only'] ? await durationsFind(targets, ctx.store) : null;
   await synthVideos({ ...ctx, ...(durations ? { find: durations.find } : {}) }, targets);
   if (durations?.durationsOnly)
-    console.log('長さと読みだけで作った（音声は取り出していない）。mix と render の前に、bun scripts/materials.ts pull で音声を取り出す');
+    console.log(
+      '長さと読みだけで作った（音声は取り出していない）。mix と render の前に、bun scripts/materials.ts pull で音声を取り出す',
+    );
 
   // 台本に無い動画の timeline（消した動画・名前や講座を変えた動画）。--prune を付けたときだけ消す
   const expected = new Set(VIDEOS.map((v) => timelineFile(v.course.id, v.key)));

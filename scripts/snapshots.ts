@@ -50,7 +50,15 @@ export const speechValues = (videos: Video[] = VIDEOS): VideoValue[] => {
     );
     const ja = LECTURES.find((l) => l.id === lecture.id);
     if (!ja) throw new Error(`日本語の台本が無い: ${key}`);
-    return { video: key, ...(translated.has(lecture.id) ? { fingerprint: fingerprint(ja) } : {}), credits: creditsIn(lang, lines.map((l) => l.voice)), lines };
+    return {
+      video: key,
+      ...(translated.has(lecture.id) ? { fingerprint: fingerprint(ja) } : {}),
+      credits: creditsIn(
+        lang,
+        lines.map((l) => l.voice),
+      ),
+      lines,
+    };
   });
 };
 
@@ -104,16 +112,25 @@ const sortKeys = (v: unknown): unknown =>
   Array.isArray(v)
     ? v.map(sortKeys)
     : v && typeof v === 'object'
-      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => byName(a, b)).map(([k, x]) => [k, sortKeys(x)]))
+      ? Object.fromEntries(
+          Object.entries(v)
+            .sort(([a], [b]) => byName(a, b))
+            .map(([k, x]) => [k, sortKeys(x)]),
+        )
       : v;
 const toJson = (v: unknown) => `${JSON.stringify(sortKeys(v), null, 2)}\n`;
 
 export const readSnapshot = (dir = SNAPSHOT_DIR): Snapshot => {
   const snap: Snapshot = new Map();
   const videoDir = path.join(dir, 'videos');
-  for (const f of existsSync(videoDir) ? readdirSync(videoDir).filter((x) => x.endsWith('.json')).sort() : []) {
+  for (const f of existsSync(videoDir)
+    ? readdirSync(videoDir)
+        .filter((x) => x.endsWith('.json'))
+        .sort()
+    : []) {
     const v = JSON.parse(readFileSync(path.join(videoDir, f), 'utf8')) as VideoFile;
-    if (`${v.video}.json` !== f) throw new Error(`スナップショットのファイル名と中身が合わない: videos/${f}（中身は ${v.video}）`);
+    if (`${v.video}.json` !== f)
+      throw new Error(`スナップショットのファイル名と中身が合わない: videos/${f}（中身は ${v.video}）`);
     snap.set(v.video, v);
   }
   return snap;
@@ -124,7 +141,8 @@ export const writeSnapshot = (values: VideoValue[], dir = SNAPSHOT_DIR) => {
   const videoDir = path.join(dir, 'videos');
   mkdirSync(videoDir, { recursive: true });
   // 無くなった動画のファイルを消す（動画のファイル以外には触らない）
-  for (const f of readdirSync(videoDir)) if (f.endsWith('.json') && !snap.has(f.slice(0, -'.json'.length))) rmSync(path.join(videoDir, f));
+  for (const f of readdirSync(videoDir))
+    if (f.endsWith('.json') && !snap.has(f.slice(0, -'.json'.length))) rmSync(path.join(videoDir, f));
   for (const [video, v] of snap) writeFileSync(path.join(videoDir, `${video}.json`), toJson(v));
 };
 
@@ -141,9 +159,18 @@ export const MEANING: Record<Category, { title: string; next: string }> = {
     title: '音声の鍵（音声ファイルの名前。v1・v2）が変わった',
     next: 'v1 も v2 も変わった台詞は、素材の音声が当たらなくなる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く',
   },
-  speech: { title: '読み（VOICEVOX・Kokoro に渡す文）が変わった', next: '鍵も変わる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く' },
-  fingerprints: { title: '訳の指紋（訳がある台本の指紋）が変わった', next: 'その訳が stale になる（合成は要らない）。わざと変えたなら --update で作り直し、訳を見直して bun scripts/i18n.ts stamp' },
-  credits: { title: '動画の終わりのクレジットが変わった', next: '動画の書き出し直しが要る（音声は同じ）。わざと変えたなら --update で作り直す' },
+  speech: {
+    title: '読み（VOICEVOX・Kokoro に渡す文）が変わった',
+    next: '鍵も変わる。わざと変えたなら --update で作り直し、PR に「合成し直しが要る」と書く',
+  },
+  fingerprints: {
+    title: '訳の指紋（訳がある台本の指紋）が変わった',
+    next: 'その訳が stale になる（合成は要らない）。わざと変えたなら --update で作り直し、訳を見直して bun scripts/i18n.ts stamp',
+  },
+  credits: {
+    title: '動画の終わりのクレジットが変わった',
+    next: '動画の書き出し直しが要る（音声は同じ）。わざと変えたなら --update で作り直す',
+  },
   keyList: {
     title: '鍵の一覧（全部の動画の v1 と v2・重なりなし。動画ごとのファイルから求める）が変わった',
     next: 'v1 も v2 もスナップショットに無い台詞は合成が要る。その台詞が 0 なら、今ある音声を使い回せる（時刻の作り直しだけ）',
@@ -164,7 +191,14 @@ const some = (keys: string[]) => `${keys.slice(0, SHOW).join(' ')}${keys.length 
 
 /** 置いたスナップショットと今の値の違い。変わった動画と台詞（何番目・どの値）を、値の種類ごとに文にする */
 export const differences = (saved: Snapshot, values: VideoValue[]): Differences => {
-  const found: Record<Category, string[]> = { videos: [], keys: [], speech: [], fingerprints: [], credits: [], keyList: [] };
+  const found: Record<Category, string[]> = {
+    videos: [],
+    keys: [],
+    speech: [],
+    fingerprints: [],
+    credits: [],
+    keyList: [],
+  };
   const savedKeys = new Set(snapshotKeys(saved));
   const resynth: string[] = [];
   const now = new Map(values.map((v) => [v.video, v]));
@@ -175,7 +209,9 @@ export const differences = (saved: Snapshot, values: VideoValue[]): Differences 
     if (fresh.size) resynth.push(`${v.video}（${fresh.size}）`);
     const old = saved.get(v.video);
     if (!old) {
-      found.videos.push(`${v.video}: videos/${v.video}.json が無い（新しい動画。台詞 ${v.lines.length}・スナップショットに無い鍵 ${fresh.size}）`);
+      found.videos.push(
+        `${v.video}: videos/${v.video}.json が無い（新しい動画。台詞 ${v.lines.length}・スナップショットに無い鍵 ${fresh.size}）`,
+      );
       continue;
     }
     if (old.fingerprint !== v.fingerprint) {
@@ -188,7 +224,8 @@ export const differences = (saved: Snapshot, values: VideoValue[]): Differences 
             : `${v.video}: ${old.fingerprint} → ${v.fingerprint}${source}`,
       );
     }
-    if (old.credits.join('\n') !== v.credits.join('\n')) found.credits.push(`${v.video}: ${old.credits.join('、')} → ${v.credits.join('、')}`);
+    if (old.credits.join('\n') !== v.credits.join('\n'))
+      found.credits.push(`${v.video}: ${old.credits.join('、')} → ${v.credits.join('、')}`);
     const before = new Map(old.lines.map((s) => [parseLine(s).at, parseLine(s)]));
     const keys: string[] = [];
     const speech: string[] = [];
@@ -219,21 +256,26 @@ export const differences = (saved: Snapshot, values: VideoValue[]): Differences 
     if (keys.length) found.keys.push(...block(v.video, keys));
     if (speech.length) found.speech.push(...block(v.video, speech));
   }
-  for (const video of [...saved.keys()].sort(byName)) if (!now.has(video)) found.videos.push(`${video}: 動画が無いのに videos/${video}.json が残っている`);
+  for (const video of [...saved.keys()].sort(byName))
+    if (!now.has(video)) found.videos.push(`${video}: 動画が無いのに videos/${video}.json が残っている`);
   // 全体の鍵の一覧は、動画ごとのファイルから求めて比べる（v1 も v2 もスナップショットに無い台詞 = 合成が要る台詞）
   const nowKeys = new Set(values.flatMap((v) => v.lines.flatMap((l) => [l.v1, l.v2].filter((k): k is string => !!k))));
   const fresh = [...new Set(values.flatMap((v) => v.lines.filter(unknown).map((l) => l.v2)))].sort();
   const added = [...nowKeys].filter((k) => !savedKeys.has(k)).sort();
   const removed = [...savedKeys].filter((k) => !nowKeys.has(k)).sort();
-  if (fresh.length) found.keyList.push(`スナップショットに無い鍵の台詞 ${fresh.length}（合成が要る。v2 の鍵）: ${some(fresh)}`);
-  else if (added.length) found.keyList.push(`スナップショットに無い鍵 ${added.length}（台詞の声は、ほかの鍵で当たる）: ${some(added)}`);
+  if (fresh.length)
+    found.keyList.push(`スナップショットに無い鍵の台詞 ${fresh.length}（合成が要る。v2 の鍵）: ${some(fresh)}`);
+  else if (added.length)
+    found.keyList.push(`スナップショットに無い鍵 ${added.length}（台詞の声は、ほかの鍵で当たる）: ${some(added)}`);
   if (removed.length) found.keyList.push(`使わなくなった鍵 ${removed.length}（素材に残るだけ）: ${some(removed)}`);
   return { found, resynth };
 };
 
 /** 違いを表示用の行にする（違いが無ければ空） */
 export const report = ({ found }: Differences): string[] =>
-  (Object.keys(MEANING) as Category[]).flatMap((c) => (found[c].length ? [`■ ${MEANING[c].title}`, ...found[c].map((x) => `  ${x}`), `  → ${MEANING[c].next}`] : []));
+  (Object.keys(MEANING) as Category[]).flatMap((c) =>
+    found[c].length ? [`■ ${MEANING[c].title}`, ...found[c].map((x) => `  ${x}`), `  → ${MEANING[c].next}`] : [],
+  );
 
 /* ───────────── 実行 ───────────── */
 
@@ -253,11 +295,19 @@ const main = (argv: string[]) => {
   for (const l of lines) console.log(l);
   if (opt.update) {
     writeSnapshot(values);
-    console.log(`${lines.length ? '作り直した' : '変わっていない（書き直しただけ）'}: ${path.relative(ROOT, SNAPSHOT_DIR)}/videos（${size}）`);
+    console.log(
+      `${lines.length ? '作り直した' : '変わっていない（書き直しただけ）'}: ${path.relative(ROOT, SNAPSHOT_DIR)}/videos（${size}）`,
+    );
     if (diff.resynth.length)
-      console.log(`PR に「合成し直しが要る」と書く。v1 も v2 もスナップショットに無い台詞がある動画（台詞の数）: ${diff.resynth.join(' ')}`);
+      console.log(
+        `PR に「合成し直しが要る」と書く。v1 も v2 もスナップショットに無い台詞がある動画（台詞の数）: ${diff.resynth.join(' ')}`,
+      );
   } else {
-    console.log(lines.length ? `スナップショットと違う。わざと変えたなら bun scripts/snapshots.ts --update（${size}）` : `スナップショットと同じ（${size}）`);
+    console.log(
+      lines.length
+        ? `スナップショットと違う。わざと変えたなら bun scripts/snapshots.ts --update（${size}）`
+        : `スナップショットと同じ（${size}）`,
+    );
     return lines.length ? 1 : 0;
   }
 };

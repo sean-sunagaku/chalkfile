@@ -144,10 +144,7 @@ describe('--help は頭書きを出すだけで、何も消さず・何も書か
 });
 
 describe('import しただけでは何も起きない（出力も、ファイルの変化も無い）', () => {
-  for (const entry of [
-    ...CLI,
-    ...MODULES.map((name) => ({ name, file: `scripts/${name}.ts` })),
-  ])
+  for (const entry of [...CLI, ...MODULES.map((name) => ({ name, file: `scripts/${name}.ts` }))])
     test(entry.name, () => {
       const file = path.join(ROOT, entry.file);
       const r = runChild([process.execPath, '-e', `await import(${JSON.stringify(file)}); console.log('imported')`]);
@@ -164,12 +161,22 @@ describe('import しただけでは何も起きない（出力も、ファイル
 describe('知らない引数は、何もせずに「使い方の誤り」（終了コード 2）で止める', () => {
   test('i18n stamp は、対象に訳が無いものが混じったら、書く前に「前提が足りない」（3）で止める', () => {
     const result = runChild([process.execPath, 'scripts/i18n.ts', 'stamp', 'P01.en', 'Z99.en']);
-    expect({ code: result.code, changed: result.changed, cache: result.cache, tmp: result.tmp }).toEqual({ code: 3, changed: [], cache: [], tmp: [] });
+    expect({ code: result.code, changed: result.changed, cache: result.cache, tmp: result.tmp }).toEqual({
+      code: 3,
+      changed: [],
+      cache: [],
+      tmp: [],
+    });
     expect(result.stderr).toContain('Z99.en');
   }, 60_000);
   const unknown: [string, string[]][] = [
-    ...['serve', 'i18n', 'build_site', 'check_delivery', 'verify_public', 'check_docs'].map((name): [string, string[]] => [name, [process.execPath, `scripts/${name}.ts`, '--nope']]),
-    ...['worker-site-smoke', 'smoke_worker'].map((name): [string, string[]] => [name, [process.execPath, `tools/verify/${name}.ts`, '--nope']]),
+    ...['serve', 'i18n', 'build_site', 'check_delivery', 'verify_public', 'check_docs'].map(
+      (name): [string, string[]] => [name, [process.execPath, `scripts/${name}.ts`, '--nope']],
+    ),
+    ...['worker-site-smoke', 'smoke_worker'].map((name): [string, string[]] => [
+      name,
+      [process.execPath, `tools/verify/${name}.ts`, '--nope'],
+    ]),
     ['build_site（無い講座）', [process.execPath, 'scripts/build_site.ts', 'no-such-course']],
     ['check_delivery（多い引数）', [process.execPath, 'scripts/check_delivery.ts', 'a', 'b']],
     ['verify_public（URLでない）', [process.execPath, 'scripts/verify_public.ts', 'bad-url']],

@@ -22,21 +22,32 @@
 // remote・素材のブランチ・main の名前は、環境変数 MATERIALS_REMOTE・MATERIALS_BRANCH・MATERIALS_BASE で差し替えられる。
 // 終了コード: 0 できた・1 失敗（check は足りないものがある）・2 使い方の誤り・3 前提が足りない（push の前の守り・素材のブランチ・道具）
 import { spawnSync } from 'node:child_process';
-import { constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
+import {
+  constants,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
 import { LANGS, type Lang } from '../content/i18n';
-import type { Course, Line, SfxId, VoiceId } from '../content/types';
 import { SFX } from '../content/sfx';
+import type { Course, Line, SfxId, VoiceId } from '../content/types';
 import { KOKORO, speechIn, VOICES } from '../content/voices';
 import { MissingError, readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { tempPath, writeAtomic } from './lib/fsx';
 import { sha256File } from './lib/hash';
-import { wavFileSamples } from './lib/wav';
 import { ROOT, TTS_REL, ttsDirs } from './lib/paths';
 import { pool } from './lib/pool';
-import { gitFetch, run as runTool, runAsync, setVerbose, tailOf, trace } from './lib/proc';
+import { gitFetch, runAsync, run as runTool, setVerbose, tailOf, trace } from './lib/proc';
+import { wavFileSamples } from './lib/wav';
 import { pullMedia } from './media';
 import { ttsKeysIn } from './voices';
 
@@ -81,7 +92,9 @@ export const defaultRepo = (): Repo => ({
 
 /** 素材の名前（SHA256SUMS のパス）の、書く場所。台詞の音声と読みは共有のキャッシュ、BGM・効果音は作業フォルダ */
 const writePath = (repo: Repo, rel: string): string =>
-  repo.cache && rel.startsWith(`${TTS}/`) ? path.join(repo.cache, rel.slice(TTS.length + 1)) : path.join(repo.root, rel);
+  repo.cache && rel.startsWith(`${TTS}/`)
+    ? path.join(repo.cache, rel.slice(TTS.length + 1))
+    : path.join(repo.root, rel);
 /** 素材の名前の、今ある場所（台詞の音声と読みは、共有のキャッシュ → 作業フォルダの .work/tts）。どちらにも無ければ null */
 const readPath = (repo: Repo, rel: string): string | null =>
   [writePath(repo, rel), path.join(repo.root, rel)].find((p) => existsSync(p)) ?? null;
@@ -125,7 +138,12 @@ export type Result = { pushed: boolean; sha: string | null; attempts: number };
 type GitOpts = { env?: Record<string, string>; input?: string };
 /** git を流して、終了コードと出力を返す */
 const run = (root: string, args: string[], opts: GitOpts = {}) => {
-  const r = runTool('git', args, { cwd: root, env: { ...process.env, ...opts.env }, input: opts.input, maxBuffer: 256 * 1024 * 1024 });
+  const r = runTool('git', args, {
+    cwd: root,
+    env: { ...process.env, ...opts.env },
+    input: opts.input,
+    maxBuffer: 256 * 1024 * 1024,
+  });
   return { code: r.code, out: r.stdout, err: r.stderr };
 };
 /** git を流して、標準出力を返す。失敗したら、git のエラーを付けて止める */
@@ -136,8 +154,13 @@ const git = (root: string, args: string[], opts: GitOpts = {}): string => {
 };
 /** ファイルの blob の ID（write なら、オブジェクトとして書く）。git hash-object は入力の順に 1 ファイル 1 行を返す */
 const hashFiles = (root: string, files: string[], write: boolean): string[] =>
-  files.length ? git(root, ['hash-object', ...(write ? ['-w'] : []), '--no-filters', '--stdin-paths'], { input: `${files.join('\n')}\n` }).split('\n') : [];
-const hashText = (root: string, text: string, write: boolean): string => git(root, ['hash-object', ...(write ? ['-w'] : []), '--stdin'], { input: text });
+  files.length
+    ? git(root, ['hash-object', ...(write ? ['-w'] : []), '--no-filters', '--stdin-paths'], {
+        input: `${files.join('\n')}\n`,
+      }).split('\n')
+    : [];
+const hashText = (root: string, text: string, write: boolean): string =>
+  git(root, ['hash-object', ...(write ? ['-w'] : []), '--stdin'], { input: text });
 
 const sha256Of = sha256File;
 const mb = (bytes: number) => `${(bytes / 1e6).toFixed(1)}MB`;
@@ -154,7 +177,20 @@ export const ffmpegConvertWith =
     pool(jobs, 8, async ([src, dest]) => {
       mkdirSync(path.dirname(dest), { recursive: true });
       const codec = to === 'flac' ? ['-c:a', 'flac', '-compression_level', '8'] : ['-c:a', 'pcm_s16le', '-f', 'wav'];
-      const args = ['-nostdin', '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-map_metadata', '-1', '-bitexact', ...codec, dest];
+      const args = [
+        '-nostdin',
+        '-y',
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        src,
+        '-map_metadata',
+        '-1',
+        '-bitexact',
+        ...codec,
+        dest,
+      ];
       const r = await runAsync('ffmpeg', args, { timeoutMs });
       if (r.code === 0 && !r.timedOut) return;
       const why = r.timedOut ? `${Math.round(timeoutMs / 100) / 10} 秒で終わらなかった` : `終了コード ${r.code}`;
@@ -169,15 +205,27 @@ const EXTRACT_TIMEOUT_MS = 15 * 60_000;
 /** ブランチの一部を、一時フォルダに取り出す（git archive を tar に流す。pipefail で、どちらが失敗しても止める）。paths は Git のパスの形も使える */
 const extract = (root: string, ref: string, paths: string[], dest: string) => {
   trace(`> git archive ${ref} -- ${paths.join(' ')} | tar -x -C ${dest}`);
-  const r = spawnSync('bash', ['-c', 'set -eo pipefail; ref=$1; dest=$2; shift 2; git archive "$ref" -- "$@" | tar -x -C "$dest"', 'bash', ref, dest, ...paths], {
-    cwd: root,
-    stdio: ['ignore', 'ignore', 'pipe'],
-    timeout: EXTRACT_TIMEOUT_MS,
-  });
+  const r = spawnSync(
+    'bash',
+    [
+      '-c',
+      'set -eo pipefail; ref=$1; dest=$2; shift 2; git archive "$ref" -- "$@" | tar -x -C "$dest"',
+      'bash',
+      ref,
+      dest,
+      ...paths,
+    ],
+    {
+      cwd: root,
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: EXTRACT_TIMEOUT_MS,
+    },
+  );
   if ((r.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT')
     throw new Error(`素材を取り出せない（git archive と tar が ${EXTRACT_TIMEOUT_MS / 60_000} 分で終わらなかった）`);
   if (r.error) throw r.error;
-  if (r.status !== 0) throw new Error(`素材を取り出せない（git archive か tar が失敗した）: ${tailOf(r.stderr.toString())}`);
+  if (r.status !== 0)
+    throw new Error(`素材を取り出せない（git archive か tar が失敗した）: ${tailOf(r.stderr.toString())}`);
 };
 
 /* ───────────── 台本から、台詞の音声の名前を作る ───────────── */
@@ -227,12 +275,17 @@ const scriptsIn = async (dir: string): Promise<Scripts> => {
   const index = (await import(path.join(dir, 'content/index.ts'))) as typeof import('../content');
   const i18n = (await import(path.join(dir, 'content/i18n.ts'))) as typeof import('../content/i18n');
   // 鍵の作り方: ttsKeysIn（v2 → v1。2026-11-03 より後の版）か、前の版の ttsKeyIn（鍵は 1 つ）
-  const voices = (await import(path.join(dir, 'scripts/voices.ts'))) as Partial<Pick<typeof import('./voices'), 'ttsKeysIn'>> &
+  const voices = (await import(path.join(dir, 'scripts/voices.ts'))) as Partial<
+    Pick<typeof import('./voices'), 'ttsKeysIn'>
+  > &
     Partial<{ ttsKeyIn: (text: string, voice: VoiceId, lang: Lang) => string }> &
     Partial<Pick<Scripts, 'speechIn'>>;
-  const speech = existsSync(path.join(dir, 'content/voices.ts')) ? ((await import(path.join(dir, 'content/voices.ts'))) as Partial<Pick<Scripts, 'speechIn'>>) : {};
+  const speech = existsSync(path.join(dir, 'content/voices.ts'))
+    ? ((await import(path.join(dir, 'content/voices.ts'))) as Partial<Pick<Scripts, 'speechIn'>>)
+    : {};
   const speechInRef = speech.speechIn ?? voices.speechIn;
-  if (!speechInRef) throw new Error('読み上げる文の作り方（speechIn）が content/voices.ts にも scripts/voices.ts にも無い');
+  if (!speechInRef)
+    throw new Error('読み上げる文の作り方（speechIn）が content/voices.ts にも scripts/voices.ts にも無い');
   const { ttsKeysIn: keysIn, ttsKeyIn: keyIn } = voices;
   const keys = keysIn ?? (keyIn ? (text: string, voice: VoiceId, lang: Lang) => [keyIn(text, voice, lang)] : undefined);
   if (!keys) throw new Error('台詞の音声の鍵の作り方（ttsKeysIn か ttsKeyIn）が scripts/voices.ts に無い');
@@ -248,7 +301,8 @@ export const keepAt = async (repo: Repo, refs: string[]): Promise<Keep> => {
   for (const ref of refs) {
     // origin/main のような remote のブランチは、最新を取ってくる
     const name = ref.slice(repo.remote.length + 1);
-    if (ref.startsWith(`${repo.remote}/`) && /^[\w./-]+$/.test(name) && !fetchBranch(repo, name)) throw new Error(`${ref} が ${repo.remote} に無い`);
+    if (ref.startsWith(`${repo.remote}/`) && /^[\w./-]+$/.test(name) && !fetchBranch(repo, name))
+      throw new Error(`${ref} が ${repo.remote} に無い`);
     const found = run(repo.root, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
     if (found.code !== 0) throw new Error(`--keep の ref が無い: ${ref}`);
     const commit = found.out.trim();
@@ -326,10 +380,17 @@ const parseSums = (text: string): Map<string, string> => {
   }
   return sums;
 };
-const sumsText = (sums: Map<string, string>) => `${[...sums].sort(([a], [b]) => byPath(a, b)).map(([rel, h]) => `${h}  ${rel}`).join('\n')}\n`;
+const sumsText = (sums: Map<string, string>) =>
+  `${[...sums]
+    .sort(([a], [b]) => byPath(a, b))
+    .map(([rel, h]) => `${h}  ${rel}`)
+    .join('\n')}\n`;
 
 /** 素材の README の表から、講座ごとの説明を読む（手元の台本に無い講座の行を、そのまま引き継ぐ） */
-const parseAbout = (readme: string) => new Map([...readme.matchAll(/^\| `tts\/([^/`]+)\/` \| (.+) \| [\d,]+ 本 \| [\d.]+MB \|$/gm)].map((m) => [m[1]!, m[2]!]));
+const parseAbout = (readme: string) =>
+  new Map(
+    [...readme.matchAll(/^\| `tts\/([^/`]+)\/` \| (.+) \| [\d,]+ 本 \| [\d.]+MB \|$/gm)].map((m) => [m[1]!, m[2]!]),
+  );
 
 /** 素材のブランチを取ってきて、木の中身・SHA256SUMS・README の説明を読む */
 const readRemote = (repo: Repo): Remote => {
@@ -367,19 +428,29 @@ export type Measure = (file: string) => { samples: number; rate: number };
 export const durationsJson = (d: Durations): string => {
   const rows = [...d]
     .sort(([a], [b]) => byPath(a, b))
-    .map(([k, x]) => `    ${JSON.stringify(k)}: { "samples": ${x.samples}, "rate": ${x.rate}, "sha256": ${JSON.stringify(x.sha256)} }`);
-  const about = '台詞の音声（.work/tts/<鍵>.wav）の長さ。materials.ts push が WAV から測る。sha256 は測った WAV（SHA256SUMS と同じ値）';
+    .map(
+      ([k, x]) =>
+        `    ${JSON.stringify(k)}: { "samples": ${x.samples}, "rate": ${x.rate}, "sha256": ${JSON.stringify(x.sha256)} }`,
+    );
+  const about =
+    '台詞の音声（.work/tts/<鍵>.wav）の長さ。materials.ts push が WAV から測る。sha256 は測った WAV（SHA256SUMS と同じ値）';
   return `{\n  "schema": 1,\n  "about": ${JSON.stringify(about)},\n  "durations": {\n${rows.join(',\n')}\n  }\n}\n`;
 };
 
 /** DURATIONS.json を読む。形が違えば止める */
 export const parseDurations = (text: string): Durations => {
   const v = JSON.parse(text) as { schema?: unknown; durations?: Record<string, Partial<Duration>> };
-  if (v.schema !== 1 || !v.durations || typeof v.durations !== 'object') throw new Error('DURATIONS.json の形が違う（schema が 1 でない）');
+  if (v.schema !== 1 || !v.durations || typeof v.durations !== 'object')
+    throw new Error('DURATIONS.json の形が違う（schema が 1 でない）');
   const out: Durations = new Map();
   for (const [k, x] of Object.entries(v.durations)) {
     const { samples, rate, sha256 } = x;
-    const ok = Number.isInteger(samples) && Number.isInteger(rate) && (rate ?? 0) > 0 && typeof sha256 === 'string' && /^[0-9a-f]{64}$/.test(sha256);
+    const ok =
+      Number.isInteger(samples) &&
+      Number.isInteger(rate) &&
+      (rate ?? 0) > 0 &&
+      typeof sha256 === 'string' &&
+      /^[0-9a-f]{64}$/.test(sha256);
     if (!ok) throw new Error(`DURATIONS.json の ${k} の形が違う`);
     out.set(k, { samples: samples as number, rate: rate as number, sha256: sha256 as string });
   }
@@ -391,7 +462,13 @@ export const parseDurations = (text: string): Durations => {
  * （sha256 は手元の素材を読んだときに 1 回だけ求めたもの）。手元に無いもの（手元の台本に無い講座など）は、前の DURATIONS.json の
  * 長さが同じ中身の WAV のものなら引き継ぐ。どちらでもないものは入れない（synth --durations-only は、今までの取り出しにもどる）
  */
-const durationsFor = (paths: Iterable<string>, sums: Map<string, string>, local: Local, previous: Durations, measure: Measure) => {
+const durationsFor = (
+  paths: Iterable<string>,
+  sums: Map<string, string>,
+  local: Local,
+  previous: Durations,
+  measure: Measure,
+) => {
   const durations: Durations = new Map();
   const seen = new Set<string>();
   let measured = 0;
@@ -410,7 +487,9 @@ const durationsFor = (paths: Iterable<string>, sums: Map<string, string>, local:
       try {
         durations.set(key, { ...measure(file), sha256: sha });
       } catch (e) {
-        throw new Error(`台詞の音声の長さを測れない: ${file}（${e instanceof Error ? e.message : e}）。壊れた音声は push しない。消してから synth か materials.ts pull をやり直す`);
+        throw new Error(
+          `台詞の音声の長さを測れない: ${file}（${e instanceof Error ? e.message : e}）。壊れた音声は push しない。消してから synth か materials.ts pull をやり直す`,
+        );
       }
       measured++;
     } else if (sha && before?.sha256 === sha) {
@@ -422,7 +501,8 @@ const durationsFor = (paths: Iterable<string>, sums: Map<string, string>, local:
 };
 
 /** 講座の説明から、README の表の「中身」の欄を作る */
-const describe = (about: string) => `${about}の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素）`;
+const describe = (about: string) =>
+  `${about}の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素）`;
 
 /** 素材の README。木の中身から作り、push した台本のコミットには左右されない（同じ素材なら同じ README になり、push しない） */
 const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, previous: Map<string, string>) => {
@@ -442,10 +522,14 @@ const readmeOf = (entries: Map<string, Entry>, abouts: Map<string, string>, prev
     }
   }
   // 並びは前の README のまま。新しい講座は、手元の台本の順で後ろに足す
-  const order = [...new Set([...previous.keys(), ...abouts.keys(), ...[...perCourse.keys()].sort(byPath)])].filter((id) => perCourse.has(id));
+  const order = [...new Set([...previous.keys(), ...abouts.keys(), ...[...perCourse.keys()].sort(byPath)])].filter(
+    (id) => perCourse.has(id),
+  );
   const rows = order.map((id) => {
     const c = perCourse.get(id)!;
-    const what = abouts.has(id) ? describe(abouts.get(id)!) : (previous.get(id) ?? '台詞の音声と読み（手元の台本に無い講座）');
+    const what = abouts.has(id)
+      ? describe(abouts.get(id)!)
+      : (previous.get(id) ?? '台詞の音声と読み（手元の台本に無い講座）');
     return `| \`tts/${id}/\` | ${what} | ${c.clips} 本 | ${mb(c.bytes)} |`;
   });
   return `# Chalkfile の動画の素材
@@ -500,13 +584,30 @@ const buildTree = (repo: Repo, from: string | null, updates: Map<string, string 
  * push は from を親にする（送るのは新しい素材だけで、前の版にも戻せる）。gc は親を付けず、それまでの履歴を切る。
  * ほかの push が先に入っていたら（lease の拒否）null。前の版の SHA と戻し方を、push の前に出しておく
  */
-const commitAndPush = async (repo: Repo, from: string | null, tree: string, message: string, opts: Options & { parent: boolean }, attempt: number): Promise<string | null> => {
+const commitAndPush = async (
+  repo: Repo,
+  from: string | null,
+  tree: string,
+  message: string,
+  opts: Options & { parent: boolean },
+  attempt: number,
+): Promise<string | null> => {
   const log = opts.log ?? console.log;
-  const commit = git(repo.root, ['commit-tree', tree, ...(opts.parent && from ? ['-p', from] : []), '-F', '-'], { input: `${message}\n` });
+  const commit = git(repo.root, ['commit-tree', tree, ...(opts.parent && from ? ['-p', from] : []), '-F', '-'], {
+    input: `${message}\n`,
+  });
   const ref = `refs/heads/${repo.branch}`;
-  log(from ? `前の版: ${from}（戻すとき: git push --force-with-lease=${ref}:${commit} ${repo.remote} ${from}:${ref}）` : `${repo.remote}/${repo.branch} はまだ無いので、新しく作る`);
+  log(
+    from
+      ? `前の版: ${from}（戻すとき: git push --force-with-lease=${ref}:${commit} ${repo.remote} ${from}:${ref}）`
+      : `${repo.remote}/${repo.branch} はまだ無いので、新しく作る`,
+  );
   await opts.beforePush?.(attempt);
-  const r = run(repo.root, ['push', '--porcelain', `--force-with-lease=${ref}:${from ?? ''}`, repo.remote, `${commit}:${ref}`], { env: { LC_ALL: 'C' } });
+  const r = run(
+    repo.root,
+    ['push', '--porcelain', `--force-with-lease=${ref}:${from ?? ''}`, repo.remote, `${commit}:${ref}`],
+    { env: { LC_ALL: 'C' } },
+  );
   if (r.code !== 0) {
     if (/^!\t.*\(stale info\)/m.test(r.out)) return null;
     throw new Error(`push が失敗した: ${`${r.err}\n${r.out}`.trim()}`);
@@ -518,19 +619,24 @@ const commitAndPush = async (repo: Repo, from: string | null, tree: string, mess
 
 /* ───────────── check ───────────── */
 
-const hasVoice = (repo: Repo, key: string) => readPath(repo, `${TTS}/${key}.wav`) !== null && readPath(repo, `${TTS}/${key}.kana`) !== null;
+const hasVoice = (repo: Repo, key: string) =>
+  readPath(repo, `${TTS}/${key}.wav`) !== null && readPath(repo, `${TTS}/${key}.kana`) !== null;
 
 /** 台本の全部の台詞の音声（台詞ごとに、どれか 1 つの鍵の音声と読み）と、BGM・効果音（決まった名前の一覧）が手元にあるか */
 export const check = (repo: Repo, courses: CourseKeys[], log: (line: string) => void = console.log): boolean => {
   let ok = true;
   for (const c of courses) {
     const missing = c.lines.filter((keys) => !keys.some((k) => hasVoice(repo, k)));
-    log(`${c.id}（${c.langs.join('・')}）: 台詞の音声 ${c.lines.length - missing.length}/${c.lines.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX・Kokoro で bun scripts/synth.ts）' : ''}`);
+    log(
+      `${c.id}（${c.langs.join('・')}）: 台詞の音声 ${c.lines.length - missing.length}/${c.lines.length}${missing.length ? '（足りない。bun scripts/materials.ts pull か、VOICEVOX・Kokoro で bun scripts/synth.ts）' : ''}`,
+    );
     if (missing.length) ok = false;
   }
   for (const a of AUDIO) {
     const missing = a.names.filter((n) => !existsSync(path.join(repo.root, a.local, `${n}.wav`)));
-    log(`${a.local}: ${a.names.length - missing.length}/${a.names.length} 個${missing.length ? `（足りない: ${missing.join(', ')}。bun scripts/materials.ts pull か、scripts/build_music.py）` : ''}`);
+    log(
+      `${a.local}: ${a.names.length - missing.length}/${a.names.length} 個${missing.length ? `（足りない: ${missing.join(', ')}。bun scripts/materials.ts pull か、scripts/build_music.py）` : ''}`,
+    );
     if (missing.length) ok = false;
   }
   return ok;
@@ -560,15 +666,23 @@ const readLocal = (repo: Repo, courses: CourseKeys[]): Local => {
   for (const c of courses)
     for (const k of allKeys(c)) rels.add(`${TTS}/${k}.wav`).add(`${TTS}/${k}.kana`).add(`${TTS}/${k}.meta.json`);
   for (const a of AUDIO) for (const n of a.names) rels.add(`${a.local}/${n}.wav`);
-  const present = new Map([...rels].flatMap((rel) => {
-    const file = readPath(repo, rel);
-    return file ? [[rel, file] as const] : [];
-  }));
+  const present = new Map(
+    [...rels].flatMap((rel) => {
+      const file = readPath(repo, rel);
+      return file ? [[rel, file] as const] : [];
+    }),
+  );
   const sha256 = new Map([...present].map(([rel, file]) => [rel, sha256Of(file)]));
   const sidecarFiles = [...present].filter(([rel]) => isSidecar(rel));
-  const blobs = hashFiles(repo.root, sidecarFiles.map(([, file]) => file), false);
+  const blobs = hashFiles(
+    repo.root,
+    sidecarFiles.map(([, file]) => file),
+    false,
+  );
   // blobs は sidecarFiles と同じ順・同じ数。
-  const sidecar = new Map(sidecarFiles.map(([rel, file], i): [string, Entry] => [rel, { blob: blobs[i]!, size: statSync(file).size }]));
+  const sidecar = new Map(
+    sidecarFiles.map(([rel, file], i): [string, Entry] => [rel, { blob: blobs[i]!, size: statSync(file).size }]),
+  );
   return { sha256, sidecar, files: present };
 };
 
@@ -600,7 +714,8 @@ const planPush = (remote: Remote, local: Local, courses: CourseKeys[]): Plan => 
     const side = local.sidecar.get(rel);
     if (side) {
       // 読みと声の記録は blob をくらべる。SHA256SUMS は手元のパスごとに 1 行なので、同じものはどのフォルダでも同じ中身にそろえる
-      for (const q of others) if (remote.entries.get(q)!.blob !== side.blob) plan.changes.set(q, { action: 'change', rel, ...side });
+      for (const q of others)
+        if (remote.entries.get(q)!.blob !== side.blob) plan.changes.set(q, { action: 'change', rel, ...side });
       const now = remote.entries.get(p);
       if (now?.blob === side.blob) plan.same.add(p);
       else plan.changes.set(p, { action: now ? 'change' : 'add', rel, ...side });
@@ -652,8 +767,17 @@ const overlay = (entries: Map<string, Entry>, changes: Map<string, Change>): Map
 };
 
 type Counts = Record<'add' | 'change' | 'same' | 'keep' | 'missing', number>;
-const LABELS: [keyof Counts, string][] = [['add', '足す'], ['change', '変える'], ['same', '同じ'], ['keep', '残す'], ['missing', '手元に無い']];
-const fmt = (c: Counts | undefined) => LABELS.filter(([k]) => c?.[k]).map(([k, label]) => `${label} ${c![k]}`).join('・') || 'なし';
+const LABELS: [keyof Counts, string][] = [
+  ['add', '足す'],
+  ['change', '変える'],
+  ['same', '同じ'],
+  ['keep', '残す'],
+  ['missing', '手元に無い'],
+];
+const fmt = (c: Counts | undefined) =>
+  LABELS.filter(([k]) => c?.[k])
+    .map(([k, label]) => `${label} ${c![k]}`)
+    .join('・') || 'なし';
 const RANK = ['keep', 'same', 'change', 'add'] as const;
 type Rank = 0 | 1 | 2 | 3;
 
@@ -668,7 +792,8 @@ const tally = (remote: Remote, plan: Plan): Map<string, Counts> => {
     if ((status.get(at.clip)?.rank ?? -1) < rank) status.set(at.clip, { group: at.group, rank });
   }
   const groups = new Map<string, Counts>();
-  const counts = (g: string) => groups.get(g) ?? groups.set(g, { add: 0, change: 0, same: 0, keep: 0, missing: 0 }).get(g)!;
+  const counts = (g: string) =>
+    groups.get(g) ?? groups.set(g, { add: 0, change: 0, same: 0, keep: 0, missing: 0 }).get(g)!;
   for (const { group, rank } of status.values()) counts(group)[RANK[rank]]++;
   for (const [g, n] of plan.missing) counts(g).missing += n;
   return groups;
@@ -678,13 +803,20 @@ const tally = (remote: Remote, plan: Plan): Map<string, Counts> => {
  * 手元の素材を、素材のブランチに足す（消さない）。リモートの木に足すか上書きした木を、取ってきたコミットを親にして push する。
  * lease は取ってきたコミットの SHA。拒否されたら、取り直してまとめ直し、3 回まで push し直す。木が前と同じなら push しない
  */
-export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { dryRun?: boolean; message?: string | undefined } = {}): Promise<Result> => {
+export const push = async (
+  repo: Repo,
+  courses: CourseKeys[],
+  opts: Options & { dryRun?: boolean; message?: string | undefined } = {},
+): Promise<Result> => {
   const log = opts.log ?? console.log;
   const convert = opts.convert ?? ffmpegConvert;
   const measure = opts.measure ?? wavFileSamples;
   const dry = opts.dryRun === true;
   const stops = guard(repo);
-  if (!check(repo, courses, () => {})) stops.push('素材が足りない。bun scripts/materials.ts check で足りないものを見て、bun scripts/synth.ts と scripts/build_music.py を流してから push する');
+  if (!check(repo, courses, () => {}))
+    stops.push(
+      '素材が足りない。bun scripts/materials.ts check で足りないものを見て、bun scripts/synth.ts と scripts/build_music.py を流してから push する',
+    );
   for (const s of stops) log(`${dry ? '注意（push なら、ここで止まる）' : '止める'}: ${s}`);
   // 止める理由は、どれも push の前提（台本のコミット・main の取り込み・手元の素材）が足りないこと
   if (stops.length && !dry) throw new MissingError(stops.join('\n'));
@@ -706,20 +838,33 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       const sums = sumsText(plan.sums);
       const sumsSame = hashText(repo.root, sums, false) === remote.entries.get(SUMS)?.blob;
       const known = overlay(remote.entries, plan.changes);
-      const readmeSame = known !== null && hashText(repo.root, readmeOf(known, abouts, remote.about), false) === remote.entries.get(README)?.blob;
+      const readmeSame =
+        known !== null &&
+        hashText(repo.root, readmeOf(known, abouts, remote.about), false) === remote.entries.get(README)?.blob;
       // 台詞の音声の長さ（push のあとの木の、全部の台詞の音声。手元の WAV から測るか、前の版から引き継ぐ）
-      const dur = durationsFor(new Set([...remote.entries.keys(), ...plan.changes.keys()]), plan.sums, local, remote.durations, measure);
+      const dur = durationsFor(
+        new Set([...remote.entries.keys(), ...plan.changes.keys()]),
+        plan.sums,
+        local,
+        remote.durations,
+        measure,
+      );
       const durText = durationsJson(dur.durations);
       const durSame = hashText(repo.root, durText, false) === remote.entries.get(DURATIONS)?.blob;
 
       // 一覧: 講座ごとの本数。手元に無い講座のフォルダは「残す」
       const groups = tally(remote, plan);
-      log(`素材のブランチ ${repo.remote}/${repo.branch}: ${remote.sha ? remote.sha.slice(0, 7) : 'まだ無い（新しく作る）'}`);
+      log(
+        `素材のブランチ ${repo.remote}/${repo.branch}: ${remote.sha ? remote.sha.slice(0, 7) : 'まだ無い（新しく作る）'}`,
+      );
       for (const c of courses) log(`  ${c.id}: ${fmt(groups.get(c.id))}`);
-      for (const [id, n] of groups) if (id !== 'audio' && !here.has(id)) log(`  ${id}: ${fmt(n)}（手元の台本に無い講座。消さずに残す）`);
+      for (const [id, n] of groups)
+        if (id !== 'audio' && !here.has(id)) log(`  ${id}: ${fmt(n)}（手元の台本に無い講座。消さずに残す）`);
       log(`  audio/（BGM・効果音）: ${fmt(groups.get('audio'))}`);
       const addedLines = [...plan.sums].filter(([rel]) => !remote.sums.has(rel)).length;
-      const changedLines = [...plan.sums].filter(([rel, h]) => remote.sums.has(rel) && remote.sums.get(rel) !== h).length;
+      const changedLines = [...plan.sums].filter(
+        ([rel, h]) => remote.sums.has(rel) && remote.sums.get(rel) !== h,
+      ).length;
       const sumsNote = sumsSame ? '同じ' : `作り直す（行を足す ${addedLines}・変える ${changedLines}）`;
       log(`  README.md: ${readmeSame ? '同じ' : '作り直す'}・SHA256SUMS: ${sumsNote}`);
       const durNote = `長さ ${dur.durations.size} 本: WAV から測った ${dur.measured}・前の版から引き継いだ ${dur.kept}${dur.unknown ? `・手元に同じ中身の WAV が無くて測れない ${dur.unknown}` : ''}`;
@@ -738,11 +883,16 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       }
 
       // FLAC にする（同じ WAV からは同じ FLAC になるので、送るのは新しい台詞だけ。前の回で作ったものは使い回す）
-      const todo = [...new Set([...plan.changes.values()].filter((c) => !c.blob && !flacs.has(c.rel)).map((c) => c.rel))];
+      const todo = [
+        ...new Set([...plan.changes.values()].filter((c) => !c.blob && !flacs.has(c.rel)).map((c) => c.rel)),
+      ];
       if (todo.length) {
         log(`FLAC にする: ${todo.length} 本`);
         const files = todo.map((rel) => path.join(tmpDir(), 'flac', rel.replace(/\.wav$/, '.flac')));
-        await convert(todo.map((rel, i): [string, string] => [fileOf(local, rel), files[i]!] ), 'flac');
+        await convert(
+          todo.map((rel, i): [string, string] => [fileOf(local, rel), files[i]!]),
+          'flac',
+        );
         const blobs = hashFiles(repo.root, files, true);
         todo.forEach((rel, i) => {
           flacs.set(rel, { blob: blobs[i]!, size: statSync(files[i]!).size });
@@ -750,9 +900,16 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       }
       for (const c of plan.changes.values()) if (!c.blob) Object.assign(c, flacs.get(c.rel));
       // 読みと声の記録をオブジェクトとして書く（ID は、前に書かずに求めたものと同じになる）
-      const sideRels = [...new Set([...plan.changes.values()].map((c) => c.rel).filter((rel) => isSidecar(rel) && !written.has(rel)))];
-      hashFiles(repo.root, sideRels.map((rel) => fileOf(local, rel)), true).forEach((blob, i) => {
-        if (blob !== local.sidecar.get(sideRels[i]!)?.blob) throw new Error(`読みか声の記録のファイルが途中で変わった: ${sideRels[i]}`);
+      const sideRels = [
+        ...new Set([...plan.changes.values()].map((c) => c.rel).filter((rel) => isSidecar(rel) && !written.has(rel))),
+      ];
+      hashFiles(
+        repo.root,
+        sideRels.map((rel) => fileOf(local, rel)),
+        true,
+      ).forEach((blob, i) => {
+        if (blob !== local.sidecar.get(sideRels[i]!)?.blob)
+          throw new Error(`読みか声の記録のファイルが途中で変わった: ${sideRels[i]}`);
         written.add(sideRels[i]!);
       });
 
@@ -769,9 +926,10 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       const clips = [...entries.keys()].filter((p) => p.endsWith('.flac') && p.startsWith('tts/')).length;
       const folders = new Set([...entries.keys()].map((p) => TTS_PATH.exec(p)?.[1]).filter(Boolean)).size;
       const touched = courses.map((c) => [c.id, groups.get(c.id)] as const).filter(([, n]) => n && (n.add || n.change));
-      const what = all.add || all.change
-        ? `の素材を足した（足す ${all.add}・変える ${all.change}${touched.length ? `。${touched.map(([id, n]) => `${id} ${fmt({ ...n!, same: 0, keep: 0, missing: 0 })}`).join('、')}` : ''}）`
-        : 'の素材は前の版と同じ。README.md・SHA256SUMS・DURATIONS.json だけを作り直した';
+      const what =
+        all.add || all.change
+          ? `の素材を足した（足す ${all.add}・変える ${all.change}${touched.length ? `。${touched.map(([id, n]) => `${id} ${fmt({ ...n!, same: 0, keep: 0, missing: 0 })}`).join('、')}` : ''}）`
+          : 'の素材は前の版と同じ。README.md・SHA256SUMS・DURATIONS.json だけを作り直した';
       const message = [
         '素材: 台詞の音声・BGM・効果音を足す',
         `台本 ${source} ${what}。手元の台本に無い講座と台詞の素材は、消さずに残した（全部で台詞の音声 ${clips} 本・${folders} 講座と、BGM・ジングル・効果音）。`,
@@ -781,7 +939,9 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
       if (commit) {
         const materials = [...entries].filter(([p]) => !INDEX_FILES.has(p));
         const total = materials.reduce((s, [, e]) => s + e.size, 0);
-        log(`${repo.branch} を ${commit.slice(0, 8)} にした（足す ${all.add}・変える ${all.change}。全部で ${materials.length + INDEX_FILES.size} ファイル・${mb(total)}）`);
+        log(
+          `${repo.branch} を ${commit.slice(0, 8)} にした（足す ${all.add}・変える ${all.change}。全部で ${materials.length + INDEX_FILES.size} ファイル・${mb(total)}）`,
+        );
         return { pushed: true, sha: commit, attempts: attempt };
       }
       log(`ほかの push が先に入っていた（${attempt} 回目）。取り直して、まとめ直す`);
@@ -795,7 +955,8 @@ export const push = async (repo: Repo, courses: CourseKeys[], opts: Options & { 
 /** push の前の守り。止める理由の一覧を返す（dry-run では知らせるだけ） */
 const guard = (repo: Repo): string[] => {
   const stops: string[] = [];
-  if (git(repo.root, ['status', '--porcelain', '--', 'content'])) stops.push('content/ にコミットしていない変更がある。素材は台本のコミットに合わせて作るので、先にコミットする');
+  if (git(repo.root, ['status', '--porcelain', '--', 'content']))
+    stops.push('content/ にコミットしていない変更がある。素材は台本のコミットに合わせて作るので、先にコミットする');
   const base = fetchBranch(repo, repo.base);
   if (!base) return stops;
   const r = run(repo.root, ['merge-base', '--is-ancestor', base, 'HEAD']);
@@ -819,7 +980,11 @@ const guard = (repo: Repo): string[] => {
  * --keep の ref の台本が使わない台詞の音声（講座ごとのフォルダの .flac・.kana・.meta.json）を一覧にする。BGM・効果音は消さない。
  * confirm のときだけ、消した木を親の無いコミットにして push する（それまでの履歴を切り、消した素材を履歴にも残さない）
  */
-export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boolean; message?: string | undefined } = {}): Promise<Result> => {
+export const gc = async (
+  repo: Repo,
+  keep: Keep,
+  opts: Options & { confirm?: boolean; message?: string | undefined } = {},
+): Promise<Result> => {
   const log = opts.log ?? console.log;
   const want = new Map<string, Set<string>>();
   const abouts = new Map<string, string>();
@@ -848,14 +1013,22 @@ export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boo
           drop.push(p);
         }
       }
-      log(`gc: ${keep.refs.join('・')}の台本が使わない台詞の音声を一覧にする（素材のブランチ ${remote.sha.slice(0, 7)}）`);
+      log(
+        `gc: ${keep.refs.join('・')}の台本が使わない台詞の音声を一覧にする（素材のブランチ ${remote.sha.slice(0, 7)}）`,
+      );
       let dropped = 0;
       let kept = 0;
       for (const [id, c] of clips) {
         const sample = [...c.drop].sort().slice(0, 3);
         const more = c.drop.size > sample.length ? ` ほか ${c.drop.size - sample.length} 本` : '';
-        const parts = [...(c.keep.size ? [`残す ${c.keep.size}`] : []), ...(c.drop.size ? [`消す ${c.drop.size}`] : [])];
-        const notes = [...(want.has(id) ? [] : ['--keep の台本に無い講座。フォルダごと消える']), ...(sample.length ? [`例: ${sample.join(', ')}${more}`] : [])];
+        const parts = [
+          ...(c.keep.size ? [`残す ${c.keep.size}`] : []),
+          ...(c.drop.size ? [`消す ${c.drop.size}`] : []),
+        ];
+        const notes = [
+          ...(want.has(id) ? [] : ['--keep の台本に無い講座。フォルダごと消える']),
+          ...(sample.length ? [`例: ${sample.join(', ')}${more}`] : []),
+        ];
         log(`  ${id}: ${parts.join('・')}${notes.length ? `（${notes.join('。')}）` : ''}`);
         dropped += c.drop.size;
         kept += c.keep.size;
@@ -872,7 +1045,9 @@ export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boo
       for (const p of drop) entries.delete(p);
       if (!opts.confirm) {
         const bytes = [...entries.values()].reduce((s, e) => s + e.size, 0);
-        log(`--confirm を付けると、消した木を親の無いコミットにして push する（残す素材も全部送り直す: 約 ${mb(bytes)}。いまは何も書いていない）`);
+        log(
+          `--confirm を付けると、消した木を親の無いコミットにして push する（残す素材も全部送り直す: 約 ${mb(bytes)}。いまは何も書いていない）`,
+        );
         return { pushed: false, sha: remote.sha, attempts: attempt };
       }
       // SHA256SUMS は、木に残るファイルの行だけにする。DURATIONS.json も、木に残る台詞の音声の長さだけにする
@@ -895,7 +1070,9 @@ export const gc = async (repo: Repo, keep: Keep, opts: Options & { confirm?: boo
       ].join('\n\n');
       const commit = await commitAndPush(repo, remote.sha, tree, message, { ...opts, parent: false }, attempt);
       if (commit) {
-        log(`${repo.branch} を ${commit.slice(0, 8)} にした（消す ${dropped}・残す ${kept}。親の無いコミットにして、それまでの履歴を切った）`);
+        log(
+          `${repo.branch} を ${commit.slice(0, 8)} にした（消す ${dropped}・残す ${kept}。親の無いコミットにして、それまでの履歴を切った）`,
+        );
         return { pushed: true, sha: commit, attempts: attempt };
       }
       log(`ほかの push が先に入っていた（${attempt} 回目）。取り直して、一覧を作り直す`);
@@ -945,11 +1122,17 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
     }
     for (const a of AUDIO) {
       const dir = path.join(tmp, a.inBranch);
-      for (const name of existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.flac')) : []) targets.set(`${a.local}/${name.replace(/\.flac$/, '.wav')}`, path.join(dir, name));
+      for (const name of existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.flac')) : [])
+        targets.set(`${a.local}/${name.replace(/\.flac$/, '.wav')}`, path.join(dir, name));
     }
-    const badSide = [...sidecars].filter(([rel, file]) => sums.has(rel) && sha256Of(file) !== sums.get(rel)).map(([rel]) => rel);
+    const badSide = [...sidecars]
+      .filter(([rel, file]) => sums.has(rel) && sha256Of(file) !== sums.get(rel))
+      .map(([rel]) => rel);
     const sideName = badSide.every((rel) => rel.endsWith('.kana')) ? '読み' : '読みか声の記録';
-    if (badSide.length) throw new Error(`${sideName}が SHA256SUMS と合わない: ${badSide.slice(0, 5).join(', ')}${badSide.length > 5 ? ` ほか ${badSide.length - 5} 本` : ''}`);
+    if (badSide.length)
+      throw new Error(
+        `${sideName}が SHA256SUMS と合わない: ${badSide.slice(0, 5).join(', ')}${badSide.length > 5 ? ` ほか ${badSide.length - 5} 本` : ''}`,
+      );
     // 読みと声の記録は、同じ中身が置いてあれば書かない（共有のキャッシュを、ほかの作業フォルダが読んでいても、置き換えは一瞬）
     for (const [rel, file] of sidecars) {
       const dest = writePath(repo, rel);
@@ -977,16 +1160,27 @@ export const pull = async (repo: Repo, ids: string[], opts: Options = {}) => {
     // 一時の名前に戻し、SHA256SUMS と合ったものだけを置き換える（合わないものは、キャッシュにも作業フォルダにも残さない）
     try {
       for (const j of jobs) mkdirSync(path.dirname(j.dest), { recursive: true });
-      await convert(jobs.map((j): [string, string] => [j.flac, j.tmp]), 'wav');
+      await convert(
+        jobs.map((j): [string, string] => [j.flac, j.tmp]),
+        'wav',
+      );
       const bad = jobs.filter((j) => sha256Of(j.tmp) !== sums.get(j.rel)).map((j) => j.rel);
-      if (bad.length) throw new Error(`SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`);
+      if (bad.length)
+        throw new Error(
+          `SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`,
+        );
       for (const j of jobs) renameSync(j.tmp, j.dest);
     } finally {
       for (const j of jobs) rmSync(j.tmp, { force: true });
     }
-    const kanaNote = checkedKana === kana.length ? '' : `。読みは SHA256SUMS に行がある ${checkedKana}/${kana.length} 本だけを確かめた（前の形の素材）`;
+    const kanaNote =
+      checkedKana === kana.length
+        ? ''
+        : `。読みは SHA256SUMS に行がある ${checkedKana}/${kana.length} 本だけを確かめた（前の形の素材）`;
     const metaNote = metas ? `・声の記録 ${metas} 本` : '';
-    log(`素材を取り出した（${repo.branch} @ ${sha.slice(0, 7)}・音声 ${targets.size} 本・読み ${kana.length} 本${metaNote}。SHA256SUMS と一致${kanaNote}）`);
+    log(
+      `素材を取り出した（${repo.branch} @ ${sha.slice(0, 7)}・音声 ${targets.size} 本・読み ${kana.length} 本${metaNote}。SHA256SUMS と一致${kanaNote}）`,
+    );
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -1002,7 +1196,11 @@ export type DurationsOnly = { sha: string; durations: Durations; kana: Map<strin
  * ffmpeg も要らない）。読みは、SHA256SUMS に行があれば照らす。素材のブランチに DURATIONS.json がまだ無ければ null
  * （呼ぶ側が、今までどおり pull で音声を取り出す）。長さだけでは mix と render はできない（音声が要る）
  */
-export const pullDurations = (repo: Repo, ids: string[], log: (line: string) => void = console.log): DurationsOnly | null => {
+export const pullDurations = (
+  repo: Repo,
+  ids: string[],
+  log: (line: string) => void = console.log,
+): DurationsOnly | null => {
   const sha = fetchBranch(repo, repo.branch);
   if (!sha) throw new MissingError(`素材のブランチ ${repo.remote}/${repo.branch} が無い`);
   if (run(repo.root, ['cat-file', '-e', `${sha}:${DURATIONS}`]).code !== 0) return null;
@@ -1023,8 +1221,13 @@ export const pullDurations = (repo: Repo, ids: string[], log: (line: string) => 
         kana.set(name.slice(0, -'.kana'.length), readFileSync(path.join(dir, name), 'utf8'));
       }
     }
-    if (bad.length) throw new Error(`読みが SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`);
-    log(`素材のブランチ ${repo.branch} @ ${sha.slice(0, 7)} から、長さ ${durations.size} 本と読み ${kana.size} 本を取り出した（音声は取り出さない）`);
+    if (bad.length)
+      throw new Error(
+        `読みが SHA256SUMS と合わない: ${bad.slice(0, 5).join(', ')}${bad.length > 5 ? ` ほか ${bad.length - 5} 本` : ''}`,
+      );
+    log(
+      `素材のブランチ ${repo.branch} @ ${sha.slice(0, 7)} から、長さ ${durations.size} 本と読み ${kana.size} 本を取り出した（音声は取り出さない）`,
+    );
     return { sha, durations, kana, sums };
   } finally {
     rmSync(tmp, { recursive: true, force: true });
@@ -1035,7 +1238,9 @@ export const pullDurations = (repo: Repo, ids: string[], log: (line: string) => 
 
 /** 講座 ID を、手元の台本の講座から選ぶ（無ければ全部） */
 const pick = (ids: string[]): string[] => {
-  for (const id of ids) if (!COURSES.some((c) => c.id === id)) throw new UsageError(`講座が無い: ${id}（${COURSES.map((c) => c.id).join(', ')}）`);
+  for (const id of ids)
+    if (!COURSES.some((c) => c.id === id))
+      throw new UsageError(`講座が無い: ${id}（${COURSES.map((c) => c.id).join(', ')}）`);
   return ids.length ? ids : COURSES.map((c) => c.id);
 };
 
@@ -1069,7 +1274,13 @@ const main = async (argv: string[]) => {
     setVerbose(values.verbose === true);
     await push(repo, courseKeys(HERE), { dryRun: values['dry-run'] === true, message: values.message });
   } else if (cmd === 'gc') {
-    const { values } = readArgs(rest, { keep: { type: 'string', multiple: true }, confirm: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, message: { type: 'string' }, ...VERBOSE });
+    const { values } = readArgs(rest, {
+      keep: { type: 'string', multiple: true },
+      confirm: { type: 'boolean' },
+      'dry-run': { type: 'boolean' },
+      message: { type: 'string' },
+      ...VERBOSE,
+    });
     if (values.help) return showHelp(import.meta.filename);
     setVerbose(values.verbose === true);
     if (values.confirm && values['dry-run']) throw new UsageError('--confirm と --dry-run は一緒に使えない');

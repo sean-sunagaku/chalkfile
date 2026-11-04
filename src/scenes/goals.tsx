@@ -1,5 +1,5 @@
 // 場面「goals」: ゴールの一覧
-import React from 'react';
+import type React from 'react';
 import type { GoalsScene } from '../../engine/core/schema';
 import { Content } from '../components/content';
 import { Glass, Smart } from '../components/ui';
@@ -45,7 +45,16 @@ const GoalRow: React.FC<{ text: string; at: number; index: number; active: boole
             strokeDashoffset={50 * (1 - draw)}
           />
         </svg>
-        <div style={{ fontFamily: MONO, fontSize: TYPE.label.goalNo, fontWeight: 700, color: C.muted, letterSpacing: 3, width: 96 }}>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: TYPE.label.goalNo,
+            fontWeight: 700,
+            color: C.muted,
+            letterSpacing: 3,
+            width: 96,
+          }}
+        >
           {String(index + 1).padStart(2, '0')}
         </div>
         <div style={{ fontFamily: SANS, fontSize: TYPE.title.goal, fontWeight: 700, color: C.ink, lineHeight: 1.3 }}>

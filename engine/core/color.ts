@@ -57,7 +57,13 @@ export const contrastRatio = (a: string, b: string): number => {
  * 色を toward に 0.05 ずつ寄せて、どの地に対してもコントラスト比が min に届いた色（from から寄せ始める。届かなければ toward）。
  * 動画のパレットが、補足の文字・図の色の文字を、テーマの色から読める濃さにするのに使う
  */
-export const reachContrast = (fg: string, toward: string, grounds: readonly string[], min: number, from = 0): string => {
+export const reachContrast = (
+  fg: string,
+  toward: string,
+  grounds: readonly string[],
+  min: number,
+  from = 0,
+): string => {
   for (let i = Math.round(from * 20); i <= 20; i++) {
     // 寄せない（0）ときは、もとの色をそのまま返す（書き方も変えない）
     const c = i === 0 ? fg : mix(fg, toward, i / 20);

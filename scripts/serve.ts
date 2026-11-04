@@ -4,9 +4,9 @@
 //   BASE_PATH=/sub/ bun scripts/serve.ts  # サイトを /sub/ の下に置く
 // 動画は、講座ごとの動画の一覧（content/<講座>/generated/media.<言語>.json）にあるものを、手元の site/media/ から配る
 import path from 'node:path';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 import { localMediaPath, readMediaManifest } from './media';
 import { mediaFilesOf, mediaResponse, staticResponse } from './site/serve-files';
-import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 
 const DIST = path.resolve(import.meta.dir, '..', 'site', 'dist');
 /** 既定の番号（Claude Code のプレビュー .claude/launch.json の site もこの番号を見る） */
@@ -17,15 +17,19 @@ async function main(argv: string[]) {
   if (values.help) return showHelp(import.meta.filename);
   const basePath = process.env.BASE_PATH ?? '/';
   const port = process.env.PORT === undefined ? undefined : Number(process.env.PORT);
-  if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535)) throw new UsageError('PORT は 0〜65535 の整数にする');
-  if (!basePath.startsWith('/') || !basePath.endsWith('/') || /[?#]/.test(basePath)) throw new UsageError('BASE_PATH は / で始まり / で終わるパスにする');
+  if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535))
+    throw new UsageError('PORT は 0〜65535 の整数にする');
+  if (!basePath.startsWith('/') || !basePath.endsWith('/') || /[?#]/.test(basePath))
+    throw new UsageError('BASE_PATH は / で始まり / で終わるパスにする');
   const media = mediaFilesOf(readMediaManifest().entries, (e) => localMediaPath(e));
   const listen = (port: number) =>
     Bun.serve({
       hostname: '127.0.0.1',
       port,
       fetch: (req) =>
-        new URL(req.url).pathname.startsWith('/media/') ? mediaResponse(req, media) : staticResponse(req, DIST, basePath),
+        new URL(req.url).pathname.startsWith('/media/')
+          ? mediaResponse(req, media)
+          : staticResponse(req, DIST, basePath),
     });
 
   let server: ReturnType<typeof listen>;

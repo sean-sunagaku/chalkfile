@@ -3,6 +3,7 @@
 // 読みの差分と素材の片付けは content/ と engine/core/ を取り出して読む）。content/langs.ts は再 export だけ。
 // 値の正本は chalkfile.config.ts。LANG_LIST と LANG_INFO は npm run gen が書く。言語を足したら、型のエラーに従う（手順は .claude/skills/study-video-course/references/i18n.md の「言語を足す」）
 
+// biome-ignore format: npm run gen が書く値の形を保つ
 const LANG_LIST = ["ja","en","zh"] as const;
 
 /** 講座の言語。ja が正本。zh は簡体字（zh-Hans） */
@@ -13,6 +14,7 @@ export type TranslatedLang = Exclude<Lang, 'ja'>;
 export const TRANSLATED_LANGS: TranslatedLang[] = LANGS.filter((l): l is TranslatedLang => l !== 'ja');
 
 /** 言語の名前（切り替えのリンクに、その言語で出す）・HTML の lang・サイトの URL の頭（訳の言語は、言語の名前のフォルダ） */
+// biome-ignore format: npm run gen が書く値の形を保つ
 export const LANG_INFO: Record<Lang, { label: string; html: string; path: string }> = {
   "ja": {
     "label": "日本語",

@@ -1,4 +1,3 @@
-import { SOURCES } from './sources';
 import type { Course } from '../types';
 import { M01 } from './M01';
 import { M02 } from './M02';
@@ -8,6 +7,7 @@ import { M05 } from './M05';
 import { M06 } from './M06';
 import { M07 } from './M07';
 import { M08 } from './M08';
+import { SOURCES } from './sources';
 import { MARKETING_SYLLABUS } from './syllabus';
 
 /** 個人開発者のためのマーケティング（顧客理解・課題の検証・対象顧客・ポジショニング・価値の伝え方・価格・集客・継続・効果測定） */

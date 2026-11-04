@@ -1,6 +1,6 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { byteRange, COURSE_ID, validateManifest } from '../../site/offline-shared';
+import { required } from '../support/required';
 
 describe('bytes Range の境界', () => {
   for (const [header, expected] of [

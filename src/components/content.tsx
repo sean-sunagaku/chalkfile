@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { CONTENT_BOTTOM, CONTENT_TOP, H, PAD } from '../theme';
 
 /** 内容の枠（見出しの下から、下の出典・注意書きの上まで）。中身を縦に並べ、上下の真ん中に置く */

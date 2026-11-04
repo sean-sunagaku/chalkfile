@@ -1,5 +1,5 @@
 // 場面「phone」: スマホの画面の流れ
-import React from 'react';
+import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { PhoneScene, PhoneScreen } from '../../engine/core/schema';
 import { DEVICE, PHONE_APP } from '../components/app-colors';
@@ -29,7 +29,9 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
       }}
     >
       <div style={{ fontWeight: 900, fontSize: TYPE.mock.appBrand, color: A.brand, letterSpacing: 1 }}>{sc.brand}</div>
-      {sc.brandSub ? <div style={{ fontSize: TYPE.mock.appBrandSub, color: A.brandSub, marginTop: 2 }}>{sc.brandSub}</div> : null}
+      {sc.brandSub ? (
+        <div style={{ fontSize: TYPE.mock.appBrandSub, color: A.brandSub, marginTop: 2 }}>{sc.brandSub}</div>
+      ) : null}
       <div
         style={{
           marginTop: 22,
@@ -128,7 +130,9 @@ const Screen: React.FC<{ sc: PhoneScreen }> = ({ sc }) => {
             </div>
           ) : null}
           {sc.secondary ? (
-            <div style={{ textAlign: 'center', fontSize: TYPE.mock.appLink, color: A.secondary, fontWeight: 700 }}>{sc.secondary}</div>
+            <div style={{ textAlign: 'center', fontSize: TYPE.mock.appLink, color: A.secondary, fontWeight: 700 }}>
+              {sc.secondary}
+            </div>
           ) : null}
         </div>
       </div>
@@ -217,7 +221,16 @@ const Phone: React.FC<{ s: PhoneScene }> = ({ s }) => {
                 {i + 1}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: on ? TYPE.title.phoneStep : TYPE.title.phoneStepDim, color: C.ink }}>{x.title}</div>
+                <div
+                  style={{
+                    fontFamily: SANS,
+                    fontWeight: 900,
+                    fontSize: on ? TYPE.title.phoneStep : TYPE.title.phoneStepDim,
+                    color: C.ink,
+                  }}
+                >
+                  {x.title}
+                </div>
                 {on ? (
                   <div
                     style={{

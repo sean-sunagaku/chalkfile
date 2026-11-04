@@ -1,4 +1,3 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import {
   ALLOW_OLD,
@@ -8,8 +7,8 @@ import {
   checkOldWords,
   checkSkill,
   compareSets,
-  descriptionOf,
   DESCRIPTION_MAX,
+  descriptionOf,
   type Finding,
   hasGeneratedMark,
   hasUsage,
@@ -20,6 +19,7 @@ import {
   tableUnder,
   unusedAllows,
 } from '../../scripts/check_docs';
+import { required } from '../support/required';
 
 const files: Record<string, string> = {
   'docs/a.md': '# 文書の地図\n\n## 安全・並行作業（AI）\n\n## 安全・並行作業（AI）\n\n<a id="extra"></a>\n',
@@ -31,7 +31,12 @@ describe('リンクとアンカー', () => {
   test('見出しのアンカーは GitHub と同じ形（記号を外す・同じ見出しは -1）', () => {
     expect(slug('講座ごとのテーマ（トンマナ）')).toBe('講座ごとのテーマトンマナ');
     expect(slug('Step 1: `npm ci` を流す')).toBe('step-1-npm-ci-を流す');
-    expect([...anchorsOf(required(files['docs/a.md']))]).toEqual(['文書の地図', '安全並行作業ai', '安全並行作業ai-1', 'extra']);
+    expect([...anchorsOf(required(files['docs/a.md']))]).toEqual([
+      '文書の地図',
+      '安全並行作業ai',
+      '安全並行作業ai-1',
+      'extra',
+    ]);
   });
 
   test('コードの中の [文字](先) はリンクにしない', () => {

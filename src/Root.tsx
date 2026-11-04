@@ -1,9 +1,9 @@
-import React from 'react';
+import type React from 'react';
 import { Composition } from 'remotion';
 import { compositionId } from '../engine/core/i18n';
 import type { Video } from '../engine/core/schema';
 import type { TimelineEntry } from '../engine/core/timeline';
-import { validateLecture, validateTimelineFiles, type Issue } from '../engine/core/validate';
+import { type Issue, validateLecture, validateTimelineFiles } from '../engine/core/validate';
 import { LectureVideo } from './Lecture';
 import { VIDEO } from './video.config';
 import { ProjectProvider, type VideoProject } from './video-project';
@@ -14,15 +14,26 @@ import { ProjectProvider, type VideoProject } from './video-project';
  */
 const errorsOf = (v: Video, entries: TimelineEntry[]): Issue[] => {
   try {
-    return [...validateLecture(v.lecture, v.course), ...validateTimelineFiles(v.lecture, v.course, entries)].filter((x) => x.level === 'error');
+    return [...validateLecture(v.lecture, v.course), ...validateTimelineFiles(v.lecture, v.course, entries)].filter(
+      (x) => x.level === 'error',
+    );
   } catch (e) {
-    return [{ level: 'error', rule: 'scenes', where: `${v.course.id}/${v.key}`, message: `台本を確かめられなかった: ${e instanceof Error ? e.message : String(e)}` }];
+    return [
+      {
+        level: 'error',
+        rule: 'scenes',
+        where: `${v.course.id}/${v.key}`,
+        message: `台本を確かめられなかった: ${e instanceof Error ? e.message : String(e)}`,
+      },
+    ];
   }
 };
 
 /** Studio はこの文をその動画の場所に出す（改行は詰まって出るので、1 件ずつ「・」で始める） */
 const failure = (key: string, errors: Issue[]) =>
-  new Error(`${key} の台本か timeline に誤りが ${errors.length} 件ある。直すまで描かない（全部の一覧は bun scripts/validate.ts）\n${errors.map((x) => `・${x.where}  ${x.message}`).join('\n')}`);
+  new Error(
+    `${key} の台本か timeline に誤りが ${errors.length} 件ある。直すまで描かない（全部の一覧は bun scripts/validate.ts）\n${errors.map((x) => `・${x.where}  ${x.message}`).join('\n')}`,
+  );
 
 /**
  * Remotion のルート（コンポジションの一覧）。描くものの一式（project。src/index.ts が src/project.ts の PROJECT を渡す）を、

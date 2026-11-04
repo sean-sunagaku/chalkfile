@@ -1,18 +1,19 @@
 // 全台詞の音声の鍵（v1 と v2）・読みと動画の終わりのクレジット、訳がある動画の訳の指紋が、tests/fixtures/snapshots/videos と同じかを見る。
 // 違ったら、変わった動画と台詞（何番目・どの値）を出す。わざと変えたなら bun scripts/snapshots.ts --update で作り直し、
 // PR に「合成し直しが要る」と書く（tests/fixtures/snapshots/README.md）
-import { required } from '../support/required';
+
 import { describe, expect, test } from 'bun:test';
 import { parseVideoKey } from '../../content/i18n';
 import {
+  type Category,
   differences,
   MEANING,
   readSnapshot,
   snapshotOf,
   speechValues,
-  type Category,
   type VideoValue,
 } from '../../scripts/snapshots';
+import { required } from '../support/required';
 
 const values = speechValues();
 const diff = differences(readSnapshot(), values);

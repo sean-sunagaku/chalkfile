@@ -135,7 +135,8 @@ const checkHtml = (rel: string, html: string, problems: string[], trusted?: Read
           `${rel}: ${i + 1} つ目の script は、組み立てが入れる信頼できる script ではありません（エスケープし忘れて紛れ込んでいないか見る）`,
         );
       }
-      if (!hashes.includes(digest)) problems.push(`${rel}: ${i + 1} つ目の script のハッシュが CSP にありません（ブラウザが止める）`);
+      if (!hashes.includes(digest))
+        problems.push(`${rel}: ${i + 1} つ目の script のハッシュが CSP にありません（ブラウザが止める）`);
     }
   });
 };
@@ -166,7 +167,9 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
   }
 
   // 2・3. HTML の印・JSON のデータ・CSP
-  const trusted = input.scripts ? new Set(input.scripts.map((s) => createHash('sha256').update(s).digest('base64'))) : undefined;
+  const trusted = input.scripts
+    ? new Set(input.scripts.map((s) => createHash('sha256').update(s).digest('base64')))
+    : undefined;
   for (const f of files) if (/\.html$/i.test(f.rel)) checkHtml(f.rel, read(f.rel).toString('utf8'), problems, trusted);
 
   // アプリの中の URL（scope からの場所）を、置いたファイルの場所にする。/ で終わるのはページ（index.html）
@@ -218,7 +221,10 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
         // 動画は Worker が Releases から配る（静的 assets には置かない）。許可リストに無い動画は 404 になる
         if (!allowed) continue;
         const e = allowed.get(pathname);
-        if (!e) problems.push(`${rel}: ${f.url} が動画の一覧（Worker の許可リスト。content/<講座>/generated/media.<言語>.json）に無い（Worker が配らない）`);
+        if (!e)
+          problems.push(
+            `${rel}: ${f.url} が動画の一覧（Worker の許可リスト。content/<講座>/generated/media.<言語>.json）に無い（Worker が配らない）`,
+          );
         else if (e.bytes !== f.bytes || e.sha256 !== f.sha256) {
           problems.push(`${rel}: ${f.url} の大きさか SHA-256 が、動画の一覧と違います`);
         }
@@ -261,17 +267,25 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
     } catch (e) {
       problems.push(e instanceof Error ? e.message : String(e));
     }
-    const served = files.map((f) => f.rel).filter((rel) => rel !== '_headers' && !rel.split('/').some((p) => p.startsWith('.')));
+    const served = files
+      .map((f) => f.rel)
+      .filter((rel) => rel !== '_headers' && !rel.split('/').some((p) => p.startsWith('.')));
     const paths = served.flatMap((rel) =>
-      rel === 'index.html' || rel.endsWith('/index.html') ? [`/${rel}`, `/${rel.slice(0, -'index.html'.length)}`] : [`/${rel}`],
+      rel === 'index.html' || rel.endsWith('/index.html')
+        ? [`/${rel}`, `/${rel.slice(0, -'index.html'.length)}`]
+        : [`/${rel}`],
     );
     for (const p of paths) {
       const { headers, joined } = headersFor(p, rules);
       if (joined.length) {
-        problems.push(`_headers: ${p} に ${joined.join('・')} を付ける規則が 2 つ当たり、値がつながります（上書きする規則で、先に「! 名前」で外す）`);
+        problems.push(
+          `_headers: ${p} に ${joined.join('・')} を付ける規則が 2 つ当たり、値がつながります（上書きする規則で、先に「! 名前」で外す）`,
+        );
       }
       if (!headers.get('cache-control')?.includes('no-transform')) {
-        problems.push(`_headers: ${p} の Cache-Control に no-transform がありません（Cloudflare が書き換えると、CSP と保存の SHA-256 が合わない）`);
+        problems.push(
+          `_headers: ${p} の Cache-Control に no-transform がありません（Cloudflare が書き換えると、CSP と保存の SHA-256 が合わない）`,
+        );
       }
     }
 
@@ -286,7 +300,9 @@ export function siteInvariantProblems(input: SiteInvariantInput): string[] {
       }
       if (u.origin !== origin || u.searchParams.has('v')) return;
       if (headersFor(u.pathname, rules).headers.get('cache-control')?.includes('immutable')) {
-        problems.push(`${where}: ${url} は長くキャッシュさせるパス（_headers の immutable）なのに ?v= がありません（描き直したあとも古いまま残る）`);
+        problems.push(
+          `${where}: ${url} は長くキャッシュさせるパス（_headers の immutable）なのに ?v= がありません（描き直したあとも古いまま残る）`,
+        );
       }
     };
     for (const f of files) {

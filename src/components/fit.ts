@@ -42,7 +42,14 @@ export const fitSize = (text: string, o: FitOptions): number => {
   const min = lowest(o);
   if (!text || textWidth(text, o.max, o) <= o.width) return o.max;
   // 字間は大きさによらないので、fitText の見込みから 1px ずつ下げて確かめる
-  const guess = fitText({ text, withinWidth: o.width, fontFamily: o.fontFamily, fontWeight: o.fontWeight, ...(o.letterSpacing ? { letterSpacing: spacing(o)! } : {}), validateFontIsLoaded: true }).fontSize;
+  const guess = fitText({
+    text,
+    withinWidth: o.width,
+    fontFamily: o.fontFamily,
+    fontWeight: o.fontWeight,
+    ...(o.letterSpacing ? { letterSpacing: spacing(o)! } : {}),
+    validateFontIsLoaded: true,
+  }).fontSize;
   let size = Math.max(min, Math.min(o.max, Math.floor(guess)));
   while (size > min && textWidth(text, size, o) > o.width) size -= 1;
   return size;

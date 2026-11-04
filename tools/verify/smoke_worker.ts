@@ -3,12 +3,13 @@
 // 前提: 組み立てたサイト・起動済みの手元の Worker・Chrome。権限: localhost への接続と証跡の書き込み。
 // 副作用: HTTP の検査要求と、専用ブラウザ context からの接続。証跡を .work/evidence に書く。
 // www は Host ヘッダーで試す。wrangler dev は --infer-origin-from-routes=false で起動する（docs/operations/publish.md）。
-import config from '../../chalkfile.config';
-import { runSiteSmoke } from './worker-site-smoke';
-import { readArgs, runMain, showHelp, UsageError, MissingError } from '../../scripts/lib/args';
+
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import config from '../../chalkfile.config';
+import { MissingError, readArgs, runMain, showHelp, UsageError } from '../../scripts/lib/args';
 import { headersFor } from '../../scripts/site/headers';
+import { runSiteSmoke } from './worker-site-smoke';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 async function main(argv: string[]) {

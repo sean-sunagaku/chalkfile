@@ -2,12 +2,13 @@
 //   npm run codemod:content                 # 教材・出典・書き方を移す差分の一覧（書かない）
 //   npm run codemod:content -- --write      # 教材を分け、出典をまとめ、共通の書き方へ移す
 // 終了コード: 0 できた・1 移せない形がある・2 使い方の誤り
-import { parse } from '@babel/parser';
+
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { Course, Source } from '../content/types';
-import { comedyCast } from '../content/_shared/comedy';
+import { parse } from '@babel/parser';
 import config from '../chalkfile.config';
+import { comedyCast } from '../content/_shared/comedy';
+import type { Course, Source } from '../content/types';
 import { MATERIALS_REGISTRY, materialsRegistry } from './gen_materials_registry';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { writeAtomic } from './lib/fsx';

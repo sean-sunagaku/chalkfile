@@ -46,7 +46,8 @@ export const wavFileSamples = (file: string): { samples: number; rate: number } 
     const n = readSync(fd, head, 0, head.length, 0);
     const { rate, block, bytes } = formatOf(head.subarray(0, n), fstatSync(fd).size);
     if (!rate || !block) throw new Error('fmt チャンクが無い');
-    if (bytes % block) throw new Error(`data の大きさ（${bytes} バイト）が、1 サンプルの大きさ（${block} バイト）の倍数でない`);
+    if (bytes % block)
+      throw new Error(`data の大きさ（${bytes} バイト）が、1 サンプルの大きさ（${block} バイト）の倍数でない`);
     return { samples: bytes / block, rate };
   } finally {
     closeSync(fd);

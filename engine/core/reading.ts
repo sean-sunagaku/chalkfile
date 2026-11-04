@@ -190,14 +190,40 @@ export const readingOf = (line: object): Reading | undefined => READING_OF.get(l
 /* ───────────── 読みのエンジン ───────────── */
 
 const LETTERS: Record<string, string> = {
-  A: 'エー', B: 'ビー', C: 'シー', D: 'ディー', E: 'イー', F: 'エフ', G: 'ジー', H: 'エイチ', I: 'アイ',
-  J: 'ジェイ', K: 'ケー', L: 'エル', M: 'エム', N: 'エヌ', O: 'オー', P: 'ピー', Q: 'キュー', R: 'アール',
-  S: 'エス', T: 'ティー', U: 'ユー', V: 'ブイ', W: 'ダブリュー', X: 'エックス', Y: 'ワイ', Z: 'ゼット',
+  A: 'エー',
+  B: 'ビー',
+  C: 'シー',
+  D: 'ディー',
+  E: 'イー',
+  F: 'エフ',
+  G: 'ジー',
+  H: 'エイチ',
+  I: 'アイ',
+  J: 'ジェイ',
+  K: 'ケー',
+  L: 'エル',
+  M: 'エム',
+  N: 'エヌ',
+  O: 'オー',
+  P: 'ピー',
+  Q: 'キュー',
+  R: 'アール',
+  S: 'エス',
+  T: 'ティー',
+  U: 'ユー',
+  V: 'ブイ',
+  W: 'ダブリュー',
+  X: 'エックス',
+  Y: 'ワイ',
+  Z: 'ゼット',
 };
 const DIGITS = ['ゼロ', 'ワン', 'ツー', 'スリー', 'フォー', 'ファイブ', 'シックス', 'セブン', 'エイト', 'ナイン'];
 
 const splitCamel = (w: string): string[] =>
-  w.replace(/([a-z])([A-Z])/g, '$1 $2').split(' ').filter(Boolean);
+  w
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .split(' ')
+    .filter(Boolean);
 
 /** 英単語の読み（講座の辞書が先、無ければ共通の辞書。小文字で引く） */
 const lookup = (dict: Readonly<Record<string, string>> | undefined, w: string): string | undefined =>
@@ -216,7 +242,7 @@ const word = (w: string, course?: Reading): string => {
 
 const token = (tok: string, course?: Reading): string =>
   tok
-    .split(/[_.\-\/]+/)
+    .split(/[_.\-/]+/)
     .filter(Boolean)
     .flatMap(splitCamel)
     .map((w) => word(w, course))
@@ -240,7 +266,7 @@ const phrasesOf = (course?: Reading): readonly (readonly [string, string])[] => 
 export const toSpeech = (text: string, course?: Reading): string => {
   let s = text;
   for (const [from, to] of phrasesOf(course)) s = s.split(from).join(to);
-  s = s.replace(/[A-Za-z][A-Za-z0-9_.\-\/]*[A-Za-z0-9]|[A-Za-z]/g, (tok) => token(tok, course));
+  s = s.replace(/[A-Za-z][A-Za-z0-9_.\-/]*[A-Za-z0-9]|[A-Za-z]/g, (tok) => token(tok, course));
   // 読まなくてよい記号と、表示用の半角スペース
   s = s.replace(/[{}`]/g, '').replace(/ +/g, '');
   return s;

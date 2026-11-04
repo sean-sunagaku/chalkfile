@@ -1,5 +1,5 @@
 // 概要のタブ: 要約・注意書き・要点・チャプター（押すとその時刻へ）・公式ドキュメントのタブのリンク
-import { type Page, lectureOf } from './context';
+import { lectureOf, type Page } from './context';
 import type { LectureData } from './data';
 import { byId, closest, h, put, svg } from './dom';
 import { clock, hostOf, safeUrl } from './format';

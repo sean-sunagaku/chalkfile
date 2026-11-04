@@ -6,8 +6,8 @@ import type { CourseText, CourseTextBase } from '../../site/i18n';
 import { texts } from '../../site/lib/text';
 import { clock } from '../../site/page/format';
 import { type CourseTexts, courseCounts, eyebrowOf } from '../../site/page/summary';
-import { PAGE_VERSION_MARK } from '../site-version';
 import { fontLink, themeCss } from '../site_theme';
+import { PAGE_VERSION_MARK } from '../site-version';
 import type { SiteConfig } from '../validate';
 import { cspHead } from './csp';
 import { esc, fillTemplate, type Html, html, inlineScript, joinHtml, raw, styleText } from './html';
@@ -71,7 +71,11 @@ const staticParts = (p: CoursePageInput, text: CourseTexts) => {
   const T = p.T;
   const meta = courseMeta(p.course, T, p.config);
   const first = p.lectures[0]!; // siteProblems が講座に動画があることを確かめた
-  const counts = courseCounts(text, meta, p.lectures.map((l) => l.duration));
+  const counts = courseCounts(
+    text,
+    meta,
+    p.lectures.map((l) => l.duration),
+  );
   const sections = meta.sections.map((sec) => {
     const items = p.lectures.map((l, i) => ({ l, i })).filter((x) => x.l.section.no === sec.no);
     return joinHtml(

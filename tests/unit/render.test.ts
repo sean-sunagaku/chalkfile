@@ -1,7 +1,7 @@
 // 動画の書き出し（scripts/stages/video/render.ts・plan.ts）。ファイルを読み書きしない部分（フレームの範囲・crf・名前・ffmpeg の引数・
 // ffprobe の確かめ・引数と環境変数）と、偽の Remotion・ffmpeg・ffprobe で流す書き出しの順番（一時の名前から置き換える・失敗と
 // Ctrl-C で前の出力を残し、一時のファイルを残さない・記録の前後）を確かめる。本物の書き出しはしない（ファイルは一時のフォルダにだけ書く）
-import { required } from '../support/required';
+
 import { afterAll, describe, expect, test } from 'bun:test';
 import {
   existsSync,
@@ -17,7 +17,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { VIDEOS, type Video } from '../../content';
 import { UsageError } from '../../scripts/lib/args';
-import { readTimelinesByKey } from '../../scripts/timelines';
 import {
   captionedArgs,
   checkKey,
@@ -37,8 +36,10 @@ import {
   videoProblems,
   wantsCaptions,
 } from '../../scripts/stages/video/plan';
-import { defaultConcurrency, RENDER } from '../../scripts/stages/video/render.config';
 import { type Job, type Limits, planJobs, type RenderDeps, renderAll } from '../../scripts/stages/video/render';
+import { defaultConcurrency, RENDER } from '../../scripts/stages/video/render.config';
+import { readTimelinesByKey } from '../../scripts/timelines';
+import { required } from '../support/required';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-render-'));

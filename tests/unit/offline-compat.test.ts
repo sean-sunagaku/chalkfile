@@ -1,8 +1,8 @@
-import { required } from '../support/required';
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
+  type CleanupInput,
   checkSavedVersion,
   parseQuarantineName,
   parseRecord,
@@ -10,9 +10,8 @@ import {
   QUARANTINE_DAYS,
   quarantineName,
   recordCaches,
-  validateManifest,
-  type CleanupInput,
   type SavedRecord,
+  validateManifest,
 } from '../../site/offline-shared';
 import {
   type KeyValueStore,
@@ -23,6 +22,7 @@ import {
   STORE_VERSION,
   storagePrefix,
 } from '../../site/page/storage';
+import { required } from '../support/required';
 
 // 利用者が保存した記録（tests/fixtures/saved-records/<日付>/）を、今の読み込みが全部受け入れることを確かめる。
 // 落ちたら、保存した講座が読めなくなる（隔離のあと 30 日で消える）。検証を元に戻すか、移行のコードを足す。fixture を書き換えて通さない。
@@ -82,7 +82,9 @@ for (const date of readdirSync(fixtures).filter((d) => /^\d{4}-\d{2}-\d{2}$/.tes
           const before = records.find((r) => r.id === id && r.file === 'record.json')!.value;
           expect(value.versions).toHaveLength(2);
           expect(value.versions[1]).toEqual(before.versions[0]);
-          expect(required(value.versions[0]).manifest.revision).not.toBe(required(before.versions[0]).manifest.revision);
+          expect(required(value.versions[0]).manifest.revision).not.toBe(
+            required(before.versions[0]).manifest.revision,
+          );
         });
       if (era.reader === 'sw')
         test('保存したあとの Cache を、今の cleanup は 1 つも消さず、隔離もしない', () => {
@@ -115,7 +117,11 @@ describe('読めない記録の扱い', () => {
     const broken = [
       { ...record(), versions: [...record().versions, ...record().versions, ...record().versions] },
       { versions: [{ ...record().versions[0], cache: `${prefix}course:rive-comedy:x` }] },
-      { versions: [{ ...record().versions[0], manifest: { ...required(record().versions[0]).manifest, pageVersion: 'x' } }] },
+      {
+        versions: [
+          { ...record().versions[0], manifest: { ...required(record().versions[0]).manifest, pageVersion: 'x' } },
+        ],
+      },
       { versions: [null] },
       { versions: 'x' },
       null,

@@ -1,9 +1,9 @@
-import { required } from '../support/required';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { type Deps, deployWorker, type Env, type Options, type Run, servedFiles } from '../../scripts/deploy_worker';
+import { required } from '../support/required';
 
 const MAIN = 'c'.repeat(40);
 const TOKEN = ['cfat', 'X'.repeat(44)].join('_');
