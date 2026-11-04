@@ -10,11 +10,12 @@ import type { HeroSnippet } from '../../content/course-module';
 import { localMediaPath, readMediaManifest } from '../../scripts/media';
 import { buildSite } from '../../scripts/site/build';
 import { type MediaFiles, mediaFilesOf } from '../../scripts/site/serve-files';
-import { type MediaEntry, mediaFilename } from '../../site/media-shared';
+import { type MediaEntry, mediaFilename, releaseUrl } from '../../site/media-shared';
 import type { CourseManifest } from '../../site/offline-shared';
 import { resolveCourse } from '../../content/lines';
 import SAMPLE from '../fixtures/content/site-sample';
 import type { SiteMode, SiteSession } from './site';
+import { legacyMediaFile } from './legacy-media';
 
 const ROOT = path.resolve(import.meta.dir, '../..');
 /** 前の公開の旧 Pages（tests/fixtures/legacy-pages）の、動画を持つ講座の保存の manifest */
@@ -35,7 +36,7 @@ export type PreparedSite = {
 const sha256 = (data: Uint8Array | string) => createHash('sha256').update(data).digest('hex');
 
 /** 本物の講座。site/dist（npm run build:site -- --strict）と、手元の動画（npm run media:pull など）を配る */
-export function prepareRealSite(): PreparedSite {
+export async function prepareRealSite(): Promise<PreparedSite> {
   const dist = path.join(ROOT, 'site/dist');
   const id = 'stripe-billing';
   const file = path.join(dist, id, 'offline-manifest.json');
@@ -50,14 +51,32 @@ export function prepareRealSite(): PreparedSite {
     id: l.id,
     video: localMediaPath({ lang: 'ja', lecture: l.id, kind: 'standard' }),
   }));
+  const old = JSON.parse(readFileSync(LEGACY_MANIFEST, 'utf8')) as CourseManifest;
+  const legacyFile = async (kind: MediaEntry['kind']) => {
+    const name = kind === 'captioned' ? 'P01.cc.mp4' : 'P01.mp4';
+    const file = old.files.find((f) => f.type === 'video/mp4' && f.url.split('?')[0].endsWith(`/${name}`));
+    if (!file) throw new Error(`凍結した旧一覧に ${name} が無い`);
+    const entry: MediaEntry = {
+      lang: 'ja', course: 'pstack-comedy', lecture: 'P01', kind,
+      bytes: file.bytes, sha256: file.sha256, filename: '', tag: 'media-ja-pstack-comedy',
+    };
+    entry.filename = mediaFilename(entry);
+    return legacyMediaFile({
+      expected: file,
+      current: localMediaPath(entry),
+      cache: path.join(ROOT, '.work/e2e-legacy', entry.filename),
+      url: releaseUrl(entry),
+    });
+  };
+  const [video, captioned] = await Promise.all([legacyFile('standard'), legacyFile('captioned')]);
   return {
     mode: 'real',
     dist,
     media: mediaFilesOf(entries, (e) => localMediaPath(e)),
     course: { id, route: `/${id}/`, title: manifest.title, searchTerm: 'サブスク', lectures, faultLecture: 'L03' },
     legacy: {
-      video: path.join(ROOT, 'site/media/P01.mp4'),
-      captioned: path.join(ROOT, 'site/media/P01.cc.mp4'),
+      video,
+      captioned,
       manifest: null,
     },
     videoSeconds: null,

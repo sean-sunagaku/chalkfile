@@ -159,6 +159,7 @@ npm run test:e2e:real              # 本物の講座と、入れてある Chrome
 ```
 
 - 本物の講座のテストが使う動画は、`bun scripts/media.ts pull stripe-billing pstack-comedy` で取る
+- 旧 Pages の移行テストは、凍結した一覧と同じハッシュの旧 P01 も使う。手元に無ければ Releases から通常版と字幕版を取り、大きさと SHA-256 を確かめて `.work/e2e-legacy/` に保存する。次からは同じファイルを使う（今の動画を上書きしない）。初回は通信が要る
 - ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
 - PR の CI（`.github/workflows/ci.yml`）は `check`・`build`・`e2e`・`smoke` の 4 つのジョブ（[CI の形](ci.md)）。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）でサイトを組み立て、artifact に残す。`smoke` は、その artifact を手元の Worker で配って確かめる。公開はせず、秘密情報も使わない。組み立てた公開物と smoke の結果は、PR の Checks の要約と artifact で見られる
 - `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本（www の移動・講座のページの本体・offline-client）のどれかで、CSP のハッシュと過不足なく合うか・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
