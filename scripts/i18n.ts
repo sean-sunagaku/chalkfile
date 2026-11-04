@@ -18,6 +18,7 @@ import { fieldShape, isListShape, keyFieldOf, LECTURE_FIELDS, lectureTexts, scen
 import { l10nProblems, localizeLecture, TRANSLATED_LANGS, untranslated, type LectureL10n, type TranslatedLang } from '../content/i18n';
 import type { AuthoredLecture, Course, Lecture } from '../content/types';
 import { checkText } from './check_content';
+import { stampSource } from './lib/i18n-source';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -69,10 +70,15 @@ const writeSource = (r: Row): string => {
   const lec = COURSES.find((c) => c.id === r.course)?.lectures.find((l) => l.id === r.id);
   if (!lec) throw new Error(`日本語の台本が無い: ${r.course}/${r.id}`);
   const src = readFileSync(file, 'utf8');
-  const next = src.replace(/source: '[0-9a-f]*'/, `source: '${fingerprint(lec)}'`);
-  if (next === src && r.state !== 'ok') throw new Error(`${r.file}: source: '…' が見つからない`);
-  writeFileSync(file, next);
-  return fingerprint(lec);
+  const hash = fingerprint(lec);
+  let next: string;
+  try {
+    next = stampSource(src, r.id, hash);
+  } catch (error) {
+    throw new Error(`${r.file}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (next !== src) writeFileSync(file, next);
+  return hash;
 };
 
 /* ───────────── 訳のひな形 ───────────── */
