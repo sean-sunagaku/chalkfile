@@ -8,10 +8,15 @@ import {
   docOutputs,
   generated,
   prefixTable,
+  projectOutputs,
   replaceBlock,
   staleOutputs,
   WORKER_MEDIA,
 } from '../scripts/gen';
+import { CORE_SETTINGS, WORKER_SETTINGS, LANGUAGE_SETTINGS, MEDIA_SETTINGS, coreSettings, workerSettings, languageSettings, mediaSettings } from '../scripts/gen_project_config';
+import { readFileSync } from 'node:fs';
+import { ROOT } from '../scripts/lib/paths';
+import path from 'node:path';
 import { readMediaManifest } from '../scripts/media';
 import { mediaManifestJson } from '../scripts/media-lists';
 
@@ -55,7 +60,7 @@ describe('README の講座の表と、new-course.md の頭文字の表', () => {
     expect(staleOutputs(docOutputs())).toEqual([]);
   });
   test('check_docs は、作り直したものと違う表を止める', () => {
-    const expected = docOutputs();
+    const expected = new Map([...docOutputs(), ...projectOutputs()]);
     const changed = new Map(
       [...expected].map(([f, t]) => [f, f === 'README.md' ? t.replace('約 56 分', '約 99 分') : t]),
     );
@@ -68,11 +73,31 @@ describe('README の講座の表と、new-course.md の頭文字の表', () => {
   });
 });
 
+describe('設定の生成忘れ', () => {
+  test('通常の文書の点検でも、声の生成物と routes の手直しを止める', () => {
+    const expected = new Map([...docOutputs(), ...projectOutputs()]);
+    const changed = new Map(expected);
+    changed.set(CORE_SETTINGS, `${changed.get(CORE_SETTINGS)}// 手直し`);
+    changed.set('wrangler.jsonc', '{}');
+    const out: Finding[] = [];
+    checkGenerated((file) => changed.get(file) ?? null, out);
+    expect(out.map((row) => row.where)).toEqual([CORE_SETTINGS, 'wrangler.jsonc']);
+  });
+});
+
 describe('Worker の許可リスト', () => {
   test('講座ごとの動画の一覧をつないだもの（--media だけでも作る）', () => {
-    expect(generated('media')).toEqual(new Map([[WORKER_MEDIA, mediaManifestJson(readMediaManifest())]]));
+    expect(generated('media')).toEqual(new Map([[WORKER_MEDIA, mediaManifestJson(readMediaManifest())], [WORKER_SETTINGS, workerSettings()], [CORE_SETTINGS, coreSettings()], [LANGUAGE_SETTINGS, languageSettings(readFileSync(path.join(ROOT, LANGUAGE_SETTINGS), 'utf8'))], [MEDIA_SETTINGS, mediaSettings(readFileSync(path.join(ROOT, MEDIA_SETTINGS), 'utf8'))]]));
     expect([...generated().keys()]).toEqual([
       WORKER_MEDIA,
+      WORKER_SETTINGS,
+      CORE_SETTINGS,
+      LANGUAGE_SETTINGS,
+      MEDIA_SETTINGS,
+      'wrangler.jsonc',
+      '.github/workflows/ci.yml',
+      '.github/workflows/deploy.yml',
+      '.github/workflows/canary.yml',
       'README.md',
       'docs/guide/new-course.md',
       'docs/guide/commands.md',

@@ -20,7 +20,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 - 実在のサービスや会社の内部の情報（自分の仕事のコード・テーブル・設計）を、台本に入れない。例は架空の「サンプルアプリ」で作る
 - 画面の固定の文字に、絵文字をアイコン代わりに使わない（アイコンは lucide-react）
 - 台詞を直したら synth → mix → render → build:site の順に流し、`.work/kana/<ID>.txt` の読みと静止画を確かめる
-- 動画（`site/media/`・`out/`）を main に commit しない。動画は `media push` で Releases に置き、サイトは main への merge で Actions が出す（[公開の順番](docs/operations/publish.md)）。公開する言語は、`site/config.json` の `publishLangs` に従う
+- 動画（`site/media/`・`out/`）を main に commit しない。動画は `media push` で Releases に置き、サイトは main への merge で Actions が出す（[公開の順番](docs/operations/publish.md)）。公開する言語は、`chalkfile.config.ts` の `publishLangs` に従う
 - パスワード・API キー・Webhook の署名シークレットを、台本やコードに書かない。例は、プレースホルダーか環境変数の名前にする
 - 公開のリポジトリなので、個人の手元のパス・個人のメール・非公開のプロジェクトの名前・アカウントの ID を、どのファイルにも書かない
 

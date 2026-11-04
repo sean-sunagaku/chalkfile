@@ -4,6 +4,7 @@
 // workflow は「形」（ジョブの数・名前・手順の順番・on の種類）では縛らず、「性質」（下の WORKFLOW_RULES）で確かめる。
 // CI を組み直しても、性質を守っていれば通り、1 つでも破れば止まる。性質の一覧と理由は docs/operations/ci.md の「点検する性質」。
 // Worker の許可リスト（npm run gen が作る worker/src/generated/media-manifest.json）があれば、講座ごとの動画の一覧と同じかも見る
+import config from '../chalkfile.config';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { type ParseError, parse as parseJsonc, printParseErrorCode } from 'jsonc-parser';
@@ -63,7 +64,7 @@ export const PRODUCTION = 'production';
 export const DEPLOY_STEP = 'Deploy';
 export const PRODUCTION_GROUP = 'chalkfile-production';
 /** production のジョブの if に、いちばん外の && で入れる条件（fork と、main 以外の ref では公開しない） */
-export const MAIN_ONLY = ["github.repository == 'sean-sunagaku/chalkfile'", "github.ref == 'refs/heads/main'"];
+export const MAIN_ONLY = [`github.repository == '${config.repository}'`, "github.ref == 'refs/heads/main'"];
 /** 外からの PR の内容を、main の権限とキャッシュで動かしうるきっかけ。どの workflow でも使わない */
 const UNTRUSTED_EVENTS = ['pull_request_target', 'workflow_run'];
 /** production のジョブを置く workflow を動かしてよいきっかけ */

@@ -1,9 +1,9 @@
-// 講座の言語の一覧（正本はここだけ）と、言語の名前・フォルダの正規表現。台本（engine/core/i18n.ts が読み込み直して出す）・動画・
+// 講座の言語の一覧（値の正本は chalkfile.config.ts）と、言語の名前・フォルダの正規表現。台本（engine/core/i18n.ts が読み込み直して出す）・動画・
 // サイトの組み立て・画面・Service Worker・Worker が同じものを読む。ほかのファイルを import しない（sw.js と Worker にも入る。
 // 読みの差分と素材の片付けは content/ と engine/core/ を取り出して読む）。content/langs.ts は再 export だけ。
-// 言語を足すときは LANG_LIST に 1 つ足して、型のエラーに従う（手順は .claude/skills/study-video-course/references/i18n.md の「言語を足す」）
+// 値の正本は chalkfile.config.ts。LANG_LIST と LANG_INFO は npm run gen が書く。言語を足したら、型のエラーに従う（手順は .claude/skills/study-video-course/references/i18n.md の「言語を足す」）
 
-const LANG_LIST = ['ja', 'en', 'zh'] as const;
+const LANG_LIST = ["ja","en","zh"] as const;
 
 /** 講座の言語。ja が正本。zh は簡体字（zh-Hans） */
 export type Lang = (typeof LANG_LIST)[number];
@@ -14,9 +14,21 @@ export const TRANSLATED_LANGS: TranslatedLang[] = LANGS.filter((l): l is Transla
 
 /** 言語の名前（切り替えのリンクに、その言語で出す）・HTML の lang・サイトの URL の頭（訳の言語は、言語の名前のフォルダ） */
 export const LANG_INFO: Record<Lang, { label: string; html: string; path: string }> = {
-  ja: { label: '日本語', html: 'ja', path: '' },
-  en: { label: 'English', html: 'en', path: 'en/' },
-  zh: { label: '中文', html: 'zh-Hans', path: 'zh/' },
+  "ja": {
+    "label": "日本語",
+    "html": "ja",
+    "path": ""
+  },
+  "en": {
+    "label": "English",
+    "html": "en",
+    "path": "en/"
+  },
+  "zh": {
+    "label": "中文",
+    "html": "zh-Hans",
+    "path": "zh/"
+  }
 };
 
 export const isLang = (s: string): s is Lang => (LANGS as string[]).includes(s);

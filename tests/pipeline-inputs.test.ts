@@ -332,7 +332,7 @@ const voiceWorld = () => {
     readFileSync(path.join(ROOT, timelineFile(video.course.id, video.key))),
   );
   // 書き出しの出力（ポスターの置き場所）は、公開する言語で決まる
-  put(root, 'site/config.json', readFileSync(path.join(ROOT, 'site/config.json')));
+  put(root, 'chalkfile.config.ts', readFileSync(path.join(ROOT, 'chalkfile.config.ts')));
   const ctx = () => ({ root, hasher: fileHasher(root, null), store, runCommand: () => 0 });
   const stage = (name: string) => {
     const s = makeStages(ctx()).find((x) => x.name === name);
@@ -416,7 +416,7 @@ describe('段の指紋（本物の段 voice・mix・render を、一時のフォ
     ]);
     expect(r.recordable).toBeUndefined();
     // 公開しない言語の動画のポスターは、講座のフォルダに置かない（site/media の写しだけ）
-    const tr = VIDEOS.find((v) => !readSiteConfig(ROOT).publishLangs.includes(v.lang));
+    const tr = VIDEOS.find((v) => !readSiteConfig().publishLangs.includes(v.lang));
     if (tr) expect(r.outputs(tr.key)).toContain(`site/media/${tr.key}.jpg`);
   });
   test('render: 記録が無くても、手元の動画が公開した動画の一覧の動画と同じなら、一覧の inputs を記録の代わりにする', () => {

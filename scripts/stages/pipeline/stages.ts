@@ -18,7 +18,7 @@
 //     course  教材を持つ講座（syllabus のある講座）の台本の全部、timelines その講座の timeline、tool build_materials.ts からたどったコード
 //   site（講座サイト。scripts/build_site.ts。単位はサイト全体 1 つ）
 //     content 全部の言語の講座の台本と一覧のページの抜き出し、data サイトの台本（site/data）、posters ポスター、
-//     media 動画の一覧（Worker の許可リストと同じもの）、config site/config.json と SITE_LANGS、
+//     media 動画の一覧（Worker の許可リストと同じもの）、config chalkfile.config.ts と SITE_LANGS、
 //     tool build_site.ts からたどったコード・site/ のひな形と画像・package-lock.json・bun の版
 // 前の段の出力は、出力の中身（sha256）で入る。指紋に入れる値を変えたら、tests/pipeline-inputs.test.ts の決まりも直す
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -248,9 +248,9 @@ export const makeStages = (ctx: StagesCtx): Stage[] => {
 
   const captioned = (key: string) => Boolean(video(key).course.cast);
   let langs: readonly string[] | null = null;
-  /** 公開する言語（site/config.json の publishLangs。ポスターを講座のフォルダに置く言語） */
+  /** 公開する言語（chalkfile.config.ts の publishLangs。ポスターを講座のフォルダに置く言語） */
   const publishLangs = () => {
-    langs ??= readSiteConfig(root).publishLangs;
+    langs ??= readSiteConfig().publishLangs;
     return langs;
   };
   const render: Stage = {
@@ -328,7 +328,7 @@ export const makeStages = (ctx: StagesCtx): Stage[] => {
     unrecorded: 'run',
     units: () => ['site'],
     deps: () => {
-      const langs: string[] = readSiteConfig(root).publishLangs;
+      const langs: string[] = readSiteConfig().publishLangs;
       return VIDEOS.filter((v) => langs.includes(v.lang)).map((v) => ({ stage: 'voice', unit: v.key }));
     },
     fingerprint: () => {
@@ -353,7 +353,7 @@ export const makeStages = (ctx: StagesCtx): Stage[] => {
             ]),
           ),
           media,
-          config: digest({ config: hasher.sha256('site/config.json'), langs: env.SITE_LANGS ?? '' }),
+          config: digest({ config: hasher.sha256('chalkfile.config.ts'), langs: env.SITE_LANGS ?? '' }),
           tool: digest({
             code: code('site', ['scripts/build_site.ts'], [...listFiles(root, ['site']), 'package-lock.json']),
             bun: Bun.version,

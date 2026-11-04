@@ -1,7 +1,7 @@
 // 講座のフォルダの台本と生成物から、全体の生成物を作る（npm run gen）。生成物がぶつかったら、main を取り込んでからこれで作り直す。
 //   bun scripts/gen.ts            # 作る
 //   bun scripts/gen.ts --check    # 作らずに、今のファイルと比べる（違えば一覧を出して 1 で終える）
-//   bun scripts/gen.ts --media    # Worker の許可リストだけを作る（wrangler の前。dev:worker・CI の build・deploy.yml が流す）
+//   bun scripts/gen.ts --media    # Worker の許可リストと実行時の設定を作る（wrangler の前。dev:worker・CI の build・deploy.yml が流す）
 // 作るもの:
 //   worker/src/generated/media-manifest.json   全講座の動画の一覧（Worker の許可リスト。Git に入れない）。講座ごとの
 //                                              content/<講座>/generated/media.<言語>.json を、講座の登録の順につなぐ（scripts/media.ts）
@@ -19,6 +19,7 @@ import { type Lang, TRANSLATED_LANGS, videoKey } from '../content/i18n';
 import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
 import { commandTable } from './cli';
+import { CORE_SETTINGS, WORKER_SETTINGS, LANGUAGE_SETTINGS, MEDIA_SETTINGS, mediaSettings, coreSettings, workerSettings, languageSettings, workflowSettings, wranglerSettings } from './gen_project_config';
 import { VIDEO_CONFIG_JSON, videoConfigJson } from './gen_video_config';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { readSiteConfig } from './lib/config';
@@ -124,10 +125,29 @@ export const docOutputs = (root = ROOT): Map<string, string> => {
 
 /* ───────────── 全部 ───────────── */
 
-/** 作る生成物（リポジトリの直下からのパス → 中身）。media だけにすると、Worker の許可リストだけ */
+/** 設定から作る追跡済みのファイル。check:docs も比べる。 */
+export const projectOutputs = (root = ROOT): Map<string, string> => {
+  const out = new Map<string, string>();
+  out.set(CORE_SETTINGS, coreSettings());
+  out.set(LANGUAGE_SETTINGS, languageSettings(readFileSync(path.join(root, LANGUAGE_SETTINGS), 'utf8')));
+  out.set(MEDIA_SETTINGS, mediaSettings(readFileSync(path.join(root, MEDIA_SETTINGS), 'utf8')));
+  out.set('wrangler.jsonc', wranglerSettings(readFileSync(path.join(root, 'wrangler.jsonc'), 'utf8')));
+  for (const name of ['ci', 'deploy', 'canary']) {
+    const file = `.github/workflows/${name}.yml`;
+    out.set(file, workflowSettings(readFileSync(path.join(root, file), 'utf8'), name === 'canary'));
+  }
+  return out;
+};
+
+/** 作る生成物。media だけにすると、Worker の許可リストと実行時の設定。 */
 export const generated = (only?: 'media'): Map<string, string> => {
   const out = new Map<string, string>();
   out.set(WORKER_MEDIA, mediaManifestJson(readMediaManifest()));
+  out.set(WORKER_SETTINGS, workerSettings());
+  for (const [file, text] of projectOutputs()) {
+    if (only === 'media' && file !== CORE_SETTINGS && file !== LANGUAGE_SETTINGS && file !== MEDIA_SETTINGS) continue;
+    out.set(file, text);
+  }
   if (only === 'media') return out;
   for (const [file, text] of docOutputs()) out.set(file, text);
   // Python の道具が読む JSON（Python は TS を読めないので、値を JSON に書き出して渡す）

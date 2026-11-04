@@ -9,7 +9,7 @@ const synthetic = (kind: MediaEntry['kind'], sha256: string): MediaEntry => ({ l
 const entry = synthetic('standard', 'c'.repeat(64));
 const captioned = synthetic('captioned', 'd'.repeat(64));
 // 入口の中身（app.ts）を、合成の一覧で作る（本番の入口 index.ts は、npm run gen が作る全講座の一覧を渡すだけ）
-const worker = createWorker({ schema: 1, entries: [entry, captioned] });
+const worker = createWorker({ schema: 1, entries: [entry, captioned] }, { origin: 'https://chalkfile.com/' });
 const request = (suffix = '', init?: RequestInit) => new Request(`https://chalkfile.com${mediaPath(entry)}${suffix}`, init);
 const success = (status = 200) => new Response(new Uint8Array([0, 1]), { status, headers: {
   'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="upstream.mp4"',
@@ -167,6 +167,14 @@ describe('Worker の入口（app.ts の createWorker）', () => {
       expect(response.status).toBe(301);
       expect(response.headers.get('Location')).toBe(`https://chalkfile.com${unknown}?download=1`);
     }
+    expect(seen).toHaveLength(0);
+  });
+  test('渡した公開先で www の判定と行き先が決まる（本番の生成物を読まない）', async () => {
+    const { seen, env } = fakeAssets();
+    const fork = createWorker({ schema: 1, entries: [entry] }, { origin: 'https://lessons.example/' });
+    const response = await fork.fetch(new Request(`http://www.lessons.example${unknown}?download=1`), env);
+    expect(response.status).toBe(301);
+    expect(response.headers.get('Location')).toBe(`https://lessons.example${unknown}?download=1`);
     expect(seen).toHaveLength(0);
   });
   test('www の HTML・静的ファイル・知らないパスは assets へそのまま渡す', async () => {

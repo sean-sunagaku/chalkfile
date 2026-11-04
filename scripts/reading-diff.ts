@@ -3,14 +3,15 @@
 //   bun scripts/reading-diff.ts                    # origin/main と比べる（手元に無ければ取ってくる）
 //   bun scripts/reading-diff.ts --base HEAD^1      # 比べる相手を変える（git の ref）
 //   npm run reading:diff -- --base origin/main
-// 読みが変わった台詞と動画の一覧を出す。止めるのは、公開する言語（site/config.json の publishLangs）の公開中の動画で読みが変わったのに、
+// 読みが変わった台詞と動画の一覧を出す。止めるのは、公開する言語（chalkfile.config.ts の publishLangs）の公開中の動画で読みが変わったのに、
 // その動画を作り直していないとき（講座の動画の一覧 content/<講座>/generated/media.<言語>.json の項目が、比べる相手と同じ）。
 // 公開中の動画は古い読みのままなので、合成し直し → mix → render → media push が要る、という合図（docs/operations/publish.md の順番）。
 // まだ公開しない言語の動画・まだ公開していない動画・作り直した動画は、知らせるだけ。止めたら 1 で終える。
 // 比べる相手の台本は git archive で一時フォルダに取り出して読む（content/ と engine/core/ と scripts/voices.ts だけ。content/ が実行時に読むのは
 // content/ と engine/core/ だけで、engine/core/ はその外を読まない。Biome の noRestrictedImports が止める。engine/core/ を読む前の版は content/ だけで読める）
+import { readSiteConfig } from './lib/config';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -215,9 +216,7 @@ if (import.meta.main) {
   const { LANGS } = await import('../content/i18n');
   const head = readingsOf(VIDEOS, speechIn);
   const headMedia = mediaHashes(COURSES.flatMap((c) => LANGS.map((lang) => readCourseMedia(c.id, lang))));
-  const published = (
-    JSON.parse(readFileSync(path.join(ROOT, 'site/config.json'), 'utf8')) as { publishLangs: string[] }
-  ).publishLangs;
+  const published = readSiteConfig().publishLangs;
   const changes = readingChanges(base.readings, head);
   const { stop, remade, notice } = judge(changes, published, base.media, headMedia);
   const lines = head.reduce((n, v) => n + v.lines.length, 0);

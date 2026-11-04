@@ -12,7 +12,7 @@ export const renderNotFound = (o: {
   /** site/not-found.html の中身 */
   template: string;
   lang: Lang;
-  /** site/config.json の series（題に入れる） */
+  /** chalkfile.config.ts の series（題に入れる） */
   series: string;
   /** サイトの URL の path（/ で終える。一覧のページへのリンクの頭） */
   basePath: string;

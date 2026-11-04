@@ -3,6 +3,7 @@
 // 信頼できる script は 3 本: www の移動（下の定数）・講座のページの画面（site/course-page.ts の bundle）・offline-client（bundle）。
 // 最終の HTML で動く script がこの 3 本のどれかで、CSP と過不足なく合うかは、組み立ての最後に scripts/site-invariants.ts が確かめる。
 // 保存版のページは SW が応答のヘッダーを作り直すので、CSP は HTTP のヘッダーではなく meta に書く
+import config from '../../chalkfile.config';
 import { createHash } from 'node:crypto';
 import { type Html, html, inlineScript } from './html';
 
@@ -11,7 +12,7 @@ import { type Html, html, inlineScript } from './html';
  * （http:// や、任意の外のホストを移り先に使わない）。全部のページの頭（__CSP__ の所）に入れる
  */
 export const WWW_REDIRECT_SCRIPT =
-  "if(location.hostname==='www.chalkfile.com'){location.replace('https://chalkfile.com'+location.pathname+location.search+location.hash);}";
+  `if(location.hostname==='www.${new URL(config.origin).hostname}'){location.replace('${new URL(config.origin).origin}'+location.pathname+location.search+location.hash);}`;
 
 /** CSP の script-src に書くハッシュ（'sha256-<base64>'） */
 export const scriptHash = (body: string) => `'sha256-${createHash('sha256').update(body).digest('base64')}'`;

@@ -4,7 +4,7 @@
 //   bun scripts/stages/video/render.ts P01.en 'S03.*'       # 訳の動画（レクチャー ID.言語）。* と ? で選べる
 //   bun scripts/stages/video/render.ts L03 --dry-run        # 書き出すもの（字幕版を作るか・出力・足りない入力）を出すだけ
 //   npm run chalk -- render …                                # 1 つの入口からも流せる（docs/guide/commands.md の「chalk」）
-// 対象は --course・--video（* と ? を使える）・--lang と名前の無い引数で選び、選ばなければ公開する言語（site/config.json の publishLangs）の全部。
+// 対象は --course・--video（* と ? を使える）・--lang と名前の無い引数で選び、選ばなければ公開する言語（chalkfile.config.ts の publishLangs）の全部。
 // バンドル（webpack）は 1 回だけ作り、全部の動画で使う。Remotion の書き出しは @remotion/renderer を、この道具の中から呼ぶ。
 // 字幕を焼き込んだ版は、掛け合いの講座（cast のある講座）で作る。--captions（か CAPTIONS=1）で全部の動画、CAPTIONS=0 で作らない（そのときは記録しない）
 // 出力: out/master/<key>.mp4（音なしの高画質の映像）・site/media/<key>.mp4（サイト用）・ポスター（公開する言語の動画は
@@ -610,7 +610,7 @@ const main = async (argv: string[]) => {
   const videos = keys.map((k) => VIDEOS.find((v) => v.key === checkKey(k)) as Video);
   const { jobs, missing, broken } = planJobs(videos, o, {
     root: ROOT,
-    publishLangs: readSiteConfig(ROOT).publishLangs,
+    publishLangs: readSiteConfig().publishLangs,
     timelines: readTimelinesByKey(ROOT),
   });
   if (values['dry-run']) {

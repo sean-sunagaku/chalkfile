@@ -10,19 +10,20 @@ import { createMediaHandler } from './media';
 /** 受け口の 1 つ。prefix は / で始まり / で終わるパスの頭（/media/ には /media と /mediax/ が合わない） */
 type Route = { prefix: `/${string}/`; handle: (request: Request, url: URL) => Response | Promise<Response> };
 
-// www の HTML も assets が返し、ページの先頭の location.replace で apex へ移す。Worker が 301 にするのは /media/ だけ。
-const toApex = (url: URL) => {
-  const apex = new URL(url);
-  apex.hostname = 'chalkfile.com';
-  apex.protocol = 'https:';
-  return Response.redirect(apex.href, 301);
-};
-
-export const createWorker = (manifest: unknown) => {
+/** 一覧と公開先を渡して作る。本番の生成 JSON は index.ts だけが読む。 */
+export const createWorker = (manifest: unknown, settings: { origin: string }) => {
+  const origin = new URL(settings.origin);
+  // www の HTML は assets が返す。Worker が 301 にするのは /media/ だけ。
+  const toApex = (url: URL) => {
+    const apex = new URL(url);
+    apex.host = origin.host;
+    apex.protocol = origin.protocol;
+    return Response.redirect(apex.href, 301);
+  };
   const media = createMediaHandler(allMediaEntries(validateMediaManifest(manifest)));
   const api = createApiHandler();
   const routes: Route[] = [
-    { prefix: '/media/', handle: (request, url) => (url.hostname === 'www.chalkfile.com' ? toApex(url) : media(request)) },
+    { prefix: '/media/', handle: (request, url) => (url.hostname === `www.${origin.hostname}` ? toApex(url) : media(request)) },
     { prefix: '/api/', handle: (request) => api(request) },
   ];
   return {

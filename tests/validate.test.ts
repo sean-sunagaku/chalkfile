@@ -170,7 +170,7 @@ describe('公開で止まること（PR の CI で、公開の CI より先に�
       headline: `版の印 ${PAGE_VERSION_MARK} を書いた`,
     });
     expect(siteProblems({ ...config, baseUrl: 'http://chalkfile.com/' }, ja([bad]), [{ ...THEMES.chalkfile, id: 'bad theme' }])).toEqual([
-      'site/config.json の baseUrl と repoUrl は https:// で書く',
+      'サイトの baseUrl と repoUrl は https:// で書く',
       '講座 ID が英数字でない: bad course',
       'bad course のリンクが https:// でない: javascript:alert(1)',
       'レクチャー ID が英数字でない: X 01',

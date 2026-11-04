@@ -260,7 +260,7 @@ const checkContent = async (out: Finding[]) => {
   }
   // 訳し残し（訳の講座に残った日本語の文字）は止める
   for (const lang of TRANSLATED_LANGS) for (const c of coursesIn(lang)) for (const u of untranslated(c, lang, COURSES.find((x: { id: string }) => x.id === c.id))) out.push({ level: 'error', where: u.split(':')[0], what: '訳し残し（日本語のまま）', sample: u.slice(u.indexOf(':') + 2), rule: 'untranslated' });
-  // 訳したあとに日本語の台本の訳す文字が変わった訳（stale）。公開する言語（site/config.json の publishLangs）なら止め、まだ公開しない言語は注意（scripts/i18n.ts の staleNotices）
+  // 訳したあとに日本語の台本の訳す文字が変わった訳（stale）。公開する言語（chalkfile.config.ts の publishLangs）なら止め、まだ公開しない言語は注意（scripts/i18n.ts の staleNotices）
   const { staleNotices, translationRows } = (await import(path.join(ROOT, 'scripts/i18n.ts'))) as typeof import('./i18n');
   for (const n of staleNotices(translationRows())) out.push({ level: n.level, where: n.file, what: n.message, sample: '', rule: 'stale' });
 };

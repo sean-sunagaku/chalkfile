@@ -6,7 +6,7 @@
 //   npm run chalk -- render --course ga4-comedy --dry-run   # 流すコマンドを出すだけ（何もしない）
 //   bun scripts/cli.ts <コマンド> …                    # npm run chalk と同じ（package.json の bin の chalkfile も、このファイル）
 // 入力: コマンドと引数。対象は --course <講座 ID>・--video <動画。* と ? を使える>・--lang <言語。all で全部>で選び、
-//   選ばなければ公開する言語（site/config.json の publishLangs）の全部の動画。--dry-run（流すコマンドを出すだけ）・--json は、
+//   選ばなければ公開する言語（chalkfile.config.ts の publishLangs）の全部の動画。--dry-run（流すコマンドを出すだけ）・--json は、
 //   意味のあるコマンドだけが受け取る（どれを受け取るかは、そのコマンドの --help）。-v は流すコマンドも出し、voice synth・materials・media では、
 //   中の道具にも --verbose を渡す（外の道具への問い合わせと、失敗したときの stderr の全部も出す）
 // 出力: 中の道具の出力と終了コード（0 成功・1 失敗・2 使い方の誤り・3 前提が足りない）。古い呼び方（bun scripts/synth.ts など）も、そのまま使える
@@ -597,7 +597,7 @@ export const COMMANDS: Command[] = [
   {
     name: 'publish verify',
     usage: '[origin]',
-    summary: '公開したサイト（既定 https://chalkfile.com/）のトップと、全部の動画の Range を確かめる',
+    summary: `公開したサイト（既定 ${readSiteConfig().baseUrl}）のトップと、全部の動画の Range を確かめる`,
     old: ['bun scripts/verify_public.ts'],
     file: 'scripts/verify_public.ts',
     options: {},

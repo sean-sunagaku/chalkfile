@@ -259,7 +259,7 @@ export const ja = {
     body: '通信できません。保存済みの講座は、講座一覧から開けます。新しい講座はオンラインで開き、「この講座をアプリ内に保存」を選んでください。',
     link: 'Chalkfile の講座一覧と保存状態へ',
   },
-  /** 無いページ（言語ごとの 404.html。site/not-found.html。{series} は site/config.json の series） */
+  /** 無いページ（言語ごとの 404.html。site/not-found.html。{series} は chalkfile.config.ts の series） */
   notFound: {
     title: '教材が見つかりません｜{series}',
     heading: '教材が見つかりません',

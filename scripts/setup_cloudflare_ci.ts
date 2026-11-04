@@ -3,10 +3,11 @@
 //   bun scripts/setup_cloudflare_ci.ts plan    # 何をするかを出すだけ（読み取りも変更もしない。既定）
 //   bun scripts/setup_cloudflare_ci.ts apply   # 初回の登録と main の公開（持ち主だけ。docs/operations/setup.md）
 // 失敗したときは、どの段で止まったかだけを出す（生の出力と秘密値は出さない）。終了コード: 0 できた・1 失敗・2 使い方の誤り
+import config from '../chalkfile.config';
 import { EXIT, readArgs, showHelp, UsageError } from './lib/args';
 
 const ACCOUNT = '1771bd0a5ec29834c0c8714ffe808889';
-const REPOSITORY = 'sean-sunagaku/chalkfile';
+const REPOSITORY = config.repository;
 const PROFILE = 'chalkfile-ci-bootstrap';
 // cf は初回の登録で 1 度だけ使うので package.json に入れず、実行のときに npm exec で取ってくる。
 // 版はここで完全に固定し、インストール時スクリプトは動かさない（下の cf() の --ignore-scripts）
@@ -65,7 +66,7 @@ async function main(argv: string[]) {
   if (values.help) return showHelp(import.meta.filename);
   const mode = positionals[0] ?? 'plan';
   if (positionals.length > 1 || !['plan', 'apply'].includes(mode)) throw new UsageError('plan または apply を指定してください（使い方は --help）');
-  const plan = { repository: REPOSITORY, environment: 'production', account: ACCOUNT, zone: 'chalkfile.com', permissions: required,
+  const plan = { repository: REPOSITORY, environment: 'production', account: ACCOUNT, zone: new URL(config.origin).hostname, permissions: required,
     secretName: SECRET_NAME, cfVersion: CF_VERSION, oauthProfile: PROFILE,
     credentialTransport: 'supported cf grant: stdout in memory -> gh secret set stdin; otherwise provider UI -> GitHub production secret; no credential in logs, files or argv',
     initialSetup: 'cf beta.26 cannot request workers-scripts.edit (Workers Editor); use the account-token dashboard with these exact permissions, never broaden to Workers Admin',
@@ -80,8 +81,8 @@ async function main(argv: string[]) {
   const secrets = await json(['gh', 'api', `repos/${REPOSITORY}/environments/production/secrets`]);
   if (!secrets.secrets?.some((s: any) => s.name === SECRET_NAME)) {
     stage = 'CloudflareのCLI認可と対象zone確認';
-    const zones = await json(cf(['zones', 'list', '--name', 'chalkfile.com', '--account-id', ACCOUNT]));
-    if (!Array.isArray(zones) || zones.length !== 1 || zones[0].name !== 'chalkfile.com' || zones[0].account?.id !== ACCOUNT || zones[0].status !== 'active') throw new Error('対象zoneを一意に確認できません');
+    const zones = await json(cf(['zones', 'list', '--name', new URL(config.origin).hostname, '--account-id', ACCOUNT]));
+    if (!Array.isArray(zones) || zones.length !== 1 || zones[0].name !== new URL(config.origin).hostname || zones[0].account?.id !== ACCOUNT || zones[0].status !== 'active') throw new Error('対象zoneを一意に確認できません');
     stage = '最小権限の確認。cf beta.26がWorkers Editorを発行できない場合はdocs/operations/setup.mdの管理画面手順を使います';
     const groups = await json(cf(['accounts', 'tokens', 'permission-groups', 'list']));
     if (!Array.isArray(groups)) throw new Error('権限一覧の形式が不正です');

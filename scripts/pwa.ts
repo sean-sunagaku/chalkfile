@@ -72,7 +72,7 @@ export type PwaOptions = {
   shell: Asset[];
   /** 出す言語（言語ごとの manifest.webmanifest を作る） */
   langs: readonly Lang[];
-  /** アプリの名前（site/config.json の series） */
+  /** アプリの名前（chalkfile.config.ts の series） */
   series: string;
   /** 無効にした保存版の revision（site/disabled-revisions.ts。SW は、当たる保存版のページをオンラインでは開かない） */
   disabledRevisions?: readonly string[];

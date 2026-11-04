@@ -35,7 +35,7 @@ content/（台本。正本）＋ content/<講座>/<言語>/（訳の上書き）
 ```
 
 - 「追跡」は main で Git が追跡するファイル。ほかは `.gitignore` で外していて、手元だけにある
-- `<key>` は動画の key（`S01`・`S01.en`）。訳の動画も同じ流れで作る。サイトに出す言語は `site/config.json` の `publishLangs` が決める
+- `<key>` は動画の key（`S01`・`S01.en`）。訳の動画も同じ流れで作る。サイトに出す言語は `chalkfile.config.ts` の `publishLangs` が決める
 - `media.ts push` は、選んだ講座（`--course`）と言語（`--lang`。既定は ja）の動画だけを扱い、その講座の一覧だけを書き換える。古いハッシュの動画は消さず、一覧の `retained` に残す（[ADR](../adr/2026-11-02-keep-old-video-hashes.md)）
 
 ## 段と記録（status・build）
@@ -54,7 +54,7 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 | mix | 動画 | 設計図の中身・台詞の音声の中身・BGM と効果音の中身・mix.py と、それが読む Python の部品・効果音の一覧・依存の固定 | `public/audio/mix/<key>.wav` |
 | render | 動画 | 台本の側（動画が描くレクチャーと講座の項目・テーマの値・声のクレジット・timeline）・描き方の側（`src/`・`engine/`・訳とテーマの部品・Remotion の設定・書き出しの道具と設定・動画の大きさの目安・Remotion などの依存の版）・ミックスの音の中身 | サイト用の動画（掛け合いの講座は字幕版も）・ポスター |
 | docs | 全部の教材で 1 つ | 教材を持つ講座の台本の全部・その timeline・build_materials.ts からたどったコード | `docs/courses/` |
-| site | サイトで 1 つ | 全部の言語の台本・サイトの台本（`site/data`）・ポスター・動画の一覧・`site/config.json`・build_site.ts からたどったコードと `site/` のひな形・依存の版 | `site/dist` |
+| site | サイトで 1 つ | 全部の言語の台本・サイトの台本（`site/data`）・ポスター・動画の一覧・`chalkfile.config.ts`・build_site.ts からたどったコードと `site/` のひな形・依存の版 | `site/dist` |
 
 - 記録は `.work/state/<段>/<単位>.json`（形は `{ schema, stage, unit, fingerprint, parts, outputs, tools, at }`。`parts` は部分ごとの指紋、`outputs` は出力の sha256、`tools` は流した道具の版で指紋には入れない）。ファイルの中身の sha256 は、大きさと時刻が同じなら `.work/state/files.json` に覚えた値を使う。どれも手元だけで、`npm run clean` が消す
 - 前の段の出力は、出力の中身の sha256 で次の段に入る。前の段を流し直しても、出力が同じなら次の段は流さない

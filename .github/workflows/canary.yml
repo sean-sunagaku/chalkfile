@@ -1,4 +1,4 @@
-# 公開中のサイト（https://chalkfile.com/）と、旧サイトの案内を毎日確かめる。secret は使わない。
+# 公開中のサイトと、旧サイトの案内を毎日確かめる。secret は使わない。
 # 通らなければ Issue を開く（同じ題の Issue が開いていれば、新しく開かずに書き足す）。見ることと直し方は docs/operations/ci.md
 name: canary
 
@@ -54,15 +54,15 @@ jobs:
             exit 1
           fi
           if ! grep -qF '<link rel="canonical" href="https://chalkfile.com/">' "$RUNNER_TEMP/legacy.html"; then
-            echo '旧サイトの案内ページに、chalkfile.com への案内が無い' >&2
+            echo '旧サイトの案内ページに、新サイトへの案内が無い' >&2
             exit 1
           fi
           health=$(curl -fsS --max-time 20 --retry 2 "${legacy}migration-health.json")
           if [ "$health" != '{"target":"https://chalkfile.com/"}' ]; then
-            echo '旧サイトの migration-health.json の行き先が chalkfile.com でない' >&2
+            echo '旧サイトの migration-health.json の行き先が新サイトでない' >&2
             exit 1
           fi
-          echo '旧サイトの案内ページ 200・行き先は https://chalkfile.com/'
+          echo '旧サイトの案内ページ 200・行き先も一致'
       - name: 失敗したときの記録を残す
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
