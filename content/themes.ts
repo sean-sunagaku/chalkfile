@@ -6,7 +6,7 @@ import type { Theme } from './types';
  * Chalkfile の既定のテーマ。明るい教室の黒板を裏返したような配色で、
  * 文字は黒板の深い緑、色はチョーク、コードの面だけ黒板の色にする。書体は角の丸いゴシック。
  */
-export const CHALKFILE: Theme = {
+export const CHALKFILE: Theme & { id: 'chalkfile' } = {
   id: 'chalkfile',
   label: 'Chalkfile',
   summary: '明るい教室の黒板を裏返した配色。文字は黒板の緑、色はチョーク、コードだけ黒板の面に書く。角の丸いゴシック。',
@@ -48,7 +48,7 @@ export const CHALKFILE: Theme = {
  * 白い地・紺の文字・紫の主役の色・斜めのグラデーションの帯。API のドキュメントのような端正な見た目。
  * どの講座にも使える部品なので、名前は色から付ける（会社名を付けない）。英字は Inter、日本語は Noto Sans JP。
  */
-export const INDIGO: Theme = {
+export const INDIGO: Theme & { id: 'indigo' } = {
   id: 'indigo',
   label: 'Indigo',
   summary: '白い地に紺の文字、紫の主役の色、角を斜めに切るグラデーションの帯。英字は Inter。',
@@ -87,7 +87,7 @@ export const INDIGO: Theme = {
 };
 
 /** 最初の版の暗いテーマ（濃紺の地・ピンクから水色のグラデーション・光の粒） */
-export const NIGHT: Theme = {
+export const NIGHT: Theme & { id: 'night' } = {
   id: 'night',
   label: 'Night',
   summary: '最初の版の暗いテーマ。濃紺の地に、ピンクから水色のグラデーションと光の粒。',
@@ -141,7 +141,7 @@ export const NIGHT: Theme = {
  * 生成りの紙のような地に、黒に近い文字と朱色の主役の色。方眼の点。英字は Inter、日本語は Noto Sans JP。
  * 画面やフォームの図（改善前・改善後）を多く見せる講座向けに、地と図の色を落ち着かせる。
  */
-export const PAPER: Theme = {
+export const PAPER: Theme & { id: 'paper' } = {
   id: 'paper',
   label: 'Paper',
   summary: '生成りの紙のような地に、黒に近い文字と朱色の主役の色。方眼の点。英字は Inter。',
@@ -183,7 +183,7 @@ export const PAPER: Theme = {
  * お笑いの舞台のような配色。クリームの地に黒に近い文字、幕の赤が主役の色で、照明の黄色の帯を斜めに入れる。
  * 掛け合い（漫才・コント）で進む講座向け。書体は角の丸いゴシック。
  */
-export const STAGE: Theme = {
+export const STAGE: Theme & { id: 'stage' } = {
   id: 'stage',
   label: 'Stage',
   summary: 'お笑いの舞台のような配色。クリームの地に黒に近い文字、幕の赤と照明の黄色の帯。角の丸いゴシック。',
@@ -223,13 +223,14 @@ export const STAGE: Theme = {
 
 const THEME_LIST = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: PAPER, stage: STAGE };
 /** テーマの id（THEMES のキー。テーマの紹介文の訳 site/i18n/<言語>.ts の themes も、このキーをそろえる） */
-export type ThemeId = keyof typeof THEME_LIST;
-export const THEMES: Record<string, Theme> = THEME_LIST;
+export const THEMES = THEME_LIST;
+export type ThemeId = keyof typeof THEMES;
+export const isThemeId = (id: string): id is ThemeId => Object.hasOwn(THEMES, id);
 
 export { DEFAULT_THEME } from '../engine/core/project-settings';
 
 export const themeOf = (id?: string): Theme => {
-  const t = THEMES[id || DEFAULT_THEME];
-  if (!t) throw new Error(`テーマが見つからない: ${id}（content/themes.ts の THEMES に足す）`);
-  return t;
+  const key = id || DEFAULT_THEME;
+  if (!isThemeId(key)) throw new Error(`テーマが見つからない: ${id}（content/themes.ts の THEMES に足す）`);
+  return THEMES[key];
 };

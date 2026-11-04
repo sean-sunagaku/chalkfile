@@ -18,6 +18,7 @@ import path from 'node:path';
 import config from '../chalkfile.config';
 import { THEMES } from '../content/themes';
 import { docOutputs, projectOutputs } from './gen';
+import { MATERIALS_REGISTRY, materialsRegistry } from './gen_materials_registry';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -322,7 +323,7 @@ const checkTables = (read: (file: string) => string | null, out: Finding[]) => {
  * 生成した表（README の講座の表・docs/guide/new-course.md の頭文字の表）が、npm run gen が今作るものと同じか。
  * 手で書いた表と実装の突き合わせ（上の一覧）の代わりに、作り直して比べる（ずれたら npm run gen で作り直す）
  */
-export const checkGenerated = (read: (file: string) => string | null, out: Finding[], outputs: () => Map<string, string> = () => new Map([...docOutputs(), ...projectOutputs()])) => {
+export const checkGenerated = (read: (file: string) => string | null, out: Finding[], outputs: () => Map<string, string> = () => new Map([...docOutputs(), ...projectOutputs(), [MATERIALS_REGISTRY, materialsRegistry()]])) => {
   let expected: Map<string, string>;
   try {
     expected = outputs();

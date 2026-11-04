@@ -1,3 +1,5 @@
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L07: Lecture = {
@@ -6,12 +8,12 @@ export const L07: Lecture = {
   section: { no: 3, title: 'サンプルで作る' },
   title: 'Webhook　あとから届く通知と 4 つの約束',
   summary: '順番・重複・偽物・すぐ返事の 4 つの約束と対策、受け取るイベント、Snapshot と Thin の違い。',
-  docs: [
-    { title: 'Stripe: Webhook でイベントを受信する（署名・再送・ベストプラクティス）', url: 'https://docs.stripe.com/webhooks' },
-    { title: 'Stripe: イベントの仕組み（Snapshot と Thin）', url: 'https://docs.stripe.com/events/how-events-work' },
-    { title: 'Stripe: サブスクリプションで Webhook を使う', url: 'https://docs.stripe.com/billing/subscriptions/webhooks' },
-    { title: 'Stripe API: Thin イベントの一覧', url: 'https://docs.stripe.com/api/v2/core/events/event-types' },
-  ],
+  docs: docsOf([
+    "l-doc-022",
+    "l-doc-023",
+    "l-doc-024",
+    "l-doc-025"
+  ]),
   quiz: [
     {
       q: 'Webhook の順番について正しいのは？',
@@ -50,21 +52,21 @@ export const L07: Lecture = {
         { t: 'Webhook は、Stripe からアプリのサーバーへの、あとから届く電話のようなものです。便利ですが、クセがあります。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'Webhook の 4 つの約束と対策', at: 1 },
-        { text: 'サブスクで受け取るイベント', at: 2 },
-        { text: 'Snapshot と Thin の違い', at: 3 },
+        'Webhook の 4 つの約束と対策',
+        'サブスクで受け取るイベント',
+        'Snapshot と Thin の違い',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: 'Webhook の四つの約束と、その対策。', sfx: 'pop' },
-        { t: 'サブスクで受け取るイベントの種類。', sfx: 'pop' },
-        { t: 'そして、通知の二つの形式、Snapshot と Thin の違いです。', sfx: 'pop' },
+        { t: 'Webhook の四つの約束と、その対策。' },
+        { t: 'サブスクで受け取るイベントの種類。' },
+        { t: 'そして、通知の二つの形式、Snapshot と Thin の違いです。' },
       ],
-    },
+    }),
     {
       kind: 'sequence',
       heading: 'Webhook のしくみ',
@@ -167,7 +169,7 @@ export const L07: Lecture = {
         { t: 'ただし、前回の処理が失敗して failed のまま残っていた通知だけは、もう一度処理します。これで、何回届いても、結果は同じになります。' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '約束 3　偽物が来るかもしれない',
       nodes: [
@@ -191,7 +193,7 @@ export const L07: Lecture = {
         { t: '正しければ処理へ。偽物なら 400 を返します。' },
         { t: '時刻も署名に含まれるので、古すぎる通知も弾けます。ライブラリの既定は、五分の許容です。', sfx: 'chime' },
       ],
-    },
+    }),
     {
       kind: 'table',
       heading: '約束 4　すぐ返事をする（再送のしくみ）',

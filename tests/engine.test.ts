@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { LANGS } from '../content/i18n';
-import { CHALKFILE, NIGHT, THEMES } from '../content/themes';
+import { CHALKFILE, isThemeId, NIGHT, THEMES } from '../content/themes';
 import type { Theme } from '../content/types';
 import { alpha, mix } from '../engine/core/color';
 import { contrastProblems, contrastRatio, contrastSummary, luminance, themeContrast } from '../engine/core/contrast';
@@ -66,7 +66,7 @@ const READABLE_C = ['muted', 'codeMuted'] as const;
 
 describe('パレット（engine/core/theme.ts の derivePalette）', () => {
   test('5 つのテーマで、読める濃さにした色（補足の muted・行番号の codeMuted・図の色の文字 text）のほかは、前の src/theme.ts（applyTheme）と同じ色を作る', () => {
-    expect(Object.keys(THEMES).sort()).toEqual(Object.keys(RECORDED_PALETTE).sort());
+    expect<string[]>(Object.keys(THEMES).filter(isThemeId).sort()).toEqual(Object.keys(RECORDED_PALETTE).sort());
     for (const [id, theme] of Object.entries(THEMES)) {
       const p = derivePalette(theme);
       const want = RECORDED_PALETTE[id];
@@ -204,9 +204,9 @@ describe('コントラスト比（engine/core/contrast.ts）', () => {
     for (const r of ['tone.strong/surface', 'tone.on/main', 'onGrad/gradient', 'display/bg']) expect(`${r} ${roles[r]}`).toBe(`${r} 3`);
   });
   test('前は下限に届かなかった組（出典・注意書き・クレジットの muted、amber の文字、暗い地の名前札）が、届く', () => {
-    const ratio = (id: string, role: string) => themeContrast(THEMES[id]).find((p) => p.role === role)?.ratio ?? 0;
+    const ratio = (id: keyof typeof THEMES, role: string) => themeContrast(THEMES[id]).find((p) => p.role === role)?.ratio ?? 0;
     // 前は chalkfile 3.09・indigo 3.45・paper 3.91・stage 4.25
-    for (const id of ['chalkfile', 'indigo', 'paper', 'stage']) expect(ratio(id, 'muted/bg2')).toBeGreaterThanOrEqual(4.5);
+    for (const id of ['chalkfile', 'indigo', 'paper', 'stage'] as const) expect(ratio(id, 'muted/bg2')).toBeGreaterThanOrEqual(4.5);
     // 前は amber の main の文字（クイズの考える時間の数）が chalkfile 2.76・indigo 2.54
     expect(ratio('chalkfile', 'tone.text/surface:amber')).toBeGreaterThanOrEqual(4.5);
     expect(ratio('indigo', 'tone.strong/surface:amber')).toBeGreaterThanOrEqual(3);

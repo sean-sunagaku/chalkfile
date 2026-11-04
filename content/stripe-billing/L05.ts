@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L05: Lecture = {
@@ -6,12 +8,12 @@ export const L05: Lecture = {
   section: { no: 2, title: 'Stripe の概念とデータ' },
   title: '請求書と支払い',
   summary: 'Invoice の 5 つの状態、毎月の請求で起きること、billing_reason、請求書から契約をたどる方法、支払いの失敗と追加の認証。',
-  docs: [
-    { title: 'Stripe: サブスクリプションの請求書', url: 'https://docs.stripe.com/billing/invoices/subscription' },
-    { title: 'Stripe: 請求書の流れ（ステータス）', url: 'https://docs.stripe.com/invoicing/overview' },
-    { title: 'Stripe API: Invoice オブジェクト', url: 'https://docs.stripe.com/api/invoices/object' },
-    { title: 'Stripe: 支払いの再試行（Smart Retries）', url: 'https://docs.stripe.com/billing/revenue-recovery/smart-retries' },
-  ],
+  docs: docsOf([
+    "l-doc-016",
+    "l-doc-017",
+    "l-doc-018",
+    "l-doc-013"
+  ]),
   quiz: [
     {
       q: '支払いが済んだ請求書の status は？',
@@ -50,21 +52,21 @@ export const L05: Lecture = {
         { t: 'サブスクの契約そのものが、お金を払うわけではありません。毎回、請求書が作られて、それが支払われています。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'Invoice の状態の流れが分かる', at: 1 },
-        { text: '毎月の請求で何が起きるか分かる', at: 2 },
-        { text: '支払いの失敗と追加の認証の扱いが分かる', at: 3 },
+        'Invoice の状態の流れが分かる',
+        '毎月の請求で何が起きるか分かる',
+        '支払いの失敗と追加の認証の扱いが分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: '請求書、Invoice の状態の流れ。', sfx: 'pop' },
-        { t: '毎月の請求で、何が起きているのか。', sfx: 'pop' },
-        { t: 'そして、支払いの失敗と、追加の認証の扱いです。', sfx: 'pop' },
+        { t: '請求書、Invoice の状態の流れ。' },
+        { t: '毎月の請求で、何が起きているのか。' },
+        { t: 'そして、支払いの失敗と、追加の認証の扱いです。' },
       ],
-    },
+    }),
     {
       kind: 'states',
       heading: '請求書の一生（Invoice の status）',

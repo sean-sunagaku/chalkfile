@@ -1,11 +1,9 @@
-import { docsFrom } from '../sources-util';
+import { Z, T, TEN } from '../_shared/comedy';
+import { flow, goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { SUPERAGENT_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Super-agent のお笑い版 第 3 章「出来事で動く（イベント駆動）」。事実は DeepSeek Harness チームの記事（英語版、2026-11-02 確認）の
@@ -19,7 +17,10 @@ export const S03: Lecture = {
   title: '出来事で動く（イベント駆動）',
   summary:
     'Super-agent を動かす Trigger（まわりの出来事）と、うるさい出来事の流れを落とす二段のふるい（コードの Fast Path とモデルの Slow Path）。同じ PR や話題のひと続き（Thread）を担当の Worker が購読し、続きをそのまま渡すパススルーで、受付の負担を減らす。',
-  docs: docsFrom(SUPERAGENT_SOURCES, ['dsh-superagent-article', 'dsh-superagent-prototype']),
+  docs: docsOf([
+    "dsh-superagent-article",
+    "dsh-superagent-prototype"
+  ]),
   quiz: [
     {
       q: '記事の「二段のふるい」の 1 段目（Fast Path）でするのは？',
@@ -69,7 +70,8 @@ export const S03: Lecture = {
         { t: 'この章では、人の指示ではなく、まわりの出来事で動く仕組み、イベント駆動を見ます。', s: 'このしょうでは、ひとの指示ではなく、まわりの出来事で動く仕組み、イベント駆動を見ます。' },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -85,7 +87,7 @@ export const S03: Lecture = {
         { t: '二つ目。二段のふるいを言えること。', sfx: 'pop' },
         { t: '三つ目。Thread の購読とパススルーで、受付を空ける理由がわかることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'concepts',
       heading: 'Trigger: エージェントを動かす出来事',
@@ -128,7 +130,7 @@ export const S03: Lecture = {
         { t: '全部を大きなモデルで一から判断すると、遅くなり、計算も使いすぎます。' },
       ],
     },
-    {
+    flow({
       kind: 'flow',
       heading: '二段のふるい: Fast Path と Slow Path',
       cite: 'DeepSeek Harness チーム「Exploring Super-agent Design」(2026)',
@@ -159,7 +161,7 @@ export const S03: Lecture = {
         { t: '要る、と判断したものだけ、動きます。', sfx: 'pop' },
         { t: '要らなければ、黙ります。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'big',
       heading: '2 段目は、言葉で広げられる',

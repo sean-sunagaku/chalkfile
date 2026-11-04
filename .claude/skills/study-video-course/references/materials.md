@@ -2,18 +2,20 @@
 
 動画のほかに「読んで学べる教材」と「自分のサービスで取り組む実践課題」まで作る講座の作り方。ナッジ・UI/UX・マーケティングの講座（`content/nudge-product/` など）が見本。
 
+動画の台本は `<ID>.ts`、読む教材は同じフォルダの `<ID>.material.ts` に書く。教材は `ChapterMaterial` 型の `<ID>_MATERIAL` を export する。例は `content/nudge-product/N01.material.ts`。`npm run gen` が `content/materials.ts` の一覧を作り、通常の入口でレクチャーの `material` に付ける。動画専用の入口は教材を読まない。
+
 ## 1 章で作るもの
 
 | # | 成果物 | どこに書くか | どう出るか |
 |---|---|---|---|
-| 1 | 教材本文 | レクチャーの `material.sections`（節 ID つき） | サイトの「教材」タブ、`docs/courses/<講座>/<章 ID>.md` |
+| 1 | 教材本文 | `<ID>.material.ts` の `sections`（節 ID つき） | サイトの「教材」タブ、`docs/courses/<講座>/<章 ID>.md` |
 | 2 | ナレーション台本 | レクチャーの `scenes[].lines`（動画の正本） | サイトの「台本」タブ、Markdown（時刻は合成の実測） |
 | 3 | 絵コンテ（表示内容・図解・読み上げ・秒数） | `scenes` から自動 | Markdown の表（秒数は `site/data/<id>.json`） |
-| 4 | 図解・比較例 | 動画は `screens`・`compare`・`table` など、教材は `material.figures` | 動画と「教材」タブと Markdown |
+| 4 | 図解・比較例 | 動画は `screens`・`compare`・`table` など、教材は `<ID>.material.ts` の `figures` | 動画と「教材」タブと Markdown |
 | 5 | 理解確認問題 3 問と解説 | レクチャーの `quiz` | サイトの「確認クイズ」タブ、Markdown |
-| 6 | 実践課題・回答例・評価基準 | `material.exercise` | サイトの「実践課題」タブ、Markdown |
-| 7 | 要点まとめと参考資料 | `material.summary`・`material.references`（出典 ID） | 「教材」タブ・「出典・参考資料」タブ、Markdown |
-| 8 | AI チャットの質問例 3 つ | `material.askExamples`（根拠の節 ID つき） | サイトの「AI に聞く」タブ、Markdown |
+| 6 | 実践課題・回答例・評価基準 | `<ID>.material.ts` の `exercise` | サイトの「実践課題」タブ、Markdown |
+| 7 | 要点まとめと参考資料 | `<ID>.material.ts` の `summary`・`references`（出典 ID） | 「教材」タブ・「出典・参考資料」タブ、Markdown |
+| 8 | AI チャットの質問例 3 つ | `<ID>.material.ts` の `askExamples`（根拠の節 ID つき） | サイトの「AI に聞く」タブ、Markdown |
 
 講座の全体（目次・到達目標・動画構成）は講座の `syllabus`（`content/<講座>/syllabus.ts`）に書く。まだ作っていない章も書いておくと、サイトのカリキュラムに「準備中」で出る。
 
@@ -35,7 +37,9 @@
 
 - 動画: 場面に `evidence` を書くと見出しの横に札が出る。研究や公式の数字の場面は `cite` に短い出典を書く（左下に出る）
 - 教材: 節ごとに `evidence`（複数可）と `sources`（出典 ID）を書く
-- 出典: `content/<講座>/sources.ts` に `Source` を並べ、`checked` に開いて確かめた日を書く。台本の `docs` は `docsOf([...])` で出典から作る
+- 出典: `content/<講座>/sources.ts` の `defineSources([...])` に、講座で 1 つの表を書く。教材の根拠は `Source` の全項目を書き、`checked` に開いて確かめた日を残す。同じ ID で中身が違う出典と、不明な ID の参照は止まる
+- 公式リンクだけなら `{ id, title, url }` で書ける。台本の `docs` は表の `docsOf([...])` で作る。リンクの題だけを短くする場合は `{ id, title }` を渡す。URL を章へ写さない。詳しい出典がある講座は、表の `SOURCES` を講座の `sources` に渡す
+- 訳は `CourseL10n.sources` に説明の上書きだけを書く。日本語の表に無い ID は検証で止まる。共通の出典や文字を使うために、別の章の台本を import しない
 
 ## 章の動画の流れ
 

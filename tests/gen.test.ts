@@ -14,6 +14,7 @@ import {
   WORKER_MEDIA,
 } from '../scripts/gen';
 import { CORE_SETTINGS, WORKER_SETTINGS, LANGUAGE_SETTINGS, MEDIA_SETTINGS, coreSettings, workerSettings, languageSettings, mediaSettings } from '../scripts/gen_project_config';
+import { MATERIALS_REGISTRY, materialsRegistry } from '../scripts/gen_materials_registry';
 import { readFileSync } from 'node:fs';
 import { ROOT } from '../scripts/lib/paths';
 import path from 'node:path';
@@ -60,7 +61,7 @@ describe('README の講座の表と、new-course.md の頭文字の表', () => {
     expect(staleOutputs(docOutputs())).toEqual([]);
   });
   test('check_docs は、作り直したものと違う表を止める', () => {
-    const expected = new Map([...docOutputs(), ...projectOutputs()]);
+    const expected = new Map([...docOutputs(), ...projectOutputs(), [MATERIALS_REGISTRY, materialsRegistry()]]);
     const changed = new Map(
       [...expected].map(([f, t]) => [f, f === 'README.md' ? t.replace('約 56 分', '約 99 分') : t]),
     );
@@ -75,7 +76,7 @@ describe('README の講座の表と、new-course.md の頭文字の表', () => {
 
 describe('設定の生成忘れ', () => {
   test('通常の文書の点検でも、声の生成物と routes の手直しを止める', () => {
-    const expected = new Map([...docOutputs(), ...projectOutputs()]);
+    const expected = new Map([...docOutputs(), ...projectOutputs(), [MATERIALS_REGISTRY, materialsRegistry()]]);
     const changed = new Map(expected);
     changed.set(CORE_SETTINGS, `${changed.get(CORE_SETTINGS)}// 手直し`);
     changed.set('wrangler.jsonc', '{}');
@@ -98,6 +99,7 @@ describe('Worker の許可リスト', () => {
       '.github/workflows/ci.yml',
       '.github/workflows/deploy.yml',
       '.github/workflows/canary.yml',
+      MATERIALS_REGISTRY,
       'README.md',
       'docs/guide/new-course.md',
       'docs/guide/commands.md',

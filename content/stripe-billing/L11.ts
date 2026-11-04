@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L11: Lecture = {
@@ -6,13 +8,16 @@ export const L11: Lecture = {
   section: { no: 4, title: 'お金・法律・iOS' },
   title: 'お金と法律',
   summary: '1,000 円のうち手元に残る金額、ほかの料金と PayPay、特商法の 2 つの要件と Checkout での補い方、無料期間のルール、消費税の表示。',
-  docs: [
-    { title: 'Stripe: 料金（日本）', url: 'https://stripe.com/jp/pricing' },
-    { title: 'Stripe: トライアルの法令遵守（カード会社の要件）', url: 'https://docs.stripe.com/billing/subscriptions/trials/manage-trial-compliance' },
-    { title: 'Stripe: PayPay（継続課金の可否）', url: 'https://docs.stripe.com/payments/paypay' },
-    { title: 'Stripe API: Checkout Session の consent_collection と custom_text', url: 'https://docs.stripe.com/api/checkout/sessions/create' },
-    { title: '消費者庁: 通信販売（特定商取引法ガイド）', url: 'https://www.no-trouble.caa.go.jp/what/mailorder/' },
-  ],
+  docs: docsOf([
+    "l-doc-036",
+    "l-doc-037",
+    "l-doc-038",
+    {
+      "id": "l-doc-019",
+      "title": "Stripe API: Checkout Session の consent_collection と custom_text"
+    },
+    "l-doc-039"
+  ]),
   quiz: [
     {
       q: '月 1,000 円のプランで、Stripe の取り分の目安は？',
@@ -52,21 +57,21 @@ export const L11: Lecture = {
         { t: '手数料と、日本で有料のサービスを売るときのルールを整理します。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: '1,000 円のうち、手元に残る金額が分かる', at: 1 },
-        { text: '特商法で必要な 2 つが言える', at: 2 },
-        { text: 'Checkout でどこまで補えるかが分かる', at: 3 },
+        '1,000 円のうち、手元に残る金額が分かる',
+        '特商法で必要な 2 つが言える',
+        'Checkout でどこまで補えるかが分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: '千円のうち、手元にいくら残るのか。', sfx: 'pop' },
-        { t: '特定商取引法で、必要になる二つのもの。', sfx: 'pop' },
-        { t: 'そして、Checkout で、どこまで補えるかです。', sfx: 'pop' },
+        { t: '千円のうち、手元にいくら残るのか。' },
+        { t: '特定商取引法で、必要になる二つのもの。' },
+        { t: 'そして、Checkout で、どこまで補えるかです。' },
       ],
-    },
+    }),
     {
       kind: 'numbers',
       heading: '1,000 円のうち、いくら残る？',

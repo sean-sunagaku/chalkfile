@@ -1,12 +1,8 @@
-import { docsFrom } from '../sources-util';
+import { Z, ZC, T, TEN } from '../_shared/comedy';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { GA4_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const ZC = 'zundamon-cry' as const; // ボケの涙声
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * GA4 のお笑い版 第 2 章。サイトが送るイベント パラメータの「項目名（email_entry）」と「値（signature）」。
@@ -20,7 +16,13 @@ export const G02: Lecture = {
   title: 'email_entry と signature',
   summary:
     'サイトは、出来事（イベント）に「項目名と値」を付けて GA4 に送る。email_entry は項目名、signature はその中に入る値。値の意味は作る側が決めること、個人情報を送らないこと、送っただけではレポートの表に出ないことを知る。',
-  docs: docsFrom(GA4_SOURCES, ['ga4-gtag-events', 'ga4-event-params', 'gtm-ga4-event', 'ga-terms', 'ga4-pii']),
+  docs: docsOf([
+    "ga4-gtag-events",
+    "ga4-event-params",
+    "gtm-ga4-event",
+    "ga-terms",
+    "ga4-pii"
+  ]),
   quiz: [
     {
       q: 'サイトが email_entry: signature を送るとき、項目名（パラメータの名前）はどれ？',

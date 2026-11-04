@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L06: Lecture = {
@@ -6,12 +8,15 @@ export const L06: Lecture = {
   section: { no: 3, title: 'サンプルで作る' },
   title: 'Checkout で申し込みを作る',
   summary: 'ホスト型の Checkout を選ぶ理由、Customer を先に作る理由、Checkout Session のサンプルコード、完了ページを信じてはいけない理由。',
-  docs: [
-    { title: 'Stripe: サブスクリプションの組み込み（Stripe がホストするページ）', url: 'https://docs.stripe.com/billing/subscriptions/build-subscriptions' },
-    { title: 'Stripe API: Create a Checkout Session', url: 'https://docs.stripe.com/api/checkout/sessions/create' },
-    { title: 'Stripe: 注文のフルフィルメント（Webhook と完了ページ）', url: 'https://docs.stripe.com/checkout/fulfillment' },
-    { title: 'Stripe: Checkout の無料トライアル', url: 'https://docs.stripe.com/payments/checkout/free-trials' },
-  ],
+  docs: docsOf([
+    {
+      "id": "l-doc-002",
+      "title": "Stripe: サブスクリプションの組み込み（Stripe がホストするページ）"
+    },
+    "l-doc-019",
+    "l-doc-020",
+    "l-doc-021"
+  ]),
   quiz: [
     {
       q: 'Checkout Session の expires_at に設定できる範囲は？',
@@ -51,21 +56,21 @@ export const L06: Lecture = {
         { t: 'ここからは、サンプルアプリを作る流れで見ていきます。まずは、Pro にするを押してから、支払いが終わって戻ってくるまでです。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: '3 つの作り方からホスト型を選ぶ理由', at: 1 },
-        { text: 'Checkout Session の主な引数の意味', at: 2 },
-        { text: '「完了ページ＝契約成立」ではない理由', at: 3 },
+        '3 つの作り方からホスト型を選ぶ理由',
+        'Checkout Session の主な引数の意味',
+        '「完了ページ＝契約成立」ではない理由',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: 'ホスト型の Checkout を選ぶ理由。', sfx: 'pop' },
-        { t: 'Checkout Session の引数の意味。', sfx: 'pop' },
-        { t: 'そして、完了ページに戻っても、それだけでは契約成立ではない理由です。', sfx: 'pop' },
+        { t: 'ホスト型の Checkout を選ぶ理由。' },
+        { t: 'Checkout Session の引数の意味。' },
+        { t: 'そして、完了ページに戻っても、それだけでは契約成立ではない理由です。' },
       ],
-    },
+    }),
     {
       kind: 'table',
       heading: '支払い画面の 3 つの作り方',

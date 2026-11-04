@@ -20,6 +20,7 @@
 
 | コマンド（`npm run chalk -- …`） | すること | 前の呼び方（そのまま使える） |
 |---|---|---|
+| `content migrate [--write]` | 教材を分け、出典と共通の書き方をまとめる（既定は差分の一覧だけ） | `npm run codemod:content` |
 | `doctor [--json]` | 道具の版・VOICEVOX・gh の認証の有無・空き容量・ポート・声のキャッシュを確かめる | （新しい） |
 | `validate [--warnings] [--json]` | 台本の検証と、台本・Git に入れるファイルの点検（訳し残しも）。--json は台本の検証だけを JSON で | `bun scripts/validate.ts`・`bun scripts/check_content.ts` |
 | `status [動画…] [--course <ID>] [--video <形>] [--lang <言語>] [--json]` | 段（voice・mix・render・docs・site）ごとに、記録（.work/state/）と今の入力の指紋を比べ、古くなった単位と次に流す段を出す（何も作らない）。公開した動画が今の台本と合うかも出す | （新しい） |

@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L03: Lecture = {
@@ -6,14 +8,14 @@ export const L03: Lecture = {
   section: { no: 2, title: 'Stripe の概念とデータ' },
   title: 'データの形を読む',
   summary: 'Price・Customer・Subscription・Event の JSON を開き、アプリが読む項目と、metadata・expand の使い方をつかむ。',
-  docs: [
-    { title: 'Stripe API: Price オブジェクト', url: 'https://docs.stripe.com/api/prices/object' },
-    { title: 'Stripe API: Customer オブジェクト', url: 'https://docs.stripe.com/api/customers/object' },
-    { title: 'Stripe API: Subscription オブジェクト', url: 'https://docs.stripe.com/api/subscriptions/object' },
-    { title: 'Stripe API: Event オブジェクト', url: 'https://docs.stripe.com/api/events/object' },
-    { title: 'Stripe: レスポンスの展開（expand）', url: 'https://docs.stripe.com/expand' },
-    { title: 'Stripe: メタデータ', url: 'https://docs.stripe.com/metadata' },
-  ],
+  docs: docsOf([
+    "l-doc-008",
+    "l-doc-009",
+    "l-doc-005",
+    "l-doc-010",
+    "l-doc-011",
+    "l-doc-012"
+  ]),
   quiz: [
     {
       q: 'Subscription の今の期間の終わり（current_period_end）は、新しい API ではどこにある？',
@@ -52,21 +54,21 @@ export const L03: Lecture = {
         { t: 'Stripe の API が返すのは、JSON という形のデータです。今回は、その中身を開いてみます。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'Price と Customer の中身が分かる', at: 1 },
-        { text: 'Subscription で読むべき項目が分かる', at: 2 },
-        { text: 'expand と Event の形が分かる', at: 3 },
+        'Price と Customer の中身が分かる',
+        'Subscription で読むべき項目が分かる',
+        'expand と Event の形が分かる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: '価格と顧客の中身。', sfx: 'pop' },
-        { t: '契約、Subscription で、アプリが読むべき項目。', sfx: 'pop' },
-        { t: 'そして、expand と、イベントの形です。', sfx: 'pop' },
+        { t: '価格と顧客の中身。' },
+        { t: '契約、Subscription で、アプリが読むべき項目。' },
+        { t: 'そして、expand と、イベントの形です。' },
       ],
-    },
+    }),
     {
       kind: 'code',
       heading: 'Price（価格）の中身',

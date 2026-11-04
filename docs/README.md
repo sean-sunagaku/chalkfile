@@ -18,6 +18,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 | 講座の型ごとの長さと本数 | [course-design.md](../.claude/skills/study-video-course/references/course-design.md) の「講座の型と大きさ」 | ほかの文書は、この表へリンクする |
 | サイト・保存・Worker を直すときの決まりと確かめ方 | スキル [chalkfile-engine](../.claude/skills/chalkfile-engine/SKILL.md) | コマンドの正本は [公開の順番](operations/publish.md) の「サイトと Worker を変えたとき」 |
 | 講座を足す（チェックリスト・頭文字の表・PR に書くこと） | [guide/new-course.md](guide/new-course.md) | 中身の作り方はスキル |
+| 台本の共通の書き方（goals・flow・掛け合い・講座リンク） | [guide/authoring.md](guide/authoring.md) | |
 | 画面と話し方 | [style.md](../.claude/skills/study-video-course/references/style.md) | |
 | テーマ（色・書体・背景） | 値は `content/themes.ts`、仕様は [theme.md](../.claude/skills/study-video-course/references/theme.md) | |
 | 効果音（名前・ミックスの音量） | 一覧は `engine/core/sfx.ts`（台本の型の `SfxId` もここから作る。Python の道具には `npm run gen` が `scripts/audio/sfx.json` にして渡す） | 使い方は [comedy.md](../.claude/skills/study-video-course/references/comedy.md) の「間・効果音・BGM」と [style.md](../.claude/skills/study-video-course/references/style.md) |

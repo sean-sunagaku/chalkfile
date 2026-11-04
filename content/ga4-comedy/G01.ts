@@ -1,11 +1,8 @@
-import { docsFrom } from '../sources-util';
+import { Z, T, TEN } from '../_shared/comedy';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { GA4_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * GA4 のお笑い版 第 1 章。GA4 の全体の形（イベント・パラメータ・ディメンション・指標・リアルタイム）だけを短く見せる。
@@ -18,7 +15,14 @@ export const G01: Lecture = {
   title: 'GA4 ってなに？',
   summary:
     'GA4 は、サイトで起きた出来事（イベント）を集めて、レポートで見る道具。イベントに付くパラメータ、レポートを作るディメンション（切り口）と指標（数）、直近 30 分のリアルタイムを、ずんだもんの掛け合いで知る。',
-  docs: docsFrom(GA4_SOURCES, ['ga4-events', 'ga4-auto-events', 'ga4-dimensions', 'ga4-metrics', 'ga4-dims-metrics-table', 'ga4-realtime']),
+  docs: docsOf([
+    "ga4-events",
+    "ga4-auto-events",
+    "ga4-dimensions",
+    "ga4-metrics",
+    "ga4-dims-metrics-table",
+    "ga4-realtime"
+  ]),
   quiz: [
     {
       q: 'GA4 が集める「イベント」とは？',

@@ -1,8 +1,9 @@
+import { comedyCast } from '../_shared/comedy';
+import { SOURCES } from './sources';
 import type { Course } from '../types';
 import { G01 } from './G01';
 import { G02 } from './G02';
 import { G03 } from './G03';
-import { GA4_SOURCES } from './sources';
 
 /**
  * GA4（Google アナリティクス 4）のお笑い版（全 3 章・短め）。ずんだもん（ボケ）・先生（ツッコミ）・天の声の掛け合いで、
@@ -23,14 +24,8 @@ export const GA4_COMEDY: Course = {
     { no: 2, title: '設定' },
   ],
   lectures: [G01, G02, G03],
-  cast: {
-    zundamon: { name: 'ずんだもん', tone: 'mint' },
-    'zundamon-cry': { name: 'ずんだもん', tone: 'mint' },
-    narrator: { name: '先生', tone: 'coral' },
-    tsukkomi: { name: '先生', tone: 'coral' },
-    tennokoe: { name: '天の声', tone: 'violet' },
-  },
-  sources: GA4_SOURCES,
+  cast: comedyCast(),
+  sources: SOURCES,
   ui: { takeaways: '要点メモ', docs: '出典・参考資料', searchHint: 'email_entry、signature、カスタム ディメンション' },
   docsNote:
     '動画の内容は、2026 年 11 月 2 日に読んだ Google アナリティクスのヘルプ（日本語版と英語版）・Google アナリティクス利用規約・タグ マネージャーのヘルプと、Google タグ（gtag.js）の開発者向けドキュメントがもとです。画面の名前・反映までの時間・上限の数は変わることがあるので、設定の前にヘルプで確かめてください。サンプルのサイト・イベント名・値の意味と、レポートの数字は説明用の架空の例です。ずんだもん（ボケ）の台詞は、わざと間違えています。',

@@ -1,3 +1,4 @@
+import { comedyCast } from '../_shared/comedy';
 import type { Course } from '../types';
 import { R01 } from './R01';
 
@@ -13,13 +14,7 @@ export const RIVE_COMEDY: Course = {
   headline: '**動きを作って、そのまま動かす**道具を、ざっくり',
   sections: [{ no: 1, title: 'ざっくり入門' }],
   lectures: [R01],
-  cast: {
-    zundamon: { name: 'ずんだもん', tone: 'mint' },
-    'zundamon-cry': { name: 'ずんだもん', tone: 'mint' },
-    narrator: { name: '先生', tone: 'coral' },
-    tsukkomi: { name: '先生', tone: 'coral' },
-    tennokoe: { name: '天の声', tone: 'violet' },
-  },
+  cast: comedyCast(),
   ui: { takeaways: '要点メモ', docs: '公式ドキュメント', searchHint: 'ステートマシン、ランタイム' },
   docsNote:
     '動画の内容は、2026 年 11 月 1 日に読んだ Rive の公式ドキュメント（ランタイムとステートマシンのページ）がもとです。機能・対応する環境・料金は変わるので、使う前に公式で確かめてください。ずんだもん（ボケ）の台詞は、わざと間違えています。',

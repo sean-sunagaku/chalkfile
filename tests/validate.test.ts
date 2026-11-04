@@ -3,7 +3,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, coursesIn } from '../content';
 import type { Lang } from '../content/i18n';
-import { NUDGE_PRODUCT } from '../content/nudge-product/course';
 import { CHALKFILE, THEMES } from '../content/themes';
 import type { Course, Lecture } from '../content/types';
 import { VOICES } from '../content/voices';
@@ -153,6 +152,8 @@ describe('見込みと表示', () => {
     expect(formatIssue({ level: 'error', rule: 'ref', where: 'a/X01 場面 1 flow.edges[0].to', message: '行き先が無い' })).toBe('止める  a/X01 場面 1 flow.edges[0].to  行き先が無い');
   });
 });
+
+const NUDGE_PRODUCT = COURSES.find((course) => course.id === 'nudge-product')!;
 
 describe('公開で止まること（PR の CI で、公開の CI より先に見つける）', () => {
   const config = readSiteConfig();

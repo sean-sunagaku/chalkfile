@@ -20,6 +20,7 @@ import type { Course } from '../content/types';
 import { freePrefixes } from '../engine/core/validate';
 import { commandTable } from './cli';
 import { CORE_SETTINGS, WORKER_SETTINGS, LANGUAGE_SETTINGS, MEDIA_SETTINGS, mediaSettings, coreSettings, workerSettings, languageSettings, workflowSettings, wranglerSettings } from './gen_project_config';
+import { MATERIALS_REGISTRY, materialsRegistry } from './gen_materials_registry';
 import { VIDEO_CONFIG_JSON, videoConfigJson } from './gen_video_config';
 import { readArgs, runMain, showHelp } from './lib/args';
 import { readSiteConfig } from './lib/config';
@@ -149,6 +150,7 @@ export const generated = (only?: 'media'): Map<string, string> => {
     out.set(file, text);
   }
   if (only === 'media') return out;
+  out.set(MATERIALS_REGISTRY, materialsRegistry());
   for (const [file, text] of docOutputs()) out.set(file, text);
   // Python の道具が読む JSON（Python は TS を読めないので、値を JSON に書き出して渡す）
   out.set(SFX_JSON, sfxJson());

@@ -38,6 +38,7 @@ export const RENDER_CODE = [
   'src',
   'engine',
   'content/i18n.ts',
+  'content/videos.ts',
   'content/themes.ts',
   'remotion.config.ts',
   'scripts/stages/video/render.ts',

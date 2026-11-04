@@ -1,3 +1,5 @@
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
 
 export const L04: Lecture = {
@@ -6,12 +8,15 @@ export const L04: Lecture = {
   section: { no: 2, title: 'Stripe の概念とデータ' },
   title: 'サブスクの一生　ステータスを読む',
   summary: 'Subscription の 8 つの status、解約と支払い失敗の動き、アプリで「使える」とする status の決め方。',
-  docs: [
-    { title: 'Stripe: サブスクリプションの仕組み（ステータス一覧）', url: 'https://docs.stripe.com/billing/subscriptions/overview' },
-    { title: 'Stripe: 支払いの再試行（Smart Retries）', url: 'https://docs.stripe.com/billing/revenue-recovery/smart-retries' },
-    { title: 'Stripe: サブスクリプションのキャンセル', url: 'https://docs.stripe.com/billing/subscriptions/cancel' },
-    { title: 'Stripe changelog: current_period の移動（2025-03-31.basil）', url: 'https://docs.stripe.com/changelog/basil/2025-03-31/deprecate-subscription-current-period-start-and-end' },
-  ],
+  docs: docsOf([
+    {
+      "id": "l-doc-001",
+      "title": "Stripe: サブスクリプションの仕組み（ステータス一覧）"
+    },
+    "l-doc-013",
+    "l-doc-014",
+    "l-doc-015"
+  ]),
   quiz: [
     {
       q: 'Customer Portal で「期間の終わりに解約」した直後の status は？',
@@ -50,21 +55,21 @@ export const L04: Lecture = {
         { t: 'Subscription には status という状態があって、アプリは、これを見て使えるかどうかを決めます。' },
       ],
     },
-    {
+    goals({
       kind: 'goals',
       heading: 'このレクチャーのゴール',
       items: [
-        { text: 'status の意味と移り変わりが分かる', at: 1 },
-        { text: '解約と支払い失敗のときの動きが分かる', at: 2 },
-        { text: 'アプリで「使える」とする条件を決められる', at: 3 },
+        'status の意味と移り変わりが分かる',
+        '解約と支払い失敗のときの動きが分かる',
+        'アプリで「使える」とする条件を決められる',
       ],
       lines: [
         { t: 'ゴールは三つです。' },
-        { t: 'status の意味と、どう移り変わるのか。', sfx: 'pop' },
-        { t: '解約や、支払いに失敗したときの動き。', sfx: 'pop' },
-        { t: 'そして、アプリで使える、とする条件の決め方です。', sfx: 'pop' },
+        { t: 'status の意味と、どう移り変わるのか。' },
+        { t: '解約や、支払いに失敗したときの動き。' },
+        { t: 'そして、アプリで使える、とする条件の決め方です。' },
       ],
-    },
+    }),
     {
       kind: 'states',
       heading: 'サブスクの一生（status の移り変わり）',

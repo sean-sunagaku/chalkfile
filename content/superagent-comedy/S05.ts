@@ -1,11 +1,9 @@
-import { docsFrom } from '../sources-util';
+import { Z, T, TEN } from '../_shared/comedy';
+import { goals } from '../_shared/scenes';
+import { docsOf } from './sources';
 import type { Lecture } from '../types';
-import { SUPERAGENT_SOURCES } from './sources';
 
 // 配役（声は content/voices.ts、名前と色は course.ts の cast）。v を省いた台詞は先生
-const Z = 'zundamon' as const; // ボケ: ずんだもん
-const T = 'tsukkomi' as const; // ツッコミ: 先生が短く刺すとき
-const TEN = 'tennokoe' as const; // 天の声
 
 /**
  * Super-agent のお笑い版 第 5 章「待たせない・場所で話し方を変える」。事実は DeepSeek Harness チームの記事（英語版、2026-11-02 確認）の
@@ -19,7 +17,10 @@ export const S05: Lecture = {
   title: '待たせない・場所で話し方を変える',
   summary:
     '道具を待つあいだ止まるふつうの ReAct ループ（半二重）と、start() ですぐ返り、結果を新しい出来事として受け取る非同期の ReAct ループ（全二重）。グループのチャットでは短く、GitHub やメールでは詰めて整える、チャンネルごとの話し方。',
-  docs: docsFrom(SUPERAGENT_SOURCES, ['dsh-superagent-article', 'deepseek-harness-readme']),
+  docs: docsOf([
+    "dsh-superagent-article",
+    "deepseek-harness-readme"
+  ]),
   quiz: [
     {
       q: 'ふつうの ReAct ループで、時間のかかる道具を run() で呼ぶと、どうなる？',
@@ -64,7 +65,8 @@ export const S05: Lecture = {
         { t: 'この章では、時間のかかる仕事をしながらでも、人に応える仕組みと、場所ごとの話し方を見ます。', s: 'このしょうでは、時間のかかる仕事をしながらでも、ひとに応える仕組みと、場所ごとの話し方を見ます。' },
       ],
     },
-    {
+    goals({
+      pop: false,
       kind: 'goals',
       heading: 'この章のゴール',
       items: [
@@ -80,7 +82,7 @@ export const S05: Lecture = {
         { t: '二つ目。start と stop で動く、非同期のループを説明できること。', s: '二つ目。スタートとストップで動く、非同期のループを説明できること。', sfx: 'pop' },
         { t: '三つ目。チャンネルごとに、返事の長さと形を変えられることです。', sfx: 'pop' },
       ],
-    },
+    }),
     {
       kind: 'sequence',
       heading: 'ふつうの ReAct ループ: 半二重',
