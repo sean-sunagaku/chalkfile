@@ -1,0 +1,33 @@
+{
+  "schema": 2,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "deepseek-creator",
+      "lecture": "H01",
+      "kind": "standard",
+      "bytes": 13417766,
+      "sha256": "04327c674b1afd5c314c3785b13e985594158142eb7eaa89484fce3abb24f63e",
+      "filename": "H01.04327c674b1afd5c314c3785b13e985594158142eb7eaa89484fce3abb24f63e.mp4",
+      "tag": "media-ja-deepseek-creator",
+      "inputs": {
+        "script": "9f242e8cf3bfb434",
+        "src": "d252adbba26b2dc9"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "deepseek-creator",
+      "lecture": "H01",
+      "kind": "captioned",
+      "bytes": 14262855,
+      "sha256": "ff9f90a178d9ba2804762014a7a72c694944522bd53037bcb3034244f1e15869",
+      "filename": "H01.cc.ff9f90a178d9ba2804762014a7a72c694944522bd53037bcb3034244f1e15869.mp4",
+      "tag": "media-ja-deepseek-creator",
+      "inputs": {
+        "script": "9f242e8cf3bfb434",
+        "src": "d252adbba26b2dc9"
+      }
+    }
+  ]
+}

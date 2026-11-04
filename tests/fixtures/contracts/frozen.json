@@ -1,5 +1,6 @@
 {
   "courses": [
+    "deepseek-creator",
     "ga4-comedy",
     "indie-marketing",
     "nudge-comedy",
@@ -1010,6 +1011,7 @@
     "G01": "G01",
     "G02": "G02",
     "G03": "G03",
+    "H01": "H01",
     "L01": "L01",
     "L02": "L02",
     "L03": "L03",
