@@ -25,13 +25,15 @@ import { mediaInputProblems } from '../scripts/validate';
 import type { MediaEntry } from '../site/media-shared';
 
 const ROOT = path.resolve(import.meta.dir, '..');
+// 版 1 の互換性は、公開中の一覧が版 2 に進んでも同じ見本で確かめる。
+const LEGACY_RIVE = readFileSync(path.join(ROOT, 'tests/fixtures/media/rive-v1.json'), 'utf8');
 const sandbox = mkdtempSync(path.join(os.tmpdir(), 'chalkfile-media-inputs-'));
 afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
 let n = 0;
 const sha = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
 const A: MediaInputs = { script: '0123456789abcdef', src: 'fedcba9876543210' };
 
-/** 本物の一覧を写した一時のフォルダ（rive-comedy の timeline も写す） */
+/** Rive は版 1 の固定見本、ほかは本物の一覧を写す（Rive の timeline も写す） */
 const box = () => {
   const root = mkdtempSync(path.join(sandbox, `b${++n}-`));
   for (const f of mediaListFiles()) {
@@ -42,17 +44,15 @@ const box = () => {
     mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     writeFileSync(path.join(root, file), body);
   };
+  put(mediaListFile('rive-comedy', 'ja'), LEGACY_RIVE);
   put(timelineFile('rive-comedy', 'R01'), readFileSync(path.join(ROOT, timelineFile('rive-comedy', 'R01')), 'utf8'));
   return { root, put, read: (file: string) => readFileSync(path.join(root, file), 'utf8') };
 };
 
 describe('動画の一覧の版 1 と 2', () => {
-  const list = readCourseMedia('rive-comedy', 'ja', ROOT);
-  if (!list) throw new Error('rive-comedy の動画の一覧が無い');
-  test('inputs が 1 つも無ければ、版 1 のまま、今と同じバイト列で書く', () => {
-    expect(courseMediaJson(list, new Map())).toBe(
-      readFileSync(path.join(ROOT, mediaListFile('rive-comedy', 'ja')), 'utf8'),
-    );
+  const list = parseCourseMedia(JSON.parse(LEGACY_RIVE)).manifest;
+  test('inputs が 1 つも無ければ、版 1 の見本と同じバイト列で書く', () => {
+    expect(courseMediaJson(list, new Map())).toBe(LEGACY_RIVE);
   });
   test('inputs のある一覧は版 2 で書き、読むと inputs を外した版 1 の形と、ファイル名 → inputs が返る', () => {
     const inputs = new Map([[list.entries[0].filename, A]]);
@@ -245,6 +245,9 @@ describe('media push --course が書く inputs（gh は偽物）', () => {
       expect(v.schema).toBe(2);
       expect(v.entries.every((e: { inputs?: unknown }) => e.inputs === undefined)).toBe(true);
       expect(v.retained.filter((e: { inputs?: unknown }) => e.inputs).length).toBe(2);
+      // 版 2 に進んだあと、さらに更新しても最初の版の動画を残す。
+      for (const e of old)
+        expect(v.retained.some((r: MediaEntry) => r.sha256 === e.sha256)).toBe(true);
     } finally {
       warn.mockRestore();
       rmSync(b.root, { recursive: true, force: true });

@@ -189,6 +189,8 @@ describe('media push --course（その講座だけを手元から作り、ほか
       mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
       writeFileSync(path.join(root, file), body);
     };
+    // 公開中の一覧に保持動画や inputs が増えても、最初の更新の条件は固定する。
+    put(mediaListFile('rive-comedy', 'ja'), readFileSync(path.join(import.meta.dir, 'fixtures/media/rive-v1.json'), 'utf8'));
     return { root, put, read: (file: string) => readFileSync(path.join(root, file), 'utf8') };
   };
   const today = new Date('2026-11-03T12:00:00Z');
