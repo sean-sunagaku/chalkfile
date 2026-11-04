@@ -1,7 +1,7 @@
 {
   // Worker（Cloudflare Workers で動く）の型。Workers の型は、wrangler types が wrangler.jsonc から作る worker-configuration.d.ts だけを使い、
   // DOM・WebWorker の型は混ぜない（生成物。npm run gen:worker-types で作り直し、npm run typecheck が作り直して同じかを確かめる）。
-  // Worker の単体テスト（tests/worker.test.ts）もここで見る。足すのは bun:test の型（@types/bun が入れる bun-types の test.d.ts）だけ。
+  // Worker の単体テスト（tests/unit/worker.test.ts）もここで見る。足すのは bun:test の型（@types/bun が入れる bun-types の test.d.ts）だけ。
   // Bun と DOM の全部の型は Workers の型とぶつかる（Response.json() の戻り値などが変わる）ので入れない
   "extends": "../tsconfig.json",
   "compilerOptions": {
@@ -10,5 +10,5 @@
     "allowArbitraryExtensions": true
   },
   "files": ["../node_modules/bun-types/test.d.ts"],
-  "include": ["worker-configuration.d.ts", "src/**/*.ts", "../tests/worker.test.ts"]
+  "include": ["worker-configuration.d.ts", "src/**/*.ts", "../tests/unit/worker.test.ts"]
 }

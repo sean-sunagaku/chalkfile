@@ -1,5 +1,5 @@
 // SHA-256（FIPS 180-4）を、同期で求める。engine/core は Node の crypto も、ブラウザの非同期の crypto.subtle も使わないので、
-// Remotion（ブラウザ）と bun（scripts・tests）で同じ値になるように、ここで計算する。tests/timeline.test.ts が node:crypto と照らし合わせる
+// Remotion（ブラウザ）と bun（scripts・tests）で同じ値になるように、ここで計算する。tests/unit/timeline.test.ts が node:crypto と照らし合わせる
 
 /** 64 個の素数の立方根の小数部の、頭の 32 ビット */
 const K = new Uint32Array([

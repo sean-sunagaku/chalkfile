@@ -11,7 +11,7 @@
 //      2 つ当たって値がつながっていない（Workers の静的 assets は、当たる規則のヘッダーをカンマでつなぐ）
 //   7. 長くキャッシュさせるパス（immutable。?v= の付いた資源）を、ページ（属性と JSON のデータ）・保存の manifest・起動用ファイルが
 //      ?v= 無しで指していない（規則はパスでしか当たらないので、?v= 無しで読むと、描き直したあとも古いまま 1 年残る）
-// 使い方: import { assertSiteInvariants } from './site-invariants' で呼ぶ（手で流す入口は無い。テストは tests/site-invariants.test.ts）
+// 使い方: import { assertSiteInvariants } from './site-invariants' で呼ぶ（手で流す入口は無い。テストは tests/unit/site-invariants.test.ts）
 import { createHash } from 'node:crypto';
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';

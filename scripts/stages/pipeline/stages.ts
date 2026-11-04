@@ -20,7 +20,7 @@
 //     content 全部の言語の講座の台本と一覧のページの抜き出し、data サイトの台本（site/data）、posters ポスター、
 //     media 動画の一覧（Worker の許可リストと同じもの）、config chalkfile.config.ts と SITE_LANGS、
 //     tool build_site.ts からたどったコード・site/ のひな形と画像・package-lock.json・bun の版
-// 前の段の出力は、出力の中身（sha256）で入る。指紋に入れる値を変えたら、tests/pipeline-inputs.test.ts の決まりも直す
+// 前の段の出力は、出力の中身（sha256）で入る。指紋に入れる値を変えたら、tests/unit/pipeline-inputs.test.ts の決まりも直す
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { COURSES, coursesIn, VIDEOS, type Video } from '../../../content';
@@ -91,7 +91,7 @@ const filesUnder = (root: string, rel: string): string[] => {
     .sort();
 };
 
-/** 教材のファイル（build_materials.ts の materialOutputs と同じ名前。tests/pipeline-inputs.test.ts が照らす） */
+/** 教材のファイル（build_materials.ts の materialOutputs と同じ名前。tests/unit/pipeline-inputs.test.ts が照らす） */
 export const docsFiles = (): string[] => {
   const courses = COURSES.filter((c) => c.syllabus);
   if (!courses.length) return [];

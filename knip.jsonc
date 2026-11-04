@@ -14,7 +14,8 @@
     "site/sw.ts",
     "site/legacy-sw.ts",
     // テストと、本番の確認などの手で流す道具
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "tools/verify/*.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
@@ -27,6 +28,7 @@
     "site/i18n/*.ts",
     "worker/src/**/*.ts",
     "tests/**/*.ts",
+    "tools/verify/*.ts",
     "*.ts"
   ],
   // 道具は CLI と部品を兼ねるので、入口のファイルの export も見る。同じファイルの中で使っている export は「使っている」とする

@@ -1,7 +1,7 @@
 // 公開の前に、台本と Git に入れるファイルを確かめる。問題があれば止まる（scripts/legacy/deploy_pages.sh と CI が使う）。
 //   bun scripts/check_content.ts                     # 確かめる
 //   bun scripts/check_content.ts --require-denylist  # ローカルの禁止語の一覧が無ければ止める（手元から公開物を出す前に使う）
-//   bun scripts/check_content.ts --self-test         # 点検そのものの点検（tests/check-content.test.ts を bun test で流す）
+//   bun scripts/check_content.ts --self-test         # 点検そのものの点検（tests/unit/check-content.test.ts を bun test で流す）
 //
 // 見るもの（出力の［］の中は規則の名前）
 //   1. 台本（content/ の講座。訳の講座も）の全部の文字。訳の講座に残った日本語（訳し残し［untranslated］）も止める
@@ -522,8 +522,8 @@ export const checkFiles = (out: Finding[], { root = ROOT, deny }: { root?: strin
 
 /* ───────────── この点検の点検 ───────────── */
 
-/** 見つけるべき例を見つけ、見逃すべき例を見逃すか。例と確かめ方は tests/check-content.test.ts にあり、bun test で流す（CI はこの入口から呼ぶ） */
-const SELF_TEST = 'tests/check-content.test.ts';
+/** 見つけるべき例を見つけ、見逃すべき例を見逃すか。例と確かめ方は tests/unit/check-content.test.ts にあり、bun test で流す（CI はこの入口から呼ぶ） */
+const SELF_TEST = 'tests/unit/check-content.test.ts';
 const selfTest = (): number => {
   const r = Bun.spawnSync([process.execPath, 'test', path.join(ROOT, SELF_TEST)], { cwd: ROOT, stdin: 'ignore', stdout: 'inherit', stderr: 'inherit' });
   console.log(r.exitCode === 0 ? `点検の点検: ${SELF_TEST} の例が全部合った` : `点検の点検: 合わない例がある（${SELF_TEST}。上の bun test の出力を見る）`);

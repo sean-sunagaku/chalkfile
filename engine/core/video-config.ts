@@ -2,7 +2,7 @@
 // 部品（src/。src/video.config.ts から読む）・台本の検証（engine/core/validate.ts）・timeline の時刻（engine/core/timeline.ts・scripts/synth.ts）がここを読む。
 // React・Remotion・Node に依存しない純粋なデータ。
 // Python（scripts/mix.py・scripts/build_music.py）が読む値は、npm run gen:video-config で scripts/audio/video_config.json に書き出す
-// （JSON もコミットする。ここを変えたら書き出し直す。ずれていると tests/video-config.test.ts が止める）
+// （JSON もコミットする。ここを変えたら書き出し直す。ずれていると tests/unit/video-config.test.ts が止める）
 // 値を変えると、動画の見た目か音が変わる（全部の書き出し直しと再ダウンロードになるので、見た目を変える直しと 1 回にまとめて出す）
 
 /** 画面の大きさ（px）と、1 秒のフレーム数 */
@@ -33,7 +33,7 @@ export const LEAD = {
 } as const;
 
 /* ───────────── 文字の大きさ ─────────────
- * 文字の大きさは役割で決める。部品は数を直接書かずに TYPE から選び（tests/type.test.ts が、部品に数を直接書いていないことを見る）、
+ * 文字の大きさは役割で決める。部品は数を直接書かずに TYPE から選び（tests/unit/type.test.ts が、部品に数を直接書いていないことを見る）、
  * 幅に合わせて縮める文字も、役割の下限（TYPE_MIN）より小さくしない（src/components/fit.ts の fitSize）。大きさは 1920×1080 の画面の上の px
  * （焼き込み字幕の版は、場面ごと CAPTION.scale に縮める）。下限を変えるときは、全部の動画の静止画を見る
  */

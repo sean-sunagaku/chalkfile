@@ -217,7 +217,7 @@ jobs:
           # 同じ実行の中でジョブを流し直したときは、前の artifact を置き換える
           overwrite: true
 
-  # build の artifact を、手元の Worker（wrangler dev。Cloudflare の認証を使わない）で配り、配信の約束を確かめる（scripts/smoke_worker.ts）。
+  # build の artifact を、手元の Worker（wrangler dev。Cloudflare の認証を使わない）で配り、配信の約束を確かめる（tools/verify/smoke_worker.ts）。
   # 結果は、ジョブの要約と artifact（smoke-result）で見られる
   smoke:
     needs: build
@@ -256,10 +256,10 @@ jobs:
           echo '手元の Worker が 90 秒で立ち上がらない（.work/smoke/wrangler.log）' >&2
           tail -n 50 .work/smoke/wrangler.log >&2
           exit 1
-      - name: 配信の約束（scripts/smoke_worker.ts）
+      - name: 配信の約束（tools/verify/smoke_worker.ts）
         env:
           PW_CHANNEL: chromium
-        run: bun scripts/smoke_worker.ts http://127.0.0.1:8787/ | tee .work/smoke/smoke.log
+        run: bun tools/verify/smoke_worker.ts http://127.0.0.1:8787/ | tee .work/smoke/smoke.log
       - name: 要約
         if: ${{ !cancelled() }}
         run: |
@@ -275,7 +275,10 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: smoke-result
-          path: .work/smoke
+          path: |
+            .work/smoke
+            .work/evidence/site-smoke.json
+            .work/evidence/site-smoke-results
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14

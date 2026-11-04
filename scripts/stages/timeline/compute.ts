@@ -1,6 +1,6 @@
 // 1 本の動画の時刻（場面と台詞の始まり）を、台詞の音声の長さから決める。純粋な関数だけを置く（ファイルを読まない・書かない）。
 // scripts/synth.ts が声（scripts/stages/voice/）の長さと読みを渡して呼び、ここで作った形を scripts/stages/timeline/emit.ts が書く。
-// 正解の値は tests/synth-compute.test.ts が照らす（間の取り方を変えたら、そのテストの値も直す）
+// 正解の値は tests/unit/synth-compute.test.ts が照らす（間の取り方を変えたら、そのテストの値も直す）
 import type { Lang } from '../../../content/i18n';
 import type { Course, Lecture, Line, Scene, VoiceId } from '../../../content/types';
 import { speechIn } from '../../../content/voices';

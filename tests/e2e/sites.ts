@@ -1,4 +1,4 @@
-// ブラウザのテストで配る講座サイトを用意する（テストのサーバー tests/browser-server.ts が、初めて頼まれたときに 1 回だけ作る）。
+// ブラウザのテストで配る講座サイトを用意する（テストのサーバー tests/e2e/browser-server.ts が、初めて頼まれたときに 1 回だけ作る）。
 //   ci: 合成の講座（tests/fixtures/content/site-sample）を、buildSite で一時のフォルダに組む。動画は ffmpeg の testsrc で作る（4 秒・小さい）。
 //       旧 Pages の P01 の動画も合成の動画にし、旧 Pages の保存の manifest の大きさと sha256 を、その動画に合わせて配る
 //   real: 本物の講座（npm run build:site で作った site/dist と、手元の site/media の動画）
@@ -89,7 +89,7 @@ const VIDEO_SECONDS = 4;
 
 /**
  * 合成の講座の一覧のページの画像に足す PNG（1×1）。起動用ファイルに JPEG 以外があっても、SW の install が通ること（型を拡張子の
- * 対応表から付けること）を、全部のテストで確かめる（どのテストも SW が動いてから始まる。中身は tests/browser/offline.spec.ts が見る）
+ * 対応表から付けること）を、全部のテストで確かめる（どのテストも SW が動いてから始まる。中身は tests/e2e/offline.spec.ts が見る）
  */
 const EXTRA_PNG = 'e2e/mark.png';
 const PNG_1X1 = Buffer.from(

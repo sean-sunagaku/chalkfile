@@ -75,11 +75,12 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `npm run lint:py` | ruff の lint（`scripts/*.py`。uv が要る） |
 | `npm run lint:sh` | shellcheck（`*.sh`。shellcheck が要る） |
 | `npm run knip` | 使っていないファイル・export・依存の一覧 |
-| `npm run typecheck` | tsc（動画と台本・サイト・Worker・scripts・tests） |
-| `npm test` | 単体テスト（`tests/*.test.ts`）。音声の鍵と読みのスナップショットも照らし合わせる |
+| `npm run typecheck` | tsc（動画と台本・サイト・Worker・scripts・tests・tools/verify） |
+| `npm test` | 単体テスト（`tests/unit/*.test.ts`）。音声の鍵と読みのスナップショットも照らし合わせる |
 | `npm run test:e2e:ci` | ブラウザのテストを、合成の講座（`tests/fixtures/content/site-sample`）で流す。本物の講座も動画も要らない（ffmpeg が要る）。CI の e2e と同じ |
 | `npm run test:e2e:real` | ブラウザのテストを、本物の講座（`site/dist` と手元の動画）と入れてある Chrome で流す |
-| `npm run test:e2e`（`test:browser` も同じ） | 上の 2 つを両方（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
+| `npm run verify:site -- [BASE_URL]` | CI と canary 共通の Playwright project（`smoke`）。起動済みのサイトの全ページ・CSP・SW scope を確かめる。BASE_URL は環境変数でも渡せる。証跡は `.work/evidence/site-smoke.json` と `site-smoke-results/` |
+| `npm run test:e2e`（`test:browser` も同じ） | ci と real の両方（[公開の順番](../operations/publish.md) の「サイトと Worker を変えたとき」） |
 | `npm run validate` | 台本の検証（矢印の行き先・`at` の範囲・表の幅・注の位置・テーマ・効果音・声・訳の重ね方など）。注意も見るなら `-- --warnings` |
 | `npm run reading:diff` | 全部の台詞の読みを main と比べ、変わった台詞と動画を出す（`-- --base <ref>`。PR の CI で流すときは、マージの commit の 1 つ目の親 `HEAD^1`）。公開する言語の公開中の動画で読みが変わったのに、動画を作り直していなければ止める |
 | `npm run i18n -- status`・`try`・`stamp`・`restamp`・`scaffold` | 訳の状態・講座に並べる前の訳の確かめ・訳したときの台本の指紋・訳のひな形（下の「多言語の動画を作る」） |
@@ -146,7 +147,7 @@ npm で入れて bun で動かす理由は [ADR](../adr/2026-11-02-npm-install-b
 | `bun scripts/snapshots.ts`（`--update`） | 音声の鍵と読みのスナップショットと比べる（作り直す） |
 | `bun scripts/export_deliverables.ts <ID…>` | 章ごとの完成動画・字幕・音・教材と、その動画で使った全部の声のクレジット（README）を `out/deliverables/` にまとめる。要るファイルが欠けていたら、何も書かずに、欠けたものと作り方を出して止める（終了コード 3） |
 | `bun scripts/check_delivery.ts site/dist` | 公開物の点検（秘密情報・MP4・大きさ） |
-| `bun scripts/smoke_worker.ts [URL]` | 手元の Worker の smoke（[公開の順番](../operations/publish.md) の「手元の Worker で確かめる」） |
+| `npm run verify:worker -- [URL]` | 手元の Worker の smoke（[公開の順番](../operations/publish.md) の「手元の Worker で確かめる」） |
 | `bun scripts/verify_public.ts` | 公開したサイトのトップと、全部の動画の Range |
 | `bun scripts/setup_cloudflare_ci.ts plan`・`apply` | 初回の設定。持ち主だけ（[初回の設定](../operations/setup.md)） |
 | `bash scripts/legacy/deploy_pages.sh` | 旧 Pages を移行の案内に置き換える。持ち主だけ。ふだんの公開には使わない |

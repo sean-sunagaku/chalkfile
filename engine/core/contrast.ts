@@ -1,5 +1,5 @@
 // 文字と地の色のコントラスト比（WCAG 2.x の相対輝度の式）。テーマの、文字と地の組と下限を、役割ごとに決める。
-// 下限は engine/core/theme.ts の CONTRAST_MIN（本文 4.5・大きい文字 3.0）。全部のテーマで下限に届くことを、テスト（tests/engine.test.ts）と
+// 下限は engine/core/theme.ts の CONTRAST_MIN（本文 4.5・大きい文字 3.0）。全部のテーマで下限に届くことを、テスト（tests/unit/engine.test.ts）と
 // 台本の検証（engine/core/validate.ts の validateTheme）が確かめる。組の色は、描くときと同じパレット（derivePalette）から取る。
 // React・Remotion・Node に依存しない
 import { contrastRatio, mix, WHITE } from './color';

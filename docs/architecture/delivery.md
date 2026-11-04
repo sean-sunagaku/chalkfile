@@ -31,7 +31,7 @@
 - ふつうの再生は `video/mp4`。単体で保存する `?download=1` にだけ attachment を付ける
 - 配信元の 404 は 404、通信の失敗や 5xx は 502。失敗を長くキャッシュしない
 - 応答（200・206・416・HEAD・エラー）には `Cross-Origin-Resource-Policy: same-origin` を付ける。ほかのサイトに動画を埋め込ませない（その再生で、Worker の無料の枠を使わせない）
-- 講座のページの動画は `preload="none"`。講座を開いただけでは `/media/` を呼ばず、再生を押すか時刻を選んだときに、開いたレクチャーの動画だけを読む（Worker の回数の枠を使わない。カリキュラムの長さは台本のデータから出す）。画面（`site/page/player.ts`）は動画を `src` で渡し、`load()` を呼ばない（Chrome は `load()` を呼ぶと、`preload="none"` でも読み始める）。確かめるのは `tests/browser/offline.spec.ts` の「講座を開いただけでは」
+- 講座のページの動画は `preload="none"`。講座を開いただけでは `/media/` を呼ばず、再生を押すか時刻を選んだときに、開いたレクチャーの動画だけを読む（Worker の回数の枠を使わない。カリキュラムの長さは台本のデータから出す）。画面（`site/page/player.ts`）は動画を `src` で渡し、`load()` を呼ばない（Chrome は `load()` を呼ぶと、`preload="none"` でも読み始める）。確かめるのは `tests/e2e/offline.spec.ts` の「講座を開いただけでは」
 
 ## 静的な応答と CSP
 
@@ -39,7 +39,7 @@
 - 静的な応答には `Cache-Control: public, max-age=0, must-revalidate, no-transform` を付ける。Cloudflare が HTML や画像を書き換えたり、Web Analytics の beacon を自動で差し込んだりするのを防ぎ、CSP と保存用の SHA-256 を保つ。Service Worker（`/sw.js`）は `no-cache, no-transform`
 - 2026-11-02 に、自動の beacon による CSP の違反を実際に見つけた。`no-transform` を付けたあと、全部の 9 ページで違反が無いことを確かめた（[Cloudflare の仕様](https://developers.cloudflare.com/web-analytics/get-started/)）
 - 全部の静的な応答に、セキュリティのヘッダーを付ける。`Content-Security-Policy: frame-ancestors 'none'`（meta の CSP では効かないので、ヘッダーで送る）・`X-Frame-Options: DENY`・`Permissions-Policy`（使わないカメラ・マイク・位置・支払い・USB を止める。全画面とクリップボードは止めない）・`Cross-Origin-Opener-Policy: same-origin`。保存版を SW が返すときは、SW が応答を作るので、ページの meta の CSP が効く
-- Workers の静的 assets は、パスに当たる規則を上から順に重ね、同じヘッダーを 2 つの規則が付けると値をカンマでつなぐ（[_headers の仕様](https://developers.cloudflare.com/workers/static-assets/headers/)。2026-11-03 に確かめた）。上書きする規則は、先に `! 名前` で外す。組み立ての最後（`scripts/site-invariants.ts`）が、どの静的な応答にも `no-transform` が付き、値がつながっていないことを確かめ、smoke（`scripts/smoke_worker.ts`）が `/`・`/sw.js`・`robots.txt`・`sitemap.xml`・講座のポスターの実際のヘッダーを規則と照らす
+- Workers の静的 assets は、パスに当たる規則を上から順に重ね、同じヘッダーを 2 つの規則が付けると値をカンマでつなぐ（[_headers の仕様](https://developers.cloudflare.com/workers/static-assets/headers/)。2026-11-03 に確かめた）。上書きする規則は、先に `! 名前` で外す。組み立ての最後（`scripts/site-invariants.ts`）が、どの静的な応答にも `no-transform` が付き、値がつながっていないことを確かめ、smoke（`tools/verify/smoke_worker.ts`）が `/`・`/sw.js`・`robots.txt`・`sitemap.xml`・講座のポスターの実際のヘッダーを規則と照らす
 - 規則はパスでしか当たらない（query を見ない）。`?v=` の付いた資源（講座のポスター `<講座>/media/*`・`<言語>/<講座>/media/*`）は `Cache-Control: public, max-age=31536000, immutable, no-transform` にする。講座のページ・一覧のページの縮小画像・og:image・保存の manifest・SW の起動用ファイルは、どれもポスターを `?v=`（その講座のページの版）付きで読み、ポスターが変われば `?v=` も変わる。`?v=` 無しで読む所を作ると、描き直したあとも古いまま残るので、組み立ての最後（`scripts/site-invariants.ts`）が止める。中身のハッシュが名前に入る動画（`/media/`）は、Worker が `immutable` を付ける
 - HSTS（`Strict-Transport-Security`）は、ゾーンの設定（Cloudflare の HSTS の設定と、ほかのサブドメイン）を持ち主が確かめてから決める
 - 検索のための `sitemap.xml`（出す言語の一覧のページと講座のページ。同じページのほかの言語も書く）と `robots.txt` は、組み立てが最上位に置く（`scripts/site/seo.ts`）。robots は、動画（`/media/`。Worker の枠を使う）と、通信できないときに SW が出すページ（`offline/`）を取りに来させない
@@ -78,7 +78,7 @@
 - 前の公開先（`gh-pages` ブランチ）には、新しいサイトへの案内だけを置く。置き換えるのは `scripts/legacy/deploy_pages.sh` だけ。最新の main・変更の無い作業フォルダ・公開先の全部の動画の Range・ブラウザでの CSP と Service Worker の確かめに通らないと止まる。見ていた `gh-pages` の SHA を指定した force-with-lease で置き換え、手元に復旧用の参照（`refs/chalkfile-backups/gh-pages-<main の SHA>`）を残す。ふつうのサイトと MP4 を `gh-pages` に出し直す用には使わない
 - 案内は、トップ・全部の講座・404 に、canonical・meta refresh・押せるリンク・path と query と hash を保つ `location.replace` を置く。旧サイトの scope の Service Worker を登録してから移る
 - 移行の Service Worker（`site/legacy-sw.ts`）は、旧サイトの保存の cache（registry・course・shell）を読み、install と activate では消さない。オンラインでは、次のページの移動で新しいサイトへ案内する。オフラインでは、完全な前の保存版と Range の再生を返し、保存し直しの案内を出す。前の保存・メモ・進み具合は、違う origin へ自動では移せない。旧サイトでは新しい保存をせず、学ぶ人が選んだ前の講座の削除だけを受け付ける
-- `tests/fixtures/legacy-pages/` は、前の公開の commit `a4399995c3ebd0b356459fcae3812da117c2ab9b` の本物の HTML・Service Worker・起動用のファイルを、少しだけ持つ。MP4 は持たず、本物の講座のテスト（`test:e2e:real`）は同じハッシュの Releases の動画を使う。合成の講座のテスト（`test:e2e:ci`）は合成の動画に替え、保存の manifest の大きさと SHA-256 を、その動画に合わせて配る。`tests/browser/migration.spec.ts` で、前の Service Worker から移行の Service Worker への切り替え、保存・記録・隣のアプリの cache が残ること、オフラインの Range と途中への移動、query と hash が保たれることを確かめる
+- `tests/fixtures/legacy-pages/` は、前の公開の commit `a4399995c3ebd0b356459fcae3812da117c2ab9b` の本物の HTML・Service Worker・起動用のファイルを、少しだけ持つ。MP4 は持たず、本物の講座のテスト（`test:e2e:real`）は同じハッシュの Releases の動画を使う。合成の講座のテスト（`test:e2e:ci`）は合成の動画に替え、保存の manifest の大きさと SHA-256 を、その動画に合わせて配る。`tests/e2e/migration.spec.ts` で、前の Service Worker から移行の Service Worker への切り替え、保存・記録・隣のアプリの cache が残ること、オフラインの Range と途中への移動、query と hash が保たれることを確かめる
 - 移行のコードを終える日は [ADR](../adr/2026-11-02-legacy-pages-end-date.md)
 
 ## 秘密情報の扱い

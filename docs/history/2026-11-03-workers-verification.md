@@ -67,13 +67,13 @@ M1/M2の実装・公開・今回の範囲の検証に残作業はない。iPhone
 
 ```bash
 bun scripts/verify_public.ts
-bun tests/worker-site-smoke.ts https://chalkfile.com/
-bun tests/verify-production.ts offline
-bun tests/verify-production.ts offline-restart
-bun tests/verify-production.ts redirects
-bun tests/measure-production.ts
-bun tests/verify-safari.ts # Mac Safariのオンライン/保存。safaridriverを自動起動して終了時に停止
-bun tests/verify-safari.ts --disconnect-wifi=en1 # 明示したWi-Fiを短時間切り、復旧してオフラインを検証
+bun tools/verify/worker-site-smoke.ts https://chalkfile.com/
+bun tools/verify/verify-production.ts offline
+bun tools/verify/verify-production.ts offline-restart
+bun tools/verify/verify-production.ts redirects
+bun tools/verify/measure-production.ts
+bun tools/verify/verify-safari.ts # Mac Safariのオンライン/保存。safaridriverを自動起動して終了時に停止
+bun tools/verify/verify-safari.ts --disconnect-wifi=en1 # 明示したWi-Fiを短時間切り、復旧してオフラインを検証
 ```
 
 `offline` と `offline-restart` は別プロセスで起動する。検証用profileとJSON/スクリーンショットは `.work/evidence/` にだけ置き、pushしない。保存プロファイルは認証情報のない専用品。`legacy-before` は旧サイト切替前だけ、`legacy-after` はそこで保存したprofileを使う。本番の現行移行を破壊して旧サイトを戻すことはしない。

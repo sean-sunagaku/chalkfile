@@ -2,7 +2,7 @@
 // 読むものを scripts/audio/video_config.json に書き出す。
 //   bun scripts/gen_video_config.ts           # 書き出す（npm run gen:video-config）。engine/core/video-config.ts を変えたら流してコミットする
 //   bun scripts/gen_video_config.ts --check   # 書き出したものが今の値と合うかだけを見る（ずれていたら 1 で終える）
-// ずれは tests/video-config.test.ts も止める（CI の npm test）
+// ずれは tests/unit/video-config.test.ts も止める（CI の npm test）
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { PYTHON_CONFIG } from '../engine/core/video-config';

@@ -20,10 +20,10 @@
     "knip": "knip",
     "format": "biome check --write",
     "format:new": "bun scripts/format_new.ts --write",
-    "typecheck": "npm run typecheck:worker-types && tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.client.json && tsc --noEmit -p site/tsconfig.sw.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.bun.json",
+    "typecheck": "npm run typecheck:worker-types && tsc --noEmit -p tsconfig.json && tsc --noEmit -p site/tsconfig.client.json && tsc --noEmit -p site/tsconfig.sw.json && tsc --noEmit -p worker/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.bun.json && tsc --noEmit -p tools/verify/tsconfig.json",
     "typecheck:worker-types": "bun scripts/worker_types.ts",
     "gen:worker-types": "bun scripts/worker_types.ts --write",
-    "test": "bun test tests/*.test.ts",
+    "test": "bun test",
     "test:e2e": "playwright test",
     "test:browser": "playwright test",
     "test:e2e:ci": "playwright test --project=ci",
@@ -56,7 +56,9 @@
     "media:push": "bun scripts/media.ts push",
     "worktree:new": "bun scripts/worktree.ts",
     "clean": "bun scripts/clean.ts",
-    "codemod:content": "bun scripts/codemod_content.ts"
+    "codemod:content": "bun scripts/codemod_content.ts",
+    "verify:site": "bun tools/verify/worker-site-smoke.ts",
+    "verify:worker": "bun tools/verify/smoke_worker.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",

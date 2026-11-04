@@ -21,6 +21,7 @@
       "site/*.json",
       "worker/**",
       "tests/**",
+      "tools/verify/**",
       "*.ts",
       "*.json",
       "*.jsonc",
@@ -65,7 +66,7 @@
     "enabled": true,
     "domains": {
       "react": "recommended",
-      // Playwright の規則は tests/browser だけで使う（下の overrides）。scripts の describe() を Playwright のものと取り違えるため
+      // Playwright の規則は tests/e2e と tools/verify だけで使う（下の overrides）。scripts の describe() を Playwright のものと取り違えるため
       "playwright": "none"
     },
     "rules": { "preset": "recommended" }
@@ -220,7 +221,7 @@
       }
     },
     {
-      "includes": ["tests/browser/**", "playwright.config.ts"],
+      "includes": ["tests/e2e/**", "tools/verify/**", "playwright.config.ts"],
       "linter": { "domains": { "playwright": "recommended" } }
     },
     {
@@ -239,7 +240,7 @@
       "assist": { "enabled": false }
     },
     {
-      // 旧 Pages の移行のコード。期限に消すまで凍結する（変えない。docs/adr/2026-11-02-legacy-pages-end-date.md・tests/legacy-freeze.test.ts）。
+      // 旧 Pages の移行のコード。期限に消すまで凍結する（変えない。docs/adr/2026-11-02-legacy-pages-end-date.md・tests/unit/legacy-freeze.test.ts）。
       // 全体の整形の日にも整形しない
       "includes": ["site/legacy-sw.ts", "scripts/build_migration.ts"],
       "formatter": { "enabled": false },

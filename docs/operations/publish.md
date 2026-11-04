@@ -132,7 +132,7 @@ npm run build:site -- --strict      # merge で動く Actions と同じ組み立
   1. `check`: `npm run check` と同じ点検（lint・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検）。台本と公開の検証は、公開した動画が今の台本で書き出したものかも見る（[CI の形](ci.md)）
   2. `build`: 素材ブランチから声を取り出し、`synth --cached-only` で時刻とサイトのデータを作る（声を合成しない）→ `media.ts check` で動画の一覧と Releases を照らす → `gen.ts --media` で Worker の許可リスト（講座ごとの動画の一覧をつないだもの。Git に入れない）を作る → `build_site.ts --strict` で組み立て、`check_delivery.ts` で点検する → 組み立てた公開物を artifact に残す
   3. `e2e`（合成の講座で、ブラウザのテスト）と `smoke`（build の artifact を手元の Worker で配って確かめる）
-  4. `deploy`: build の artifact を、build が出した sha256 の一覧と照らしてから `wrangler deploy` で出す。公開したページが組み立てたものと同じか・全部の動画の Range（`verify_public.ts`）・HTML の smoke（`tests/worker-site-smoke.ts`）を確かめ、通らなければ前の版に戻す
+  4. `deploy`: build の artifact を、build が出した sha256 の一覧と照らしてから `wrangler deploy` で出す。公開したページが組み立てたものと同じか・全部の動画の Range（`verify_public.ts`）・HTML の smoke（`tools/verify/worker-site-smoke.ts`）を確かめ、通らなければ前の版に戻す
 - 公開の実行は、同じ時に 1 つだけ（あとから来たものは、前のものが終わるのを待つ）
 - 止まったときと、前の版に戻ったときは [戻し方](recovery.md) の「Actions を出し直す」と「公開後の確かめが通らず、前の版に戻ったとき」
 
@@ -142,10 +142,10 @@ deploy のジョブは、出したあとに `verify_public.ts` と HTML の smok
 
 ```bash
 bun scripts/verify_public.ts                            # トップの 200 と、全部の動画の Range（206）
-bun tests/worker-site-smoke.ts https://chalkfile.com/   # 全ページの表示・SW の scope・CSP の違反とエラー（Chrome）
+bun tools/verify/worker-site-smoke.ts https://chalkfile.com/   # 全ページの表示・SW の scope・CSP の違反とエラー（Chrome）
 ```
 
-- 保存・再起動・再生も見るときは、`bun tests/verify-production.ts offline` のあと、別のプロセスで `bun tests/verify-production.ts offline-restart` を流す。認証情報の無い専用の profile を使う。証跡は `.work/evidence/` に置き、push しない
+- 保存・再起動・再生も見るときは、`bun tools/verify/verify-production.ts offline` のあと、別のプロセスで `bun tools/verify/verify-production.ts offline-restart` を流す。認証情報の無い専用の profile を使う。証跡は `.work/evidence/` に置き、push しない
 - 「動画ファイルをダウンロード」のボタンも、1 本だけ確かめる。保存を確かめた一時の profile の cache を残したまま通信を切り、MP4 を 1 本ダウンロードして、名前・大きさ・SHA-256 を照らす
 - 手元での成功と、公開したサイトでの成功は、分けて記録する。Chrome での成功を、Safari や iPhone の実機での成功と混ぜない
 
@@ -163,15 +163,15 @@ npm run test:e2e:real              # 本物の講座と、入れてある Chrome
 - ブラウザのテストは、手元の生成物（組み立てたサイトと動画）を使う。CI の点検が通っても、再生できたことにはしない
 - PR の CI（`.github/workflows/ci.yml`）は `check`・`build`・`e2e`・`smoke` の 4 つのジョブ（[CI の形](ci.md)）。`check` は `npm run check` と同じで、`npm run validate` が台本のほかに、公開で止まること（講座サイトの設定・ID・リンク、教材の参照、公開する言語のポスターと動画の一覧）も見る。`build` は公開と同じ手順（素材の取り出し → `synth --cached-only` → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）でサイトを組み立て、artifact に残す。`smoke` は、その artifact を手元の Worker で配って確かめる。公開はせず、秘密情報も使わない。組み立てた公開物と smoke の結果は、PR の Checks の要約と artifact で見られる
 - `build_site` は最後に公開物の決まり（`scripts/site-invariants.ts`）を確かめ、破れていれば止まる。見るのは、Workers の上限・MP4 が無いこと・置き換えの印の残り・動く script が組み立ての入れた 3 本（www の移動・講座のページの本体・offline-client）のどれかで、CSP のハッシュと過不足なく合うか・全部の `offline-manifest.json` が保存の検証を通るか・起動用ファイルの中身と型
-- 組み立ての本体は `scripts/site/`（役割ごとのファイル。`build.ts` の `buildSite`）。HTML は、エスケープを既定にした `html` のテンプレートと、印を 1 回だけなめる置き換え（`scripts/site/html.ts`）で組む。CSP のハッシュは、描く前に信頼できる 3 本から作る。合成の講座の出力のスナップショット（`tests/site-build.test.ts`）が、出力の変化を止める（わざと変えたときは `UPDATE_SITE_SNAPSHOT=1 bun test tests/site-build.test.ts`）
+- 組み立ての本体は `scripts/site/`（役割ごとのファイル。`build.ts` の `buildSite`）。HTML は、エスケープを既定にした `html` のテンプレートと、印を 1 回だけなめる置き換え（`scripts/site/html.ts`）で組む。CSP のハッシュは、描く前に信頼できる 3 本から作る。合成の講座の出力のスナップショット（`tests/unit/site-build.test.ts`）が、出力の変化を止める（わざと変えたときは `UPDATE_SITE_SNAPSHOT=1 bun test tests/unit/site-build.test.ts`）
 - 大きさの上限の正本は `site/limits.ts`（保存は 1 ファイル 32 MiB・ページ 4 MiB・1 講座 1 GiB・201 ファイル、Workers の静的 assets は 1 ファイル 25 MiB・2 万ファイル、Releases の動画は 2 GiB 未満）。サイト用の動画は 14,500 KiB を目安に書き出す（上限ではない）。保存の上限を超える動画は `media.ts push`・`check` が止める
 - ファイルの型は、拡張子の対応表 `site/mime.ts` から付ける。知らない拡張子のファイルを `site/assets` に置くと、組み立てが止まる
-- ブラウザのテストは、テストのサーバー（`tests/browser-server.ts`）が、テストごとに別の番号で講座サイトを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け、旧 Pages からの移行。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る（`tests/e2e/session.ts`。状態はテストごとなので、workers を 2 以上にできる）。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
+- ブラウザのテストは、テストのサーバー（`tests/e2e/browser-server.ts`）が、テストごとに別の番号で講座サイトを配って確かめる: オンラインとオフライン、全部の保存と削除、Range の応答とバイトの一致、動画の再生・停止・途中への移動・繰り返し、ブラウザを閉じてからの起動、教材と worker の更新、保存の欠け、旧 Pages からの移行。容量の不足は Cache API の例外で、通信の失敗・206・壊れたデータ・途中のデータ・リダイレクト・取り消しは、テストのサーバーで作る（`tests/e2e/session.ts`。状態はテストごとなので、workers を 2 以上にできる）。物理のディスクの枯渇や、iPhone の実機の確かめの代わりにはならない
 - `test:e2e:ci` は、合成の講座（`tests/fixtures/content/site-sample`。2 本）を `buildSite` で一時のフォルダに組み、4 秒の動画を ffmpeg の testsrc で作って配る。アクセシビリティ（axe-core）も見る。今ある違反は `tests/fixtures/a11y-known/` に並べて許し、新しい違反で落ちる
 - ブラウザは、入れてある Chrome を一時の profile で使う。`PW_CHANNEL=chromium npm run test:e2e:ci` で、Playwright の Chromium も選べる（CI と同じ。`npx playwright install chromium` で別に入れる）
 - 証跡の既定の置き場所は、作業フォルダの `.work/evidence/browser/<project>/`（`CHALKFILE_EVIDENCE_DIR` で変える）。動画と証跡は main に入れない
-- 案内（保存の状態・進み具合・通信のエラー）の表示を変えたら、`npm run test:e2e:ci -- tests/browser/offline-status.spec.ts` も流す
-- ふだんの手元の確かめは、ルート `/` の `npm run serve` か `npm run dev:worker`。旧サイトの scope の互換は、移行のテスト（`tests/browser/migration.spec.ts`）で確かめる。localhost のほかは HTTPS が要る
+- 案内（保存の状態・進み具合・通信のエラー）の表示を変えたら、`npm run test:e2e:ci -- tests/e2e/offline-status.spec.ts` も流す
+- ふだんの手元の確かめは、ルート `/` の `npm run serve` か `npm run dev:worker`。旧サイトの scope の互換は、移行のテスト（`tests/e2e/migration.spec.ts`）で確かめる。localhost のほかは HTTPS が要る
 
 ### 手元の Worker で確かめる（smoke）
 
@@ -180,7 +180,7 @@ npm run test:e2e:real              # 本物の講座と、入れてある Chrome
 ```bash
 npm run synth -- --cached-only && npm run build:site -- --strict
 npm run dev:worker -- --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で（先に Worker の許可リストを作る）
-bun scripts/smoke_worker.ts http://127.0.0.1:8787/
+bun tools/verify/smoke_worker.ts http://127.0.0.1:8787/
 ```
 
 - Worker の許可リスト（`worker/src/generated/media-manifest.json`）は `npm run gen` が作る。`npm run dev:worker` は先に作る。`npx wrangler dev`（`.claude/launch.json` の worker も）を直に流すときは、先に `npm run gen`

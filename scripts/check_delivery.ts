@@ -1,5 +1,5 @@
 // 公開の手順（.github/workflows/ の workflow と、そこから使うリポジトリの中の composite action）・Worker の設定（wrangler.jsonc）・
-// 組み立てた静的公開物（site/dist）を確かめる。CI の build と deploy が流す。単体テスト（tests/delivery.test.ts）が、わざと壊して止まるかを見る。
+// 組み立てた静的公開物（site/dist）を確かめる。CI の build と deploy が流す。単体テスト（tests/unit/delivery.test.ts）が、わざと壊して止まるかを見る。
 //   bun scripts/check_delivery.ts [site/dist]
 // workflow は「形」（ジョブの数・名前・手順の順番・on の種類）では縛らず、「性質」（下の WORKFLOW_RULES）で確かめる。
 // CI を組み直しても、性質を守っていれば通り、1 つでも破れば止まる。性質の一覧と理由は docs/operations/ci.md の「点検する性質」。

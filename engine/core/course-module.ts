@@ -7,7 +7,7 @@ import type { AuthoredCourse } from './schema';
 /**
  * 講座サイトの一覧のページの最初の画面に出す、台本の抜き出し（「台本はこう書く」の見本）。file はリポジトリの直下からの場所、
  * lines は見せる行（file の行を写し、長い行は「, … },」で切る）。並び（order）で最初の講座のものを使う。
- * 写した行が file と合っているかは tests/site-build.test.ts が見る
+ * 写した行が file と合っているかは tests/unit/site-build.test.ts が見る
  */
 export type HeroSnippet = { file: string; lines: readonly string[] };
 

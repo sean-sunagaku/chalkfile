@@ -1,5 +1,5 @@
 // 「新しい版」の案内に出す、何が変わったか（正本は site/news.ts）。講座ごとの保存用の教材情報（offline-manifest.json の news）に入れるものを選び、
-// お知らせの書き方の誤りを見つける（組み立てが止める。テストは tests/site-news.test.ts）
+// お知らせの書き方の誤りを見つける（組み立てが止める。テストは tests/unit/site-news.test.ts）
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { Lang } from '../../content/i18n';

@@ -117,7 +117,7 @@ export function validateManifest(value: unknown, id: string, scope: string, lega
 
 /**
  * 保存の記録の 1 つの版を確かめる（教材情報と、Cache の名前がその講座のものか）。prefix は Cache の名前の頭（chalkfile:<scope の path>:offline-v1:）。
- * 利用者が保存した記録も毎回ここを通る。ここと validateManifest を厳しくすると、保存した講座が読めなくなる（tests/offline-compat.test.ts）
+ * 利用者が保存した記録も毎回ここを通る。ここと validateManifest を厳しくすると、保存した講座が読めなくなる（tests/unit/offline-compat.test.ts）
  */
 export function checkSavedVersion(value: unknown, id: string, scope: string, prefix: string): SavedVersion {
   const v = value as SavedVersion;

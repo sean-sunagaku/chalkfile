@@ -204,32 +204,32 @@ export const ALLOW_OLD: OldAllow[] = [
     why: '旧 Pages の URL から chalkfile.com へ移す案内を作る',
   },
   { rx: /^tests\/fixtures\//, why: '旧 Pages の頃の公開物と保存の記録（互換のテストの入力）' },
-  { rx: /^tests\/browser\/migration\.spec\.ts$/, words: ['/chalkfile/'], why: '旧 Pages からの移行を確かめるテスト' },
+  { rx: /^tests\/e2e\/migration\.spec\.ts$/, words: ['/chalkfile/'], why: '旧 Pages からの移行を確かめるテスト' },
   {
-    rx: /^tests\/capture-saved-records\.ts$/,
+    rx: /^tools\/verify\/capture-saved-records\.ts$/,
     words: ['github.io', '/chalkfile/'],
     why: '旧 Pages の保存の記録を取る（互換のテストの入力を作る）',
   },
-  { rx: /^tests\/delivery\.test\.ts$/, words: ['/chalkfile/'], why: '旧 Pages のパスを新しいサイトへ移す変換のテスト' },
+  { rx: /^tests\/unit\/delivery\.test\.ts$/, words: ['/chalkfile/'], why: '旧 Pages のパスを新しいサイトへ移す変換のテスト' },
   {
-    rx: /^tests\/offline-compat\.test\.ts$/,
+    rx: /^tests\/unit\/offline-compat\.test\.ts$/,
     words: ['/chalkfile/'],
     why: '旧 Pages の頃の保存の名前を、今の読み込みが受け入れるかのテスト',
   },
-  { rx: /^tests\/verify-production\.ts$/, words: ['github.io'], why: '公開したあとに、旧 Pages からの移行を確かめる' },
+  { rx: /^tools\/verify\/verify-production\.ts$/, words: ['github.io'], why: '公開したあとに、旧 Pages からの移行を確かめる' },
   // 動かした生成物の前の場所を、わざと読むか止めるコード
   {
     rx: /^scripts\/stills-compare\.ts$/,
     words: ['src/generated/*.json'],
     why: '基準の版が前の形（1 つの timeline）でも比べる',
   },
-  { rx: /^tests\/timeline\.test\.ts$/, words: ['src/generated/*.json'], why: '前の場所の timeline を止めることのテスト' },
+  { rx: /^tests\/unit\/timeline\.test\.ts$/, words: ['src/generated/*.json'], why: '前の場所の timeline を止めることのテスト' },
   { rx: /^\.gitignore$/, words: ['dist-media'], why: '前の組み立ての出力が手元に残っていても、Git に入れない' },
   // この点検そのもの
   { rx: /^scripts\/check_docs\.ts$/, why: 'この点検（古い言葉の一覧）' },
-  { rx: /^tests\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
+  { rx: /^tests\/unit\/check-docs\.test\.ts$/, why: 'この点検のテスト' },
   { rx: /^CHANGELOG\.md$/, words: ['render.sh'], why: '変更の記録（当時の道具の名前をそのまま残す）' },
-  { rx: /^tests\/render\.test\.ts$/, words: ['render.sh'], why: '前の書き出しの道具と同じ値で書き出すかのテスト' },
+  { rx: /^tests\/unit\/render\.test\.ts$/, words: ['render.sh'], why: '前の書き出しの道具と同じ値で書き出すかのテスト' },
   // 直す担当が決まっている、コードの古い説明と前の形の処理（直したら、この行を消す）
 ];
 

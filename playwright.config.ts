@@ -1,4 +1,4 @@
-// ブラウザのテスト（Playwright）。テストのサーバー（tests/browser-server.ts）が、テストごとに別の番号で講座サイトを配る。
+// ブラウザのテスト（Playwright）。テストのサーバー（tests/e2e/browser-server.ts）が、テストごとに別の番号で講座サイトを配る。
 //   npm run test:e2e:ci     合成の講座（project ci）。本物の講座も動画も要らない（ffmpeg が要る）。CI は PW_CHANNEL=chromium
 //   npm run test:e2e:real   本物の講座と、入れてある Chrome（project real。先に npm run build:site -- --strict と、手元の動画）
 //   npm run test:e2e        両方
@@ -13,7 +13,7 @@ process.env.CHALKFILE_EVIDENCE_DIR ??= path.join(__dirname, '.work/evidence/brow
 const evidence = process.env.CHALKFILE_EVIDENCE_DIR;
 
 export default defineConfig<{ siteMode: SiteMode }>({
-  testDir: './tests/browser',
+  testDir: './tests/e2e',
   fullyParallel: true,
   workers: Number(process.env.PW_WORKERS ?? 2),
   timeout: 120000,
@@ -34,9 +34,9 @@ export default defineConfig<{ siteMode: SiteMode }>({
     { name: 'real', use: { siteMode: 'real' }, testIgnore: /a11y\.spec\.ts$/ },
   ],
   webServer: {
-    command: 'bun tests/browser-server.ts',
+    command: 'bun tests/e2e/browser-server.ts',
     env: { PW_PORT: process.env.PW_PORT ?? '0' },
-    // 「chalkfile-e2e: <URL>」の URL を、テストの側の process.env.CHALKFILE_E2E_HUB にする（tests/browser/fixtures.ts）
+    // 「chalkfile-e2e: <URL>」の URL を、テストの側の process.env.CHALKFILE_E2E_HUB にする（tests/e2e/fixtures.ts）
     wait: { stdout: /chalkfile-e2e: (?<chalkfile_e2e_hub>http:\/\/127\.0\.0\.1:\d+)\// },
     stdout: 'pipe',
     gracefulShutdown: { signal: 'SIGTERM', timeout: 5000 },

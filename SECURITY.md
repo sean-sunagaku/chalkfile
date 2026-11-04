@@ -34,7 +34,7 @@ To report a vulnerability, please use GitHub's private vulnerability reporting: 
   - Git に入れる全部のテキストファイルの見えない文字・制御文字（タブ・改行・復帰のほか）・秘密情報の形・手元だけの禁止語（`.git/info/chalkfile-denylist` か `.denylist.local`。どちらも Git に入れない）
   - 動画と音声（`mp4`・`mov`・`wav`・`flac`・`m4a` など）と、5MiB を超えるファイルを Git に入れない（動画は Releases、声の素材は `materials` ブランチ。ポスターと `tests/fixtures/` は理由つきで外し、50MiB で止める）
   - わざと書いた例は、`scripts/content-allow.json` に `{ "text", "rule", "why" }` で書き、その所のその規則だけを許す。見えない文字・制御文字・秘密情報の形・禁止語は許さない
-  - `--self-test` で、見つけるべき例を見つけ、見逃すべき例を見逃すかを確かめる（`tests/check-content.test.ts`）
+  - `--self-test` で、見つけるべき例を見つけ、見逃すべき例を見逃すかを確かめる（`tests/unit/check-content.test.ts`）
 - clone した人の手元で勝手に動くものを置かない
   - Claude Code: `.claude/` に入れるのはスキルと `launch.json` だけ（設定・hooks・agents・commands は入れない）。スキルの頭書きに `hooks`・`allowed-tools` を書かない。`launch.json` が起動するのは、決めたコマンド（`npm run serve`・`npm run studio`・`npm run dev:worker`。起こす scripts の中身も決めている）だけ
   - AI への指示のファイル（`AGENTS.md`・`CLAUDE.md`）: リポジトリの直下にだけ置く。`@` で読み込むのは、リポジトリの中のファイルだけ（`~` や `/` で始まるパス・`..` で外に出るパスと、`.git/`・認証ファイル（`.env` など）を指すものを止める。開いた人の手元のファイルを AI に渡さない）

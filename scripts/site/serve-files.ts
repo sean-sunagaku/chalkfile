@@ -1,5 +1,5 @@
 // 組み立てたサイトを手元で配る部品（Bun.serve の fetch の中で使う）。手元で見る scripts/serve.ts と、ブラウザのテストのサーバー
-// （tests/browser-server.ts）が同じものを使う。本番の配り方に合わせる:
+// （tests/e2e/browser-server.ts）が同じものを使う。本番の配り方に合わせる:
 //   静的なファイル: Workers の静的 assets と同じく、ディレクトリは index.html・/ の無いディレクトリは 301・無いページは、そのパスから
 //                  いちばん近いフォルダの 404.html を 404（wrangler.jsonc の not_found_handling: 404-page。/en/ の下は en/404.html）。
 //                  型は拡張子の対応表（site/mime.ts の contentTypeOf）

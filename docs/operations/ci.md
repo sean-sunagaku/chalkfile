@@ -3,7 +3,7 @@
 Pull Request と main で流す GitHub Actions の形と、そうしている理由。公開の順番は [公開の順番](publish.md)、止まったときと戻したときは [戻し方](recovery.md)。
 
 - workflow は `.github/workflows/` の `ci.yml`（PR と main）・`canary.yml`（毎日）・`render-check.yml`（Linux の書き出し。手で流すときだけ）。手順の中身の正本は、それぞれの YAML と、`.github/actions/` の composite action（`setup`・`ffmpeg`・`playwright`）
-- 公開の決まりは、形（ジョブの数・手順の順番）ではなく性質で守る。性質は下の「点検する性質」。`scripts/check_delivery.ts` が確かめ、`npm run check` の単体テスト（`tests/delivery.test.ts`）が、わざと壊して止まるかを見る
+- 公開の決まりは、形（ジョブの数・手順の順番）ではなく性質で守る。性質は下の「点検する性質」。`scripts/check_delivery.ts` が確かめ、`npm run check` の単体テスト（`tests/unit/delivery.test.ts`）が、わざと壊して止まるかを見る
 
 ## ジョブ（ci.yml）
 
@@ -17,7 +17,7 @@ check ─┬─ build ── smoke ─┬─ deploy（main だけ）
 | `check` | lint・足したファイルの整形・型・単体テスト・台本と公開の検証・台本とファイルの点検・文書の点検・教材のずれ（`npm run check` と同じもの） | PR と main |
 | `build` | 公開と同じ手順でサイトを組み立てて点検する（素材の長さの一覧と読みだけで `synth --cached-only --durations-only`。一覧が無い・古いときは音声の取り出しにもどる → `media check` → `gen.ts --media` → `build_site --strict` → `check_delivery`）。Worker を `wrangler deploy --dry-run` でまとめ、公開物を artifact `site-dist` に残す | PR と main |
 | `e2e` | 合成の講座で、ブラウザ（Playwright の Chromium）のテストを流す（`npm run test:e2e:ci` を `--if-present` で流す）。失敗したら trace を artifact `e2e-trace` に残す | PR と main |
-| `smoke` | `site-dist` を取り、手元の Worker（`wrangler dev` の手元のモード。Cloudflare の認証を使わない）で配って、`scripts/smoke_worker.ts` で配信の約束を確かめる | PR と main |
+| `smoke` | `site-dist` を取り、手元の Worker（`wrangler dev` の手元のモード。Cloudflare の認証を使わない）で配って、`tools/verify/smoke_worker.ts` で配信の約束を確かめる | PR と main |
 | `deploy` | 上の 4 つが通ったときだけ、`site-dist` をそのまま出す（下の「公開の流れ」） | main への push と、main を選んだ手動の実行 |
 
 - `check` の台本と公開の検証（`npm run validate`）は、公開した動画が今の台本で書き出したものかも見る（動画の一覧の `inputs`。台本が変わった → 止める・描き方のコードだけ → 注意・記録が無い → 知らせ。知らせは Actions の注釈）。決まりは [全体図](../architecture/overview.md) の「段と記録」
@@ -42,7 +42,7 @@ secret も、PR に書く権限も使わずに、組み立てたものと確か�
 3. Deploy の手順（secret はここだけ）が `scripts/deploy_worker.ts` を流す
    - main の先頭でない commit は出さない（古い実行を流し直しても、古い版を出さない）
    - 今の版を控える → `wrangler deploy` → 公開したページと `sw.js` が、組み立てたものと同じバイトになるのを待つ（新しい版が届いたか・`no-transform` が効いているか）
-   - `verify_public.ts`（トップと全部の動画の Range）と `tests/worker-site-smoke.ts`（全ページ・SW の scope・CSP。runner の image の Chrome で開く）。通らなければ、間をおいて 1 回だけ流し直す
+   - `verify_public.ts`（トップと全部の動画の Range）と `tools/verify/worker-site-smoke.ts`（全ページ・SW の scope・CSP。runner の image の Chrome で開く）。通らなければ、間をおいて 1 回だけ流し直す
    - それでも通らなければ、控えた版へ `wrangler rollback` して、ジョブを失敗にする（[戻し方](recovery.md) の「公開後の確かめが通らず、前の版に戻ったとき」）
    - 確かめのコマンドには、token と account ID を渡さない
 - 公開は、同じ時に 1 つだけ流れる（concurrency の group `chalkfile-production`。途中で取り消さない）
@@ -78,7 +78,7 @@ secret も、PR に書く権限も使わずに、組み立てたものと確か�
 ## 毎日の確かめ（canary.yml）
 
 - 毎日 1 回（日本時間の昼。米国の朝の、Actions が混む時間を避ける）と、手で流したとき（Actions → canary → Run workflow）。secret は使わない。fork では流れない
-- 見るもの: トップと全部の動画の Range（`verify_public.ts`）・本番の HTML の smoke（`tests/worker-site-smoke.ts`。runner の image の Chrome）・旧サイトの案内ページが 200 で chalkfile.com を指すか。どれかが通らなくても、残りも流す
+- 見るもの: トップと全部の動画の Range（`verify_public.ts`）・本番の HTML の smoke（`tools/verify/worker-site-smoke.ts`。runner の image の Chrome）・旧サイトの案内ページが 200 で chalkfile.com を指すか。どれかが通らなくても、残りも流す
 - どれかが通らないか、時間切れで止まったら、`report` のジョブが Issue を開く。同じ題の Issue が開いていれば、新しく開かずに書き足す。Issue に書けるのは、このジョブだけ（リポジトリのコードを取らず、gh だけを流す）
 
 ### canary が Issue を開いたとき

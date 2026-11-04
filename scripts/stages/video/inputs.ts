@@ -6,7 +6,7 @@
 //           サイト用の動画の大きさの目安）と、RENDER_DEPS の依存の版
 // script に入れないもの: サイトと教材だけが使う項目（要点・クイズ・公式ドキュメント・教材・講座の前置き・リンク・出典・サイトの言葉）。
 //   直しても動画は変わらないので、入れると CI が書き出し直しを求めてしまう。動画が読む項目を src/ で増やしたら、ここの一覧にも足す
-//   （tests/pipeline-inputs.test.ts が src/ を読んで、一覧の外の項目を読んでいないかを確かめる）
+//   （tests/unit/pipeline-inputs.test.ts が src/ を読んで、一覧の外の項目を読んでいないかを確かめる）
 // 声とミックスの音は timeline（声の長さで決まる時刻）を通してだけ入る。音そのものの指紋は、書き出しの段の記録（audio）が持つ
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
