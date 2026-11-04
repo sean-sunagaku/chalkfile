@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "b74456344b4802c2",
+ "text": "ピーティーシーは、道具の呼び出しをプログラムにまとめる方式です。必ず速くなる、とは限りません。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "50a32b925917e332",
+ "text": "目的、置き場所、確認方法を伝えて、設置したあとまで確かめます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

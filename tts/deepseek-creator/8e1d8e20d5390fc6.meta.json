@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "8e1d8e20d5390fc6",
+ "text": "設定ページを持つプラグインの編集は、プラグインズから開きます。セッティングズのビルトインプラグインズは、組み込みの一覧や稼働状態を見る場所です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

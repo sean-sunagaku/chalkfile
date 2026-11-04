@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "bb38a5994d1c9f3d",
+ "text": "次に入力と出力。最初はサンプルのメモだけを選び、本文を見られる形にします。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

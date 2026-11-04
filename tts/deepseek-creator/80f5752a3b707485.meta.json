@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "80f5752a3b707485",
+ "text": "さらに、使う道具と仕事の進め方をまとめた、自分用のモードも作れます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

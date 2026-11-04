@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "c9f9702c01fc7ae8",
+ "text": "アドプラグインの本体は、インストール画面を開きます。すでにある道具を入れる入口です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

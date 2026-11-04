@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "c2b9c15a6dbd572f",
+ "text": "じゃあ、モデルを、ずんだ味にするのだ！",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

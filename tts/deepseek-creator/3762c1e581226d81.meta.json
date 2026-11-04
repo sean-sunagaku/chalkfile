@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "3762c1e581226d81",
+ "text": "ディープシークハーネス。クリエイターモードは、何を作れる？",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 13,
+  "speed": 1,
+  "intonation": 1.25,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

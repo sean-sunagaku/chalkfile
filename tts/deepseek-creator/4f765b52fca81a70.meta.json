@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "4f765b52fca81a70",
+ "text": "矢印を押したら、工場が完成するのだ？",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

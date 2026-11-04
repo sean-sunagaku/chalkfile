@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "e4a4e05394ba5a55",
+ "text": "ディープシークハーネスは、開発プレビューです。使う前に、公式の変更と、手元の版を確かめてください。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

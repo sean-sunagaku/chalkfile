@@ -8,7 +8,7 @@
 
 素材があれば、台詞を変えていない章は VOICEVOX なしで、時刻 → 音のミックス → 動画 → 講座サイトまで作り直せます。手順はリポジトリの docs/guide/quickstart.md の「B. 素材から作る」です。
 
-全部で 757.7MB（音声は FLAC。取り出すと WAV に戻り、`SHA256SUMS` と同じ中身になる）。どの台本から足したかは、このブランチのコミットのメッセージ（`git log`）にあります。
+全部で 768.8MB（音声は FLAC。取り出すと WAV に戻り、`SHA256SUMS` と同じ中身になる）。どの台本から足したかは、このブランチのコミットのメッセージ（`git log`）にあります。
 
 | パス | 中身 | 数 | 大きさ |
 |---|---|---|---|
@@ -21,6 +21,7 @@
 | `tts/pstack-comedy/` | 笑ってわかる pstack（1 レクチャー・ja・en・zh）の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素） | 215 本 | 28.1MB |
 | `tts/superagent-comedy/` | 笑ってわかる Super-agent（6 章・ja・en・zh）の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素） | 1517 本 | 257.4MB |
 | `tts/ga4-comedy/` | 笑ってわかる GA4（3 章・ja）の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素） | 119 本 | 15.8MB |
+| `tts/deepseek-creator/` | 笑ってわかる DeepSeek Harness Creator mode（1 レクチャー・ja）の台詞の音声（日本語は VOICEVOX、英語・中国語は Kokoro。48kHz・モノラル）と読み（日本語はカナ、ほかは音素） | 76 本 | 11.1MB |
 | `audio/music/`・`audio/sfx/` | BGM・ジングル・効果音（`scripts/build_music.py` の合成） | 15 個 | 13.9MB |
 | `SHA256SUMS` | 取り出した後のファイル（WAV・読み・声の記録）の sha256（パスはリポジトリの最上位から） | | |
 | `DURATIONS.json` | 台詞の音声（WAV）の長さ（サンプルの数）と、測った WAV の sha256。CI が音声を取り出さずに時刻を作るのに使う（`synth.ts --cached-only --durations-only`） | | |
