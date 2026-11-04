@@ -1,4 +1,4 @@
-import { Z, T, TEN } from '../_shared/comedy';
+import { T, TEN, Z } from '../_shared/comedy';
 import { goals } from '../_shared/scenes';
 import type { Lecture } from '../types';
 import { docsOf } from './sources';

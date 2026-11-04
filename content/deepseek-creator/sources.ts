@@ -1,4 +1,5 @@
 import { defineSources } from '../sources-util';
+
 const root = 'https://github.com/deepseek-ai/deepseek-harness/blob/8bd073392eef6f54e921a093b95076248eb08cbb/';
 export const SOURCE_TABLE = defineSources([
   { id: 'h-doc-001', title: 'DeepSeek Harness 公式サイト（Creator mode と作成例）', url: 'https://www.deepseek.com/harness/en/' },
