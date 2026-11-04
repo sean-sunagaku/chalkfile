@@ -1,6 +1,190 @@
 {
-  "schema": 1,
+  "schema": 2,
   "entries": [
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L01",
+      "kind": "standard",
+      "bytes": 12228480,
+      "sha256": "829b0bdd634c7a2ac0e74d4778fba435911f3dfa1598b2d618e6c2525e9a606f",
+      "filename": "L01.829b0bdd634c7a2ac0e74d4778fba435911f3dfa1598b2d618e6c2525e9a606f.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "615b07e06fdf6acd",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L02",
+      "kind": "standard",
+      "bytes": 12258616,
+      "sha256": "bff26fcebe54849570476a1badee62d111e10c45bfcf1cf07535ace2025a2283",
+      "filename": "L02.bff26fcebe54849570476a1badee62d111e10c45bfcf1cf07535ace2025a2283.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "8dcda900904ddf1f",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L03",
+      "kind": "standard",
+      "bytes": 14008808,
+      "sha256": "d5c81dd8127f6812ab70c4d13e460bb8a6e990b64bba55ed708c9dba78e48140",
+      "filename": "L03.d5c81dd8127f6812ab70c4d13e460bb8a6e990b64bba55ed708c9dba78e48140.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "8446752ab0c6784c",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L04",
+      "kind": "standard",
+      "bytes": 13625973,
+      "sha256": "21f2d35548c863403b695a477b50ccfd1ee9b613d0a0285d32fb3dac436b4215",
+      "filename": "L04.21f2d35548c863403b695a477b50ccfd1ee9b613d0a0285d32fb3dac436b4215.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "541b47af3cbc24b2",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L05",
+      "kind": "standard",
+      "bytes": 13269136,
+      "sha256": "7539b32cd25290d04ff102e23125feb93cd67146e4d799d2eea1e542a076c724",
+      "filename": "L05.7539b32cd25290d04ff102e23125feb93cd67146e4d799d2eea1e542a076c724.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "539bb4235326db67",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L06",
+      "kind": "standard",
+      "bytes": 13866869,
+      "sha256": "da50d11e5ad40d17f4ce885a87234cc560e6188c7adf5f832acc5cf7c1a13731",
+      "filename": "L06.da50d11e5ad40d17f4ce885a87234cc560e6188c7adf5f832acc5cf7c1a13731.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "069d17ab6d6748ef",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L07",
+      "kind": "standard",
+      "bytes": 14740913,
+      "sha256": "701a35525b6c3a97d892fd6330a6854eacf4f8c2138f0c8afbac4d0354f29d58",
+      "filename": "L07.701a35525b6c3a97d892fd6330a6854eacf4f8c2138f0c8afbac4d0354f29d58.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "ed541e4b40aea9c9",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L08",
+      "kind": "standard",
+      "bytes": 14679734,
+      "sha256": "4c7d882f6ec6a79b598fe43874c83a5a5f0d70fe5e0dfe43b94bf4aa2ea46ab4",
+      "filename": "L08.4c7d882f6ec6a79b598fe43874c83a5a5f0d70fe5e0dfe43b94bf4aa2ea46ab4.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "a172248e4042e4cf",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L09",
+      "kind": "standard",
+      "bytes": 14280578,
+      "sha256": "b1087512ebc6e1da63ab1760a285416e998d3e1df00fd6bc17ae72b9175c0841",
+      "filename": "L09.b1087512ebc6e1da63ab1760a285416e998d3e1df00fd6bc17ae72b9175c0841.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "a414700418f8eca1",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L10",
+      "kind": "standard",
+      "bytes": 12360808,
+      "sha256": "9900807497d70ca8967d70726c7760ace2b388fc2722cb1e1be3ba4b3d7b2d14",
+      "filename": "L10.9900807497d70ca8967d70726c7760ace2b388fc2722cb1e1be3ba4b3d7b2d14.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "762a860b6f545805",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L11",
+      "kind": "standard",
+      "bytes": 14105449,
+      "sha256": "b29428c2389a60bcfe15aa4251056c16576cb63f2edcdd186e1daa973ae8b8d0",
+      "filename": "L11.b29428c2389a60bcfe15aa4251056c16576cb63f2edcdd186e1daa973ae8b8d0.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "ebdf0178315a8400",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L12",
+      "kind": "standard",
+      "bytes": 8283925,
+      "sha256": "da26d28a6dfd39c35fb090a8b3df1c8e11b7a1f0529e498a89bc658aaf6b65c1",
+      "filename": "L12.da26d28a6dfd39c35fb090a8b3df1c8e11b7a1f0529e498a89bc658aaf6b65c1.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "5a3575ebdfffc3ba",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "stripe-billing",
+      "lecture": "L13",
+      "kind": "standard",
+      "bytes": 11724654,
+      "sha256": "820807a06cec17a12b05ac84cd929290c0f439687d089948671344aeee3ca031",
+      "filename": "L13.820807a06cec17a12b05ac84cd929290c0f439687d089948671344aeee3ca031.mp4",
+      "tag": "media-ja-stripe-billing",
+      "inputs": {
+        "script": "efea52a2237d61cb",
+        "src": "d36176fc0028daac"
+      }
+    }
+  ],
+  "retained": [
     {
       "lang": "ja",
       "course": "stripe-billing",
@@ -9,7 +193,8 @@
       "bytes": 11128834,
       "sha256": "ddcf2ee4eaafe1609d675b5debd30ab575da60d4a26d1b0be3bb32e29ae47d83",
       "filename": "L01.ddcf2ee4eaafe1609d675b5debd30ab575da60d4a26d1b0be3bb32e29ae47d83.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -19,7 +204,8 @@
       "bytes": 11147346,
       "sha256": "049fc3595581f9d8537b4e011f996be7008f8991de907e91d285a2c820296f14",
       "filename": "L02.049fc3595581f9d8537b4e011f996be7008f8991de907e91d285a2c820296f14.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -29,7 +215,8 @@
       "bytes": 14351800,
       "sha256": "4ba26e30071b1b17dd057a6be9bdad5ce4f9f09b252565c4cc8fdd3708e54142",
       "filename": "L03.4ba26e30071b1b17dd057a6be9bdad5ce4f9f09b252565c4cc8fdd3708e54142.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -39,7 +226,8 @@
       "bytes": 12549582,
       "sha256": "34a269d81548dfd3a15071ecbd110c8d1b95ebedc6766707daaf9bb93de85c4a",
       "filename": "L04.34a269d81548dfd3a15071ecbd110c8d1b95ebedc6766707daaf9bb93de85c4a.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -49,7 +237,8 @@
       "bytes": 13684834,
       "sha256": "5f6f8a8dfd4d9691288af1904bbbd1320d261bee6fa9458047176498affc5870",
       "filename": "L05.5f6f8a8dfd4d9691288af1904bbbd1320d261bee6fa9458047176498affc5870.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -59,7 +248,8 @@
       "bytes": 13677279,
       "sha256": "ff0bdf73846ce1c122debf16d35a66f00184bce5d437235ff2c4caf675a456ee",
       "filename": "L06.ff0bdf73846ce1c122debf16d35a66f00184bce5d437235ff2c4caf675a456ee.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -69,7 +259,8 @@
       "bytes": 14384219,
       "sha256": "2d1ed08b4c2b99c12eacddb52b340a9997927d90c00715891764bf551651e0e0",
       "filename": "L07.2d1ed08b4c2b99c12eacddb52b340a9997927d90c00715891764bf551651e0e0.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -79,7 +270,8 @@
       "bytes": 13914258,
       "sha256": "bae499781e13c447112b32df069ea82bf768ded73765a854b5a1d33570b1bd4c",
       "filename": "L08.bae499781e13c447112b32df069ea82bf768ded73765a854b5a1d33570b1bd4c.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -89,7 +281,8 @@
       "bytes": 13149015,
       "sha256": "0155e82cba1c924cc05b4ab4ef2079bd64224d862c6641251119824c1e5b3297",
       "filename": "L09.0155e82cba1c924cc05b4ab4ef2079bd64224d862c6641251119824c1e5b3297.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -99,7 +292,8 @@
       "bytes": 11578652,
       "sha256": "9e8d3a0a6c178a2467cf280784e2a8aef30a05878ff0ee9cd00d3d389518ba59",
       "filename": "L10.9e8d3a0a6c178a2467cf280784e2a8aef30a05878ff0ee9cd00d3d389518ba59.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -109,7 +303,8 @@
       "bytes": 14500048,
       "sha256": "7fc20af11c009a3297f18d241ebd3ce4fed5201c646b4a27d784b4323a448259",
       "filename": "L11.7fc20af11c009a3297f18d241ebd3ce4fed5201c646b4a27d784b4323a448259.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -119,7 +314,8 @@
       "bytes": 7601409,
       "sha256": "a8a87bd14ebea67b305a340e2e23e228a70f5aab7da43213a0b7c6120c3b7acb",
       "filename": "L12.a8a87bd14ebea67b305a340e2e23e228a70f5aab7da43213a0b7c6120c3b7acb.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -129,7 +325,8 @@
       "bytes": 10750024,
       "sha256": "9a11907bc3ca8d52999695fb114f73ac513f91485a7e55c05c893cb8d6c149a6",
       "filename": "L13.9a11907bc3ca8d52999695fb114f73ac513f91485a7e55c05c893cb8d6c149a6.mp4",
-      "tag": "media-ja-stripe-billing"
+      "tag": "media-ja-stripe-billing",
+      "retainedUntil": "2027-02-02"
     }
   ]
 }

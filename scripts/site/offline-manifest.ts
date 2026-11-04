@@ -2,7 +2,7 @@
 // 版（pageVersion）は、版の印を入れたまま描いたページと、ここで並べるファイル（動画・ポスター・字幕版）から決める（scripts/site-version.ts）
 import type { MediaEntry } from '../../site/media-shared';
 import { mediaPath } from '../../site/media-shared';
-import type { Asset, CourseManifest } from '../../site/offline-shared';
+import type { Asset, CourseManifest, CourseNews } from '../../site/offline-shared';
 import { asset, hash } from '../pwa';
 import { PAGE_VERSION_MARK, stampVersion } from '../site-version';
 
@@ -39,13 +39,17 @@ export const pageFiles = (o: {
     ];
   });
 
-/** 保存の manifest。ページの sha256 と大きさは、版を差し込んだ最終のページから。ポスターの ?v= も版にする */
+/**
+ * 保存の manifest。ページの sha256 と大きさは、版を差し込んだ最終のページから。ポスターの ?v= も版にする。
+ * news（「新しい版」の案内に出す、何が変わったか）は版に入れない。無ければ項目を書かない
+ */
 export const courseManifest = (o: {
   cid: string;
   title: string;
   page: Uint8Array;
   files: Asset[];
   pageVersion: string;
+  news?: CourseNews[];
 }): CourseManifest => {
   const saved = [
     asset(`${o.cid}/`, o.page, 'text/html'),
@@ -59,5 +63,6 @@ export const courseManifest = (o: {
     revision: hash(JSON.stringify(saved)),
     bytes: saved.reduce((sum, f) => sum + f.bytes, 0),
     files: saved,
+    ...(o.news?.length ? { news: o.news } : {}),
   };
 };

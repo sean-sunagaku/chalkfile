@@ -1,6 +1,176 @@
 {
-  "schema": 1,
+  "schema": 2,
   "entries": [
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S01",
+      "kind": "standard",
+      "bytes": 14879273,
+      "sha256": "37453544c7b2ba356ed41d14a67f37008f75683ca7b20132491496c93b2e6079",
+      "filename": "S01.37453544c7b2ba356ed41d14a67f37008f75683ca7b20132491496c93b2e6079.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "c2e33dc121f1403c",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S01",
+      "kind": "captioned",
+      "bytes": 15822412,
+      "sha256": "01fbd1fc4bfbb350d562815940150b99046e831c9f22604b6e0d2ace0d52eaf5",
+      "filename": "S01.cc.01fbd1fc4bfbb350d562815940150b99046e831c9f22604b6e0d2ace0d52eaf5.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "c2e33dc121f1403c",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S02",
+      "kind": "standard",
+      "bytes": 17593692,
+      "sha256": "6ac9a338f3b1b3e64a716d42c57afd4e3a2e321c807335648d436368325fbd25",
+      "filename": "S02.6ac9a338f3b1b3e64a716d42c57afd4e3a2e321c807335648d436368325fbd25.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "0ed8f267715837e3",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S02",
+      "kind": "captioned",
+      "bytes": 18785460,
+      "sha256": "2de0b05947bed5bd554abf69d6b1521493637f304c295ad682cd7f3b07cc090d",
+      "filename": "S02.cc.2de0b05947bed5bd554abf69d6b1521493637f304c295ad682cd7f3b07cc090d.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "0ed8f267715837e3",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S03",
+      "kind": "standard",
+      "bytes": 15445471,
+      "sha256": "7412392154fd84447c38652dd08d33d0576bb946c3d1b24595995be6558b6ebb",
+      "filename": "S03.7412392154fd84447c38652dd08d33d0576bb946c3d1b24595995be6558b6ebb.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "273144c2164b0f9e",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S03",
+      "kind": "captioned",
+      "bytes": 16355979,
+      "sha256": "6a5fe8fd7143c7346981b683ea4dfb17c154031136718e08038fd6ca214ef79a",
+      "filename": "S03.cc.6a5fe8fd7143c7346981b683ea4dfb17c154031136718e08038fd6ca214ef79a.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "273144c2164b0f9e",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S04",
+      "kind": "standard",
+      "bytes": 14483400,
+      "sha256": "a8479d9348f5b6a194a54fad5164897475243db2ae25c1df23012b68dfe3d344",
+      "filename": "S04.a8479d9348f5b6a194a54fad5164897475243db2ae25c1df23012b68dfe3d344.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "fbd33d3c6eb10b87",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S04",
+      "kind": "captioned",
+      "bytes": 15420136,
+      "sha256": "96dd8c7221149e5a38d2a0940923b69c14084c6752b543faebc088afffa7b512",
+      "filename": "S04.cc.96dd8c7221149e5a38d2a0940923b69c14084c6752b543faebc088afffa7b512.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "fbd33d3c6eb10b87",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S05",
+      "kind": "standard",
+      "bytes": 13420876,
+      "sha256": "4395e727d93ea5e65937c657a2eed7f767f3a79699d3e0ef810e9c37a2b20151",
+      "filename": "S05.4395e727d93ea5e65937c657a2eed7f767f3a79699d3e0ef810e9c37a2b20151.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "9a29fa22e2a1e57a",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S05",
+      "kind": "captioned",
+      "bytes": 13900505,
+      "sha256": "39ca0568d0c7f4f318d5349cde4f392dc427eda6ed3a56eb452954f4666d0063",
+      "filename": "S05.cc.39ca0568d0c7f4f318d5349cde4f392dc427eda6ed3a56eb452954f4666d0063.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "9a29fa22e2a1e57a",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S06",
+      "kind": "standard",
+      "bytes": 17323526,
+      "sha256": "fae26208db9ec75901e4d14c8300124edd8b2dbc93ffea5dcb33f4e2550f0825",
+      "filename": "S06.fae26208db9ec75901e4d14c8300124edd8b2dbc93ffea5dcb33f4e2550f0825.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "3a1e28d8dc3e4b40",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "superagent-comedy",
+      "lecture": "S06",
+      "kind": "captioned",
+      "bytes": 18628279,
+      "sha256": "f3fcd4d6c4c807d8c3d7dad2892a153597b8b56891991e78ae814eb48b12968f",
+      "filename": "S06.cc.f3fcd4d6c4c807d8c3d7dad2892a153597b8b56891991e78ae814eb48b12968f.mp4",
+      "tag": "media-ja-superagent-comedy",
+      "inputs": {
+        "script": "3a1e28d8dc3e4b40",
+        "src": "d36176fc0028daac"
+      }
+    }
+  ],
+  "retained": [
     {
       "lang": "ja",
       "course": "superagent-comedy",
@@ -9,7 +179,8 @@
       "bytes": 15294727,
       "sha256": "0dcdb99ee3d7d3ed16f76cd194a53fa0e4136319d7c2c67e0c81fdcb5e8260b0",
       "filename": "S01.0dcdb99ee3d7d3ed16f76cd194a53fa0e4136319d7c2c67e0c81fdcb5e8260b0.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -19,7 +190,8 @@
       "bytes": 16409733,
       "sha256": "43585220551cea8c7a089411bc0dcadbb40d72b08e83d94674a2f71a9ee260b0",
       "filename": "S01.cc.43585220551cea8c7a089411bc0dcadbb40d72b08e83d94674a2f71a9ee260b0.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -29,7 +201,8 @@
       "bytes": 18129763,
       "sha256": "1e67cf295fa648e201bdc06f433705f7552da94b8434410e5025b1bcb5773efe",
       "filename": "S02.1e67cf295fa648e201bdc06f433705f7552da94b8434410e5025b1bcb5773efe.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -39,7 +212,8 @@
       "bytes": 19454031,
       "sha256": "6231f22f862de35eaa8f9528b1b25ba108bd974407c1807330dd768d5ee55769",
       "filename": "S02.cc.6231f22f862de35eaa8f9528b1b25ba108bd974407c1807330dd768d5ee55769.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -49,7 +223,8 @@
       "bytes": 16007917,
       "sha256": "60d72573c0a5dcfd259cbb68886853b851ff30f86732b0811cceaca75a33e922",
       "filename": "S03.60d72573c0a5dcfd259cbb68886853b851ff30f86732b0811cceaca75a33e922.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -59,7 +234,8 @@
       "bytes": 16967160,
       "sha256": "7eb433755aa9fab4bfd1600a79a23d0a8cfb35d4fb54ae37e63c50b77ea82532",
       "filename": "S03.cc.7eb433755aa9fab4bfd1600a79a23d0a8cfb35d4fb54ae37e63c50b77ea82532.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -69,7 +245,8 @@
       "bytes": 14943446,
       "sha256": "6fc58f37a1c0c0a66d97114a49842908e092468630edd4b291dd63834adaad32",
       "filename": "S04.6fc58f37a1c0c0a66d97114a49842908e092468630edd4b291dd63834adaad32.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -79,7 +256,8 @@
       "bytes": 16003798,
       "sha256": "a7f1ce8ef9f107d2e43cf24d651d229c0885a440ca7c5d0a50f7763b90df9022",
       "filename": "S04.cc.a7f1ce8ef9f107d2e43cf24d651d229c0885a440ca7c5d0a50f7763b90df9022.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -89,7 +267,8 @@
       "bytes": 14302699,
       "sha256": "79764e68f9efc2af81e537da662e6daaec64809291aa8b30781ac12b2ed83ebc",
       "filename": "S05.79764e68f9efc2af81e537da662e6daaec64809291aa8b30781ac12b2ed83ebc.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -99,7 +278,8 @@
       "bytes": 13896055,
       "sha256": "717ee649b1f2e72f397131f729216271186da13321f8ff7e9b24eeecb2278033",
       "filename": "S05.cc.717ee649b1f2e72f397131f729216271186da13321f8ff7e9b24eeecb2278033.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -109,7 +289,8 @@
       "bytes": 17865985,
       "sha256": "77eb37ffae5a85ac8fb8dbe425f39889b5e6942fa73f5f946deda1ee6074698d",
       "filename": "S06.77eb37ffae5a85ac8fb8dbe425f39889b5e6942fa73f5f946deda1ee6074698d.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -119,7 +300,8 @@
       "bytes": 19316362,
       "sha256": "1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513",
       "filename": "S06.cc.1e356f829ab1a15e4561412e3d216d28045f73209d4c9d3acf8d35abdf3e8513.mp4",
-      "tag": "media-ja-superagent-comedy"
+      "tag": "media-ja-superagent-comedy",
+      "retainedUntil": "2027-02-02"
     }
   ]
 }

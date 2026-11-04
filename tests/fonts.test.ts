@@ -20,6 +20,7 @@ import {
   videoText,
 } from '../engine/core/fonts';
 import { fontIssues, LICENSES, readManifest, requestedChars, SOURCES, UPSTREAM, upstreamUrl } from '../scripts/fonts';
+import { siteFontText } from '../scripts/site/font-text';
 import { woff2CodePoints } from '../scripts/lib/woff2';
 import { course, lecture, say } from './fixtures/content/invalid/_base';
 
@@ -88,10 +89,17 @@ describe('書体に入れる文字（videoText・courseText・requestedChars）'
     expect(text).toContain('○×');
     expect(text).toContain(FIXED_TEXT);
   });
-  test('中国語の書体には中国語の台本だけ、日本語の書体には日本語と英語の台本の文字を入れる', () => {
+  test('書体には対応する言語の台本とサイトの文字を入れる', () => {
     const sc = new Set(requestedChars('noto-sc', SRC));
     const jp = new Set(requestedChars('noto', SRC));
-    const ja = new Set(charSet(coursesIn('ja').map(courseText)));
+    const ja = new Set(
+      charSet([
+        ...coursesIn('ja').map(courseText),
+        ...coursesIn('en').map(courseText),
+        ...siteFontText('ja'),
+        ...siteFontText('en'),
+      ]),
+    );
     const zhOnly = charSet(coursesIn('zh').map(courseText)).filter((cp) => !ja.has(cp) && cp > 0x3000);
     expect(zhOnly.length).toBeGreaterThan(0);
     for (const cp of zhOnly) {

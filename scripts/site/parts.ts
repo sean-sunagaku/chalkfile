@@ -2,14 +2,23 @@
 // 保存機能（PWA）の <head>・パネル・script・ファビコン。HTML は scripts/site/html.ts の html`…` で作る（エスケープが既定）
 import { LANG_INFO, type Lang } from '../../content/i18n';
 import type { Course } from '../../content/types';
-import type { SiteText } from '../../site/i18n';
+import type { Locale } from '../../site/i18n';
 import { cssColor, fillTemplate, type Html, html, inlineScript, joinHtml, jsonHtml, raw } from './html';
 
-/** テンプレートの {{key}} に入れる、その言語の決まった文字（無いキーは undefined。fillTemplate が止める） */
+/**
+ * テンプレートの {{key}}・{{key.name}} に入れる、その言語の決まった文字（表 table の key、. で区切ると中の表の name）。
+ * 無いキーと、文字でないもの（表・数で形の変わる文字）は undefined（fillTemplate が止める）
+ */
 export const textOf =
-  (T: SiteText) =>
-  (key: string): string | undefined =>
-    Object.hasOwn(T, key) ? T[key as keyof SiteText] : undefined;
+  (table: object) =>
+  (key: string): string | undefined => {
+    let value: unknown = table;
+    for (const part of key.split('.')) {
+      if (typeof value !== 'object' || value === null || !Object.hasOwn(value, part)) return undefined;
+      value = (value as Record<string, unknown>)[part];
+    }
+    return typeof value === 'string' ? value : undefined;
+  };
 
 /** ページの言語の、保存機能の画面（offline-client.ts）に渡す文字 */
 const LOCALE: Record<Lang, string> = { ja: 'ja-JP', en: 'en-US', zh: 'zh-CN' };
@@ -28,7 +37,8 @@ export const headMeta = (h: {
   title: string;
   description: string;
   url: string;
-  image?: string;
+  /** SNS の共有の画像（ページの版の印を入れたいときは Html にする。文字はエスケープする） */
+  image?: string | Html;
   icon: string;
   lang: Lang;
   alternates: { lang: Lang; url: string }[];
@@ -85,7 +95,8 @@ export type AppContext = {
   /** アプリの色（既定のテーマの地の色） */
   themeColor: string;
   coursesIn: CoursesIn;
-  text: Record<Lang, SiteText>;
+  /** 言語ごとの決まった文字（site/i18n の LOCALES。保存の欄は panel と client、保存の画面は client を使う） */
+  text: Readonly<Record<Lang, Locale>>;
 };
 
 /** 保存機能の部品（ページのテンプレートの __PWA_HEAD__・__OFFLINE_PANEL__・__PWA_SCRIPT__） */
@@ -101,13 +112,13 @@ export const appParts = (
   root: string,
   course?: { id: string; title: string; pageVersion: string },
 ): AppParts => ({
-  head: html`<link rel="manifest" href="${root}manifest.webmanifest"><link rel="apple-touch-icon" href="${root}icons/icon-180.png"><meta name="theme-color" content="${cssColor(ctx.themeColor)}"><meta name="apple-mobile-web-app-capable" content="yes">`,
+  head: html`<link rel="manifest" href="${root}${LANG_INFO[lang].path}manifest.webmanifest"><link rel="apple-touch-icon" href="${root}icons/icon-180.png"><meta name="theme-color" content="${cssColor(ctx.themeColor)}"><meta name="apple-mobile-web-app-capable" content="yes">`,
   panel: raw(
     fillTemplate(
       ctx.offlinePanel,
       {
         marks: { COURSE_HIDDEN: html`${course ? '' : 'hidden'}`, LIBRARY_OPEN: html`${course ? '' : 'open'}` },
-        text: textOf(ctx.text[lang]),
+        text: textOf({ ...ctx.text[lang].client, ...ctx.text[lang].panel }),
       },
       'site/offline-panel.html',
     ),
@@ -118,6 +129,6 @@ export const appParts = (
     courses: ctx.coursesIn(lang).map((c) => ({ id: `${LANG_INFO[lang].path}${c.id}`, title: c.title })),
     lang,
     locale: LOCALE[lang],
-    text: ctx.text[lang],
+    text: ctx.text[lang].client,
   })}</script>${inlineScript(ctx.offlineClient)}`,
 });

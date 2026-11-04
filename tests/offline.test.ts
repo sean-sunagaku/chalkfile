@@ -69,16 +69,15 @@ test('サイズの不足・大きすぎるファイル・重複・違う講座�
 describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
   const file = (url: string, type = 'video/mp4') => ({ url, bytes: 10, sha256: hash, type });
   const course = (id: string, files: ReturnType<typeof file>[]) => ({ schema: 1, id, title: 't', pageVersion: hash, revision: hash, bytes: files.length * 10, files });
-  const roots = { en: '/chalkfile-media-en/' };
   test('字幕を焼き込んだ版（.cc.mp4）も保存対象にできる', () => {
     const m = course('sample', [file('sample/'), file(`sample/media/S01.mp4?v=${hash}`), file(`sample/media/S01.jpg?v=${hash}`, 'image/jpeg'), file(`sample/media/S01.cc.mp4?v=${hash}`)]);
     m.files[0].type = 'text/html';
     expect(validateManifest(m, 'sample', scope).files.length).toBe(4);
   });
-  test('訳の講座は、言語の動画のサイトにある自分の言語の動画だけ保存対象にできる', () => {
-    const m = course('en/sample', [file('en/sample/'), file(`/chalkfile-media-en/sample/S01.en.mp4?v=${hash}`), file(`/chalkfile-media-en/sample/S01.en.jpg?v=${hash}`, 'image/jpeg'), file(`/chalkfile-media-en/sample/S01.en.cc.mp4?v=${hash}`)]);
+  test('訳の講座は、/media/<言語>/<講座>/ にある自分の言語の動画と、講座のフォルダのポスターだけ保存対象にできる', () => {
+    const m = course('en/sample', [file('en/sample/'), file(`/media/en/sample/S01.${hash}.mp4`), file(`en/sample/media/S01.en.jpg?v=${hash}`, 'image/jpeg'), file(`/media/en/sample/S01.cc.${hash}.mp4`)]);
     m.files[0].type = 'text/html';
-    expect(validateManifest(m, 'en/sample', scope, roots).files.length).toBe(4);
+    expect(validateManifest(m, 'en/sample', 'https://example.com/').files.length).toBe(4);
   });
   for (const [name, files] of [
     ['字幕の版だけで、字幕なしの動画が無い', ['sample/media/S01.cc.mp4', 'sample/media/S01.jpg']],
@@ -90,14 +89,23 @@ describe('字幕を焼き込んだ版と、訳の講座の動画', () => {
     expect(() => validateManifest(m, 'sample', scope)).toThrow();
   });
   for (const [name, files] of [
-    ['別の言語の動画', ['/chalkfile-media-en/sample/S01.zh.mp4', '/chalkfile-media-en/sample/S01.zh.jpg']],
-    ['別の言語の動画のサイト', ['/chalkfile-media-zh/sample/S01.en.mp4', '/chalkfile-media-zh/sample/S01.en.jpg']],
-    ['別の講座のフォルダ', ['/chalkfile-media-en/other/S01.en.mp4', '/chalkfile-media-en/other/S01.en.jpg']],
-    ['別の origin', ['https://other.example.com/chalkfile-media-en/sample/S01.en.mp4', 'https://other.example.com/chalkfile-media-en/sample/S01.en.jpg']],
+    ['別の言語の動画', [`/media/zh/sample/S01.${hash}.mp4`, `en/sample/media/S01.en.jpg?v=${hash}`]],
+    ['別の言語のポスター', [`/media/en/sample/S01.${hash}.mp4`, `en/sample/media/S01.zh.jpg?v=${hash}`]],
+    ['別の講座の動画', [`/media/en/other/S01.${hash}.mp4`, `en/sample/media/S01.en.jpg?v=${hash}`]],
+    ['別の origin', [`https://other.example.com/media/en/sample/S01.${hash}.mp4`, `en/sample/media/S01.en.jpg?v=${hash}`]],
+    // 旧 Pages の頃の訳の動画のサイト。今の SW は、その場所を渡さない（旧 Pages の移行の SW だけが渡す。下のテスト）
+    ['旧 Pages の頃の動画のサイト', [`/chalkfile-media-en/sample/S01.en.mp4?v=${hash}`, `/chalkfile-media-en/sample/S01.en.jpg?v=${hash}`]],
   ] as const) test(`訳の講座で拒否: ${name}`, () => {
-    const m = course('en/sample', [file('en/sample/'), ...files.map((f) => file(`${f}?v=${hash}`, f.endsWith('.jpg') ? 'image/jpeg' : 'video/mp4'))]);
+    const m = course('en/sample', [file('en/sample/'), ...files.map((f) => file(f, f.includes('.jpg') ? 'image/jpeg' : 'video/mp4'))]);
     m.files[0].type = 'text/html';
-    expect(() => validateManifest(m, 'en/sample', scope, roots)).toThrow();
+    expect(() => validateManifest(m, 'en/sample', 'https://example.com/')).toThrow();
+  });
+  test('旧 Pages の移行の SW（site/legacy-sw.ts）が渡す、その頃の動画のサイトの動画は、移行の SW を消すまで受け入れる', () => {
+    const legacy = 'https://example.com/old-site/';
+    const m = course('en/sample', [file('en/sample/'), file(`/chalkfile-media-en/sample/S01.en.mp4?v=${hash}`), file(`/chalkfile-media-en/sample/S01.en.jpg?v=${hash}`, 'image/jpeg')]);
+    m.files[0].type = 'text/html';
+    expect(validateManifest(m, 'en/sample', legacy, { en: '/chalkfile-media-en/' }).files.length).toBe(3);
+    expect(() => validateManifest(m, 'en/sample', legacy, { zh: '/chalkfile-media-zh/' })).toThrow();
   });
   test('講座の ID は、言語の頭を 1 つだけ付けられる', () => {
     for (const ok of ['sample', 'en/sample', 'zh/superagent-comedy']) expect(COURSE_ID.test(ok)).toBe(true);

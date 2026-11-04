@@ -1,6 +1,6 @@
 // 静的な応答のヘッダー（scripts/site/headers.ts の _headers）。Workers の静的 assets と同じ重ね方で、パスごとに効くヘッダーを確かめる
 import { describe, expect, test } from 'bun:test';
-import { HEADER_RULES, HEADERS, headersFile, headersFor, parseHeaders } from '../scripts/site/headers';
+import { HEADER_RULES, HEADERS, headersFile, headersFor, IMMUTABLE, parseHeaders } from '../scripts/site/headers';
 
 const SECURITY = {
   'content-security-policy': "frame-ancestors 'none'",
@@ -18,12 +18,17 @@ describe('静的な応答のヘッダー（_headers）', () => {
       '/index.html',
       '/stripe-billing/',
       '/en/pstack-comedy/',
-      '/stripe-billing/media/L01.jpg',
+      '/stripe-billing/offline-manifest.json',
       '/icons/icon-192.png',
+      '/icons/maskable-512.png',
       '/assets/themes/paper.jpg',
       '/manifest.webmanifest',
+      '/en/manifest.webmanifest',
       '/offline/',
       '/404.html',
+      '/en/404.html',
+      '/sitemap.xml',
+      '/robots.txt',
     ]) {
       const { headers, joined } = headersFor(p);
       expect(joined).toEqual([]);
@@ -32,6 +37,16 @@ describe('静的な応答のヘッダー（_headers）', () => {
         'cache-control': 'public, max-age=0, must-revalidate, no-transform',
       });
     }
+  });
+  test('?v= の付いた資源（講座のポスター）は 1 年キャッシュさせ、確かめ直させない。全部に当たる規則の Cache-Control を外すので、値がつながらない', () => {
+    for (const p of ['/stripe-billing/media/L01.jpg', '/en/pstack-comedy/media/P01.en.jpg']) {
+      const { headers, joined } = headersFor(p);
+      expect(joined).toEqual([]);
+      expect(Object.fromEntries(headers)).toEqual({ ...SECURITY, 'cache-control': IMMUTABLE });
+    }
+    expect(IMMUTABLE).toBe('public, max-age=31536000, immutable, no-transform');
+    // 動画（/media/）は Worker が返す（_headers は効かない）。一覧のページの画像は ?v= を付けないので、長くキャッシュさせない
+    for (const p of ['/media/ja/stripe-billing/L01.mp4', '/assets/hero.jpg']) expect(headersFor(p).headers.get('cache-control')).not.toContain('immutable');
   });
   test('Service Worker は no-cache。全部に当たる規則の Cache-Control を外してから付けるので、値がつながらない', () => {
     const { headers, joined } = headersFor('/sw.js');

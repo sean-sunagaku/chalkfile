@@ -1,6 +1,36 @@
 {
-  "schema": 1,
+  "schema": 2,
   "entries": [
+    {
+      "lang": "ja",
+      "course": "pstack-comedy",
+      "lecture": "P01",
+      "kind": "standard",
+      "bytes": 14296994,
+      "sha256": "9faec8dbf8441fca34291a852c40a39913c646a1b4f89a43c59a1366a805423f",
+      "filename": "P01.9faec8dbf8441fca34291a852c40a39913c646a1b4f89a43c59a1366a805423f.mp4",
+      "tag": "media-ja-pstack-comedy",
+      "inputs": {
+        "script": "0e79ea86e714d0d5",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "pstack-comedy",
+      "lecture": "P01",
+      "kind": "captioned",
+      "bytes": 14729033,
+      "sha256": "440ed7a3d65a4be17a35b10f91d8b8cff25f6dc1c807ce780586df1257f222dd",
+      "filename": "P01.cc.440ed7a3d65a4be17a35b10f91d8b8cff25f6dc1c807ce780586df1257f222dd.mp4",
+      "tag": "media-ja-pstack-comedy",
+      "inputs": {
+        "script": "0e79ea86e714d0d5",
+        "src": "d36176fc0028daac"
+      }
+    }
+  ],
+  "retained": [
     {
       "lang": "ja",
       "course": "pstack-comedy",
@@ -9,7 +39,8 @@
       "bytes": 13677690,
       "sha256": "63c34ded4d600ca9a19a19decc8b3697f8953b54a225b8533bbc7be395db5b89",
       "filename": "P01.63c34ded4d600ca9a19a19decc8b3697f8953b54a225b8533bbc7be395db5b89.mp4",
-      "tag": "media-ja-pstack-comedy"
+      "tag": "media-ja-pstack-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -19,7 +50,8 @@
       "bytes": 14398927,
       "sha256": "fefc1993bf088554aa6499995528332084a5c5a8789ca7c657c58717f57af5d8",
       "filename": "P01.cc.fefc1993bf088554aa6499995528332084a5c5a8789ca7c657c58717f57af5d8.mp4",
-      "tag": "media-ja-pstack-comedy"
+      "tag": "media-ja-pstack-comedy",
+      "retainedUntil": "2027-02-02"
     }
   ]
 }

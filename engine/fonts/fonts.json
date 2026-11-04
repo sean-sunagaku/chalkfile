@@ -19,9 +19,9 @@
           "weights": [
             500
           ],
-          "sha256": "39438e26bc61655d9fb735cb37e5d08824b084b1bee74fbf2f77bf9828bdd7eb",
-          "bytes": 248892,
-          "chars": 1347,
+          "sha256": "5f462ea86f95bf35aceeeeaeb83c931a5d3af5c748836ebc77b47a5d5f3b3509",
+          "bytes": 249916,
+          "chars": 1353,
           "missing": "≈－",
           "source": {
             "path": "ofl/zenmarugothic/ZenMaruGothic-Medium.ttf",
@@ -36,9 +36,9 @@
           "weights": [
             700
           ],
-          "sha256": "a48c8aaafd03f2de99560b3d06e95728305d96ffa8fe46c69c95db4db21fa440",
-          "bytes": 252608,
-          "chars": 1347,
+          "sha256": "ea29ac6641702c98ff01f1d8dd41496c3d04a4437a270f8713f43d13ec0a5f48",
+          "bytes": 253796,
+          "chars": 1353,
           "missing": "≈－",
           "source": {
             "path": "ofl/zenmarugothic/ZenMaruGothic-Bold.ttf",
@@ -53,9 +53,9 @@
           "weights": [
             900
           ],
-          "sha256": "f0f896323c79c1dd6242fedfe864311efd6d30e98ad5ec90af2ff425acd033bb",
-          "bytes": 251132,
-          "chars": 1347,
+          "sha256": "754c389538cbe4bba11bf68205d30501fe4f2863cfd083b48497aae049d45136",
+          "bytes": 252272,
+          "chars": 1353,
           "missing": "≈－",
           "source": {
             "path": "ofl/zenmarugothic/ZenMaruGothic-Black.ttf",
@@ -80,9 +80,9 @@
             700,
             900
           ],
-          "sha256": "e4fa8410ad2fd02194f40cdacf6691b7855148bfd1200170ff31243e65381cbc",
-          "bytes": 460516,
-          "chars": 1348,
+          "sha256": "cd0b7bd3447729491bd5f0c0a5b370b8a1f0ab42ce930fe3f34567fee425c18a",
+          "bytes": 461984,
+          "chars": 1354,
           "missing": "≒",
           "source": {
             "path": "ofl/notosansjp/NotoSansJP[wght].ttf",
@@ -107,9 +107,9 @@
             700,
             900
           ],
-          "sha256": "f593f415f37f645dd0d84deb039951f8c441c2492aec63c974dd8f3ce0b197d0",
-          "bytes": 370364,
-          "chars": 1294,
+          "sha256": "8465e813f46e51e8799cce277b172ab7cf3154a92dacf7e565242ece494f331a",
+          "bytes": 450328,
+          "chars": 1461,
           "missing": "",
           "source": {
             "path": "ofl/notosanssc/NotoSansSC[wght].ttf",

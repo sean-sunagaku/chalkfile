@@ -2,21 +2,23 @@
 // 動画と同じパレット（engine/core/theme.ts の derivePalette）と色の計算（engine/core/color.ts）から作るので、動画とサイトのトンマナがそろう。
 // 図の文字色（--pink など）は、パレットの site.toneText（動画の文字色と、混ぜる割合が違う。そろえるのは、動画とサイトの見た目をまとめて更新する回）
 import type { Lang } from '../content/i18n';
-import type { FontKey, Theme } from '../content/types';
-import { alpha } from '../engine/core/color';
+import type { Theme } from '../content/types';
+import { alpha, mix } from '../engine/core/color';
 import { derivePalette } from '../engine/core/theme';
+import { FONTS } from '../engine/core/fonts';
+import { readableOn } from './site/contrast';
 
-const FONT: Record<FontKey, { family: string; query: string }> = {
-  'zen-maru': { family: '"Zen Maru Gothic"', query: 'Zen+Maru+Gothic:wght@500;700;900' },
-  inter: { family: '"Inter"', query: 'Inter:wght@400;500;600;700;800' },
-  noto: { family: '"Noto Sans JP"', query: 'Noto+Sans+JP:wght@400;500;700;900' },
-  'noto-sc': { family: '"Noto Sans SC"', query: 'Noto+Sans+SC:wght@400;500;700;900' },
+/** 動画と同じファイルを、太さごとに登録する。保存版でも同じ URL を SW が返す。 */
+export const fontLink = (t: Theme, lang: Lang = 'ja') => {
+  const ids = [...derivePalette(t, lang).fonts, 'mono'] as const;
+  const faces = ids.flatMap((id) => {
+    const font = FONTS[id];
+    return font.files.flatMap((file) => file.weights.map((weight) =>
+      `@font-face{font-family:"${font.family}";font-style:normal;font-weight:${weight};font-display:swap;src:url("/fonts/${file.file}") format("woff2");}`,
+    ));
+  });
+  return `<style>${faces.join('')}</style>`;
 };
-
-export const fontLink = (t: Theme, lang: Lang = 'ja') =>
-  `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${[...derivePalette(t, lang).fonts.map((f) => FONT[f].query), 'JetBrains+Mono:wght@500;700']
-    .map((q) => `family=${q}`)
-    .join('&')}&display=swap">`;
 
 /** 書体が読めないときの、端末の書体（中国語は簡体字の書体、ほかは日本語の書体） */
 const SYSTEM: Record<Lang, string[]> = {
@@ -24,7 +26,7 @@ const SYSTEM: Record<Lang, string[]> = {
   en: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic"'],
   zh: ['"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"'],
 };
-const fontBody = (t: Theme, lang: Lang) => [...derivePalette(t, lang).fonts.map((f) => FONT[f].family), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
+const fontBody = (t: Theme, lang: Lang) => [...derivePalette(t, lang).fonts.map((f) => `"${FONTS[f].family}"`), ...SYSTEM[lang], 'system-ui', 'sans-serif'].join(', ');
 
 /** 背景の飾り（動画の decor と同じ考え方） */
 const decorCss = (t: Theme) => {
@@ -59,6 +61,22 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
   const light = t.scheme === 'light';
   // 図の色を文字に使うときの色（明るい地では、図の色だと薄いので、見出しの色を少し混ぜて読める濃さにする）
   const ink = derivePalette(t, lang).site.toneText;
+  // 面に重ねる薄い色の濃さ（今のレクチャー・台詞・クイズの印）
+  const soft = {
+    pink: light ? 0.1 : 0.14,
+    violet: light ? 0.1 : 0.16,
+    cyan: light ? 0.1 : 0.13,
+    mint: light ? 0.1 : 0.14,
+    coral: light ? 0.1 : 0.15,
+  } as const;
+  // 薄い文字（時刻・数・注記）は、地・面・一段上の面と、面に重ねた薄い色のどれに置いても、本文の下限のコントラストで読める濃さにする
+  // （テーマの muted は動画と共有なので、サイトに出すときだけ本文の色へ寄せる。scripts/site/contrast.ts）
+  const grounds = [
+    c.bg,
+    c.surface,
+    c.surface2,
+    ...Object.entries(soft).map(([tone, a]) => mix(c.surface, t.tones[tone as keyof typeof soft], a)),
+  ];
   const vars: Record<string, string> = {
     '--ink': c.bg,
     '--panel': c.surface,
@@ -66,7 +84,7 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
     '--line': c.line,
     '--fg': c.ink,
     '--fg-2': c.sub,
-    '--muted': c.muted,
+    '--muted': readableOn(c.muted, grounds, c.ink),
     '--accent': c.accent,
     '--on-accent': c.onAccent,
     '--pink': ink.pink,
@@ -75,11 +93,11 @@ export const themeCss = (t: Theme, lang: Lang = 'ja') => {
     '--mint': ink.mint,
     '--amber': ink.amber,
     '--coral': ink.coral,
-    '--pink-soft': alpha(t.tones.pink, light ? 0.1 : 0.14),
-    '--violet-soft': alpha(t.tones.violet, light ? 0.1 : 0.16),
-    '--cyan-soft': alpha(t.tones.cyan, light ? 0.1 : 0.13),
-    '--mint-soft': alpha(t.tones.mint, light ? 0.1 : 0.14),
-    '--coral-soft': alpha(t.tones.coral, light ? 0.1 : 0.15),
+    '--pink-soft': alpha(t.tones.pink, soft.pink),
+    '--violet-soft': alpha(t.tones.violet, soft.violet),
+    '--cyan-soft': alpha(t.tones.cyan, soft.cyan),
+    '--mint-soft': alpha(t.tones.mint, soft.mint),
+    '--coral-soft': alpha(t.tones.coral, soft.coral),
     '--mark': alpha(c.accent, light ? 0.38 : 0.5),
     '--grad': `linear-gradient(100deg, ${t.gradient.join(', ')})`,
     '--shadow': t.shadow,

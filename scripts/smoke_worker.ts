@@ -67,13 +67,16 @@ check(
   `${sw.status} ${header(sw, 'Cache-Control')}`,
 );
 // 静的な応答のヘッダーが、_headers の規則（scripts/site/headers.ts）のとおり（セキュリティのヘッダー・no-transform。
-// 同じパスに 2 つの規則が当たって、値がカンマでつながっていない）
+// 同じパスに 2 つの規則が当たって、値がカンマでつながっていない）。?v= の付いた資源（最初の講座のポスター）は immutable
 {
   const differ: string[] = [];
-  for (const route of ['/', '/sw.js']) {
+  const course = pages.find((p) => p !== '/' && existsSync(path.join(dist, p, 'media')));
+  const poster = course ? readdirSync(path.join(dist, course, 'media')).find((f) => f.endsWith('.jpg')) : undefined;
+  const routes = ['/', '/sw.js', '/robots.txt', '/sitemap.xml', ...(course && poster ? [`${course}media/${poster}?v=smoke`] : [])];
+  for (const route of routes) {
     const response = await get(route, { headers: { 'Sec-Fetch-Mode': route === '/' ? 'navigate' : 'no-cors' } });
     await response.body?.cancel();
-    for (const [name, value] of headersFor(route).headers) {
+    for (const [name, value] of headersFor(new URL(route, base).pathname).headers) {
       if (header(response, name) !== value) differ.push(`${route} ${name}: ${header(response, name) || '(無い)'}`);
     }
   }

@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CourseStatus } from '../../site/offline-shared';
 import type { Stats } from '../e2e/session';
-import type { Control, SiteSession } from '../e2e/site';
-import { channel, delayedProgress, evidenceDir, expect, manifestOf, openWithActiveWorker, seek, test } from './fixtures';
+import { type Control, type SiteSession, UPDATE_NEWS } from '../e2e/site';
+import { channel, delayedProgress, evidenceDir, expect, manifestOf, seek, test } from './fixtures';
 
 // 保存と再生を確かめる講座は、テストのサーバーのセッションが決める（ci は合成の講座、real は Stripe 講座。tests/e2e/sites.ts）
 /** 一覧の「講座ごとの保存状態」は、組み立てた講座の数だけ並ぶ */
@@ -43,10 +43,10 @@ async function status(page: Page, site: SiteSession): Promise<CourseStatus> {
     return reply.courses.find((s) => s.id === id)!;
   }, site.course.id);
 }
+/** 再生してから時刻へ移る（動画は preload="none" で、再生を押すまで読まない） */
 async function playAndPause(page: Page, at = 0) {
   const video = page.locator('video');
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThanOrEqual(1);
-  await video.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; v.currentTime = time; await v.play(); }, at);
+  await video.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; await v.play(); v.currentTime = time; }, at);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(at + 0.2);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
   await video.evaluate((v: HTMLVideoElement) => v.pause());
@@ -61,7 +61,7 @@ test('一覧ページの375px表示から保存状態とインストール案内
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.setViewportSize({ width: 375, height: 812 });
-  await openWithActiveWorker(page, '/');
+  await page.goto('/');
   await expect(page.locator('#savedCourses a')).toHaveCount(courseCount(site));
   await expect(page.locator('#offlineMessage')).toContainText('保存状態を確認しました');
   await expect(page.locator('h1')).toHaveText('Chalkfile');
@@ -75,6 +75,22 @@ test('一覧ページの375px表示から保存状態とインストール案内
   await savedLink(page, site).click();
   await expect(page.locator('#offlineSave')).toBeEnabled();
   expect(errors).toEqual([]);
+});
+
+test('講座を開いただけでは、動画（/media/）を取りに行かない。長さは台本のデータから出し、再生を押すと開いたレクチャーの動画だけを取る', async ({ page, request, site }) => {
+  await ready(page, site);
+  await expect(page.locator('#playbackStatus')).toContainText('オンライン再生');
+  // 保存の状態の確かめ・ポスター・字幕のデータの間に、動画を取りに行っていない（preload="none"）
+  await page.waitForTimeout(1500);
+  expect((await stats(request)).mediaRequests).toBe(0);
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => [v.preload, v.readyState])).toEqual(['none', 0]);
+  await expect(page.locator('#sections .dur').first()).not.toHaveText('00:00');
+  await expect(page.locator('#curSum')).not.toBeEmpty();
+  await playAndPause(page, seek(site, 5));
+  expect((await stats(request)).mediaRequests).toBeGreaterThan(0);
+  expect(await page.locator('video').evaluate((v: HTMLVideoElement) => new URL(v.currentSrc).pathname)).toMatch(
+    new RegExp(`/${site.course.lectures[0].id}(\\.cc)?\\.[a-f0-9]{64}\\.mp4$`),
+  );
 });
 
 test('オンライン再生、単体ファイル保存、学習UI、PWA情報と375pxの導線', async ({ page, context, request, site }) => {
@@ -107,7 +123,11 @@ test('オンライン再生、単体ファイル保存、学習UI、PWA情報と
   const appManifest = await cdp.send('Page.getAppManifest');
   expect(appManifest.errors).toEqual([]);
   const data = JSON.parse(appManifest.data!);
-  expect(data.scope).toBe('./'); expect(data.start_url).toBe('./'); expect(data.icons).toHaveLength(2);
+  expect(data.scope).toBe('./'); expect(data.start_url).toBe('./'); expect(data.lang).toBe('ja');
+  // ふつうのアイコンと、形を切り抜くアイコン（maskable）は別の画像
+  expect((data.icons as { src: string; purpose: string }[]).map((i) => `${i.purpose} ${i.src}`)).toEqual([
+    'any icons/icon-192.png', 'any icons/icon-512.png', 'maskable icons/maskable-192.png', 'maskable icons/maskable-512.png',
+  ]);
   const installability = await cdp.send('Page.getInstallabilityErrors');
   // 通常のテストcontextはシークレット。アプリ自体の不備が無いことを分けて確認する。
   expect(installability.installabilityErrors.map((e) => e.errorId)).toEqual(['in-incognito']);
@@ -271,12 +291,18 @@ test('キャンセル・別タブからの重複保存を処理し、再試行�
 test('教材更新：旧版の教材と動画を維持し、失敗後に再試行して完全な新版へ切り替える', async ({ page, context, request, site }) => {
   await ready(page, site); await save(page);
   const original = (await status(page, site)).saved!;
+  // 公開中の版と保存版が同じ間は、何が変わったかを出さない
+  await expect(page.locator('#offlineNews')).toBeHidden();
   // 変わっていない動画は前の保存版から写して取りに来ないので、更新の失敗は、版の変わるポスターに差し込む
   await control(request, { mode: 'fail', update: true, faultTarget: 'poster' });
   await page.reload();
   expect(await page.title()).not.toContain('更新テスト');
   await page.locator('#offlineCheck').click();
   await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
+  // 新しい版の案内に、何が変わったか（教材情報の news のうち、保存した日より後のもの）を出す
+  await expect(page.locator('#offlineMessage')).toContainText('新しい版があります');
+  await expect(page.locator('#offlineNews')).toBeVisible();
+  await expect(page.locator('#offlineNewsList li').first()).toContainText(UPDATE_NEWS);
   await page.locator('#offlineSave').click();
   await expect(page.locator('#offlineMessage')).toContainText('再試行');
   expect((await status(page, site)).saved!.manifest.revision).toBe(original.manifest.revision);
@@ -415,6 +441,11 @@ test('無効の一覧に入れた revision の保存版は、オンラインで�
     await expect(page).toHaveTitle(/更新テスト/);
     await expect(page.locator('#offlineSave')).toHaveText('新しい版に更新して保存');
     await expect(page.locator('#offlineSave')).toBeEnabled();
+    // 案内は更新だけ（開き直しても公開中のページになるので、「保存した版を開く」と「保存版が切り替わりました」は出さない）
+    await expect(page.locator('#offlineMessage')).toContainText('保存した版には直した不具合がある');
+    await expect(page.locator('#offlineReload')).toBeHidden();
+    await expect(page.locator('#playbackStatus')).toContainText('オンライン再生');
+    await expect(page.locator('#offlineNewsList li').first()).toContainText(UPDATE_NEWS);
     // 公開中のページのポスター（新しい版の ?v=。保存版には無い）と動画も、取って再生できる
     const poster = await page.locator('video').evaluate((v: HTMLVideoElement) => v.poster);
     expect(poster).toContain('?v=');
@@ -573,4 +604,29 @@ test('保存中にブラウザを終了しても、途中の講座を保存済�
     expect(await page.evaluate(async (id) => (await caches.keys()).filter((n) => n.includes(`:course:${id}:`)), site.course.id)).toEqual([]);
     await save(page);
   } finally { await context.close(); rmSync(profile, { recursive: true, force: true }); }
+});
+
+test('書体は外のサービスに接続せず、通信断でも保存したバイトと MIME で読める', async ({ page, context, site }) => {
+  const externalFonts: string[] = [];
+  page.on('request', (r) => {
+    if (/fonts\.(?:googleapis|gstatic)\.com/.test(r.url())) externalFonts.push(r.url());
+  });
+  await ready(page, site);
+  const fontDir = path.join(site.dist, 'fonts');
+  const expected = readdirSync(fontDir).filter((f) => f.endsWith('.woff2')).map((f) => ({
+    url: `/fonts/${f}`,
+    bytes: [...readFileSync(path.join(fontDir, f))],
+  }));
+  expect(expected.length).toBeGreaterThan(0);
+  await context.setOffline(true);
+  for (const font of expected) {
+    const got = await page.evaluate(async (url) => {
+      const r = await fetch(url);
+      return { status: r.status, type: r.headers.get('content-type')?.split(';')[0], bytes: [...new Uint8Array(await r.arrayBuffer())] };
+    }, font.url);
+    expect(got, font.url).toEqual({ status: 200, type: 'font/woff2', bytes: font.bytes });
+  }
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => [...document.fonts].some((f) => f.status === 'loaded'))).toBe(true);
+  expect(externalFonts).toEqual([]);
 });

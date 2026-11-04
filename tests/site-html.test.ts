@@ -1,5 +1,7 @@
 // サイトの HTML を安全に組み立てる部品（scripts/site/html.ts）。エスケープが既定・raw() で外す・印の 1 回の置き換え・テーマの色の形
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   cssColor,
   esc,
@@ -12,7 +14,7 @@ import {
   raw,
   styleText,
 } from '../scripts/site/html';
-import { cspHead, scriptHash, splitPageScript, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
+import { cspHead, scriptHash, WWW_REDIRECT_SCRIPT } from '../scripts/site/csp';
 
 describe('html`…` と raw()', () => {
   test('文字と数はエスケープし、Html はそのまま、配列はつなぐ', () => {
@@ -84,15 +86,10 @@ describe('CSP（scripts/site/csp.ts）', () => {
     );
     expect(head).toEndWith(`"><script>${WWW_REDIRECT_SCRIPT}</script>`);
   });
-  test('テンプレートから本体の script を取り出し、その場所を __PAGE_SCRIPT__ にする。属性の無い script が 1 つでなければ止める', () => {
-    const json = '<script id="d" type="application/json">{}</script>';
-    expect(splitPageScript(`<p>${json}<script>\nrun()\n</script></p>`, 't')).toEqual({
-      template: `<p>${json}__PAGE_SCRIPT__</p>`,
-      script: '\nrun()\n',
-    });
-    expect(() => splitPageScript(json, 'site/t.html')).toThrow(
-      'site/t.html に、ページの本体の script（属性の無い <script>）が 1 つではなく 0 ある',
-    );
-    expect(() => splitPageScript('<script>a</script><script>b</script>', 't')).toThrow('2 ある');
+  test('講座のページのテンプレートに、動く script を書かない（画面は site/course-page.ts。組み立てが __PAGE_SCRIPT__ の所に入れる）', () => {
+    const template = readFileSync(path.join(import.meta.dir, '../site/template.html'), 'utf8');
+    const scripts = [...template.matchAll(/<script\b([^>]*)>/gi)].map((m) => m[1].trim());
+    expect(scripts).toEqual(['id="course-data" type="application/json"']);
+    expect(template.split('__PAGE_SCRIPT__')).toHaveLength(2);
   });
 });

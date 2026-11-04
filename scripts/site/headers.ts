@@ -1,4 +1,5 @@
-// Workers の静的 assets に置く、ページのほかのファイル: 応答のヘッダー（_headers）・送らないファイル（.assetsignore）・404 のページ
+// Workers の静的 assets に置く、ページのほかのファイル: 応答のヘッダー（_headers）・送らないファイル（.assetsignore）。
+// 言語ごとの 404 のページは scripts/site/render-not-found.ts
 import { rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -15,9 +16,13 @@ export type HeaderRule = { path: string; detach?: readonly string[]; set: Readon
  *   ほかのサイトの枠に入れさせない（frame-ancestors は meta の CSP では効かないので、ヘッダーで送る）。使わない機能を止める。
  *   別のサイトの窓と同じ閲覧の単位に入らない（COOP）。HSTS は、ゾーンの設定を確かめてから決める（ここでは送らない）
  * - Service Worker: 毎回確かめ直す（no-cache）
- * ?v= の付いたポスターは、同じパスを一覧のページ・og:image・SW の起動用ファイルが ?v= 無しで読む。規則はパスでしか当たらないので、
- * 長くキャッシュさせない（描き直したあと、一覧のページの縮小画像が古いまま残る）
+ * - ?v= の付いた資源（講座のポスター <講座>/media/*・<言語>/<講座>/media/*）: 1 年キャッシュさせ、確かめ直させない（immutable）。
+ *   講座のページ・一覧のページの縮小画像・og:image・保存の manifest・SW の起動用ファイルは、どれもポスターを ?v=（その講座のページの版）を
+ *   付けて読み、ポスターが変われば ?v= も変わる。規則はパスでしか当たらない（query を見ない）ので、?v= 無しで読む所を作らない
+ *   （組み立ての最後の scripts/site-invariants.ts が、immutable のパスを ?v= 無しで指していないかを確かめる）
  */
+/** ?v= の付いた資源に付ける Cache-Control（no-transform は、ほかの静的な応答と同じく外さない） */
+export const IMMUTABLE = 'public, max-age=31536000, immutable, no-transform';
 export const HEADER_RULES: readonly HeaderRule[] = [
   {
     path: '/*',
@@ -32,6 +37,8 @@ export const HEADER_RULES: readonly HeaderRule[] = [
     },
   },
   { path: '/sw.js', detach: ['Cache-Control'], set: { 'Cache-Control': 'no-cache, no-transform' } },
+  { path: '/:course/media/*', detach: ['Cache-Control'], set: { 'Cache-Control': IMMUTABLE } },
+  { path: '/:lang/:course/media/*', detach: ['Cache-Control'], set: { 'Cache-Control': IMMUTABLE } },
 ];
 
 /** 規則を _headers の書き方にする（規則ごとに、パスの行と、字下げした「! 名前」「名前: 値」の行） */
@@ -101,16 +108,9 @@ export const headersFor = (
 /** MP4 とローカルの設定（. で始まるファイル）は、静的 assets に送らない */
 export const ASSETS_IGNORE = '**/*.mp4\n.*\n';
 
-/** 無いページの 404（wrangler.jsonc の not_found_handling: 404-page）。__CSP__ は呼ぶ側が CSP にする */
-export const NOT_FOUND_HTML =
-  '<!doctype html><html lang="ja"><head><meta charset="utf-8">__CSP__<meta name="viewport" content="width=device-width"><title>教材が見つかりません｜Chalkfile</title></head><body><h1>教材が見つかりません</h1><p><a href="/">講座一覧へ</a></p></body></html>';
-
-/** ヘッダー・送らないファイル・404 のページを書く。notFound は CSP を付けた 404 のページ */
-export const writeServingFiles = (dist: string, notFound: string) => {
-  // 前の配信先（旧 Pages）の頃の名残の、空のファイル。消すと公開物のファイルが変わるので、ここでは残す（前の配信先の名残をまとめて消す直しで消す）
-  writeFileSync(path.join(dist, '.nojekyll'), '');
+/** ヘッダーと送らないファイルを書く */
+export const writeServingFiles = (dist: string) => {
   writeFileSync(path.join(dist, '.assetsignore'), ASSETS_IGNORE);
   rmSync(path.join(dist, '_redirects'), { force: true });
   writeFileSync(path.join(dist, '_headers'), HEADERS);
-  writeFileSync(path.join(dist, '404.html'), notFound);
 };

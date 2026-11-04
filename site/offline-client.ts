@@ -1,22 +1,28 @@
 import type { CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineOperation, OfflineReply, OfflineResults } from './offline-shared';
-import type { SiteText } from './i18n';
+import type { ClientText, ClientTextBase } from './i18n';
+import { texts } from './lib/text';
+import { OFFLINE_STATE, type OfflineState } from './page/events';
 
 type AppData = {
   root: string;
   course?: { id: string; title: string; pageVersion: string };
   courses: { id: string; title: string }[];
-  /** このページの言語（保存機能のエラーもこの言語で返してもらう）と、決まった文字（site/i18n.ts） */
+  /** このページの言語（保存機能のエラーもこの言語で返してもらう）と、決まった文字（site/i18n の client） */
   lang: string;
   locale: string;
-  text: SiteText;
+  text: ClientText;
 };
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 const app = JSON.parse(document.getElementById('pwa-data')!.textContent!) as AppData;
 const T = app.text;
-const tt = (k: keyof SiteText, v: Record<string, string | number> = {}) => T[k].replace(/\{(\w+)\}/g, (m, n: string) => (n in v ? String(v[n]) : m));
+const { tt } = texts<ClientTextBase>(T, app.locale);
 const root = new URL(app.root, location.href);
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+/**
+ * SW が動き出したあと（navigator.serviceWorker.ready のあと）にだけ入れる。register のあと ready の前（初めて開いて SW を入れている間）は、
+ * controller も active も無いので、状態を問い合わせても「保存機能を準備できません」になる。それまでは問い合わせず、ボタンも押せないままにする
+ */
 let registration: ServiceWorkerRegistration | undefined;
 let latest: CourseManifest | undefined;
 let states: CourseStatus[] = [];
@@ -76,15 +82,58 @@ function request(type: OfflineOperation, id?: string, progress?: (p: DownloadPro
   });
 }
 
-function network() {
-  $('networkState').textContent = navigator.onLine ? T.ocOnline : T.ocOffline;
+/** 文字が変わったときだけ書く（読み上げの欄は、同じ文を書き直すと読み直すことがある） */
+function setText(id: string, text: string) {
+  const el = $(id);
+  if (el.textContent !== text) el.textContent = text;
 }
-function message(text: string) { messageRevision++; $('offlineMessage').textContent = text; }
+function network() {
+  setText('networkState', navigator.onLine ? T.ocOnline : T.ocOffline);
+}
+/**
+ * 案内の文（画面の #offlineMessage）。読み上げの欄（#offlineLive）にも書く。保存の進み具合（step は 10% ごとの段）は、
+ * 段が変わったときだけ読み上げの欄に書く（画面の文は毎回書く。読み上げの欄に毎回書くと、1 秒に何度も読み上げが割り込む）
+ */
+let spokenStep: number | null = null;
+function message(text: string, step: number | null = null) {
+  messageRevision++;
+  $('offlineMessage').textContent = text;
+  if (step === null || step !== spokenStep) setText('offlineLive', text);
+  spokenStep = step;
+}
 function storageMessage() {
   if (!app.course) return T.ocStatusHome;
   const status = states.find((s) => s.id === app.course!.id);
   if (status?.incomplete) return status.saved ? T.ocIncompleteWithOld : T.ocIncomplete;
+  // 保存した版を無効にした講座（site/disabled-revisions.ts）で、公開中の版を開いているときは、更新して保存するよう案内する
+  if (openedPublished(status)) return T.ocDisabled;
   return status?.saved ? T.ocSavedReady : T.ocNotSaved;
+}
+/**
+ * 保存した版を無効にしたので、SW が保存版ではなく公開中の版のページを開いた（このページの版が保存版と違う）。オフラインでは SW は保存版を開くので、
+ * そのときは版が同じで、ふつうの保存版として扱う
+ */
+function openedPublished(status: CourseStatus | undefined) {
+  return !!app.course && !!status?.saved && !!status.disabled && status.saved.manifest.pageVersion !== app.course.pageVersion;
+}
+/**
+ * 新しい版で変わったこと（教材情報の news のうち、保存した日より後の日付のもの）。新しい版が見つかったときだけ出す。
+ * news は前の SW を通っても来るが、形は確かめていないので、文字のものだけを文字として出す
+ */
+let newsShown = '';
+function drawNews(saved: CourseStatus['saved'] | undefined) {
+  const since = saved?.savedAt.slice(0, 10) ?? '';
+  const news = saved && latest && saved.manifest.revision !== latest.revision && Array.isArray(latest.news) ? latest.news : [];
+  const items = news.filter((n) => typeof n?.date === 'string' && typeof n.text === 'string' && n.date >= since).slice(0, 3);
+  const key = JSON.stringify(items);
+  if (key === newsShown) return;
+  newsShown = key;
+  $('offlineNews').hidden = !items.length;
+  $('offlineNewsList').replaceChildren(...items.map((n) => {
+    const li = document.createElement('li');
+    li.textContent = `${n.date}　${n.text}`;
+    return li;
+  }));
 }
 function canShowStatus() { return !busy && !locallyDownloading && !states.some((s) => s.progress); }
 function drawProgress(p?: DownloadProgress | null) {
@@ -93,7 +142,9 @@ function drawProgress(p?: DownloadProgress | null) {
   if (!p) return;
   bar.max = p.total || 1;
   bar.value = p.loaded;
-  message(p.total ? tt('ocProgress', { pct: Math.floor(p.loaded / p.total * 100), loaded: mb(p.loaded), total: mb(p.total), file: p.file, count: p.count }) : T.ocProgressStart);
+  const pct = p.total ? Math.floor(p.loaded / p.total * 100) : 0;
+  // 読み上げの段: 始め（教材情報の確認）が -1、保存中は 10% ごとに 0〜10
+  message(p.total ? tt('ocProgress', { pct, loaded: mb(p.loaded), total: mb(p.total), file: p.file, count: p.count }) : T.ocProgressStart, p.total ? Math.floor(pct / 10) : -1);
 }
 
 function render() {
@@ -115,11 +166,15 @@ function render() {
     $<HTMLButtonElement>('offlineCancel').disabled = !workingId && !locallyDownloading;
     $<HTMLButtonElement>('offlineCheck').disabled = !registration || !navigator.onLine || processing;
     $('downloadSize').textContent = latest ? tt('ocSize', { size: mb(latest.bytes) }) : T.ocSizeOnline;
-    const changed = saved && saved.manifest.pageVersion !== app.course.pageVersion;
+    // 保存版とこのページの版が違えば、保存した版を開き直す（無効にした版は、開き直しても公開中のページになるので案内しない）
+    const disabled = openedPublished(status);
+    const changed = !!saved && !disabled && saved.manifest.pageVersion !== app.course.pageVersion;
     $('offlineReload').hidden = !changed;
     if (changed) message(T.ocSwitched);
-    window.dispatchEvent(new CustomEvent('chalkfile:offline-state', { detail: {
-      saved: !!saved, pageVersion: saved?.manifest.pageVersion, incomplete: status?.incomplete, online: navigator.onLine,
+    drawNews(saved);
+    // 講座のページの画面（site/course-page.ts の player）が、再生の状態の文に使う
+    window.dispatchEvent(new CustomEvent<OfflineState>(OFFLINE_STATE, { detail: {
+      saved: !!saved, pageVersion: saved?.manifest.pageVersion, incomplete: status?.incomplete, disabled, online: navigator.onLine,
     } }));
   }
   const list = $('savedCourses');
@@ -167,14 +222,15 @@ async function refresh() {
   finally { refreshInProgress = false; }
 }
 async function check() {
-  if (!app.course || !navigator.onLine) return;
+  if (!app.course || !navigator.onLine || !registration) return;
   $<HTMLButtonElement>('offlineCheck').disabled = true;
   const before = messageRevision;
   try {
     latest = (await request('CHECK', app.course.id)).manifest;
     const status = states.find((s) => s.id === app.course!.id);
     const saved = status?.saved;
-    if (status && before === messageRevision && canShowStatus()) message(status.incomplete ? storageMessage() : saved && saved.manifest.revision !== latest?.revision ? T.ocNewVersion : saved ? T.ocSameVersion : storageMessage());
+    const newer = !!saved && saved.manifest.revision !== latest?.revision;
+    if (status && before === messageRevision && canShowStatus()) message(status.incomplete || openedPublished(status) ? storageMessage() : newer ? T.ocNewVersion : saved ? T.ocSameVersion : storageMessage());
   } catch (error) {
     // 確認を待つ間に始まった保存や、別操作の結果を遅い応答で置き換えない。
     if (before === messageRevision && canShowStatus()) {
@@ -239,11 +295,13 @@ async function init() {
     if (event.data?.protocol === 1 && event.data?.type === 'CHANGED') void refresh();
   });
   try {
-    registration = await navigator.serviceWorker.register(new URL('sw.js', root), { scope: root.pathname, updateViaCache: 'none' });
+    const registered = await navigator.serviceWorker.register(new URL('sw.js', root), { scope: root.pathname, updateViaCache: 'none' });
     await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => setTimeout(() => reject(new Error(T.ocSwTimeout)), 30000))]);
-    const updateNotice = () => { if (registration?.waiting) $('appUpdate').hidden = false; };
+    // ここから問い合わせる（pageshow・visibilitychange・CHANGED の知らせ・online が先に来ても、refresh と check は待つ）
+    registration = registered;
+    const updateNotice = () => { if (registered.waiting) $('appUpdate').hidden = false; };
     updateNotice();
-    registration.addEventListener('updatefound', () => registration?.installing?.addEventListener('statechange', updateNotice));
+    registered.addEventListener('updatefound', () => registered.installing?.addEventListener('statechange', updateNotice));
     await refresh();
     await check();
     // 別タブでの保存・キャンセルも反映する。通常時はフォーカスを戻したときに確認。

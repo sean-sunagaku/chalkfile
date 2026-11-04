@@ -1,6 +1,6 @@
 // 講座サイトを組み立てる本体（buildSite）。本物の講座は scripts/build_site.ts（CLI）が渡し、テストは合成の講座を渡す。
 // 順番: 安全のための確かめ → 講座のページ（データ → 描く → CSP → 版 → 保存の manifest → 書く）→ 一覧のページ → 画像 → PWA（アイコン・
-// manifest・オフラインの案内・sw.js）→ ヘッダーと 404 → 公開物の決まりの確かめ（scripts/site-invariants.ts）
+// 言語ごとの manifest・オフラインの案内・sw.js）→ ヘッダー・sitemap.xml と robots.txt・言語ごとの 404 → 公開物の決まりの確かめ（scripts/site-invariants.ts）
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { HeroSnippet } from '../../content/course-module';
@@ -9,24 +9,27 @@ import { THEMES, themeOf } from '../../content/themes';
 import type { Course } from '../../content/types';
 import { posterFile } from '../../engine/core/generated';
 import { DISABLED_REVISIONS } from '../../site/disabled-revisions';
-import { SITE_TEXT, THEME_SUMMARY } from '../../site/i18n';
+import { courseText, homeText, LOCALES } from '../../site/i18n';
 import { type MediaEntry, type MediaManifest, mediaKey } from '../../site/media-shared';
 import { mimeOf } from '../../site/mime';
+import { SITE_NEWS, type SiteNews } from '../../site/news';
 import type { Asset, CourseManifest } from '../../site/offline-shared';
-import { asset, buildPwa, bundle } from '../pwa';
+import { asset, buildPwa, bundle, hash } from '../pwa';
 import { assertSiteInvariants } from '../site-invariants';
 import { PAGE_VERSION_MARK, pageVersionOf, stampVersion } from '../site-version';
-import { mediaRootOf, readSiteConfig, type SiteConfig, siteProblems } from '../validate';
+import { readSiteConfig, type SiteConfig, siteProblems } from '../validate';
 import { copyAssets, thumbnailAssets } from './assets';
-import { realPosterOf, SITE_DIR, siteBase } from './config';
-import { cspHead, splitPageScript, WWW_REDIRECT_SCRIPT } from './csp';
+import { ROOT, realPosterOf, SITE_DIR, siteBase } from './config';
+import { WWW_REDIRECT_SCRIPT } from './csp';
 import { cleanOutput, listOutput, writeCourse } from './emit';
-import { NOT_FOUND_HTML, writeServingFiles } from './headers';
-import { fillTemplate } from './html';
+import { writeServingFiles } from './headers';
+import { newsFor, newsProblems } from './news';
 import { courseJson, homeCredits, lectureModels, minutesOf, type ReadData, type SiteData } from './model';
 import { courseManifest, type PosterFile, pageFiles } from './offline-manifest';
-import { type AppContext, appParts } from './parts';
+import { type AppContext, appParts, textOf } from './parts';
 import { renderCoursePage } from './render-course';
+import { notFoundFile, renderNotFound } from './render-not-found';
+import { robotsTxt, type SitemapPage, sitemapXml } from './seo';
 import { homePosterOf, renderHomePage } from './render-home';
 
 /** 組み立ての入力 */
@@ -55,6 +58,8 @@ export type BuildSiteOptions = {
   assetsDir?: string;
   /** 無効にした保存版の revision（既定は site/disabled-revisions.ts。sw.js の設定に入れる） */
   disabledRevisions?: readonly string[];
+  /** 「新しい版」の案内に出す、何が変わったか（既定は site/news.ts。講座の保存用の教材情報の news に入れる） */
+  news?: readonly SiteNews[];
   /** 進み具合の出力（既定は console.log）と注意（既定は console.warn） */
   log?: (line: string) => void;
   warn?: (line: string) => void;
@@ -102,14 +107,17 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
 
   // ID は URL とファイル名に使うので英数字だけ。リンクは https:// だけ（PR の CI の npm run validate も同じものを流す）。
   // 台本の中身の確かめ（注入・隠し文字・秘密情報）は scripts/check_content.ts が受け持つ
-  const problems = siteProblems(config, coursesIn);
+  const news = o.news ?? SITE_NEWS;
+  const problems = [
+    ...siteProblems(config, coursesIn),
+    ...newsProblems(news, { root: ROOT, langs, courses: langs.flatMap((l) => coursesIn(l).map((c) => c.id)) }),
+  ];
   if (problems.length) throw new Error(problems.join('\n'));
 
-  // ページの本体の script は、テンプレートから取り出しておく（CSP のハッシュを先に計算する、信頼できるソースの 1 つ）
-  const { template, script: pageScript } = splitPageScript(
-    readFileSync(path.join(SITE_DIR, 'template.html'), 'utf8'),
-    'site/template.html',
-  );
+  // 講座のページの画面（site/course-page.ts）と保存の画面（site/offline-client.ts）は、Bun で 1 本ずつにまとめてページに入れる
+  // （CSP のハッシュを先に計算する、信頼できるソース。保存版の HTML が 1 枚で完結する）
+  const template = readFileSync(path.join(SITE_DIR, 'template.html'), 'utf8');
+  const pageScript = await bundle(path.join(SITE_DIR, 'course-page.ts'));
   const home = readFileSync(path.join(SITE_DIR, 'home.html'), 'utf8');
   const offlineCss = readFileSync(path.join(SITE_DIR, 'offline.css'), 'utf8');
   const app: AppContext = {
@@ -117,7 +125,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
     offlineClient: await bundle(path.join(SITE_DIR, 'offline-client.ts')),
     themeColor: themeOf().color.bg,
     coursesIn,
-    text: SITE_TEXT,
+    text: LOCALES,
   };
   const readData: ReadData = (key) => {
     const f = path.join(o.dataDir, `${key}.json`);
@@ -134,9 +142,8 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
 
   /* ───────────── 講座のページ（言語ごと） ───────────── */
   for (const lang of langs) {
-    const T = SITE_TEXT[lang];
+    const T = courseText(lang);
     const info = LANG_INFO[lang];
-    const mediaRoot = mediaRootOf(config, lang);
     for (const course of coursesIn(lang).filter((c) => !only.length || only.includes(c.id))) {
       const theme = themeOf(course.theme);
       const cid = `${info.path}${course.id}`;
@@ -184,12 +191,12 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       const page = Buffer.from(stampVersion(html, pageVersion));
       const manifest =
         posters.length === lectures.length
-          ? courseManifest({ cid, title: course.title, page, files, pageVersion })
+          ? courseManifest({ cid, title: course.title, page, files, pageVersion, news: newsFor(news, course.id, lang) })
           : null;
       if (manifest) manifests.push(manifest);
       writeCourse({ outDir: dist, cid, page, posters, manifest });
       log(
-        `site/dist/${cid}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}${mediaRoot ? `  動画 ${mediaRoot}` : ''}`,
+        `site/dist/${cid}/index.html ${(html.length / 1024).toFixed(0)} KB  ${lectures.length} レクチャー  合計 ${minutes.toFixed(1)} 分  テーマ ${theme.id}`,
       );
     }
   }
@@ -197,6 +204,20 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   /* ───────────── 一覧のページ（言語ごと） ───────────── */
   const brand = themeOf();
   mkdirSync(dist, { recursive: true });
+  /**
+   * 一覧のページの縮小画像と SW の起動用ファイルの ?v=（その講座のページの版。講座のページの最初のポスターと同じ URL になり、
+   * ブラウザのキャッシュを分け合う）。この組み立てで作った講座と、講座を指定して組み立てたときの前に組んだ講座は、保存の manifest から。
+   * manifest の無い講座（ポスターがそろっていない）は、縮小画像の中身の sha256
+   */
+  const posterVersion = (c: Course): string => {
+    const cid = `${LANG_INFO[(c.lang ?? 'ja') as Lang].path}${c.id}`;
+    const built = manifests.find((m) => m.id === cid);
+    if (built) return built.pageVersion;
+    const saved = path.join(dist, cid, 'offline-manifest.json');
+    if (existsSync(saved)) return (JSON.parse(readFileSync(saved, 'utf8')) as CourseManifest).pageVersion;
+    const poster = path.join(dist, homePosterOf(c, '', '').split('?')[0]);
+    return existsSync(poster) ? hash(readFileSync(poster)) : '';
+  };
   for (const lang of langs) {
     const info = LANG_INFO[lang];
     const root = lang === 'ja' ? './' : '../';
@@ -207,14 +228,15 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
       langs,
       coursesIn,
       lang,
-      T: SITE_TEXT[lang],
+      T: homeText(lang),
       brand,
       themes: Object.values(THEMES),
       themeOf,
       hasThemeImage: (id) => existsSync(path.join(assetsDir, `themes/${id}.jpg`)),
-      themeSummary: (t) => (lang === 'ja' ? t.summary : (THEME_SUMMARY[lang][t.id] ?? t.summary)),
+      themeSummary: (t) => textOf(LOCALES[lang].themes)(t.id) ?? t.summary,
       minutesOf: (c) => minutesOf(c, (c.lang ?? 'ja') as Lang, readData),
       credits: homeCredits(coursesIn(lang), lang),
+      posterVersion,
       hero: o.hero,
       app: appParts(app, lang, root),
       offlineClient: app.offlineClient,
@@ -230,14 +252,12 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   /* ───────────── 画像・PWA・ヘッダー ───────────── */
   // 一覧のページの画像と、講座のサムネイル（日本語の講座の最初の動画のポスター）は、SW の起動用ファイルにする
   shell.push(...copyAssets(assetsDir, path.join(dist, 'assets'), dist));
+  shell.push(...copyAssets(path.join(ROOT, 'engine/fonts'), path.join(dist, 'fonts'), dist));
   shell.push(
     ...thumbnailAssets(
       dist,
-      coursesIn('ja').map((c) => homePosterOf(c, '')),
+      coursesIn('ja').map((c) => homePosterOf(c, '', posterVersion(c))),
     ),
-  );
-  const mediaRoots = Object.fromEntries(
-    langs.flatMap((l) => (mediaRootOf(config, l) ? [[l, mediaRootOf(config, l) as string]] : [])),
   );
   // sw.js に入れる講座（保存できる講座）は、出す言語の全部の講座から、組み立てたサイトに保存の manifest があるものを選ぶ。
   // 講座を指定して組み立てたときも、前に組んだ講座を外さない（外すと、その講座を保存できず、一覧のページの保存の欄からも消える）
@@ -252,15 +272,33 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   const disabledRevisions = o.disabledRevisions ?? DISABLED_REVISIONS;
   const disabledProblems = disabledRevisionProblems(disabledRevisions, published);
   if (disabledProblems.length) throw new Error(disabledProblems.join('\n'));
-  await buildPwa(SITE_DIR, dist, brand, saveable, shell, mediaRoots, disabledRevisions);
-  writeServingFiles(dist, fillTemplate(NOT_FOUND_HTML, { marks: { CSP: cspHead([]) } }, '404.html'));
+  await buildPwa(SITE_DIR, dist, { brand, courses: saveable, shell, langs, series: config.series, disabledRevisions });
+  writeServingFiles(dist);
+  // 検索のための sitemap.xml と robots.txt（出す言語の一覧のページと講座のページ。講座を指定して組み立てても、全部の講座を並べる）
+  const sitemap: SitemapPage[] = langs.flatMap((lang) => [
+    { url: `${base}${LANG_INFO[lang].path}`, alternates: langs.map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}` })) },
+    ...coursesIn(lang).map((c) => ({
+      url: `${base}${LANG_INFO[lang].path}${c.id}/`,
+      alternates: langs
+        .filter((l) => coursesIn(l).some((x) => x.id === c.id))
+        .map((l) => ({ lang: l, url: `${base}${LANG_INFO[l].path}${c.id}/` })),
+    })),
+  ]);
+  writeFileSync(path.join(dist, 'sitemap.xml'), sitemapXml(sitemap));
+  writeFileSync(path.join(dist, 'robots.txt'), robotsTxt(base));
+  // 無いページは言語ごと（Workers の静的 assets は、いちばん近いフォルダの 404.html を返す）
+  const notFound = readFileSync(path.join(SITE_DIR, 'not-found.html'), 'utf8');
+  for (const lang of langs) {
+    const file = path.join(dist, notFoundFile(lang));
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, renderNotFound({ template: notFound, lang, series: config.series, basePath: new URL(base).pathname }));
+  }
 
   // 公開物の決まり（Workers の上限・MP4 なし・印の残り・CSP と script・保存の manifest・起動用ファイル）を確かめる。破れていれば止める。
-  // ページで動く script は、信頼できる 3 本（www の移動・講座のページの本体・offline-client）のどれかでなければ止める
+  // ページで動く script は、信頼できる 3 本（www の移動・講座のページの画面・offline-client）のどれかでなければ止める
   assertSiteInvariants({
     dist,
     scope: base,
-    mediaRoots,
     media: o.mediaManifest,
     shell,
     courses: saveable,
@@ -272,7 +310,7 @@ export async function buildSite(o: BuildSiteOptions): Promise<BuildSiteResult> {
   );
 
   if (missing.length) {
-    const msg = `まだ動画かポスターが無い: ${missing.join(' ')}（bash scripts/render.sh で作る）`;
+    const msg = `まだ動画かポスターが無い: ${missing.join(' ')}（bash scripts/scripts/stages/video/render.ts で作る）`;
     if (o.strict) throw new Error(msg);
     warn(msg);
   }

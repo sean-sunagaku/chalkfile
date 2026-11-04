@@ -5,26 +5,14 @@
 // 台詞（lines）だけは丸ごと置き換える（お笑いは直訳せず、言語ごとに作り直すので、数も変わってよい）。
 // 日本語の台本の at が台詞の id なら、訳の台詞に同じ id を付ければ、台詞の数が違っても at を書き直さなくてよい（重ねたあとで番号に直す。engine/core/lines.ts）
 import { AT_KEYS, COURSE_FIELDS, fieldShape, isListShape, keyFieldOf, LECTURE_FIELDS, type Shape, sceneShape, type Visit, walkCourse, walkLecture } from './fields';
+import { isLang, type Lang, type TranslatedLang } from './langs';
 import { resolveLecture } from './lines';
 import type { At, AuthoredCourse, AuthoredLecture, Course, Lecture, Line, Scene, Source, VoiceId } from './schema';
 
 export { AT_KEYS };
 
-/** 講座の言語。ja が正本。zh は簡体字（zh-Hans） */
-export type Lang = 'ja' | 'en' | 'zh';
-export const LANGS: Lang[] = ['ja', 'en', 'zh'];
-/** 訳の言語（日本語の台本に上書きを重ねて作る言語） */
-export type TranslatedLang = Exclude<Lang, 'ja'>;
-export const TRANSLATED_LANGS: TranslatedLang[] = ['en', 'zh'];
-
-/** 言語の名前（切り替えのリンクに、その言語で出す）・HTML の lang・サイトの URL の頭 */
-export const LANG_INFO: Record<Lang, { label: string; html: string; path: string }> = {
-  ja: { label: '日本語', html: 'ja', path: '' },
-  en: { label: 'English', html: 'en', path: 'en/' },
-  zh: { label: '中文', html: 'zh-Hans', path: 'zh/' },
-};
-
-export const isLang = (s: string): s is Lang => (LANGS as string[]).includes(s);
+// 言語の一覧と名前の正本は ./langs（Service Worker と Worker にも入るので、ほかのファイルを読まないファイルにする）。台本と道具は、今までどおりここから読む
+export { isLang, LANG_INFO, LANGS, type Lang, TRANSLATED_LANGS, type TranslatedLang } from './langs';
 
 /** 動画 1 本の名前。日本語はレクチャー ID のまま（S01）、ほかは言語を付ける（S01.en）。timeline・音・字幕・動画のファイル名に使う */
 export const videoKey = (lectureId: string, lang: Lang) => (lang === 'ja' ? lectureId : `${lectureId}.${lang}`);

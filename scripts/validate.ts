@@ -10,7 +10,7 @@
 //     教材の ID と参照（materialProblems。scripts/build_materials.ts も書き出す前に呼ぶ）、公開する言語（site/config.json の publishLangs）の
 //     全部の動画のポスター（content/<講座>/generated/posters/）と動画の一覧（content/<講座>/generated/media.<言語>.json）。
 //     これまで main の公開の CI でしか分からなかった（GA4 のポスターの入れ忘れ）ので、PR で先に止める。
-//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems。今は注意）。
+//     講座のページのクレジットが、講座の動画で使った全部の声を含むか（creditProblems）。
 //     公開した動画が、今の台本で書き出したものか（mediaInputProblems。動画の一覧の inputs と、今の台本・描き方の指紋を比べる）
 //   書体（scripts/fonts.ts の fontIssues）: 動画が描く文字が、その動画の書体（engine/fonts/ のサブセット）にあるか（無ければ誤り）と、
 //     台本の文字がサブセットに入っているか（入っていなければ注意。npm run fonts で作り直す）
@@ -24,7 +24,7 @@
 // 終了コード: 0 誤りなし・1 誤りがある・2 使い方の誤り
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { LANG_INFO, LANGS, type Lang, videoKey } from '../content/i18n';
+import { LANGS, type Lang, videoKey } from '../content/i18n';
 import { THEMES, themeOf } from '../content/themes';
 import type { Course, Theme } from '../content/types';
 import { creditsIn, voicesOf } from '../content/voices';
@@ -58,12 +58,6 @@ export type Report = { ok: boolean; errors: number; warnings: number; courses: n
 /** site/config.json の形と読み方（scripts/build_site.ts も、ここから読む。置き場所は scripts/lib/config.ts） */
 export { readSiteConfig, type SiteConfig };
 
-/** 訳の言語の動画のサイトのパス（/media/en/ など。サイトと同じ origin なので、パスだけで指せる）。日本語と、動画のサイトの無い言語は null */
-export const mediaRootOf = (config: SiteConfig, lang: Lang): string | null => {
-  const m = lang === 'ja' ? undefined : config.media?.[lang];
-  return m ? new URL(m.url.endsWith('/') ? m.url : `${m.url}/`).pathname : null;
-};
-
 const ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
 
@@ -74,25 +68,8 @@ const HTTPS = /^https:\/\/[^\s"'<>`]+$/;
  * coursesIn は言語ごとの講座（content/index.ts の coursesIn）。公開しない言語の講座も見る
  */
 export const siteProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Course[], themes: readonly Theme[] = Object.values(THEMES)): string[] => {
-  const base = config.baseUrl.endsWith('/') ? config.baseUrl : `${config.baseUrl}/`;
   const problems: string[] = [];
   if (!HTTPS.test(config.baseUrl) || !HTTPS.test(config.repoUrl)) problems.push('site/config.json の baseUrl と repoUrl は https:// で書く');
-  for (const [lang, m] of Object.entries(config.media ?? {})) {
-    if (!m || !HTTPS.test(m.url) || !HTTPS.test(m.repo)) problems.push(`site/config.json の media.${lang} の url と repo は https:// で書く`);
-    // 動画のサイトは講座サイトと同じ origin（Service Worker が中身を確かめて保存でき、Range もそのまま動く）
-    else if (new URL(m.url).origin !== new URL(base).origin) problems.push(`site/config.json の media.${lang}.url は baseUrl と同じ origin にする: ${m.url}`);
-    else {
-      // 講座サイトを含むパスに置くと、ページと動画の区別（Service Worker）が崩れる。講座サイトの下に置くとき（chalkfile.com/media/ など）は、
-      // 頭のフォルダの名前を、講座 ID・言語のフォルダと重ねない
-      // biome-ignore lint/style/noNonNullAssertion: media に書いた訳の言語には、動画のサイトのパスが必ずある（build_site.ts にあったときのまま）
-      const mp = mediaRootOf(config, lang as Lang)!;
-      const bp = new URL(base).pathname;
-      const head = mp.startsWith(bp) ? mp.slice(bp.length).split('/')[0] : '';
-      if (bp.startsWith(mp) || coursesIn('ja').some((c) => c.id === head) || LANGS.some((l) => LANG_INFO[l].path === `${head}/`)) {
-        problems.push(`site/config.json の media.${lang}.url は、講座サイトを含まず、講座 ID・言語のフォルダと重ならない場所にする: ${m.url}`);
-      }
-    }
-  }
   for (const lang of LANGS)
     for (const c of coursesIn(lang)) {
       if (!ID.test(c.id)) problems.push(`講座 ID が英数字でない: ${c.id}`);
@@ -162,25 +139,17 @@ export const mediaProblems = (config: SiteConfig, coursesIn: (lang: Lang) => Cou
 };
 
 /**
- * 講座のページに出す声のクレジットの文（ページの {voices} は scripts/site/model.ts の courseCredits、{note} は講座の sourceNote）。
- * 今の courseCredits は、日本語は全講座で共通の講師と呼び込み、訳は使った声から作る（creditsIn）
+ * 講座のページのクレジット（ページの {voices}。scripts/site/model.ts の courseCredits）が、講座の動画で使った全部の声のクレジットを含むか
+ * （キャラクターの利用規約。VOICEVOX は「VOICEVOX:キャラ名」）。ページのクレジットは台詞の声から作るので、ふだんは当たらない。
+ * 作り方を直して声が抜けたら、公開の前に止める（誤り）。credits は確かめるクレジットの作り方（既定はページのもの。テストが差し替える）
  */
-const pageCreditText = (course: Course, lang: Lang): string =>
-  [...courseCredits(course, lang), course.sourceNote ?? ''].join('\n');
-
-/**
- * 講座のページのクレジットが、講座の動画で使った全部の声のクレジットを含むか（キャラクターの利用規約。VOICEVOX は「VOICEVOX:キャラ名」）。
- * 日本語のページは講師と呼び込みしか出さないので、ほかの声（ずんだもん・玄野武宏など）は講座の sourceNote に書く（comedy.md）。
- * 今は注意（warning）にする。ページのクレジットを使った声から作るように直したら（サイトの版が変わるので、ほかのサイトの直しとまとめて出す）、
- * level を誤り（error）にする
- */
-export const creditProblems = (coursesIn: (lang: Lang) => Course[], level: Issue['level'] = 'warning'): PublishIssue[] =>
+export const creditProblems = (coursesIn: (lang: Lang) => Course[], credits: (course: Course, lang: Lang) => readonly string[] = courseCredits): PublishIssue[] =>
   LANGS.flatMap((lang) =>
     coursesIn(lang).flatMap((course) => {
-      const shown = pageCreditText(course, lang);
-      const lacking = creditsIn(lang, course.lectures.flatMap(voicesOf)).filter((c) => !shown.includes(c));
+      const shown = new Set(credits(course, lang));
+      const lacking = creditsIn(lang, course.lectures.flatMap(voicesOf)).filter((c) => !shown.has(c));
       return lacking.length
-        ? [{ level, rule: 'credit' as const, where: lang === 'ja' ? course.id : `${course.id}（${lang}）`, message: `講座のページのクレジットに ${lacking.join('・')} が無い（講座の sourceNote に「ボケの声は VOICEVOX:ずんだもん」のように書く）` }]
+        ? [{ level: 'error' as const, rule: 'credit' as const, where: lang === 'ja' ? course.id : `${course.id}（${lang}）`, message: `講座のページのクレジットに ${lacking.join('・')} が無い（scripts/site/model.ts の courseCredits は、台詞の声から content/voices.ts の creditsIn で作る）` }]
         : [];
     }),
   );

@@ -82,8 +82,8 @@ Chalkfile の文書とコードに出てくる言葉の意味。「どこにあ�
 
 | 言葉 | 意味 | どこにあるか |
 |---|---|---|
-| 言語の記号 | `ja`・`en` のような 2 文字の名前。`zh` は中国語の簡体字 | `engine/core/i18n.ts` の `Lang`・`LANGS` |
-| 訳の上書き | 日本語の台本に重ねる訳のファイル。画面の文字は日本語と同じ数・同じ順で上書きし（`key` を書いた項目は `key` で重ねる）、台詞は丸ごと書き直す。理由は [ADR](../adr/2026-11-02-japanese-source-translation-overlay.md) | `content/<講座 ID>/<言語>/`。重ね方は `engine/core/i18n.ts`、項目の役目は `engine/core/fields.ts` |
+| 言語の記号 | `ja`・`en` のような 2 文字の名前。`zh` は中国語の簡体字。訳の言語は、サイトの URL のフォルダ・動画の名前の終わり・保存の講座の ID の頭にもなる | `engine/core/langs.ts` の `Lang`・`LANGS`（`content/i18n.ts` からも読める） |
+| 訳の上書き | 日本語の台本に重ねる訳のファイル。画面の文字は日本語と同じ数・同じ順で上書きし（`key` を書いた項目は `key` で重ねる）、台詞は丸ごと書き直す。理由は [ADR](../adr/2026-11-02-japanese-source-translation-overlay.md) | `content/<講座 ID>/<言語>/`。重ね方は `content/i18n.ts`、項目の役目は `content/fields.ts` |
 | 訳の指紋 | 訳したときの日本語の台本の、訳す文字の指紋。訳す文字が変わると `scripts/i18n.ts status` が知らせ、公開する言語の訳なら `check_content.ts` が止める | `LectureL10n.source` |
 | publishLangs | 公開する言語。サイトに出す言語と、引数なしの synth が作る動画を決める | `site/config.json` |
 

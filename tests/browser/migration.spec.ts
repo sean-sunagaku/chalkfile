@@ -4,7 +4,7 @@ import { expect, seek, test } from './fixtures';
 
 // 旧 Pages（/chalkfile/）からの移行。前の公開（tests/fixtures/legacy-pages の本物の旧 SW）で保存したあと、公開済みの移行の案内
 // （tests/fixtures/legacy-migration。今のソースから作り直さない）に替える。動画は、ci は合成の動画（保存の manifest もそれに合わせる）、
-// real は手元の本物の P01
+// real は凍結した一覧と同じハッシュの旧 P01（現在の動画が変わったら Releases から取り、検証して別に保存する）
 test('公開していた旧SWから移行し、保存・記録・Rangeを残してオンラインで同じURLへ移る', async ({ page, context, request, site }) => {
   await request.post('/__test/control', { data: { legacyPhase: 'old' } });
   await page.goto('/chalkfile/pstack-comedy/');

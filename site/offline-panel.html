@@ -12,7 +12,9 @@
     </div>
   </div>
   <progress id="offlineProgress" aria-label="{{offProgressLabel}}" max="1" value="0" hidden></progress>
-  <p id="offlineMessage" role="status" aria-live="polite">{{offPreparing}}</p>
+  <p id="offlineMessage">{{offPreparing}}</p>
+  <p id="offlineLive" class="sr-only" role="status" aria-live="polite"></p>
+  <div id="offlineNews" hidden><p>{{offNewsHead}}</p><ul id="offlineNewsList"></ul></div>
   <details __LIBRARY_OPEN__><summary>{{offLibrary}}</summary><ul id="savedCourses"></ul><p>{{offLibraryHint}}</p></details>
   <details><summary>{{offStorage}}</summary>
     <p id="storageState">{{offStorageChecking}}</p>

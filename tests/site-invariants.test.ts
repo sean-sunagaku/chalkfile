@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSy
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { asset, hash } from '../scripts/pwa';
+import { HEADERS } from '../scripts/site/headers';
 import { assertSiteInvariants, type SiteInvariantInput, siteInvariantProblems } from '../scripts/site-invariants';
 import { PAGE_VERSION_MARK } from '../scripts/site-version';
 import { OFFLINE_FILE_MAX_BYTES, WORKERS_ASSET_MAX_BYTES } from '../site/limits';
@@ -83,7 +84,6 @@ const makeSite = () => {
   const input: SiteInvariantInput = {
     dist: dir,
     scope,
-    mediaRoots: {},
     media: { schema: 1, entries: [video] },
     shell: [
       asset('./', Buffer.from(home), 'text/html'),
@@ -274,6 +274,26 @@ describe('組み立てたサイトの決まり（assertSiteInvariants）', () =>
     ]);
     site.write('_headers', '/*\n  Cache-Control: public, max-age=0, must-revalidate, no-transform\n/icons/*\n  ! Cache-Control\n  Cache-Control: public, max-age=60, no-transform\n');
     expect(siteInvariantProblems(site.input)).toEqual([]);
+  });
+  test('長くキャッシュさせるパス（immutable）を、ページ・保存の manifest・起動用ファイルが ?v= 無しで指していれば止まる', () => {
+    const site = makeSite();
+    const version = 'b'.repeat(64);
+    site.write('_headers', HEADERS);
+    // 決まりを守ったサイトは、ポスターをどれも ?v= 付きで指す
+    expect(siteInvariantProblems(site.input)).toEqual([]);
+    site.write('index.html', page(`<img src="sample/media/S01.jpg"><img src="sample/media/S01.jpg?v=${version}">`, ['run("home")', 'run("www")']));
+    const shell = [...(site.input.shell ?? []).slice(1), asset('sample/media/S01.jpg', Buffer.from('poster'), 'image/jpeg')];
+    shell.unshift(asset('./', readFileSync(path.join(site.dir, 'index.html')), 'text/html'));
+    const course = readFileSync(path.join(site.dir, 'sample/index.html'), 'utf8').replace('<h1>', '<meta property="og:image" content="https://chalkfile.com/sample/media/S01.jpg"><h1>');
+    site.write('sample/index.html', course);
+    site.editManifest((files) => {
+      files[0] = asset('sample/', Buffer.from(course), 'text/html');
+    });
+    expect(siteInvariantProblems({ ...site.input, shell })).toEqual([
+      'index.html: sample/media/S01.jpg は長くキャッシュさせるパス（_headers の immutable）なのに ?v= がありません（描き直したあとも古いまま残る）',
+      'sample/index.html: https://chalkfile.com/sample/media/S01.jpg は長くキャッシュさせるパス（_headers の immutable）なのに ?v= がありません（描き直したあとも古いまま残る）',
+      '起動用ファイル: sample/media/S01.jpg は長くキャッシュさせるパス（_headers の immutable）なのに ?v= がありません（描き直したあとも古いまま残る）',
+    ]);
   });
   test('保存の manifest があるのに、sw.js に入っていない講座があれば止まる（講座を指定して組み立てたときに外れた講座など）', () => {
     const site = makeSite();

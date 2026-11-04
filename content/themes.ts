@@ -220,7 +220,10 @@ export const STAGE: Theme = {
   radius: 18,
 };
 
-export const THEMES: Record<string, Theme> = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: PAPER, stage: STAGE };
+const THEME_LIST = { chalkfile: CHALKFILE, indigo: INDIGO, night: NIGHT, paper: PAPER, stage: STAGE };
+/** テーマの id（THEMES のキー。テーマの紹介文の訳 site/i18n/<言語>.ts の themes も、このキーをそろえる） */
+export type ThemeId = keyof typeof THEME_LIST;
+export const THEMES: Record<string, Theme> = THEME_LIST;
 
 export const DEFAULT_THEME = 'chalkfile';
 

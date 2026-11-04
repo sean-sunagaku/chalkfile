@@ -57,7 +57,7 @@
 
 講座の `cast` に、声ごとの名前と色を書く。字幕の焼き込みの帯に名前の札が出て、サイトの台本と字幕は「ずんだもん：…」になる。
 
-声のクレジットは、レクチャーで使った声だけが動画のエンディングに出る（台詞の声から作る。`engine/core/voices.ts` の `lectureCredits`）。納品物の README（`npm run chalk -- export`）と読む教材にも、台詞の声から作ったクレジットが全部出る。講座サイトのクレジットの行は全講座で共通（講師と呼び込み）なので、ほかの声は講座の `sourceNote` にも書く（`ボケの声は VOICEVOX:ずんだもん、天の声は VOICEVOX:玄野武宏。…`）。書き忘れると、`npm run validate` が注意（声のクレジット）で知らせる。
+声のクレジットは、レクチャーで使った声だけが動画のエンディングに出る（台詞の声から作る。`engine/core/voices.ts` の `lectureCredits`）。納品物の README（`npm run chalk -- export`）と読む教材にも、台詞の声から作ったクレジットが全部出る。講座サイトのクレジットの行（講座のページと一覧のページ）も、台詞の声から作る（`scripts/site/model.ts` の `courseCredits`・`homeCredits`）。講座の `sourceNote` に声を書かなくてよい。サイトのクレジットから使った声が抜けると、`npm run validate` が誤り（声のクレジット）で止める。
 
 ## 字幕
 

@@ -17,6 +17,7 @@
       "scripts/**",
       "site/*.ts",
       "site/lib/*.ts",
+      "site/page/*.ts",
       "site/*.json",
       "worker/**",
       "tests/**",
@@ -228,7 +229,6 @@
       "includes": [
         "scripts/build_site.ts",
         "scripts/pwa.ts",
-        "site/i18n.ts",
         "site/offline-client.ts",
         "site/offline-shared.ts",
         "site/sw.ts",

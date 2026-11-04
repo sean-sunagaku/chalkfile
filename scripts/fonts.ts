@@ -21,6 +21,7 @@ import { sha256File } from './lib/hash';
 import { cacheDir, ROOT } from './lib/paths';
 import { run } from './lib/proc';
 import { woff2CodePoints } from './lib/woff2';
+import { siteFontText } from './site/font-text';
 import type { PublishIssue } from './validate';
 
 /* ───────────── 元の書体（出どころ） ───────────── */
@@ -159,6 +160,7 @@ export const requestedChars = (id: FontId, { videos, coursesIn }: TextSource): n
   const texts = [
     ...videos.filter((v) => font.langs.includes(v.lang)).map(videoText),
     ...font.langs.flatMap((lang) => coursesIn(lang).map(courseText)),
+    ...font.langs.flatMap(siteFontText),
   ];
   return charSet(texts).filter((cp) => inRanges(cp, font.ranges));
 };

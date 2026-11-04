@@ -1,6 +1,92 @@
 {
-  "schema": 1,
+  "schema": 2,
   "entries": [
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G01",
+      "kind": "standard",
+      "bytes": 8597229,
+      "sha256": "64038b493d106fb370a67893179726074f11f41b6ccefa98341a83bd6fae3e0b",
+      "filename": "G01.64038b493d106fb370a67893179726074f11f41b6ccefa98341a83bd6fae3e0b.mp4",
+      "tag": "media-ja-ga4-comedy",
+      "inputs": {
+        "script": "c08d933c967876e8",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G01",
+      "kind": "captioned",
+      "bytes": 8699288,
+      "sha256": "3ae54e2fa995e4715003682aaceffa48a3990187c590adf88bf431a376ebc0b5",
+      "filename": "G01.cc.3ae54e2fa995e4715003682aaceffa48a3990187c590adf88bf431a376ebc0b5.mp4",
+      "tag": "media-ja-ga4-comedy",
+      "inputs": {
+        "script": "c08d933c967876e8",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G02",
+      "kind": "standard",
+      "bytes": 9200647,
+      "sha256": "e560274196810131579320e1ffc42c7c43599a4549c4681ab79e9f55eccf3e44",
+      "filename": "G02.e560274196810131579320e1ffc42c7c43599a4549c4681ab79e9f55eccf3e44.mp4",
+      "tag": "media-ja-ga4-comedy",
+      "inputs": {
+        "script": "e5ed71e4e73e560c",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G02",
+      "kind": "captioned",
+      "bytes": 9527067,
+      "sha256": "a8dcaa79e6791c2720691255accc9f8322d07a5437c46ae86b1cba6a6e41c28b",
+      "filename": "G02.cc.a8dcaa79e6791c2720691255accc9f8322d07a5437c46ae86b1cba6a6e41c28b.mp4",
+      "tag": "media-ja-ga4-comedy",
+      "inputs": {
+        "script": "e5ed71e4e73e560c",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G03",
+      "kind": "standard",
+      "bytes": 10719666,
+      "sha256": "63603d5fd494b6acd2201d0fb38f8111b90745a8b7be6e904caa6efae3898897",
+      "filename": "G03.63603d5fd494b6acd2201d0fb38f8111b90745a8b7be6e904caa6efae3898897.mp4",
+      "tag": "media-ja-ga4-comedy",
+      "inputs": {
+        "script": "222a30e8f4b64eba",
+        "src": "d36176fc0028daac"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "ga4-comedy",
+      "lecture": "G03",
+      "kind": "captioned",
+      "bytes": 10894450,
+      "sha256": "6ff00c47e7a26316729044eb67b42215833c79e3bfe3b1956ea65ff588055532",
+      "filename": "G03.cc.6ff00c47e7a26316729044eb67b42215833c79e3bfe3b1956ea65ff588055532.mp4",
+      "tag": "media-ja-ga4-comedy",
+      "inputs": {
+        "script": "222a30e8f4b64eba",
+        "src": "d36176fc0028daac"
+      }
+    }
+  ],
+  "retained": [
     {
       "lang": "ja",
       "course": "ga4-comedy",
@@ -9,7 +95,8 @@
       "bytes": 8053653,
       "sha256": "1ec29f56d5440f5c6f07061e7f681c3494bc7f1c6b1cd19fa2f178169db8d6aa",
       "filename": "G01.1ec29f56d5440f5c6f07061e7f681c3494bc7f1c6b1cd19fa2f178169db8d6aa.mp4",
-      "tag": "media-ja-ga4-comedy"
+      "tag": "media-ja-ga4-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -19,7 +106,8 @@
       "bytes": 8347122,
       "sha256": "ffa3dce527a0b785eb90f34690594fa0fe1015297536a2aab33df739e5343d54",
       "filename": "G01.cc.ffa3dce527a0b785eb90f34690594fa0fe1015297536a2aab33df739e5343d54.mp4",
-      "tag": "media-ja-ga4-comedy"
+      "tag": "media-ja-ga4-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -29,7 +117,8 @@
       "bytes": 8754119,
       "sha256": "e0a1b7e7375d2404520e8e8e0496ca80395d5c9d4a8f4eb93fa37cdf59084178",
       "filename": "G02.e0a1b7e7375d2404520e8e8e0496ca80395d5c9d4a8f4eb93fa37cdf59084178.mp4",
-      "tag": "media-ja-ga4-comedy"
+      "tag": "media-ja-ga4-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -39,7 +128,8 @@
       "bytes": 9228593,
       "sha256": "c3de26448def4cd9f2c2cabf38a3d203c5c66287ee160b60cf82bcafa8a0fbd5",
       "filename": "G02.cc.c3de26448def4cd9f2c2cabf38a3d203c5c66287ee160b60cf82bcafa8a0fbd5.mp4",
-      "tag": "media-ja-ga4-comedy"
+      "tag": "media-ja-ga4-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -49,7 +139,8 @@
       "bytes": 10395288,
       "sha256": "b035d5aae4756933e9e16b57e12d133e079bbbd4c16db8899dfcf2be38272267",
       "filename": "G03.b035d5aae4756933e9e16b57e12d133e079bbbd4c16db8899dfcf2be38272267.mp4",
-      "tag": "media-ja-ga4-comedy"
+      "tag": "media-ja-ga4-comedy",
+      "retainedUntil": "2027-02-02"
     },
     {
       "lang": "ja",
@@ -59,7 +150,8 @@
       "bytes": 10782708,
       "sha256": "ba09eb95a0d6fed78fa45ca151abe04ab0744a0ad5c59516818f81dfae2cffd6",
       "filename": "G03.cc.ba09eb95a0d6fed78fa45ca151abe04ab0744a0ad5c59516818f81dfae2cffd6.mp4",
-      "tag": "media-ja-ga4-comedy"
+      "tag": "media-ja-ga4-comedy",
+      "retainedUntil": "2027-02-02"
     }
   ]
 }

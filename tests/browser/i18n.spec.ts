@@ -28,10 +28,10 @@ async function status(page: Page, id: string): Promise<CourseStatus | undefined>
     return reply.courses.find((s) => s.id === id);
   }, id);
 }
+/** 再生してから時刻へ移る（動画は preload="none" で、再生を押すまで読まない） */
 async function playAt(page: Page, at: number) {
   const video = page.locator('video');
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThanOrEqual(1);
-  await video.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; v.currentTime = time; await v.play(); }, at);
+  await video.evaluate(async (v: HTMLVideoElement, time) => { v.muted = true; await v.play(); v.currentTime = time; }, at);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(at + 0.2);
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
   await video.evaluate((v: HTMLVideoElement) => v.pause());
@@ -137,10 +137,13 @@ test('学習の記録（見た位置）は言語ごとに分ける（動画の�
   await page.evaluate(() => localStorage.setItem('chalkfile:pstack-comedy:progress', JSON.stringify({ P01: { t: 200, max: 0.7, done: false } })));
   await page.goto('/en/pstack-comedy/');
   const video = page.locator('video');
-  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThanOrEqual(1);
-  expect(await video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeLessThan(1);
+  // 動画は再生を押すまで読まない（preload="none"）。再生すると、続きの時刻があればそこへ移る
+  const play = () => video.evaluate(async (v: HTMLVideoElement) => { v.muted = true; await v.play(); });
+  await play();
+  expect(await video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeLessThan(3);
   // 日本語のページは、前と同じ鍵の続きから再生する
   await page.goto('/pstack-comedy/');
+  await play();
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(190);
 });
 

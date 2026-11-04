@@ -38,7 +38,8 @@ export const courseOf = (lectureId: string): Course => {
 const ids = LECTURES.map((l) => l.id);
 const dup = ids.find((id, i) => ids.indexOf(id) !== i);
 if (dup) throw new Error(`レクチャー ID が講座をまたいで重なっている: ${dup}`);
-// 訳の講座の URL と保存の ID は <言語>/<講座>（en/pstack-comedy）。Service Worker は頭の 2 文字の英小文字を言語のフォルダとして読むので、2 文字の英小文字の講座 ID は使わない
+// 訳の講座の URL と保存の ID は <言語>/<講座>（en/pstack-comedy）。言語のフォルダは言語の一覧（content/langs.ts）から読む。
+// 言語の名前と、これから足す言語の名前（2 文字の英小文字）は、講座 ID に使わない
 if (COURSES.some((c) => (LANGS as string[]).includes(c.id) || /^[a-z]{2}$/.test(c.id))) throw new Error('講座 ID に 2 文字の英小文字（ja・en・zh などの言語の名前）は使えない（訳の講座の URL の頭と重なる）');
 
 /* ───────────── 訳の講座（content/i18n.ts） ─────────────

@@ -1,16 +1,18 @@
 /// <reference lib="webworker" />
+import { isLang, isLangFolder, type Lang } from '../content/langs';
 import { rangeResponse } from './lib/http-range';
 import { esc } from './lib/text';
 import { downloadName, parseMediaPath } from './media-shared';
-import { COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest, type OfflineErrorCode } from './offline-shared';
+import { COURSE_ID, OfflineError, parseQuarantineName, parseRecord, planCleanup, recordCaches, sha256, validateManifest } from './offline-shared';
 import type { Asset, CourseManifest, CourseStatus, DownloadProgress, OfflineBroadcast, OfflineReply, OfflineRequest, SavedRecord, SavedVersion } from './offline-shared';
+import type { SwText } from './i18n';
 
 /**
- * 組み立て（scripts/pwa.ts の buildPwa）が入れる設定。mediaRoots: 訳の言語の動画を置く、同じ origin の別のサイト（言語 → パス。
- * 例 en → /chalkfile-media-en/）。disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts）
+ * 組み立て（scripts/pwa.ts の buildPwa）が入れる設定。disabledRevisions: 無効にした保存版の revision（site/disabled-revisions.ts）。
+ * messages: 言語ごとの、SW が返す文字（site/i18n/<言語>.ts の sw。ページの文字と同じファイルに書き、組み立てが全部の言語を入れる）
  */
 declare const __BUILD_CONFIG__: {
-  build: string; courses: string[]; shell: Asset[]; mediaRoots: Record<string, string>; disabledRevisions: string[];
+  build: string; courses: string[]; shell: Asset[]; disabledRevisions: string[]; messages: Readonly<Record<Lang, SwText>>;
 };
 // 組み立ては __BUILD_CONFIG__ を、出てくる場所ごとに中身で置き換える。1 か所で受けて、sw.js に設定を 1 回だけ入れる
 const CONFIG = __BUILD_CONFIG__;
@@ -28,90 +30,15 @@ const deleting = new Set<string>();
 // 訳の講座の ID は en/… のように / を含むので、記録の URL では符号にする
 const recordUrl = (id: string) => new URL(`.offline-records/${encodeURIComponent(id)}`, scope).href;
 const assetUrl = (f: Asset) => new URL(f.url, scope).href;
-const mediaRoots = Object.fromEntries(Object.entries(CONFIG.mediaRoots).map(([lang, root]) => [lang, new URL(root, scope).href]));
 /** 重大な不具合で無効にした保存版の revision。当たる保存版は消さないが、オンラインではそのページを開かない（route） */
 const disabled = new Set(CONFIG.disabledRevisions);
 
-/** 保存機能のエラーの文字（ページの言語で返す）。ページの文字は site/i18n.ts */
-const MESSAGES: Record<string, Record<OfflineErrorCode, string>> = {
-  ja: {
-    manifest: '保存用の教材情報を確認できません。オンラインで再読み込みしてください。',
-    format: '保存対象の形式が不正です。',
-    origin: 'このサイトの公開教材だけ保存できます。',
-    page: '教材ページの形式が不正です。',
-    media: '保存対象は公開 MP4 とポスターに限ります。',
-    incomplete: '保存対象がそろっていません。',
-    unpublished: 'この講座の更新情報は公開されていません。',
-    fetchManifest: '教材情報を取得できません。通信を確認して再試行してください。',
-    tooLarge: '教材情報が大きすぎます。',
-    integrity: '教材情報の整合性を確認できません。',
-    fetchFile: '教材を取得できません。一部取得や別形式の応答は保存しません。',
-    changed: '教材のサイズが変わりました。更新を確認して再試行してください。',
-    corrupt: '教材が不完全か、公開中に更新されました。通信を確認して再試行してください。',
-    quota: '保存用の空き容量が不足しています。',
-    busy: '別の保存・削除を処理中です。完了してから再試行してください。',
-    busyDelete: '保存・削除が処理中です。キャンセルか完了の後に削除してください。',
-    verify: '保存した教材を確認できません。再試行してください。',
-    cancelled: '保存をキャンセルしました。未完了のデータは保存済みになりません。',
-    noSpace: '空き容量が不足しています。不要な保存を削除して再試行してください。',
-    pick: '講座を選んでください。',
-    unknownOp: '対応していない操作です。',
-    storage: '保存場所を利用できません。ブラウザの設定を確認してください。',
-    timeout: '通信が時間切れになりました。再試行してください。',
-  },
-  en: {
-    manifest: 'Cannot read the course data for saving. Reload while online.',
-    format: 'The files to save are in an invalid format.',
-    origin: 'Only course materials published on this site can be saved.',
-    page: 'The course page is in an invalid format.',
-    media: 'Only the published MP4 videos and posters can be saved.',
-    incomplete: 'The files to save are incomplete.',
-    unpublished: 'Update information for this course is not published.',
-    fetchManifest: 'Cannot get the course data. Check your connection and retry.',
-    tooLarge: 'The course data is too large.',
-    integrity: 'Cannot verify the course data.',
-    fetchFile: 'Cannot get a course file. Partial or unexpected responses are not saved.',
-    changed: 'A course file changed size. Check for updates and retry.',
-    corrupt: 'A course file was incomplete or updated while being published. Check your connection and retry.',
-    quota: 'Not enough free space to save.',
-    busy: 'Another save or delete is in progress. Retry after it finishes.',
-    busyDelete: 'A save or delete is in progress. Delete after it is cancelled or finished.',
-    verify: 'Cannot verify the saved files. Please retry.',
-    cancelled: 'Saving was cancelled. Unfinished data is not marked as saved.',
-    noSpace: 'Not enough free space. Delete saved courses you do not need and retry.',
-    pick: 'Choose a course.',
-    unknownOp: 'This operation is not supported.',
-    storage: 'Storage is not available. Check your browser settings.',
-    timeout: 'The connection timed out. Please retry.',
-  },
-  zh: {
-    manifest: '无法确认用于保存的课程信息。请在联网时重新加载。',
-    format: '要保存的文件格式不正确。',
-    origin: '只能保存本网站公开的课程材料。',
-    page: '课程页面的格式不正确。',
-    media: '只能保存公开的 MP4 视频和封面。',
-    incomplete: '要保存的文件不完整。',
-    unpublished: '本课程的更新信息未公开。',
-    fetchManifest: '无法获取课程信息。请检查网络后重试。',
-    tooLarge: '课程信息太大。',
-    integrity: '无法确认课程信息的完整性。',
-    fetchFile: '无法获取课程文件。不会保存部分内容或格式不符的响应。',
-    changed: '课程文件的大小变了。请检查更新后重试。',
-    corrupt: '课程文件不完整，或在发布过程中被更新。请检查网络后重试。',
-    quota: '保存所需的空闲空间不足。',
-    busy: '正在处理其他保存或删除。请等完成后重试。',
-    busyDelete: '正在保存或删除。请在取消或完成后再删除。',
-    verify: '无法确认保存的文件。请重试。',
-    cancelled: '已取消保存。未完成的数据不会算作已保存。',
-    noSpace: '空闲空间不足。请删除不需要的保存后重试。',
-    pick: '请选择课程。',
-    unknownOp: '不支持此操作。',
-    storage: '无法使用存储空间。请检查浏览器设置。',
-    timeout: '网络超时。请重试。',
-  },
-};
+/** その言語の SW の文字（ページが送る言語。知らない言語は日本語） */
+const textIn = (lang: string): SwText => (isLang(lang) ? CONFIG.messages[lang] : undefined) ?? CONFIG.messages.ja;
+/** 講座の ID の言語（en/… は en。頭に言語のフォルダの無い講座は日本語） */
+const langOf = (id: string) => (id.includes('/') ? id.split('/')[0] : 'ja');
 const messageOf = (e: unknown, lang: string) => {
-  const m = MESSAGES[lang] ?? MESSAGES.ja;
+  const m = textIn(lang).errors;
   if (e instanceof OfflineError) return m[e.code];
   // 時間切れを、保存場所の問題と取り違えない（通信の失敗は fetchManifest・download が OfflineError にする）
   if (e instanceof DOMException && e.name === 'TimeoutError') return m.timeout;
@@ -124,7 +51,7 @@ async function readRecord(id: string): Promise<RecordData> {
   let value: unknown;
   try {
     value = await res.json();
-    return parseRecord(value, id, scope, prefix, CONFIG.mediaRoots);
+    return parseRecord(value, id, scope, prefix);
   } catch { return { versions: [], unreadable: { caches: recordCaches(value, id, prefix) } }; }
 }
 
@@ -215,7 +142,7 @@ async function fetchManifest(id: string): Promise<CourseManifest> {
   if (text.length > 100000) throw new OfflineError('tooLarge');
   let parsed: unknown;
   try { parsed = JSON.parse(text); } catch { throw new OfflineError('manifest'); }
-  const m = validateManifest(parsed, id, scope, CONFIG.mediaRoots);
+  const m = validateManifest(parsed, id, scope);
   if (await sha256(new TextEncoder().encode(JSON.stringify(m.files)).buffer) !== m.revision) throw new OfflineError('integrity');
   return m;
 }
@@ -405,21 +332,15 @@ function cachedResponse(req: Request, response: Response): Promise<Response> {
 }
 
 /**
- * URL がどの講座のものか。訳の講座のページは <言語>/<講座>/、訳の動画は別のサイト（動画のサイト）の <講座>/ の下。
- * media は動画のサイトの URL（relative は動画のサイトの中のパス）。2 文字の英小文字の講座 ID は使わない（content/index.ts）
+ * URL がどの講座のものか。訳の講座のページは <言語>/<講座>/、動画はどの言語も /media/<言語>/<講座>/ の下（media は動画の URL）。
+ * 言語のフォルダは講座の言語の一覧（content/langs.ts）から読む。言語の名前の講座 ID は使わない（content/index.ts）
  */
 function courseIdOf(url: URL): { id: string; relative: string; media: boolean } {
   const hashed = parseMediaPath(url.pathname);
   if (hashed) return { id: `${hashed.lang === 'ja' ? '' : `${hashed.lang}/`}${hashed.course}`, relative: url.pathname.slice(1), media: true };
-  for (const [lang, root] of Object.entries(mediaRoots)) {
-    if (url.href.startsWith(root)) {
-      const relative = url.pathname.slice(new URL(root).pathname.length);
-      return { id: `${lang}/${relative.split('/')[0]}`, relative, media: true };
-    }
-  }
   const relative = url.pathname.slice(new URL(scope).pathname.length);
   const parts = relative.split('/');
-  const id = /^[a-z]{2}$/.test(parts[0]) && parts.length > 1 && parts[1] ? `${parts[0]}/${parts[1]}` : parts[0];
+  const id = isLangFolder(parts[0]) && parts.length > 1 && parts[1] ? `${parts[0]}/${parts[1]}` : parts[0];
   return { id, relative, media: false };
 }
 
@@ -457,7 +378,7 @@ async function route(req: Request): Promise<Response> {
       let opened: SavedVersion | undefined;
       for (const v of record.versions) if (await complete(v)) { opened = v; break; }
       if (!opened || !disabled.has(opened.manifest.revision)) {
-        return new Response('この保存版の動画は利用できません。講座を再読み込みし、オンラインで保存し直してください。 / This saved video is not available. Reload the course and save it again online.', { status: 503 });
+        return new Response(textIn(langOf(id)).videoUnavailable, { status: 503 });
       }
     }
   }
@@ -467,7 +388,7 @@ async function route(req: Request): Promise<Response> {
     if (response.status < 500 || req.mode !== 'navigate') return response;
   } catch { /* オフラインでは選択して保存した教材と起動用ページだけ返す */ }
   const shell = await caches.open(shellName);
-  // 動画のサイトの URL に、一覧のページを返さない（保存していない訳の動画とポスターは、下の 503 になる）
+  // 動画の URL に、一覧のページを返さない（保存していない動画は、下の 503 になる）
   const key = !media && (!relative || relative === 'index.html') ? scope : url.href;
   const cached = await shell.match(key);
   if (cached) return cachedResponse(req, cached);
@@ -475,12 +396,11 @@ async function route(req: Request): Promise<Response> {
     const fallback = await shell.match(new URL('offline/', scope).href);
     if (fallback) return new Response((await fallback.text()).replaceAll('__ROOT__', esc(new URL(scope).pathname)), { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
-  return new Response('オフラインです。この教材はアプリ内に保存されていません。 / Offline. This file is not saved in the app.', { status: 503 });
+  return new Response(textIn(langOf(id)).fileNotSaved, { status: 503 });
 }
 
 sw.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  const mine = url.href.startsWith(scope) || Object.values(mediaRoots).some((root) => url.href.startsWith(root));
-  if (url.origin !== new URL(scope).origin || !mine || !['GET', 'HEAD'].includes(event.request.method)) return;
+  if (url.origin !== new URL(scope).origin || !url.href.startsWith(scope) || !['GET', 'HEAD'].includes(event.request.method)) return;
   event.respondWith(route(event.request));
 });

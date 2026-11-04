@@ -1,4 +1,5 @@
 // URL の許可リストを、サイトの組み立てと Worker の両方で共有する（外部 URL は持たない）。
+import { LANG_PATTERN } from '../content/langs';
 import { MEDIA_LIST_MAX_ENTRIES, RELEASE_ASSET_MAX_BYTES } from './limits';
 export const MEDIA_REPOSITORY = 'sean-sunagaku/chalkfile';
 export type MediaEntry = {
@@ -16,9 +17,10 @@ export type MediaEntry = {
 export type RetainedMediaEntry = MediaEntry & { retainedUntil?: string };
 export type MediaManifest = { schema: 1; entries: MediaEntry[]; retained?: RetainedMediaEntry[] };
 export const allMediaEntries = (manifest: MediaManifest) => [...manifest.entries, ...(manifest.retained ?? [])];
-// 講座・レクチャーの ID、言語、SHA-256 の形。一覧の検査（validateMediaManifest）と、配るパスの読み方（parseMediaPath）が同じものを使う
+// 講座・レクチャーの ID、言語、SHA-256 の形。一覧の検査（validateMediaManifest）と、配るパスの読み方（parseMediaPath）が同じものを使う。
+// 言語は講座の言語の一覧（content/langs.ts の LANGS）にあるものだけ（保存の確かめ site/offline-shared.ts と同じ一覧から作る）
 const ID_PART = '[A-Za-z0-9][A-Za-z0-9_-]*';
-const LANG_PART = '[a-z]{2,3}(?:-[A-Z]{2})?';
+const LANG_PART = LANG_PATTERN;
 const HASH_PART = '[a-f0-9]{64}';
 const ID = new RegExp(`^${ID_PART}$`);
 const LANG = new RegExp(`^${LANG_PART}$`);

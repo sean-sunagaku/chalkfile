@@ -26,9 +26,6 @@ export const VOICES: Record<VoiceId, { speaker: number; speed: number; intonatio
   tennokoe: { speaker: 11, speed: 1.02, intonation: 1.1, pitch: 0, credit: 'VOICEVOX:玄野武宏' },
 };
 
-/** 講座サイトのクレジットに出す声（全講座で共通の講師と呼び込み）。ほかの声を使う講座は、講座の sourceNote にも書く */
-export const SITE_CREDITS: string[] = [...new Set([VOICES.narrator.credit, VOICES.announcer.credit])];
-
 /** レクチャーで使った声のクレジット（VOICES の順・重なりなし）。動画のエンディングに出す */
 export const creditsOf = (voices: Iterable<VoiceId>): string[] => {
   const used = new Set(voices);

@@ -1,10 +1,12 @@
 // 講座のページに入れるデータ（純粋。ファイルを読み書きしない）。台本（Course）と講義のデータ（synth.ts が書く site/data/<key>.json）から、
-// ページの中の JSON（template.html の __COURSE_JSON__。画面の JS が読む）の形を作る。講義のデータは呼ぶ側が読んで渡す
+// ページの中の JSON（template.html の __COURSE_JSON__。画面の site/course-page.ts が読む）の形を作る。講義のデータは呼ぶ側が読んで渡す。
+// 形の正本は画面の側の site/page/data.ts の CourseData（courseJson が satisfies で確かめる）
 import { LANG_INFO, type Lang, videoKey } from '../../content/i18n';
 import type { ChapterMaterial, Course, Source, VoiceId } from '../../content/types';
-import { creditsIn, SITE_CREDITS } from '../../content/voices';
-import type { SiteText } from '../../site/i18n';
+import { creditsIn } from '../../content/voices';
+import type { CourseText } from '../../site/i18n';
 import { type MediaEntry, mediaPath } from '../../site/media-shared';
+import type { CourseData } from '../../site/page/data';
 import { PAGE_VERSION_MARK } from '../site-version';
 import type { SiteConfig } from '../validate';
 import { type Html, jsonHtml } from './html';
@@ -59,7 +61,7 @@ export const materialForSite = (course: Course, m: ChapterMaterial) => {
 export type LectureModel = ReturnType<typeof lectureModels>[number];
 
 /** 講座のレクチャー。講義のデータが無ければ止める（先に synth.ts を流す） */
-export const lectureModels = (course: Course, lang: Lang, T: SiteText, readData: ReadData) =>
+export const lectureModels = (course: Course, lang: Lang, T: CourseText, readData: ReadData) =>
   course.lectures.map((lec) => {
     const key = videoKey(lec.id, lang);
     const d = readData(key);
@@ -95,16 +97,17 @@ const voicesOf = (courses: readonly Course[]): VoiceId[] =>
     c.lectures.flatMap((l) => l.scenes.flatMap((s) => s.lines.map((ln) => (ln.v ?? 'narrator') as VoiceId))),
   );
 
-/** 講座の動画で使った声のクレジット。日本語は全講座で共通（講師と呼び込み。ほかの声は講座の sourceNote） */
-export const courseCredits = (course: Course, lang: Lang): string[] =>
-  lang === 'ja' ? SITE_CREDITS : creditsIn(lang, voicesOf([course]));
+/**
+ * 講座のページのクレジット（講座の動画で使った全部の声。content/voices.ts の creditsIn。VOICEVOX は「VOICEVOX:キャラ名」）。
+ * 声の一覧の順で、重ねない。動画のエンディングと同じく、台詞の声から作る（キャラクターの利用規約。講座の sourceNote に声を書かなくてよい）
+ */
+export const courseCredits = (course: Course, lang: Lang): string[] => creditsIn(lang, voicesOf([course]));
 
-/** 一覧のページのクレジット。日本語は全講座で共通、訳の言語はその言語の全講座で使った声 */
-export const homeCredits = (courses: readonly Course[], lang: Lang): string[] =>
-  lang === 'ja' ? SITE_CREDITS : creditsIn(lang, voicesOf(courses));
+/** 一覧のページのクレジット（その言語の全部の講座の動画で使った声） */
+export const homeCredits = (courses: readonly Course[], lang: Lang): string[] => creditsIn(lang, voicesOf(courses));
 
 /** 講座の情報（ページの JSON の course）。計画だけある章（まだ動画が無い）は、カリキュラムに「準備中」で出す */
-export const courseMeta = (course: Course, T: SiteText, config: SiteConfig) => {
+export const courseMeta = (course: Course, T: CourseText, config: SiteConfig) => {
   const made = new Set(course.lectures.map((l) => l.id));
   const planned = (course.syllabus?.chapters ?? [])
     .filter((ch) => !made.has(ch.lectureId))
@@ -133,7 +136,7 @@ export type VideoFor = (lecture: string, kind: MediaEntry['kind']) => MediaEntry
 export const courseJson = (o: {
   course: Course;
   lang: Lang;
-  T: SiteText;
+  T: CourseText;
   config: SiteConfig;
   lectures: LectureModel[];
   video: VideoFor;
@@ -159,5 +162,5 @@ export const courseJson = (o: {
         videoCc: cc ? mediaPath(cc) : '',
       };
     }),
-  });
+  } satisfies CourseData);
 };

@@ -1,10 +1,11 @@
 // 声のクレジット（キャラクターの利用規約）。どれも台詞の声から作る（content/voices.ts の creditsIn）。
-// 納品物の README（scripts/export_deliverables.ts）・読む教材（scripts/build_materials.ts）・講座のページの確かめ（scripts/validate.ts）
+// 納品物の README（scripts/export_deliverables.ts）・読む教材（scripts/build_materials.ts）・講座のページと一覧のページ（scripts/site/model.ts）と、その確かめ（scripts/validate.ts）
 import { describe, expect, test } from 'bun:test';
 import { COURSES, coursesIn, VIDEOS, videoOf } from '../content';
 import { creditsIn, voicesOf } from '../content/voices';
 import { courseVoicesLine, materialOutputs, speakersLine } from '../scripts/build_materials';
 import { creditLine } from '../scripts/export_deliverables';
+import { courseCredits, homeCredits } from '../scripts/site/model';
 import { creditProblems } from '../scripts/validate';
 
 const comedy = VIDEOS.filter((v) => v.course.cast);
@@ -50,24 +51,37 @@ describe('読む教材（build_materials）', () => {
   });
 });
 
-describe('講座のページのクレジット（validate の creditProblems）', () => {
-  test('今の講座は、ページ（日本語は講師と呼び込みと sourceNote）が全部の声を含む', () => {
+describe('講座のページと一覧のページのクレジット（scripts/site/model.ts・validate の creditProblems）', () => {
+  test('講座のページのクレジットは、その講座の動画で使った全部の声（お笑い版は、ずんだもんと天の声も）', () => {
+    for (const lang of ['ja', 'en', 'zh'] as const) {
+      for (const c of coursesIn(lang)) expect(courseCredits(c, lang)).toEqual(creditsIn(lang, c.lectures.flatMap(voicesOf)));
+    }
+    const ga4 = COURSES.find((c) => c.id === 'ga4-comedy');
+    if (!ga4) throw new Error('ga4-comedy が無い');
+    expect(courseCredits(ga4, 'ja')).toEqual(['VOICEVOX:No.7', 'VOICEVOX:青山龍星', 'VOICEVOX:ずんだもん', 'VOICEVOX:玄野武宏']);
+    // 掛け合いの無い講座は、講師と呼び込みだけ
+    const stripe = COURSES.find((c) => c.id === 'stripe-billing');
+    if (!stripe) throw new Error('stripe-billing が無い');
+    expect(courseCredits(stripe, 'ja')).toEqual(['VOICEVOX:No.7', 'VOICEVOX:青山龍星']);
+  });
+  test('一覧のページのクレジットは、その言語の全部の講座で使った声', () => {
+    expect(homeCredits(coursesIn('ja'), 'ja')).toEqual(creditsIn('ja', COURSES.flatMap((c) => c.lectures.flatMap(voicesOf))));
+    expect(homeCredits(coursesIn('ja'), 'ja')).toContain('VOICEVOX:ずんだもん');
+  });
+  test('今の講座は、ページのクレジットが全部の声を含む', () => {
     expect(creditProblems(coursesIn)).toEqual([]);
   });
-  test('sourceNote に書いていない声を、注意で知らせる（ページを声から作ったら、誤りにする）', () => {
-    const noted = (lang: Parameters<typeof coursesIn>[0]) =>
-      coursesIn(lang).map((c) =>
-        c.id === 'ga4-comedy' ? { ...c, sourceNote: 'ボケの声は VOICEVOX:ずんだもん。' } : c,
-      );
-    expect(creditProblems(noted)).toEqual([
+  test('ページのクレジットから声が抜けたら、誤りで止める（前の、講師と呼び込みだけを出す形）', () => {
+    const fixed = (_: unknown, lang: string) => (lang === 'ja' ? ['VOICEVOX:No.7', 'VOICEVOX:青山龍星'] : []);
+    const ja = (lang: Parameters<typeof coursesIn>[0]) => (lang === 'ja' ? coursesIn('ja').filter((c) => c.id === 'ga4-comedy') : []);
+    expect(creditProblems(ja, fixed)).toEqual([
       {
-        level: 'warning',
+        level: 'error',
         rule: 'credit',
         where: 'ga4-comedy',
         message:
-          '講座のページのクレジットに VOICEVOX:玄野武宏 が無い（講座の sourceNote に「ボケの声は VOICEVOX:ずんだもん」のように書く）',
+          '講座のページのクレジットに VOICEVOX:ずんだもん・VOICEVOX:玄野武宏 が無い（scripts/site/model.ts の courseCredits は、台詞の声から content/voices.ts の creditsIn で作る）',
       },
     ]);
-    expect(creditProblems(noted, 'error').map((x) => x.level)).toEqual(['error']);
   });
 });

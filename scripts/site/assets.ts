@@ -45,12 +45,13 @@ export const copyAssets = (from: string, to: string, dist: string): Asset[] => {
 };
 
 /**
- * 一覧のページに出す、講座のサムネイル（日本語の講座の最初の動画のポスター。posters はサイトの最上位からの場所）。
- * 置いてあるものだけを、小さな起動用ファイルにする。訳の講座のサムネイルは入れない（起動用ファイルが 1 つでも取れないと、
- * SW の install 全体が止まるので、訳の講座の反映が遅れても、講座サイトの更新が止まらないようにする）
+ * 一覧のページに出す、講座のサムネイル（日本語の講座の最初の動画のポスター。posters はサイトの最上位からの URL で、?v= の版が付く）。
+ * 置いてあるものだけを、小さな起動用ファイルにする（URL は一覧のページが読むのと同じ ?v= 付き。SW は query まで合わせて返す）。
+ * 訳の講座のサムネイルは入れない（起動用ファイルが 1 つでも取れないと、SW の install 全体が止まるので、訳の講座の反映が遅れても、
+ * 講座サイトの更新が止まらないようにする）
  */
 export const thumbnailAssets = (dist: string, posters: string[]): Asset[] =>
-  posters.flatMap((f) => {
-    const local = path.join(dist, f);
-    return existsSync(local) ? [asset(f, readFileSync(local), mimeOf(f))] : [];
+  posters.flatMap((url) => {
+    const local = path.join(dist, url.split('?')[0]);
+    return existsSync(local) ? [asset(url, readFileSync(local), mimeOf(url))] : [];
   });
