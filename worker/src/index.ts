@@ -3,5 +3,6 @@
 // CI の build・deploy.yml は流す）。型は generated/media-manifest.d.json.ts（JSON が無い checkout でも型を確かめられる）
 import { createWorker } from './app';
 import manifest from './generated/media-manifest.json';
+import settings from './generated/project-settings.json';
 
-export default createWorker(manifest);
+export default createWorker(manifest, settings);

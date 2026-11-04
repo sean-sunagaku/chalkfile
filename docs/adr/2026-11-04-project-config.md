@@ -22,7 +22,7 @@
 | `wrangler.jsonc` の routes | 公開先のドメインと www |
 | `.github/workflows/{ci,deploy,canary}.yml` の公開先・リポジトリの条件 | fork の制限と公開の確認先 |
 
-Worker の JSON は Git に入れない。それ以外は、取り出した旧版の台本の読み込みや、Actions の開始前にも要るので Git に入れる。`npm run gen -- --check` と `npm run check:docs` が、正本とのずれを止める。生成する場所が消えたときも止める。
+Worker の JSON は Git に入れず、本番の入口だけが読む。Worker 本体は一覧と設定を引数で受け取り、単体テストは生成前でも動く。それ以外は、取り出した旧版の台本の読み込みや、Actions の開始前にも要るので Git に入れる。`npm run gen -- --check` と `npm run check:docs` が、正本とのずれを止める。生成する場所が消えたときも止める。
 
 言語の宣言と中継先の定数は、今までと同じファイルに残す。別のモジュールへ動かすだけでも、Bun の圧縮で SW のバイト列が変わるため。今回の移行では、サイト出力 99 ファイルが移行前と同じバイト列であることを確かめた。
 
