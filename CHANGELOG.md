@@ -49,6 +49,7 @@ Chalkfile のエンジン（動画・講座サイト・配信の Worker・作る
 ### 安全
 
 - Cloudflare の初回設定ツールは、対象のアカウント ID を `CLOUDFLARE_ACCOUNT_ID` から受け取る。値をコードへ書かず、plan に表示せず、未指定の apply は外部操作の前に止める
+- Remotion と関連パッケージを 4.0.540 に揃え、Zod 4.6.7・PostCSS 8.5.32 を含む lock に更新した。依存の監査で見つかった High 11件を解消し、監査結果は0件
 
 ## 2026-11-03
 
