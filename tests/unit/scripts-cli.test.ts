@@ -14,6 +14,12 @@ afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
 
 /** CLI の道具（TS は bun、stills.ts は node、シェル、Python） */
 const TS = [
+  'serve',
+  'i18n',
+  'build_site',
+  'check_delivery',
+  'verify_public',
+  'check_docs',
   'build_materials',
   'check_content',
   'codemod_content',
@@ -138,9 +144,12 @@ describe('--help は頭書きを出すだけで、何も消さず・何も書か
 });
 
 describe('import しただけでは何も起きない（出力も、ファイルの変化も無い）', () => {
-  for (const name of [...TS, 'stills', ...MODULES])
-    test(name, () => {
-      const file = path.join(ROOT, 'scripts', `${name}.ts`);
+  for (const entry of [
+    ...CLI,
+    ...MODULES.map((name) => ({ name, file: `scripts/${name}.ts` })),
+  ])
+    test(entry.name, () => {
+      const file = path.join(ROOT, entry.file);
       const r = runChild([process.execPath, '-e', `await import(${JSON.stringify(file)}); console.log('imported')`]);
       expect({ code: r.code, stdout: r.stdout, stderr: r.stderr, changed: r.changed, cache: r.cache }).toEqual({
         code: 0,
@@ -153,7 +162,28 @@ describe('import しただけでは何も起きない（出力も、ファイル
 });
 
 describe('知らない引数は、何もせずに「使い方の誤り」（終了コード 2）で止める', () => {
+  test('i18n stamp は、対象に訳が無いものが混じったら、書く前に「前提が足りない」（3）で止める', () => {
+    const result = runChild([process.execPath, 'scripts/i18n.ts', 'stamp', 'P01.en', 'Z99.en']);
+    expect({ code: result.code, changed: result.changed, cache: result.cache, tmp: result.tmp }).toEqual({ code: 3, changed: [], cache: [], tmp: [] });
+    expect(result.stderr).toContain('Z99.en');
+  }, 60_000);
   const unknown: [string, string[]][] = [
+    ...['serve', 'i18n', 'build_site', 'check_delivery', 'verify_public', 'check_docs'].map((name): [string, string[]] => [name, [process.execPath, `scripts/${name}.ts`, '--nope']]),
+    ...['worker-site-smoke', 'smoke_worker'].map((name): [string, string[]] => [name, [process.execPath, `tools/verify/${name}.ts`, '--nope']]),
+    ['build_site（無い講座）', [process.execPath, 'scripts/build_site.ts', 'no-such-course']],
+    ['check_delivery（多い引数）', [process.execPath, 'scripts/check_delivery.ts', 'a', 'b']],
+    ['verify_public（URLでない）', [process.execPath, 'scripts/verify_public.ts', 'bad-url']],
+    ['verify_public（多い引数）', [process.execPath, 'scripts/verify_public.ts', 'https://example.com/', 'extra']],
+    ['verify_public（ルートでない）', [process.execPath, 'scripts/verify_public.ts', 'https://example.com/sub/']],
+    ['i18n（コマンドなし）', [process.execPath, 'scripts/i18n.ts']],
+    ['i18n（statusの多い引数）', [process.execPath, 'scripts/i18n.ts', 'status', 'extra']],
+    ['i18n（restampの多い引数）', [process.execPath, 'scripts/i18n.ts', 'restamp', 'extra']],
+    ['i18n（stampの指定なし）', [process.execPath, 'scripts/i18n.ts', 'stamp']],
+    ['i18n（stampの不正な指定）', [process.execPath, 'scripts/i18n.ts', 'stamp', '../P01.en']],
+    ['i18n（stdoutの場所）', [process.execPath, 'scripts/i18n.ts', 'restamp', '--stdout']],
+    ['i18n（scaffoldの指定なし）', [process.execPath, 'scripts/i18n.ts', 'scaffold']],
+    ['i18n（scaffoldの多い指定）', [process.execPath, 'scripts/i18n.ts', 'scaffold', 'P01.en', 'W01.en']],
+    ['i18n（tryの多い指定）', [process.execPath, 'scripts/i18n.ts', 'try', 'pstack-comedy', 'en', 'P01', 'extra']],
     ['synth.ts', [process.execPath, 'scripts/synth.ts', '--nope']],
     ['synth.ts（無い動画）', [process.execPath, 'scripts/synth.ts', 'ZZ99']],
     ['materials.ts', [process.execPath, 'scripts/materials.ts', 'pull', '--nope']],

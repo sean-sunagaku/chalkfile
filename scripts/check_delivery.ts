@@ -13,6 +13,7 @@ import { retainedWarnings } from '../site/media-shared';
 import { checkSecrets } from './check_content';
 import { readMediaManifest } from './media';
 import { mediaManifestJson } from './media-lists';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -522,7 +523,10 @@ export function checkArtifact(dir: string) {
   return count;
 }
 
-if (import.meta.main) {
+async function main(argv: string[]) {
+  const { values, positionals } = readArgs(argv, {}, { positionals: true });
+  if (values.help) return showHelp(import.meta.filename);
+  if (positionals.length > 1) throw new UsageError('公開物のフォルダは 1 つだけ指定する');
   const workflows = validateWorkflows(ROOT);
   validateWorkerConfig(readWranglerConfig());
   // 期限を過ぎた retained は、公開を止めずに知らせる（media.ts check と同じ文）。
@@ -534,6 +538,7 @@ if (import.meta.main) {
   const worker = path.join(ROOT, 'worker/src/generated/media-manifest.json');
   if (existsSync(worker) && readFileSync(worker, 'utf8') !== mediaManifestJson(manifest)) throw new Error('Worker の許可リスト（worker/src/generated/media-manifest.json）が、講座ごとの動画の一覧と違います。npm run gen で作り直してください。');
   if (!existsSync(worker)) console.log('Worker の許可リストはまだ無い（wrangler の前に npm run gen が作る）。');
-  const dir = path.resolve(process.argv[2] ?? path.join(ROOT, 'site/dist'));
+  const dir = path.resolve(positionals[0] ?? path.join(ROOT, 'site/dist'));
   console.log(`公開の手順（workflow ${workflows} 本）の性質と、静的公開物 ${checkArtifact(dir)} files を確認。機密情報・MP4の混入なし。`);
 }
+if (import.meta.main) await runMain(main);

@@ -3,6 +3,7 @@
 import config from '../chalkfile.config';
 import { mediaPath } from '../site/media-shared';
 import { readMediaManifest } from './media';
+import { readArgs, runMain, showHelp, UsageError } from './lib/args';
 
 export async function verifyPublic(origin = config.origin) {
   const base = new URL(origin);
@@ -29,4 +30,14 @@ export async function verifyPublic(origin = config.origin) {
   }));
   console.log(`公開トップ200・全${entries.length}動画の206/Content-Range/video/mp4/attachmentなしを確認。`);
 }
-if (import.meta.main) await verifyPublic(process.argv[2]);
+async function main(argv: string[]) {
+  const { values, positionals } = readArgs(argv, {}, { positionals: true });
+  if (values.help) return showHelp(import.meta.filename);
+  if (positionals.length > 1) throw new UsageError('公開先は 1 つだけ指定する');
+  const origin = positionals[0] ?? config.origin;
+  let base: URL;
+  try { base = new URL(origin); } catch { throw new UsageError('公開先は http(s) の URL にする'); }
+  if (!['http:', 'https:'].includes(base.protocol) || base.username || base.password || base.pathname !== '/' || base.search || base.hash) throw new UsageError('公開先は認証情報のないルート URL にする');
+  await verifyPublic(base.href);
+}
+if (import.meta.main) await runMain(main);

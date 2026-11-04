@@ -19,6 +19,7 @@ import config from '../chalkfile.config';
 import { THEMES } from '../content/themes';
 import { docOutputs, projectOutputs } from './gen';
 import { MATERIALS_REGISTRY, materialsRegistry } from './gen_materials_registry';
+import { readArgs, runMain, showHelp, EXIT } from './lib/args';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -494,8 +495,10 @@ export const checkDocs = (out: Finding[], used: Map<OldAllow, number> = new Map(
   checkGenerated(read, out);
 };
 
-if (import.meta.main) {
-  const strict = process.argv.includes('--strict');
+async function main(argv: string[]) {
+  const { values } = readArgs(argv, { strict: { type: 'boolean' } });
+  if (values.help) return showHelp(import.meta.filename);
+  const strict = values.strict;
   const out: Finding[] = [];
   const used = new Map<OldAllow, number>();
   checkDocs(out, used);
@@ -517,5 +520,6 @@ if (import.meta.main) {
   console.log(
     `古い言葉の例外（ALLOW_OLD）で許したもの: わざと書く所 ${allowed(false)} 件・直す担当が決まっている所 ${allowed(true)} 件`,
   );
-  process.exit(errors.length ? 1 : 0);
+  return errors.length ? EXIT.failed : EXIT.ok;
 }
+if (import.meta.main) await runMain(main);

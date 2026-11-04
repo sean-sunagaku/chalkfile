@@ -29,6 +29,8 @@
 | `voice speech-check [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 訳の声を Whisper で聞き取り直し、読み上げの間違いを探す（選ばなければ、合成した訳の全部） | `uv run --locked --script scripts/check_speech.py` |
 | `i18n status` | 訳の表（訳あり・日本語の台本が訳のあとで変わった・未訳）と訳し残し | `bun scripts/i18n.ts status` |
 | `i18n stamp <動画…>（例: P01.en・'*.zh'）` | 訳を台本に合わせ直したあと、今の日本語の台本の指紋を訳のファイルに書く | `bun scripts/i18n.ts stamp` |
+| `i18n scaffold <動画> [--stdout]（例: S07.en）` | 日本語の注釈を入れた訳のひな形を作る（--stdout は表示だけ） | `bun scripts/i18n.ts scaffold` |
+| `i18n restamp` | 日本語が変わっていない訳の、前の作り方の指紋だけを付け直す | `bun scripts/i18n.ts restamp` |
 | `i18n try <講座 ID> <言語> <レクチャー ID>` | 講座に並べる前の訳のファイルを 1 本だけ確かめる（重ね方・訳し残し・点検・長さ） | `bun scripts/i18n.ts try` |
 | `music build [--only <名前>…] [--skip-verify] [--check]` | BGM・ジングル・効果音（public/audio/）。--check は素材と同じ音ができるかだけを見る | `npm run build:music`・`npm run music:verify` |
 | `mix [動画…] [--course <ID>] [--video <形>] [--lang <言語>]` | 音のミックス（public/audio/mix/）。先に voice synth。ミックスの前後に、段の記録（.work/state/mix/）も書く | `npm run mix` |

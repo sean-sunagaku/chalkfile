@@ -19,6 +19,7 @@ import { l10nProblems, localizeLecture, TRANSLATED_LANGS, untranslated, type Lec
 import type { AuthoredLecture, Course, Lecture } from '../content/types';
 import { checkText } from './check_content';
 import { stampSource } from './lib/i18n-source';
+import { readArgs, runMain, showHelp, UsageError, MissingError, EXIT } from './lib/args';
 
 const ROOT = path.resolve(import.meta.dir, '..');
 
@@ -179,8 +180,16 @@ export const scaffold = (lec: AuthoredLecture, lang: TranslatedLang, source: str
 
 /* ───────────── 実行 ───────────── */
 
-if (import.meta.main) {
-  const [cmd, ...args] = process.argv.slice(2);
+async function main(argv: string[]) {
+  const { values, positionals } = readArgs(argv, { stdout: { type: 'boolean' } }, { positionals: true });
+  if (values.help) return showHelp(import.meta.filename);
+  const [cmd, ...args] = positionals;
+  if (!cmd || !['status', 'stamp', 'restamp', 'scaffold', 'try'].includes(cmd)) throw new UsageError('status | stamp | restamp | scaffold | try を指定する（使い方は --help）');
+  if (values.stdout && cmd !== 'scaffold') throw new UsageError('--stdout は scaffold だけで使う');
+  if ((cmd === 'status' || cmd === 'restamp') && args.length) throw new UsageError(`${cmd} は引数を取らない`);
+  if (cmd === 'stamp' && (!args.length || args.some((arg) => !/^(?:[A-Z]\d{2}\.(?:en|zh|\*)|\*\.(?:en|zh))$/.test(arg)))) throw new UsageError("指紋を書く訳を指定する（例: P01.en、P01.*、'*.zh'）");
+  if (cmd === 'scaffold' && (args.length !== 1 || !/^[A-Z]\d{2}\.(en|zh)$/.test(args[0] ?? ''))) throw new UsageError('scaffold <レクチャー ID>.<en|zh> [--stdout] を指定する');
+  if (cmd === 'try' && (args.length !== 3 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(args[0] ?? '') || !TRANSLATED_LANGS.includes(args[1] as TranslatedLang) || !/^[A-Z]\d{2}$/.test(args[2] ?? ''))) throw new UsageError('try <講座 ID> <en|zh> <レクチャー ID> を指定する');
   const rows = translationRows();
   if (cmd === 'status' || !cmd) {
     for (const course of COURSES) {
@@ -207,11 +216,13 @@ if (import.meta.main) {
     const published = publishLangs();
     const stops = stale.filter((r) => published.includes(r.lang)).length;
     console.log(`訳: ${rows.filter((r) => r.state !== 'none').length} 本（台本が変わった ${stale.length} 本〔うち公開する言語 ${stops} 本〕・訳し残し ${left} か所）`);
-    process.exit(left || stops ? 1 : 0);
+    return left || stops ? EXIT.failed : EXIT.ok;
   } else if (cmd === 'stamp') {
-    const want = (r: Row) => args.some((a) => a === `${r.id}.${r.lang}` || a === `${r.id}.*` || a === `*.${r.lang}`);
-    const picked = rows.filter((r) => r.state !== 'none' && want(r));
-    if (!picked.length) throw new Error(`訳が無い: ${args.join(' ')}（例: P01.en、'*.zh'）`);
+    const matches = (r: Row, a: string) => a === `${r.id}.${r.lang}` || a === `${r.id}.*` || a === `*.${r.lang}`;
+    const available = rows.filter((r) => r.state !== 'none');
+    const missing = args.filter((a) => !available.some((r) => matches(r, a)));
+    if (missing.length) throw new MissingError(`訳が無い: ${missing.join(' ')}（例: P01.en、'*.zh'）`);
+    const picked = available.filter((r) => args.some((a) => matches(r, a)));
     for (const r of picked) console.log(`${r.file}: source を ${writeSource(r)} にした`);
   } else if (cmd === 'restamp') {
     // 指紋の作り方を変えたとき（v1 → 今）に、確かめ済みの訳だけを付け直す。v1 でも stale だった訳は stale のまま残す（誰も確かめていない訳を、確かめた扱いにしない）
@@ -220,15 +231,15 @@ if (import.meta.main) {
     const left = rows.filter((r) => r.state === 'stale' && !r.old);
     console.log(`付け直した ${old.length} 本。stale のまま残した ${left.length} 本${left.length ? `: ${left.map((r) => `${r.id}.${r.lang}`).join(' ')}` : ''}`);
   } else if (cmd === 'scaffold') {
-    const [target, ...rest] = args.filter((a) => a !== '--stdout');
+    const [target, ...rest] = args;
     const m = /^([A-Z]\d{2})\.(en|zh)$/.exec(target ?? '');
-    if (!m || rest.length) throw new Error('使い方: bun scripts/i18n.ts scaffold <レクチャー ID>.<en|zh> [--stdout]（例: S07.en）');
+    if (!m || rest.length) throw new UsageError('scaffold <レクチャー ID>.<en|zh> [--stdout] を指定する（例: S07.en）');
     const [, id, lang] = m as unknown as [string, string, TranslatedLang];
     const course = AUTHORED_COURSES.find((c) => c.lectures.some((l) => l.id === id));
     const lec = course?.lectures.find((l) => l.id === id);
-    if (!course || !lec) throw new Error(`日本語の台本が無い: ${id}`);
+    if (!course || !lec) throw new UsageError(`日本語の台本が無い: ${id}`);
     const text = scaffold(lec, lang, fingerprint(lec));
-    if (args.includes('--stdout')) process.stdout.write(text);
+    if (values.stdout) process.stdout.write(text);
     else {
       const file = path.join('content', course.id, lang, `${id}.ts`);
       if (existsSync(path.join(ROOT, file))) throw new Error(`${file} はもうある（上書きしない。表示だけなら --stdout）`);
@@ -242,7 +253,7 @@ if (import.meta.main) {
     // 訳は、at の id を番号に直す前の日本語の台本に重ねる（content/index.ts の coursesIn と同じ）
     const course = AUTHORED_COURSES.find((c) => c.id === courseId);
     const base = course?.lectures.find((l) => l.id === id);
-    if (!course || !base || !TRANSLATED_LANGS.includes(lang)) throw new Error('使い方: bun scripts/i18n.ts try <講座 ID> <en|zh> <レクチャー ID>');
+    if (!course || !base || !TRANSLATED_LANGS.includes(lang)) throw new UsageError('try <講座 ID> <en|zh> <レクチャー ID> を指定する');
     const mod = (await import(path.join(ROOT, 'content', courseId, lang, `${id}.ts`))) as Record<string, LectureL10n>;
     const tr = mod[id];
     if (!tr) throw new Error(`content/${courseId}/${lang}/${id}.ts が ${id} を export していない`);
@@ -284,9 +295,8 @@ if (import.meta.main) {
     for (const l of long) console.log(`長さ  ${l}`);
     const bad = merged.length + problems.length + findings.filter((f) => f.level === 'error').length;
     console.log(bad ? `直すところ ${bad} か所` : `重ね方・訳し残し・点検は通った（空の文字 ${empty.length}・長さの注意 ${long.length}）`);
-    process.exit(bad ? 1 : 0);
-  } else {
-    console.error("使い方: bun scripts/i18n.ts status | stamp <ID.言語 …>（'*.en' で英語の全部）| restamp | scaffold <ID>.<en|zh> [--stdout] | try <講座 ID> <en|zh> <レクチャー ID>");
-    process.exit(1);
+    return bad ? EXIT.failed : EXIT.ok;
   }
+  return EXIT.ok;
 }
+if (import.meta.main) await runMain(main);
