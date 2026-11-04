@@ -2,6 +2,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { type ParseError, parse } from 'jsonc-parser';
 import config, { RENDER } from '../../chalkfile.config';
 import { DEFAULT_THEME } from '../../content/themes';
 import { LANG_INFO, LANGS } from '../../engine/core/langs';
@@ -19,8 +20,8 @@ import {
 } from '../../scripts/gen_project_config';
 import { readSiteConfig } from '../../scripts/lib/config';
 import { ROOT } from '../../scripts/lib/paths';
-import { RENDER as renderSettings } from '../../scripts/stages/video/render.config';
 import { RENDER_CODE } from '../../scripts/stages/video/inputs';
+import { RENDER as renderSettings } from '../../scripts/stages/video/render.config';
 import { MEDIA_REPOSITORY } from '../../site/media-shared';
 
 const read = (file: string) => readFileSync(path.join(ROOT, file), 'utf8');
@@ -52,7 +53,9 @@ describe('プロジェクトの設定', () => {
     expect(JSON.parse(workerSettings(fork))).toEqual({ origin: fork.origin, repository: fork.repository });
     expect(coreSettings(fork)).toContain(JSON.stringify(fork.origin));
     expect(mediaSettings(read(MEDIA_SETTINGS), fork)).toContain(JSON.stringify(fork.repository));
-    const wrangler = JSON.parse(wranglerSettings(read('wrangler.jsonc'), fork));
+    const errors: ParseError[] = [];
+    const wrangler = parse(wranglerSettings(read('wrangler.jsonc'), fork), errors);
+    expect(errors).toEqual([]);
     expect(wrangler.routes).toEqual([
       { pattern: 'lessons.example', custom_domain: true },
       { pattern: 'www.lessons.example', custom_domain: true },

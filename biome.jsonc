@@ -1,7 +1,7 @@
 // Biome の設定（TS・TSX・JSON の lint と整形）。コメントを書くので biome.jsonc にしている
-//   npm run lint        lint だけ（CI の check でも流す）
+//   npm run lint        lint・整形・import の並べ替えを確かめる（CI の check でも流す）
 //   npm run format:new  足したファイルだけを整形する（CI の pull_request は、足したファイルの整形を確かめる）
-//   npm run format      全体の整形と lint の安全な直し。開いている講座の PR が 0 の日に 1 回だけ流す（下の「整形」）
+//   npm run format      整形・import の並べ替えと lint の安全な直し
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "root": true,
@@ -30,6 +30,7 @@
       "!content/*/generated",
       "!engine/fonts",
       "!engine/core/project-settings.ts",
+      "!scripts/audio/video_config.json",
       // Worker の型は wrangler types が作る（npm run gen:worker-types）。Worker の許可リストは npm run gen が作る（Git に入れない）
       "!worker/worker-configuration.d.ts",
       "!worker/src/generated/*.json",
@@ -39,10 +40,9 @@
   },
   // 整形: 書き方は今の多数派に合わせる（シングルクォート・セミコロン・2 スペース・末尾のカンマ）。
   // 行幅は 120（content を除くコードの行の 92% が 120 字以内。100 字以内は 88%、80 字以内は 80%。2026-11-02 に数えた）
-  // 今は切ってある。全体の整形は、開いている講座の PR が 0 の日に 1 回の PR で行い（enabled を true にして npm run format）、
-  // その commit を .git-blame-ignore-revs に書く。それまで、新しく足したファイルだけを npm run format:new で整える
+  // 全体の整形を入れた commit は .git-blame-ignore-revs に記録する。以後は CI で全体の整形も確かめる。
   "formatter": {
-    "enabled": false,
+    "enabled": true,
     // 台本（content）は lint だけにする。台本の 1 行は長く、整形すると差分が大きく、講座の PR と必ずぶつかる
     "includes": ["**", "!content/**"],
     "indentStyle": "space",
@@ -61,7 +61,7 @@
     }
   },
   // import の並べ替えも、全体の整形と同じ日に入れる
-  "assist": { "enabled": false },
+  "assist": { "enabled": true },
   "linter": {
     "enabled": true,
     "domains": {
@@ -130,7 +130,12 @@
             "noRestrictedImports": {
               "level": "error",
               "options": {
-                "patterns": [{ "group": ["**", "!./**", "../**", "!../engine/core/**"], "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない" }]
+                "patterns": [
+                  {
+                    "group": ["**", "!./**", "../**", "!../engine/core/**"],
+                    "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない"
+                  }
+                ]
               }
             }
           }
@@ -145,7 +150,12 @@
             "noRestrictedImports": {
               "level": "error",
               "options": {
-                "patterns": [{ "group": ["**", "!./**", "!../**", "../../**", "!../../engine/core/**"], "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない" }]
+                "patterns": [
+                  {
+                    "group": ["**", "!./**", "!../**", "../../**", "!../../engine/core/**"],
+                    "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない"
+                  }
+                ]
               }
             }
           }
@@ -160,7 +170,12 @@
             "noRestrictedImports": {
               "level": "error",
               "options": {
-                "patterns": [{ "group": ["**", "!./**", "!../**", "../../../**", "!../../../engine/core/**"], "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない" }]
+                "patterns": [
+                  {
+                    "group": ["**", "!./**", "!../**", "../../../**", "!../../../engine/core/**"],
+                    "message": "台本（content/）が読んでよいのは、content/ の中（講座の中・講座どうし・content/ の共通のファイル）と engine/core/ だけ。src/・scripts/・site/・npm のパッケージ・Node を読まない"
+                  }
+                ]
               }
             }
           }
@@ -225,24 +240,9 @@
       "linter": { "domains": { "playwright": "recommended" } }
     },
     {
-      // サイトの版に入るファイル（scripts/build_site.ts の pageVersion と、scripts/pwa.ts が作る sw.js）と、旧 Pages の移行の SW。
-      // 版を出力から決める直し（T0-08・#26）が入るまで、整形も lint の直しもしない（版が変わると、保存した全員に更新の案内が出る）。
-      // #26 が入ったら、この override を消してから整形する
-      "includes": [
-        "scripts/build_site.ts",
-        "scripts/pwa.ts",
-        "site/offline-client.ts",
-        "site/offline-shared.ts",
-        "site/sw.ts",
-        "site/legacy-sw.ts"
-      ],
-      "formatter": { "enabled": false },
-      "assist": { "enabled": false }
-    },
-    {
       // 旧 Pages の移行のコード。期限に消すまで凍結する（変えない。docs/adr/2026-11-02-legacy-pages-end-date.md・tests/unit/legacy-freeze.test.ts）。
       // 全体の整形の日にも整形しない
-      "includes": ["site/legacy-sw.ts", "scripts/build_migration.ts"],
+      "includes": ["site/legacy-sw.ts", "scripts/build_migration.ts", "site/legacy-config.json"],
       "formatter": { "enabled": false },
       "assist": { "enabled": false }
     },
