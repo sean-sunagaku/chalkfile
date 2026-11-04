@@ -43,29 +43,29 @@ npm run check                    # lint・型・単体テスト（tests/unit/wor
 npm run build:site -- --strict   # 公開と同じ組み立て。最後に公開物の決まり（scripts/site-invariants.ts）を確かめる
 npm run test:browser             # 実 Chrome で、保存・再生・Range・通信断・再起動・更新・移行
 npm run dev:worker -- --ip 127.0.0.1 --port 8787 --infer-origin-from-routes=false   # 別の端末で
-bun tools/verify/smoke_worker.ts http://127.0.0.1:8787/                                  # ルート / と SW の scope / ・CSP・/media/ の応答
+npm run verify:worker -- http://127.0.0.1:8787/                                  # ルート / と SW の scope / ・CSP・/media/ の応答
 ```
 
-- 再生を確かめるには、本物の動画と字幕のデータが要る（`bun scripts/media.ts pull stripe-billing pstack-comedy`）。mock・型・ブラウザのスマホの幅から、iPhone の実機での成功を推し量らない
+- 再生を確かめるには、本物の動画と字幕のデータが要る（`npm run media:pull -- stripe-billing pstack-comedy`）。mock・型・ブラウザのスマホの幅から、iPhone の実機での成功を推し量らない
 - 見るもの: PC と 375px の画面・本当の通信断・ブラウザを閉じてからの起動・保存と削除・更新の失敗と成功・取り消しとやり直し・容量の例外・バイトを照らした Range と途中への移動・字幕版の切り替え・1 本のダウンロード。移行を変えたら、新しいブラウザの context で、Service Worker の install と scope も見る
 - 画面を変えたら、`npm run test:e2e:ci -- tests/e2e/a11y.spec.ts` で axe と、キーボードだけでの操作（本文へ飛ぶ・再生・タブ・クイズ・チャプターとレクチャーの移動）を見る
 - 決まった文字を変えたら、`bun test tests/unit/site-i18n.test.ts`（全言語のキー・差し込みの名前・数の形・使われていないキー）。動画の読み方を変えたら、`tests/e2e/offline.spec.ts` の「講座を開いただけでは」（開いただけでは `/media/` の要求が 0）
 - 案内（保存の状態・進み具合・通信のエラー）を変えたら、`npm run test:browser -- tests/e2e/offline-status.spec.ts` も流す。一時の profile で全部の動画を 1 回保存し、完全に閉じたあとのオフラインの起動・完全な版がある／無いときの保存の欠け・遅い確認のエラーと保存の進み具合の取り合い・エラーと操作の結果が消えないことを見る。テストで起こした欠けや通信のエラーを、本物の故障と混ぜない
 - 公開していない訳の講座の場面を、日本語の成功に数えない（公開していない言語のテストは、skip として記録する）
 - 公開したあとの表示の直しは、新しい版を選んで保存し直してから、オフラインで確かめる（保存した前の版の HTML は書き換わらない）
-- `/media/` を変えたら、公開したあとに `bun scripts/verify_public.ts`（全部の動画の Range の 206）も見る
+- `/media/` を変えたら、公開したあとに `npm run chalk -- publish verify`（全部の動画の Range の 206）も見る
 
 ## 公開したサイトを確かめ直す
 
 - 基本は [公開の順番](../../../docs/operations/publish.md) の「公開後の確認」（トップの 200・全部の動画の Range・全ページの表示と SW の scope と CSP）
-- 保存・再起動・再生: `bun tools/verify/verify-production.ts offline` で、認証情報の無い専用の profile に保存する。そのあと別のプロセスの `bun tools/verify/verify-production.ts offline-restart` で、通信を切った再起動・再生・途中への移動・字幕の切り替え・1 本のダウンロードの SHA-256 を見る。前の保存の profile は残したまま確かめ、古い「保存済み」の表示を、新しい保存の成功と数えない
+- 保存・再起動・再生: `npm run verify:production -- offline` で、認証情報の無い専用の profile に保存する。そのあと別のプロセスの `npm run verify:production -- offline-restart` で、通信を切った再起動・再生・途中への移動・字幕の切り替え・1 本のダウンロードの SHA-256 を見る。前の保存の profile は残したまま確かめ、古い「保存済み」の表示を、新しい保存の成功と数えない
 - 1 本のダウンロード: 保存を確かめた一時の profile を消す前に、通信を切ったまま「動画ファイルをダウンロード」を 1 回押し、名前・大きさ・SHA-256 を生成物と照らす。保存の cache を使えるかを見て、全部の動画を取り直さない。アプリ内の保存や手元での成功を、公開したサイトでボタンを押した成功と数えない
-- 要求の数: `bun tools/verify/measure-production.ts` で、自分の確かめ用のヘッダーが付いた要求だけを Cloudflare の側で数える
+- 要求の数: `npm run measure:production` で、自分の確かめ用のヘッダーが付いた要求だけを Cloudflare の側で数える
 - profile と生のログは push しない。結果は日付つきの記録に残す（見本は [公開確認の記録](../../../docs/history/2026-11-03-workers-verification.md)）。Chrome や自動の試験での成功を、Safari や iPhone の実機での成功と混ぜない
 
 ## Mac の Safari で確かめる
 
-- `safaridriver` と `bun tools/verify/verify-safari.ts` を使う。初回は Apple 公式の `safaridriver --enable`（環境によっては、管理者の認可が要る）
+- `safaridriver` と `npm run verify:safari` を使う。初回は Apple 公式の `safaridriver --enable`（環境によっては、管理者の認可が要る）
 - 画面のロック中の pointer の入力や画面の更新の制限を、「CLI ごと使えない」と広げて考えない。見えていない間は、保存と字幕のボタンの DOM の click と、動画から取り出した単色でないフレームを確かめる
 - `--disconnect-wifi=<interface>` を付けたときだけ、本当に Wi-Fi を切る。先に、別のプロセスで戻す手を用意する。Safari の `navigator.onLine` だけで通信断と決めない
 - Mac の解除のあとは、document が visible であることを確かめ、ふつうの WebDriver の element click での保存と字幕の切り替え、再生の時刻と実際のフレームの進みを別に確かめる。見えない間の DOM の click の結果から、ふつうの操作の成功を推し量らない

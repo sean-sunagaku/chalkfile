@@ -1,4 +1,4 @@
-// 公開したサイト（既定は https://chalkfile.com/）のトップと、全講座の動画の一覧の全部の動画の Range を確かめる（deploy.yml が公開のあとに流す）。
+// 公開したサイト（既定は https://chalkfile.com/）のトップと、全講座の動画の一覧の全部の動画の Range を確かめる（ci.yml が公開のあとに流す）。
 //   bun scripts/verify_public.ts [origin]
 import config from '../chalkfile.config';
 import { mediaPath } from '../site/media-shared';

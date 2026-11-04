@@ -71,8 +71,8 @@
 | 2026-11-02 | [動画の古いハッシュを消さない（retained）](2026-11-02-keep-old-video-hashes.md) | 採用 |
 | 2026-11-02（記録した日） | [npm で入れて bun で動かす](2026-11-02-npm-install-bun-run.md) | 採用（Remotion の書き出しの動かし方だけ、2026-11-04 の ADR に置き換え） |
 | 2026-11-02 | [日本語の台本を正本にし、訳は上書きで重ねる。英語と中国語の声は Kokoro-82M](2026-11-02-japanese-source-translation-overlay.md) | 採用 |
-| 2026-11-02 | [lint と format は Biome にする](2026-11-02-biome.md) | 採用（導入はこれから） |
-| 2026-11-02 | [旧 GitHub Pages の移行コードを 2027-05-02 に終える](2026-11-02-legacy-pages-end-date.md) | 提案 |
+| 2026-11-02 | [lint と format は Biome にする](2026-11-02-biome.md) | 採用 |
+| 2026-11-02 | [旧 GitHub Pages の移行コードを 2027-05-02 に終える](2026-11-02-legacy-pages-end-date.md) | 採用 |
 | 2026-11-03 | [台本の文のライセンスは、コードと同じ MIT のままにする](2026-11-03-script-text-license.md) | 採用 |
 | 2026-11-03 | [素材は 1GB までは materials ブランチに置き、超えたら講座ごとの束を Releases に移す](2026-11-03-materials-location.md) | 採用（移るのは合図が出てから） |
 | 2026-11-03 | [Worker の入口を小さなルーターにし、AI チャットの受け口は `/api/*` に足す](2026-11-03-worker-api-shape.md) | 採用（受け口は M4 で入れる） |

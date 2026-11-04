@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { checkSecrets } from '../../scripts/check_content';
-import { registerGeneratedToken, tokenPolicies } from '../../scripts/setup_cloudflare_ci';
+import { ROOT } from '../../scripts/lib/paths';
+import { accountIdOf, registerGeneratedToken, tokenPolicies } from '../../scripts/setup_cloudflare_ci';
 import { required } from '../support/required';
 
 const groups = [
@@ -16,22 +17,24 @@ const groups = [
   { id: 'f'.repeat(32), name: 'Workers Scripts Write', scopes: ['com.cloudflare.api.account'], is_selectable: true },
 ];
 test('CIは対象account/zoneの3権限だけとし、token発行権限や全zoneを渡さない', () => {
-  const policies = tokenPolicies(groups, 'e'.repeat(32));
+  const policies = tokenPolicies(groups, 'e'.repeat(32), '1'.repeat(32));
   expect(policies.flatMap((p) => p.permission_groups.map((g) => g.id))).toEqual(groups.slice(0, 3).map((g) => g.id));
+  expect(required(policies[0]).resources).toEqual({ [`com.cloudflare.api.account.${'1'.repeat(32)}`]: '*' });
   expect(required(policies[1]).resources).toEqual({ [`com.cloudflare.api.account.zone.${'e'.repeat(32)}`]: '*' });
   for (const source of [
     groups.slice(1),
     [...groups, required(groups[0])],
     groups.map((g) => ({ ...g, is_selectable: false })),
   ])
-    expect(() => tokenPolicies(source, 'e'.repeat(32))).toThrow();
-  expect(() => tokenPolicies(groups, '*')).toThrow();
+    expect(() => tokenPolicies(source, 'e'.repeat(32), '1'.repeat(32))).toThrow();
+  expect(() => tokenPolicies(groups, '*', '1'.repeat(32))).toThrow();
 });
 test('Editorが発行不可ならlegacyのScripts Writeへ広げず、tokenを作らない', () => {
   expect(() =>
     tokenPolicies(
       groups.map((g) => (g.name === 'Workers Editor' ? { ...g, is_selectable: false } : g)),
       'e'.repeat(32),
+      '1'.repeat(32),
     ),
   ).toThrow();
 });
@@ -82,4 +85,30 @@ test('Cloudflareの現行prefix付き認証値を、変数名のない文章か�
     expect(findings).toHaveLength(1);
     expect(JSON.stringify(findings)).not.toContain(value);
   }
+});
+
+test('初回設定の account は明示した対象だけを受け、不正な値を表示しない', () => {
+  expect(accountIdOf('1'.repeat(32))).toBe('1'.repeat(32));
+  expect(() => accountIdOf(undefined)).toThrow('CLOUDFLARE_ACCOUNT_ID');
+  expect(() => accountIdOf('*')).toThrow('CLOUDFLARE_ACCOUNT_ID');
+  expect(() => tokenPolicies(groups, 'e'.repeat(32), '*')).toThrow();
+});
+
+test('plan は対象IDを表示せず、apply は未指定なら外部操作より前に止まる', () => {
+  const call = (mode: string, account: string) =>
+    Bun.spawnSync([process.execPath, 'scripts/setup_cloudflare_ci.ts', mode], {
+      cwd: ROOT,
+      env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: account, CLOUDFLARE_API_TOKEN: '' },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+  const sample = '1'.repeat(32);
+  const plan = call('plan', sample);
+  expect(plan.exitCode).toBe(0);
+  expect(plan.stdout.toString()).toContain('CLOUDFLARE_ACCOUNT_ID');
+  expect(plan.stdout.toString()).not.toContain(sample);
+  const missing = call('apply', '');
+  expect(missing.exitCode).toBe(3);
+  expect(missing.stdout.toString()).toBe('');
+  expect(missing.stderr.toString()).toContain('CLOUDFLARE_ACCOUNT_ID');
 });

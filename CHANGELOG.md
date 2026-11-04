@@ -30,6 +30,10 @@ Chalkfile のエンジン（動画・講座サイト・配信の Worker・作る
 
 ### 変えた
 
+- サイト・言語・声・書き出しの設定を `chalkfile.config.ts` に集め、生成した値をエンジンと Worker で共有する（[#72]）
+- 台本と読む教材を分け、出典・到達目標・流れ・掛け合いの書き方を共通化した。既存の台本・教材・訳と、動画の入力・時刻の指紋は変わらない（[#73]）
+- 単体テストを `tests/unit/`、ブラウザー試験を `tests/e2e/`、運用の確認を `tools/verify/` に分けた。CI・canary・公開後の確認で同じ Playwright project を使う（[#74]）
+- CLI の引数・使い方・import 時の動作を揃え、配列の範囲と任意項目を型検査へ追加した。TS と Python の全体整形を行い、CI でも整形を確かめる（[#76]・[#77]・[#79]）
 - 全 9 講座の日本語の動画 60 本（字幕版を含む）と、ポスター 48 枚を更新する。書体・文字の大きさ・コントラスト・長い文字の収め方・図の枠・コードの色分けを見直した。台詞と音声は同じ（[#70]・[#71]）
 - 書体をサイト内のファイルから読み、通信なしで使えるよう起動用の保存に含める。Google Fonts への接続をなくした（[#71]）
 - 講座の画面の処理を TypeScript に分け、キーボードと読み上げで使いやすくした。開いただけでは動画を読まず、再生や時刻の選択時に読み始める（[#71]）
@@ -37,9 +41,14 @@ Chalkfile のエンジン（動画・講座サイト・配信の Worker・作る
 
 ### 直した
 
+- 翻訳の stamp は構文を読んで対象の `source` だけを書き換える。コメントや入れ子の同名項目を変更しない（[#75]）
 - 初めて開いたとき、Service Worker の準備前に保存状態を問い合わせ、エラーの案内が残る問題（[#71]）
 - 保存時の MIME の照合、更新と検証の状態管理、無効にした保存版の更新案内。保存の不完全なものを成功として扱わない（[#66]・[#71]）
 - 講座と一覧のクレジットを、実際に使った声から作る（[#71]）
+
+### 安全
+
+- Cloudflare の初回設定ツールは、対象のアカウント ID を `CLOUDFLARE_ACCOUNT_ID` から受け取る。値をコードへ書かず、plan に表示せず、未指定の apply は外部操作の前に止める
 
 ## 2026-11-03
 
@@ -151,3 +160,10 @@ Chalkfile のエンジン（動画・講座サイト・配信の Worker・作る
 [#69]: https://github.com/sean-sunagaku/chalkfile/pull/69
 [#70]: https://github.com/sean-sunagaku/chalkfile/pull/70
 [#71]: https://github.com/sean-sunagaku/chalkfile/pull/71
+[#72]: https://github.com/sean-sunagaku/chalkfile/pull/72
+[#73]: https://github.com/sean-sunagaku/chalkfile/pull/73
+[#74]: https://github.com/sean-sunagaku/chalkfile/pull/74
+[#75]: https://github.com/sean-sunagaku/chalkfile/pull/75
+[#76]: https://github.com/sean-sunagaku/chalkfile/pull/76
+[#77]: https://github.com/sean-sunagaku/chalkfile/pull/77
+[#79]: https://github.com/sean-sunagaku/chalkfile/pull/79

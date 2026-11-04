@@ -18,24 +18,24 @@ curl -s http://127.0.0.1:50021/version
 | コマンド | 入力 | 出力 |
 |---|---|---|
 | `npm run gen:video-config`（`npm run gen` も作る） | `engine/core/video-config.ts` | `scripts/audio/video_config.json`（mix.py・build_music.py が読む動画の値。コミットする） |
-| `uv run --locked --group audio python scripts/build_music.py` | `scripts/audio/music/`（合成のコード）、`scripts/audio/video_config.json`、効果音の一覧 `scripts/audio/sfx.json`（合成する効果音と名前が合うか） | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
-| `uv run --locked --group audio python scripts/build_music.py --check`（`npm run music:verify`） | 合成のコード、手元の `origin/materials` の `SHA256SUMS` | 作り直した WAV が素材と同じバイト列か（`public/audio/` には書かない） |
-| `bun scripts/synth.ts [ID…]` | 台本、読みの辞書（共通の `engine/core/reading.ts` と講座の `content/<講座>/reading.ts`。訳は `content/<講座>/<言語>/`） | 共有のキャッシュ `~/.cache/chalkfile/tts/`（台詞の声と読みと声の記録。同じ文と合成のレシピなら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く）。`--cached-only --durations-only` は素材ブランチの長さの一覧と読みだけで作る（音声は取り出さない） |
-| `uv run scripts/check_speech.py <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
-| `bun scripts/i18n.ts status`・`try`・`stamp`・`restamp`・`scaffold`（`npm run i18n -- …`） | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋・訳のひな形（[i18n.md](i18n.md)） |
-| `uv run --locked --group audio python scripts/mix.py <ID…>`（`npm run mix` は選んだ動画か、公開する言語の全部を渡す） | `.work/plan/`、声、BGM、効果音の一覧 `scripts/audio/sfx.json`、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav`。始める前に、設計図の形（`scripts/audio/handoff.py`）と、要る声・BGM・効果音がそろっているかを見る |
-| `npm run render -- [ID…]`（`bun scripts/stages/video/render.ts`。`npm run chalk -- render` も同じ） | `src/`、書体 `engine/fonts/`、timeline、mix | 選んだ動画を 1 回で書き出す（バンドルは 1 回）。`out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター（公開する言語の動画は `content/<講座>/generated/posters/<id>.jpg`。どの動画も写しを `site/media/<id>.jpg`）。掛け合いの講座（`cast` のある講座）は `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用）も（`--captions` か `CAPTIONS=1` で全部の動画）。出力は一時の名前に書き、ffprobe で確かめてから置き換える。設定は `scripts/stages/video/render.config.ts` |
-| `node scripts/stills.ts <ID>[:場面] [--mid]` | `src/`、書体 `engine/fonts/`、timeline | `out/stills/` |
-| `bun scripts/fonts.ts [--check]`（`npm run fonts`） | 台本の全部の文字、元の書体（google/fonts の固定した commit。共有のキャッシュ `~/.cache/chalkfile/fonts/`） | `engine/fonts/`（サブセットの woff2・`fonts.json`・`OFL-<書体>.txt`。コミットする） |
-| `bun scripts/build_site.ts [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`chalkfile.config.ts`（`--strict` は Releases も照らす） | `site/dist/` |
-| `bun scripts/serve.ts` | `site/dist/` | `http://127.0.0.1:8765/` |
-| `bun scripts/media.ts push --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
-| `bun scripts/media.ts pull [講座 ID…]` | 動画の一覧、Releases | `site/media/`（SHA-256 を確かめる。手元の違う動画は上書きしない） |
-| `bun scripts/gen.ts`（`npm run gen`） | 講座の登録と、講座のフォルダの動画の一覧・timeline、`engine/core/sfx.ts`、`engine/core/video-config.ts` | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表、Python の道具が読む `scripts/audio/sfx.json` と `video_config.json`（コミットする） |
-| `bash scripts/legacy/deploy_pages.sh`（持ち主だけ。旧 Pages の移行の案内のときだけ） | `site/migration-dist/`（`scripts/build_migration.ts` が作る） | 旧 Pages の `gh-pages` ブランチ（新しいサイトへの案内だけ） |
-| `bun scripts/materials.ts pull [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は Releases の動画も） | `.work/tts/`（WAV と読み）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
-| `bun scripts/materials.ts push [--dry-run]` | 台本、共有のキャッシュか `.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（リモートの素材に足すだけ。前の版を親にしたコミット。台詞の長さの一覧 `DURATIONS.json` も WAV から測って書く） |
-| `bun scripts/materials.ts gc [--keep ref] [--confirm]` | `materials` ブランチ、`--keep` の ref（既定 origin/main）の台本 | 台本が使わない台詞の音声の一覧（`--confirm` のときだけ消して push） |
+| `npm run build:music` | `scripts/audio/music/`（合成のコード）、`scripts/audio/video_config.json`、効果音の一覧 `scripts/audio/sfx.json`（合成する効果音と名前が合うか） | `public/audio/music/`（BGM・ジングル）、`public/audio/sfx/` |
+| `npm run music:verify` | 合成のコード、手元の `origin/materials` の `SHA256SUMS` | 作り直した WAV が素材と同じバイト列か（`public/audio/` には書かない） |
+| `npm run synth -- [ID…]` | 台本、読みの辞書（共通の `engine/core/reading.ts` と講座の `content/<講座>/reading.ts`。訳は `content/<講座>/<言語>/`） | 共有のキャッシュ `~/.cache/chalkfile/tts/`（台詞の声と読みと声の記録。同じ文と合成のレシピなら使い回す）、`content/<講座>/generated/timeline/<key>.json`（動画ごと。指紋つき）、`.work/plan/`、`.work/kana/`、`site/data/`。訳の動画は `S01.en` のように渡し、足りない台詞は Kokoro でまとめて読む（`.work/speech/<key>.json` も書く）。`--cached-only --durations-only` は素材ブランチの長さの一覧と読みだけで作る（音声は取り出さない） |
+| `npm run chalk -- voice speech-check <key…>` | `.work/speech/` | 訳の台詞を Whisper で聞き取り直した点検（`.work/speech/<key>.report.txt`） |
+| `npm run i18n -- status`・`try`・`stamp`・`restamp`・`scaffold`（`npm run i18n -- …`） | 訳のファイル | 訳の表・1 本の訳の確かめ・台本の指紋・訳のひな形（[i18n.md](i18n.md)） |
+| `npm run mix -- <ID…>`（`npm run mix` は選んだ動画か、公開する言語の全部を渡す） | `.work/plan/`、声、BGM、効果音の一覧 `scripts/audio/sfx.json`、`scripts/audio/video_config.json` | `public/audio/mix/<id>.wav`。始める前に、設計図の形（`scripts/audio/handoff.py`）と、要る声・BGM・効果音がそろっているかを見る |
+| `npm run render -- [ID…]`（`scripts/stages/video/render.ts`。`npm run chalk -- render` も同じ） | `src/`、書体 `engine/fonts/`、timeline、mix | 選んだ動画を 1 回で書き出す（バンドルは 1 回）。`out/master/<id>.mp4`（映像だけ）、`site/media/<id>.mp4`（サイト用。目安は 14,500 KiB。訳は `<ID>.<言語>.mp4`）、ポスター（公開する言語の動画は `content/<講座>/generated/posters/<id>.jpg`。どの動画も写しを `site/media/<id>.jpg`）。掛け合いの講座（`cast` のある講座）は `site/media/<id>.cc.mp4`（サイト用の字幕焼き込み）と `out/captioned/<id>.mp4`（配る用）も（`--captions` か `CAPTIONS=1` で全部の動画）。出力は一時の名前に書き、ffprobe で確かめてから置き換える。設定は `scripts/stages/video/render.config.ts` |
+| `npm run stills -- <ID>[:場面] [--mid]` | `src/`、書体 `engine/fonts/`、timeline | `out/stills/` |
+| `npm run fonts -- [--check]` | 台本の全部の文字、元の書体（google/fonts の固定した commit。共有のキャッシュ `~/.cache/chalkfile/fonts/`） | `engine/fonts/`（サブセットの woff2・`fonts.json`・`OFL-<書体>.txt`。コミットする） |
+| `npm run build:site -- [講座 ID] [--strict]` | 台本、`site/data/`、講座のフォルダのポスターと動画の一覧、`site/*.html`、`chalkfile.config.ts`（`--strict` は Releases も照らす） | `site/dist/` |
+| `npm run serve` | `site/dist/` | `http://127.0.0.1:8765/` |
+| `npm run media:push -- --course <講座 ID> [--lang <言語>]`（`npm run media:push`） | `site/media/` のその講座の動画とポスター | GitHub Releases（タグ `media-<言語>-<講座 ID>`。名前に SHA-256 が入る）、その講座の動画の一覧 `content/<講座>/generated/media.<言語>.json` |
+| `npm run media:pull -- [講座 ID…]` | 動画の一覧、Releases | `site/media/`（SHA-256 を確かめる。手元の違う動画は上書きしない） |
+| `npm run gen` | 講座の登録と、講座のフォルダの動画の一覧・timeline、`engine/core/sfx.ts`、`engine/core/video-config.ts` | Worker の許可リスト `worker/src/generated/media-manifest.json`（Git に入れない）、README の講座の表、new-course.md の頭文字の表、Python の道具が読む `scripts/audio/sfx.json` と `video_config.json`（コミットする） |
+| `npm run chalk -- legacy pages-migrate`（持ち主だけ。旧 Pages の移行の案内のときだけ） | `site/migration-dist/`（`scripts/build_migration.ts` が作る） | 旧 Pages の `gh-pages` ブランチ（新しいサイトへの案内だけ） |
+| `npm run materials:pull -- [講座 ID…] [--videos]` | `materials` ブランチ（`--videos` は Releases の動画も） | 共有の声キャッシュ `~/.cache/chalkfile/tts/`（WAV・読み・声の記録）、`public/audio/music/`・`sfx/`（`--videos` は `site/media/`） |
+| `npm run materials:push -- [--dry-run]` | 台本、共有のキャッシュか `.work/tts/`、`public/audio/music/`・`sfx/` | `materials` ブランチ（リモートの素材に足すだけ。前の版を親にしたコミット。台詞の長さの一覧 `DURATIONS.json` も WAV から測って書く） |
+| `npm run chalk -- materials gc [--keep ref] [--confirm]` | `materials` ブランチ、`--keep` の ref（既定 origin/main）の台本 | 台本が使わない台詞の音声の一覧（`--confirm` のときだけ消して push） |
 
 ## 素材（`materials` ブランチ）
 
@@ -43,7 +43,7 @@ VOICEVOX と Kokoro の出力（台詞の声）と BGM・効果音は、作り�
 
 - 中身: `tts/<講座 ID>/<key>.flac`・`.kana`・`.meta.json`（台本の全部の台詞。`key` は声の鍵で、`scripts/voices.ts` の `ttsKeysIn` が v2（合成のレシピから）→ v1（凍結した前の作り方）の順に探す。`.meta.json` は v2 の鍵で作った声の記録で、合成のレシピとエンジンの版）、`audio/music/`・`audio/sfx/`（FLAC）、`SHA256SUMS`（WAV に戻したあとの中身と読み）、`DURATIONS.json`（台詞の長さと、測った WAV の sha256）、`README.md`
 - 取り出す: `npm run materials:pull` → `npm run synth -- --cached-only` は VOICEVOX につながずに時刻を決める。足りない台詞があると、`pull` を案内して止まる。時刻とサイトのデータだけが要るとき（CI）は、`npm run synth -- --cached-only --durations-only` で、長さの一覧と読みだけを取り出して作れる（音声も ffmpeg も要らない。一覧が無い・古いときは、今までどおり音声を取り出す）
-- 確かめる: `npm run materials:check`（台本の全部の台詞の声が `.work/tts/` に、決まった名前の BGM・効果音が `public/audio/` にあるか）
+- 確かめる: `npm run materials:check`（台本の全部の台詞の声が共有の声キャッシュに、決まった名前の BGM・効果音が `public/audio/` にあるか）
 - 足す: [公開の順番](../../../../docs/operations/publish.md) の 4（足すだけ。merge より前に）。消すのは `materials.ts gc` だけで、持ち主が流す（[戻し方](../../../../docs/operations/recovery.md) の「素材を片付ける」）
 - FLAC は可逆なので、WAV に戻すと VOICEVOX の出力と同じバイトになる（`pull` が `SHA256SUMS` で確かめる）。大きさは WAV のままの 3 分の 1 ほど
 
