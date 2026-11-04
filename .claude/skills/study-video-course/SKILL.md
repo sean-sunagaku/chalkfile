@@ -54,7 +54,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 - 見た目: `npm run stills -- L01 --mid` で `out/stills/` に静止画を書き、全部見る（はみ出し・重なり・小さすぎ）。字幕つきは `--captions`。共有の部品やテーマを変えたら `npm run stills:compare -- --base origin/main`
 - 長さ: `ffprobe` の動画の長さが `content/<講座>/generated/timeline/<ID>.json` の `durationInFrames / 30` と合う
 - 事実: 台本ができたら、別の目（サブエージェント）に台本のファイルだけを渡し、主張ごとに公式で確かめてもらう（[research.md](references/research.md) の「事実確認を別の目でやる」）。お笑い版では、ツッコミを直させない
-- 権利: `bun scripts/check_overlap.ts <講座 ID>`（台本と出典の公式ページで、言い回しが続けて同じところ）。ロゴ・画面写真・他人の画像が無いことも見る
+- 権利: `npm run chalk -- check overlap --course <講座 ID>`（台本と出典の公式ページで、言い回しが続けて同じところ）。ロゴ・画面写真・他人の画像が無いことも見る
 - 安全と型: `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検）。安全のきまりは [safety.md](references/safety.md)
 - サイト: `npm run build:site` → `npm run serve` で開き、再生・途中への移動・字幕の切り替え（全画面でも見えるか）・スマホの幅（375px）を見る。講座を足したら `npm run test:browser` も流す
 
@@ -74,7 +74,7 @@ CAPTIONS=1 npm run render -- L01 L02     # 動画（字幕なし・サイト用�
 | レクチャーを足す | 台本 → 講座の `course.ts` の `lectures` に足す → synth・mix・render → 前後のレクチャーの `ending.next` を直す |
 | VOICEVOX の無い手元で作り直す | `npm run materials:pull` → `npm run synth -- --cached-only` → mix → render（[始め方](../../../docs/guide/quickstart.md) の B） |
 | 講座を英語・中国語にする | [i18n.md](references/i18n.md) の「作る順番」 |
-| 日本語の台本を直した（訳がある講座） | `bun scripts/i18n.ts status` で「台本が変わった」訳を見直す → `stamp` → 訳の動画も synth から作り直す |
+| 日本語の台本を直した（訳がある講座） | `npm run i18n -- status` で「台本が変わった」訳を見直す → `stamp` → 訳の動画も synth から作り直す |
 | サイト・保存・Worker を直す | スキル `chalkfile-engine` |
 
 ## やらないこと

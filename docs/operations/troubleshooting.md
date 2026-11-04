@@ -54,9 +54,9 @@
 - **synth が「エンジンの版が混ざっている」と知らせる**: 1 本の動画の声を、違う版の VOICEVOX（訳は Kokoro）で作った。そろえるなら、古い版の声（`<鍵>.meta.json` の `engineVersion` で分かる）をキャッシュから消して、もう一度 synth する
 - **`synth --durations-only` が「DURATIONS.json がまだ無い」「長さが無いか古い台詞がある」と出す**: 素材ブランチの長さの一覧が、まだ無いか、今の音声と合わない。そのときは今までどおり音声を取り出して作るので、止まりはしない（ffmpeg が要る）。次の `materials push` で一覧がそろう
 - **`materials push` が「台詞の音声の長さを測れない」で止まる**: 手元のその WAV が壊れている。消してから、synth か `npm run materials:pull` で作り直す
-- **`media push` が「通常動画がありません」で止まる**: 選んだ講座（`--course`）の通常版が全部手元に要る（ほかの講座の動画は要らない）。作り直さない動画は `bun scripts/media.ts pull <講座 ID>` で取る（[公開の順番](publish.md) の 5）
+- **`media push` が「通常動画がありません」で止まる**: 選んだ講座（`--course`）の通常版が全部手元に要る（ほかの講座の動画は要らない）。作り直さない動画は `npm run media:pull -- <講座 ID>` で取る（[公開の順番](publish.md) の 5）
 - **`media.ts pull` が「上書きしません」で止まる**: 手元の動画が、動画の一覧と違う。作り直した動画なら、その講座を外して pull する。古い写しなら、消してから pull する（[公開の順番](publish.md) の「ぶつかったとき」）
-- **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`bun scripts/media.ts pull <講座 ID>` で SHA-256 を確かめた通常版を取り、書き出しと同じ 4.2 秒の所・幅 1280・JPEG の品質 3（`scripts/stages/video/render.config.ts` の `poster`）で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
+- **`build:site -- --strict` が、ポスターが無いと止まる**: 新しい講座には、全部のレクチャーの `content/<講座>/generated/posters/<ID>.jpg` が要る。render が作るので、commit する（前の手順の `site/media/<ID>.jpg` だけがあるときは、`media push --course <講座 ID>` が写す）。前の手順で作った動画にポスターが無いときは、`npm run media:pull -- <講座 ID>` で SHA-256 を確かめた通常版を取り、書き出しと同じ 4.2 秒の所・幅 1280・JPEG の品質 3（`scripts/stages/video/render.config.ts` の `poster`）で取り出して（`ffmpeg -ss 4.2 -i site/media/<ID>.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 content/<講座>/generated/posters/<ID>.jpg`）、目で見てから commit する。点検を緩めたり、CI で動画を取ってきたりして避けない
 - **`media:check` が `retained` の期限の注意を出す**: 公開は止まらない。片付けるかどうかは持ち主が決める（[戻し方](recovery.md) の「古いハッシュの動画を片付ける」）
 - **Actions の ffmpeg の手順で止まる**: 版を固定したビルドを取れないか、sha256 が合わない。出し直す（[戻し方](recovery.md) の「Actions を出し直す」）。続くときは [CI の形](ci.md) の「ffmpeg」
 - **公開のあとで、前の版に戻った（deploy のジョブが失敗した）**: [戻し方](recovery.md) の「公開後の確かめが通らず、前の版に戻ったとき」

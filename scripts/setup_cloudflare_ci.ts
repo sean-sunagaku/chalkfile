@@ -2,11 +2,11 @@
 // planは読取/変更とも行わない。applyは本人が許可した初回登録とmainの公開を実行する。
 //   bun scripts/setup_cloudflare_ci.ts plan    # 何をするかを出すだけ（読み取りも変更もしない。既定）
 //   bun scripts/setup_cloudflare_ci.ts apply   # 初回の登録と main の公開（持ち主だけ。docs/operations/setup.md）
-// 失敗したときは、どの段で止まったかだけを出す（生の出力と秘密値は出さない）。終了コード: 0 できた・1 失敗・2 使い方の誤り
+// apply は CLOUDFLARE_ACCOUNT_ID が必要。値は表示しない。
+// 失敗したときは、どの段で止まったかだけを出す（生の出力と秘密値は出さない）。終了コード: 0 できた・1 失敗・2 使い方の誤り・3 前提不足
 import config from '../chalkfile.config';
-import { EXIT, readArgs, showHelp, UsageError } from './lib/args';
+import { EXIT, MissingError, readArgs, showHelp, UsageError } from './lib/args';
 
-const ACCOUNT = '1771bd0a5ec29834c0c8714ffe808889';
 const REPOSITORY = config.repository;
 const PROFILE = 'chalkfile-ci-bootstrap';
 // cf は初回の登録で 1 度だけ使うので package.json に入れず、実行のときに npm exec で取ってくる。
@@ -18,7 +18,16 @@ type Group = { id: string; name: string; scopes: string[]; is_selectable?: boole
 type Run = (args: string[], stdin?: string) => Promise<{ code: number; stdout: string }>;
 const required = ['Workers Editor', 'Workers Routes Write', 'Zone Read'];
 
-export function tokenPolicies(groups: Group[], zoneId: string) {
+/** apply の対象は環境変数で受け、値をエラーや plan に写さない。 */
+export const accountIdOf = (value: string | undefined): string => {
+  if (!value) throw new MissingError('apply には CLOUDFLARE_ACCOUNT_ID の指定が必要です');
+  if (!/^[a-f0-9]{32}$/.test(value))
+    throw new UsageError('CLOUDFLARE_ACCOUNT_ID は 32 桁の小文字の16進数で指定してください');
+  return value;
+};
+
+export function tokenPolicies(groups: Group[], zoneId: string, accountId: string) {
+  accountIdOf(accountId);
   if (!/^[a-f0-9]{32}$/.test(zoneId)) throw new Error('対象zoneのIDが不正です');
   const choose = (name: string, scope: string) => {
     const candidates = groups.filter((g) => g.name === name && g.scopes.includes(scope) && g.is_selectable !== false);
@@ -30,7 +39,7 @@ export function tokenPolicies(groups: Group[], zoneId: string) {
     {
       effect: 'allow',
       permission_groups: [choose(required[0]!, 'com.cloudflare.api.account')],
-      resources: { [`com.cloudflare.api.account.${ACCOUNT}`]: '*' },
+      resources: { [`com.cloudflare.api.account.${accountId}`]: '*' },
     },
     {
       effect: 'allow',
@@ -71,7 +80,7 @@ async function run(args: string[], stdin?: string) {
     stdin: 'pipe',
     stdout: 'pipe',
     stderr: 'ignore',
-    env: { ...process.env, CI: '1', CLOUDFLARE_ACCOUNT_ID: ACCOUNT },
+    env: { ...process.env, CI: '1' },
   });
   if (stdin !== undefined) child.stdin.write(stdin);
   child.stdin.end();
@@ -108,7 +117,7 @@ async function main(argv: string[]) {
   const plan = {
     repository: REPOSITORY,
     environment: 'production',
-    account: ACCOUNT,
+    account: 'CLOUDFLARE_ACCOUNT_ID（apply の前に指定。値は表示しない）',
     zone: new URL(config.origin).hostname,
     permissions: required,
     secretName: SECRET_NAME,
@@ -124,6 +133,7 @@ async function main(argv: string[]) {
     console.log(JSON.stringify(plan, null, 2));
     return;
   }
+  const accountId = accountIdOf(process.env.CLOUDFLARE_ACCOUNT_ID);
   if (process.env.CLOUDFLARE_API_TOKEN) throw new Error('既存tokenを流用せず、専用の認可profileから実行してください');
   stage = 'GitHubのmain限定とaccount確認';
   const policies = await json(['gh', 'api', `repos/${REPOSITORY}/environments/production/deployment-branch-policies`]);
@@ -138,16 +148,18 @@ async function main(argv: string[]) {
     'api',
     `repos/${REPOSITORY}/environments/production/variables/CLOUDFLARE_ACCOUNT_ID`,
   ]);
-  if (accountVar.value !== ACCOUNT) throw new Error('productionのaccount IDが対象と一致しません');
+  if (accountVar.value !== accountId) throw new Error('productionのaccount IDが対象と一致しません');
   const secrets = await json(['gh', 'api', `repos/${REPOSITORY}/environments/production/secrets`]);
   if (!secrets.secrets?.some((s: any) => s.name === SECRET_NAME)) {
     stage = 'CloudflareのCLI認可と対象zone確認';
-    const zones = await json(cf(['zones', 'list', '--name', new URL(config.origin).hostname, '--account-id', ACCOUNT]));
+    const zones = await json(
+      cf(['zones', 'list', '--name', new URL(config.origin).hostname, '--account-id', accountId]),
+    );
     if (
       !Array.isArray(zones) ||
       zones.length !== 1 ||
       zones[0].name !== new URL(config.origin).hostname ||
-      zones[0].account?.id !== ACCOUNT ||
+      zones[0].account?.id !== accountId ||
       zones[0].status !== 'active'
     )
       throw new Error('対象zoneを一意に確認できません');
@@ -155,7 +167,7 @@ async function main(argv: string[]) {
       '最小権限の確認。cf beta.26がWorkers Editorを発行できない場合はdocs/operations/setup.mdの管理画面手順を使います';
     const groups = await json(cf(['accounts', 'tokens', 'permission-groups', 'list']));
     if (!Array.isArray(groups)) throw new Error('権限一覧の形式が不正です');
-    const payload = { name: 'chalkfile-github-production', policies: tokenPolicies(groups, zones[0].id) };
+    const payload = { name: 'chalkfile-github-production', policies: tokenPolicies(groups, zones[0].id, accountId) };
     // 作成APIだけが返す秘密値を、これ以外のコマンド引数・ファイルへ渡さない。
     stage = 'token作成とGitHub登録';
     const generated = await json(cf(['accounts', 'tokens', 'create', '--body', JSON.stringify(payload)]));
@@ -177,10 +189,10 @@ if (import.meta.main) {
   try {
     await main(process.argv.slice(2));
   } catch (e) {
-    // 使い方の誤りだけは、その文を出す（ほかは、生の出力や秘密値が混ざりうるので段だけを出す）
-    if (e instanceof UsageError) {
+    // 使い方と前提不足だけは、その文を出す（ほかは、生の出力や秘密値が混ざりうるので段だけを出す）
+    if (e instanceof UsageError || e instanceof MissingError) {
       console.error(e.message);
-      process.exitCode = EXIT.usage;
+      process.exitCode = e instanceof MissingError ? EXIT.missing : EXIT.usage;
     } else {
       console.error(`CLI設定を完了できません（${stage}）。生出力や秘密値は表示しません。`);
       process.exitCode = EXIT.failed;

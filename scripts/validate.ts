@@ -1,4 +1,4 @@
-// 台本と、公開で止まることを検証する。誤り（error）があれば 1 で終える。PR の CI（.github/workflows/check.yml）も流す。
+// 台本と、公開で止まることを検証する。誤り（error）があれば 1 で終える。PR の CI（.github/workflows/ci.yml）も流す。
 //   bun scripts/validate.ts             # 誤りの一覧と、注意（warning）の数と内訳
 //   bun scripts/validate.ts --warnings  # 注意も一覧にする
 //   bun scripts/validate.ts --json      # 結果を JSON で出す（CI・ほかの道具が読む）

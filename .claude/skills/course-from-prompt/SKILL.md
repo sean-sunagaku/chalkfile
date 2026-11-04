@@ -61,10 +61,10 @@ npm run gen                                        # README の講座の表と�
 npm run build:materials                            # docs/courses/（教材 Markdown・絵コンテ・chunks.jsonl）
 npm run check                                      # lint・型・単体テスト・台本の検証・点検（CI と同じ）
 npm run test:browser                               # 実 Chrome でオフライン保存・再生（講座を足したら必ず）
-bun scripts/check_overlap.ts <講座 ID>             # 公式ページとの言い回しの一致
+npm run chalk -- check overlap --course <講座 ID>             # 公式ページとの言い回しの一致
 grep -noE "[0-9]+ ?日 ?（[月火水木金土日]）" content/<講座 ID>/*.ts   # 例の曜日を、その年の暦で確かめる
 npm run build:site -- <講座 ID> …                 # ほかの講座の site/data が手元に無いときは、講座 ID を渡す
-bun scripts/export_deliverables.ts <ID> …          # out/deliverables/（完成動画・字幕・音・教材）
+npm run chalk -- export <ID> …          # out/deliverables/（完成動画・字幕・音・教材）
 ```
 
 書き出した動画は、`ffprobe` の長さを timeline（`content/<講座>/generated/timeline/<ID>.json`）の `durationInFrames / 30` と比べ（サイト用と字幕つきの両方）、改善前・改善後の画面の場面から静止画を抜いて見る（モックの色・日付。担当の静止画の確認の後に直した共有の部品は、ここでしか確かめられない）。

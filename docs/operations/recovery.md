@@ -40,7 +40,7 @@ CI の deploy のジョブ（`scripts/deploy_worker.ts`）は、出したあと�
 npm run synth -- --cached-only && npm run build:site -- --strict && npm run gen
 npx --no-install wrangler deploy --env preview                 # 1 回目: 戻す先の版を作る。出力に preview の URL が出る
 npx --no-install wrangler deployments status --env preview     # 今の版の Version ID を控える
-bun scripts/deploy_worker.ts --env preview --origin https://chalkfile-preview.<workers.dev の名前>.workers.dev/ --drill
+npm run deploy:worker -- --env preview --origin https://chalkfile-preview.<workers.dev の名前>.workers.dev/ --drill
 npx --no-install wrangler deployments status --env preview     # 控えた版に戻っているか
 ```
 
@@ -79,7 +79,7 @@ ci.yml の公開が止まり、急いで出すときだけ使う。組み立て�
 2. VOICEVOX のエンジンを `127.0.0.1:50021` で動かす（[pipeline.md](../../.claude/skills/study-video-course/references/pipeline.md) の「前提」）。訳の声は、uv が Kokoro を用意する
 3. `npm run materials:pull` で残っている素材を取り出してから、`npm run synth -- <ID…>` を流す（足りない台詞だけを作る）
 4. `.work/kana/<ID>.txt` の読みを見て、`npm run materials:check`
-5. `bun scripts/check_content.ts --require-denylist` → `npm run materials:push`
+5. `npm run check:content -- --require-denylist` → `npm run materials:push`
 
 - VOICEVOX や Kokoro の版が変わると、同じ文でも音が変わり、時刻（timeline）が変わることがある。`git diff content/*/generated/timeline/` で変わっていたら、その動画は書き出し直して `media push` する（[公開の順番](publish.md) の 5〜7）
 - BGM と効果音は `npm run build:music` で作り直せる。素材と同じバイト列になるかは `npm run music:verify` で確かめる（numpy・scipy の版を上げたときも）
@@ -88,8 +88,8 @@ ci.yml の公開が止まり、急いで出すときだけ使う。組み立て�
 ## 素材を片付ける（gc）
 
 ```bash
-bun scripts/materials.ts gc                                                        # origin/main の台本が使わない台詞の声を一覧にするだけ
-bun scripts/materials.ts gc --keep origin/main --keep origin/<branch> --confirm   # 消す（持ち主）
+npm run chalk -- materials gc                                                        # origin/main の台本が使わない台詞の声を一覧にするだけ
+npm run chalk -- materials gc --keep origin/main --keep origin/<branch> --confirm   # 消す（持ち主）
 ```
 
 - 消すのは `--confirm` を付けたときだけ。持ち主が流す

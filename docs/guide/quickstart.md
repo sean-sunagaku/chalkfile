@@ -63,7 +63,7 @@ npm run render                                  # 掛け合いの講座は、字
 npm run build:materials && npm run build:site   # 読む教材と講座サイト
 ```
 
-- `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめる。1 つの講座だけなら `bun scripts/materials.ts pull nudge-product`
+- `pull` は FLAC を WAV に戻し、ブランチの `SHA256SUMS` と同じ中身かを確かめる。1 つの講座だけなら `npm run materials:pull -- nudge-product`
 - 手元の音声が台本に足りているか: `npm run materials:check`（足りない台詞は、VOICEVOX を動かして synth が作る）
 - 素材を足すのは [公開の順番](../operations/publish.md) の 4、消すのは持ち主だけ（[戻し方](../operations/recovery.md) の「素材を片付ける」）
 - 素材と動画のブランチを持ってこないで clone するとき: `git clone --single-branch https://github.com/sean-sunagaku/chalkfile.git`

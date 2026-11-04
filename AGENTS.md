@@ -9,6 +9,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 
 ## 方針
 
+- エンジン・サイト・保存・Worker を直すときは、スキル `chalkfile-engine`（`.claude/skills/chalkfile-engine/SKILL.md`）の手順に従う
 - 講座を作る・直すときは、スキル `study-video-course`（`.claude/skills/study-video-course/SKILL.md`）の手順に従う。共通プロンプトから講座を丸ごと作るときは `course-from-prompt`。Claude Code でない AI は、SKILL.md と `references/` をファイルとして開いて読む
 - 講座の見た目（色・書体・背景）はテーマで決める（値は `content/themes.ts`、仕様は [theme.md](.claude/skills/study-video-course/references/theme.md)）。部品に色を直接書かない
 - 講座と解説動画には、お笑い（ボケ・ツッコミ・天の声の掛け合い）を必ず入れる（[comedy.md](.claude/skills/study-video-course/references/comedy.md)）
@@ -19,7 +20,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 - 台本の事実は、公式ドキュメントと一次情報で確かめてから書く。確かめた日と版を `docsNote` と `sourceNote` に残す
 - 実在のサービスや会社の内部の情報（自分の仕事のコード・テーブル・設計）を、台本に入れない。例は架空の「サンプルアプリ」で作る
 - 画面の固定の文字に、絵文字をアイコン代わりに使わない（アイコンは lucide-react）
-- 台詞を直したら synth → mix → render → build:site の順に流し、`.work/kana/<ID>.txt` の読みと静止画を確かめる
+- 台詞を直したら synth → mix → render → build:site の順に流す（`npm run chalk -- build --to site` で、古い段だけを順に流せる）。`.work/kana/<ID>.txt` の読みと静止画を確かめる
 - 動画（`site/media/`・`out/`）を main に commit しない。動画は `media push` で Releases に置き、サイトは main への merge で Actions が出す（[公開の順番](docs/operations/publish.md)）。公開する言語は、`chalkfile.config.ts` の `publishLangs` に従う
 - パスワード・API キー・Webhook の署名シークレットを、台本やコードに書かない。例は、プレースホルダーか環境変数の名前にする
 - 公開のリポジトリなので、個人の手元のパス・個人のメール・非公開のプロジェクトの名前・アカウントの ID を、どのファイルにも書かない
@@ -34,7 +35,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 - 秘密情報（API キー・トークン・パスワード・署名シークレット・接続文字列）を、読まない・書かない・表示しない。認証ファイル・`.env`・`.dev.vars` を開かない
 - clone した人の手元で勝手に動くものを足さない: `.claude/settings*.json`・`.claude/hooks/`・npm のインストール時スクリプト・`.mcp.json` などの自動で動く設定（一覧は `scripts/check_content.ts`。理由は [ADR](docs/adr/2026-10-30-no-auto-run-on-clone.md)）
 - AI への指示のファイルは、リポジトリの直下の `AGENTS.md` と `CLAUDE.md` だけにする。`@` で読み込むのは、リポジトリの中のファイルだけ
-- 素材と動画を出す前は `bun scripts/check_content.ts --require-denylist` を、PR を出す前は `npm run check` を通す
+- 素材と動画を出す前は `npm run check:content -- --require-denylist` を、PR を出す前は `npm run check` を通す
 
 ## 公開と Workers のきまり
 
@@ -62,7 +63,7 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
   - README の講座の表・new-course.md の頭文字の表: そのまま `npm run gen`（印の間を作り直す。ぶつかった行の印も消える）。Worker の許可リスト（`worker/src/generated/`）は Git に入れないので、main を取り込んだら `npm run gen`
   - 読む教材の一覧（`content/materials.ts`）: main の側を取ってから `npm run gen`。本文の `content/<講座>/<ID>.material.ts` は手で書く正本
   - 読む教材（`docs/courses/`）: `npm run build:materials`
-  - 音声の鍵のスナップショット（`tests/fixtures/snapshots/`）: `bun scripts/snapshots.ts --update`
+  - 音声の鍵のスナップショット（`tests/fixtures/snapshots/`）: `npm run snapshots:update`
   - ポスター（`content/<講座>/generated/posters/`）: 作り直した動画だけ `npm run render -- <ID>`
   - 動画の一覧（`content/<講座>/generated/media.<言語>.json`）: 講座ごとなので、ほかの講座とはぶつからない。同じ講座を 2 本の branch で push したときは、[公開の順番](docs/operations/publish.md) の「ぶつかったとき」
 - 素材（`materials push`）と動画（`media push --course <講座 ID>`）は、main を取り込んだ branch から出す。どちらも足すだけにする（動画の push は選んだ講座の一覧だけを書き換える）。消すのは、持ち主が明示したときだけ（`materials.ts gc`・`retained` から外す）
@@ -75,7 +76,6 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 
 | ファイル | branch | すること | 書いた日 |
 |---|---|---|---|
-| `package.json`・`.github/workflows/`・`AGENTS.md`・`content/courses.ts`・`content/index.ts` | `refactor/generated-per-course` のあと、リファクタの一連の branch（1 本ずつ順に merge する） | 生成物を講座のフォルダへ・講座の登録を 1 講座 1 行に・CLI と CI の組み直し | 2026-11-03 |
 
 ### 凍結中
 
@@ -95,6 +95,6 @@ Chalkfile は、TypeScript で書いた台本から、ナレーション付き�
 
 - コマンドの入口は `package.json` の scripts（`npm run …`）。引数は `--` のあとに渡す。一覧は [commands.md](docs/guide/commands.md)
 - 道具をまとめた 1 つの入口は `npm run chalk -- <コマンド>`（一覧は `npm run chalk -- help`、手元の前提は `npm run chalk -- doctor`）。流すコマンドだけを見るときは `--dry-run`
-- PR を出す前は `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検。CI と同じ）
-- 新しく足した TS と JSON は `npm run format:new` で整える。全体の整形（`npm run format`）は、静かな日にだけ流す
+- PR を出す前は `npm run check`（lint・型・単体テスト・台本の検証・台本とファイルの点検・文書の点検・教材のずれの点検（check:materials）。CI と同じ）
+- 足したり直したりした TS と JSON は `npm run format` で整える（新しいファイルだけなら `npm run format:new`）。大きな全体整形は、静かな日にだけ行う
 - 始め方は [quickstart.md](docs/guide/quickstart.md)、講座を足すチェックリストは [new-course.md](docs/guide/new-course.md)、公開は [公開の順番](docs/operations/publish.md)
