@@ -80,3 +80,4 @@
 | 2026-11-04 | [www.chalkfile.com からの移動は、ページの頭の静的な script のままにする](2026-11-04-www-redirect-in-page.md) | 採用（301 の規則は任意） |
 | 2026-11-04 | [動画の書き出しは、bun の TS から @remotion/renderer を呼ぶ](2026-11-04-render-with-remotion-renderer.md) | 採用 |
 | 2026-11-04 | [配列の範囲と、省略する項目も型で確かめる](2026-11-04-stricter-types.md) | 採用 |
+| 2026-11-04 | [別の使い手が現れるまで、workspaces と npm 公開を見送る](2026-11-04-defer-package-publication.md) | 採用 |

@@ -127,6 +127,8 @@ voice（synth.ts）─┬─ mix（mix.py）── render（render.ts）
 
 ## 依存の向き
 
+workspaces への移動とエンジンの npm 公開は、別の使い手か公開の需要が出るまで見送る（[決定と再検討の条件](../adr/2026-11-04-defer-package-publication.md)）。
+
 型の検査は、動画・ページ・SW・Worker・道具・テストに分ける。配列の範囲と省略する項目を確かめる設定と、凍結中の旧 Pages の例外は [型の設定](../adr/2026-11-04-stricter-types.md) にまとめる。
 
 部品が読んでよいものを、置き場所ごとに決めている。破る import は `biome.jsonc` の `noRestrictedImports` が止め（CI の lint）、決まりが効いているかは `tests/unit/import-rules.test.ts` が確かめる。
