@@ -90,6 +90,12 @@ const targetArgs = (values: Values, positionals: string[]) => [
   ...positionals,
 ];
 
+/** 省略できる引数を 1 つだけ受け取る。余分な対象を捨てて、別のものを点検しない。 */
+const optionalTarget = (positionals: string[], command: string, label: string): string[] => {
+  if (positionals.length > 1) throw new UsageError(`${command}: ${label}は省略するか、1 つだけ渡す`);
+  return positionals;
+};
+
 /* ───────────── 対象（--course・--video・--lang） ───────────── */
 
 const TARGET = {
@@ -175,6 +181,31 @@ const renderSteps = ({ values, positionals }: Ctx): Step[] => {
 /* ───────────── コマンドの一覧 ───────────── */
 
 export const COMMANDS: Command[] = [
+  {
+    name: 'new video',
+    usage: '<講座 ID> --title <題名> [--prefix <頭文字>] [--theme <テーマ>] [--dry-run]',
+    summary: '1 本の解説動画の台本・講座・読みの辞書を作り、講座の一覧に登録する。--dry-run は変更予定だけを出す',
+    old: [],
+    file: 'scripts/scaffold.ts',
+    options: {
+      title: { type: 'string' },
+      prefix: { type: 'string' },
+      theme: { type: 'string' },
+      ...DRY,
+    },
+    positionals: true,
+    dry: 'pass',
+    steps: ({ values, positionals }) => [
+      bun(
+        'scripts/scaffold.ts',
+        ...positionals,
+        ...opt(values, 'title'),
+        ...opt(values, 'prefix'),
+        ...opt(values, 'theme'),
+        ...flag(values, 'dry-run'),
+      ),
+    ],
+  },
   {
     name: 'content migrate',
     usage: '[--write]',
@@ -642,7 +673,9 @@ export const COMMANDS: Command[] = [
     file: 'scripts/check_delivery.ts',
     options: {},
     positionals: true,
-    steps: ({ positionals }) => [bun('scripts/check_delivery.ts', ...positionals.slice(0, 1))],
+    steps: ({ positionals }) => [
+      bun('scripts/check_delivery.ts', ...optionalTarget(positionals, 'site check', 'フォルダ')),
+    ],
   },
   {
     name: 'publish verify',
@@ -652,7 +685,9 @@ export const COMMANDS: Command[] = [
     file: 'scripts/verify_public.ts',
     options: {},
     positionals: true,
-    steps: ({ positionals }) => [bun('scripts/verify_public.ts', ...positionals.slice(0, 1))],
+    steps: ({ positionals }) => [
+      bun('scripts/verify_public.ts', ...optionalTarget(positionals, 'publish verify', 'origin')),
+    ],
   },
   {
     name: 'check overlap',

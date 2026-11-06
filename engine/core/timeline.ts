@@ -92,13 +92,18 @@ export const parseTimeline = (value: unknown, where: string): TimelineFile => {
   if (typeof value.fingerprint !== 'string' || !/^[0-9a-f]{16}$/.test(value.fingerprint))
     fail('fingerprint が 16 字の 16 進でない');
   if (!Array.isArray(value.scenes) || !value.scenes.length) fail('scenes が無い');
+  let previousStart = -1;
   (value.scenes as unknown[]).forEach((s, i) => {
     if (!isObj(s) || !isInt(s.start, 0) || !isInt(s.duration, 1) || !Array.isArray(s.lines))
       fail(`場面 ${i + 1} の start・duration・lines の形が違う`);
-    const scene = s as Record<string, unknown> & { lines: unknown[] };
+    const scene = s as Record<string, unknown> & { start: number; lines: unknown[] };
     scene.lines.forEach((l, k) => {
       if (!isObj(l) || !isInt(l.start, 0) || !isInt(l.end, 0))
         fail(`場面 ${i + 1} の台詞 ${k + 1} の start・end が整数でない`);
+      // 台詞と字幕は開始時刻から検索する。同時開始と声の重なりは保ち、順番だけを確かめる。
+      const start = scene.start + (l as TimelineLine).start;
+      if (start < previousStart) fail(`場面 ${i + 1} の台詞 ${k + 1} の開始時刻が前の台詞より早い`);
+      previousStart = start;
     });
   });
   return value as TimelineFile;

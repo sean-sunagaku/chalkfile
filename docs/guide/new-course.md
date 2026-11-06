@@ -50,6 +50,19 @@
 
 講座のことは、講座のフォルダ（`content/<講座 ID>/`）に閉じる。講座を足す PR は、そのフォルダと、登録表 `content/courses.ts` の 1 行を直す。教材を足した場合は、`npm run gen` が作る `content/materials.ts` の差分も入れる。フォルダの名前は講座 ID にする（生成物の置き場所にも使う）。
 
+### 1 本の動画を雛形から始める
+
+```bash
+npm run chalk -- new video sample-topic --title 'サンプルアプリの使い方' --dry-run
+npm run chalk -- new video sample-topic --title 'サンプルアプリの使い方'
+```
+
+最初のコマンドで、使う頭文字と作るファイルを確かめる。次のコマンドが、台本・`course.ts`・`index.ts`・`reading.ts` を作り、`content/courses.ts` に登録を 1 行足す。頭文字と並びは空いているものを選ぶ。自分で決めるときは `--prefix A`・`--theme stage` を付ける。既にあるフォルダや登録は上書きしない。
+
+雛形は、掛け合いを含む 1 本の解説動画を作るための出発点。台本・目標・まとめ・出典を題材に合わせて書き、事実と読みを確かめる。音声と動画は、次の「声・音・動画を作る」の手順で作る。登録後は `npm run gen` で一覧を作り直す。
+
+### 手で書くファイル
+
 手で書くもの:
 
 - [ ] `content/<講座 ID>/<ID>.ts`: レクチャーごとの台本。場面の型は `engine/core/schema.ts`（台本は `content/types.ts` から読む）、画面と話し方の決まりは [style.md](../../.claude/skills/study-video-course/references/style.md)

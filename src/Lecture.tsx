@@ -1,8 +1,10 @@
 import type React from 'react';
+import { useMemo } from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
 import { LANG_INFO, type Lang } from '../engine/core/i18n';
 import { upgradeLecture } from '../engine/core/legacy';
 import type { Scene, Tone } from '../engine/core/schema';
+import { lastStartedIndex } from './active-timing';
 import { Background, Footer, Header, Progress } from './components/chrome';
 import { fitLines, textWidth, wrappedLines } from './components/fit';
 import { useFonts } from './fonts';
@@ -52,41 +54,43 @@ type Cue = { start: number; end: number; text: string; who?: { name: string; ton
 const Captions: React.FC<{ cues: Cue[]; lang: Lang }> = ({ cues, lang }) => {
   const { C, SANS, tone } = usePalette();
   const frame = useCurrentFrame();
-  let i = -1;
-  for (let k = 0; k < cues.length; k++) if (frame >= cues[k]!.start - LEAD.caption) i = k;
+  const i = lastStartedIndex(cues, frame, LEAD.caption);
   const cue = cues[i];
   // 台詞の後の短い間では字幕を残す（ちらつかせない）。次の台詞の手前までか、CAPTION.holdSec（0.7 秒）まで
   const until = cue ? Math.min(cue.end + frames(CAPTION.holdSec), (cues[i + 1]?.start ?? Infinity) - LEAD.caption) : -1;
   const show = cue && frame <= until;
   // 帯の 2 行に入らない台詞は、入るまで縮める（CAPTION.minSize まで。折り返した行の数を測って決める）。名前札があれば、その分だけ行が短い。
   // 縮めても入らない台詞（台本の検証が注意にする）は、行の間を詰めて帯の中に収める
-  const wrap = {
-    fontFamily: SANS,
-    fontWeight: 700,
-    letterSpacing: CAPTION.spacing,
-    lineHeight: CAPTION_LINE_HEIGHT,
-    lang: LANG_INFO[lang].html,
-    wrap: WRAP[lang],
-  };
-  const tag =
-    show && cue?.who
-      ? textWidth(cue.who.name, CAPTION.nameSize, { fontFamily: SANS, fontWeight: 900 }) +
-        CAPTION.namePadX * 2 +
-        CAPTION.gap
-      : 0;
-  const room = W - CAPTION.sidePad * 2 - tag;
-  const size =
-    show && cue
-      ? fitLines(cue.text, CAPTION.lines, {
-          ...wrap,
-          role: 'body',
-          max: CAPTION.size,
-          min: CAPTION.minSize,
-          width: room,
-        })
-      : CAPTION.size;
-  const rows = show && cue ? wrappedLines(cue.text, size, room, wrap) : 1;
-  const lineHeight = Math.min(CAPTION_LINE_HEIGHT, (CAPTION_BAND - 7 - 8) / (Math.max(rows, CAPTION.lines) * size));
+  const { size, lineHeight } = useMemo(() => {
+    const wrap = {
+      fontFamily: SANS,
+      fontWeight: 700,
+      letterSpacing: CAPTION.spacing,
+      lineHeight: CAPTION_LINE_HEIGHT,
+      lang: LANG_INFO[lang].html,
+      wrap: WRAP[lang],
+    };
+    const tag =
+      show && cue?.who
+        ? textWidth(cue.who.name, CAPTION.nameSize, { fontFamily: SANS, fontWeight: 900 }) +
+          CAPTION.namePadX * 2 +
+          CAPTION.gap
+        : 0;
+    const room = W - CAPTION.sidePad * 2 - tag;
+    const size =
+      show && cue
+        ? fitLines(cue.text, CAPTION.lines, {
+            ...wrap,
+            role: 'body',
+            max: CAPTION.size,
+            min: CAPTION.minSize,
+            width: room,
+          })
+        : CAPTION.size;
+    const rows = show && cue ? wrappedLines(cue.text, size, room, wrap) : 1;
+    const lineHeight = Math.min(CAPTION_LINE_HEIGHT, (CAPTION_BAND - 7 - 8) / (Math.max(rows, CAPTION.lines) * size));
+    return { size, lineHeight };
+  }, [show, cue, SANS, lang]);
   return (
     <div
       style={{
@@ -183,17 +187,18 @@ export const LectureVideo: React.FC<LectureProps> = ({ id, audio = false, theme,
       </Sequence>
     );
   });
-  const cast = course.cast ?? {};
-  const cues: Cue[] = captions
-    ? lecture.scenes.flatMap((s, i) =>
-        s.lines.map((ln, k) => ({
-          start: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.start,
-          end: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.end,
-          text: ln.t,
-          who: cast[ln.v ?? 'narrator'],
-        })),
-      )
-    : [];
+  const cues: Cue[] = useMemo(() => {
+    if (!captions) return [];
+    const cast = course.cast ?? {};
+    return lecture.scenes.flatMap((s, i) =>
+      s.lines.map((ln, k) => ({
+        start: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.start,
+        end: tl.scenes[i]!.start + tl.scenes[i]!.lines[k]!.end,
+        text: ln.t,
+        who: cast[ln.v ?? 'narrator'],
+      })),
+    );
+  }, [captions, lecture, tl, course.cast]);
   return (
     <ThemeProvider theme={th} lang={lang}>
       <AbsoluteFill lang={LANG_INFO[lang].html} style={{ fontFamily: SANS, ...WRAP[lang] }}>

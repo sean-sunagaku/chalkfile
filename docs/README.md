@@ -9,6 +9,7 @@ Chalkfile の文書の入口。話題ごとに正本（直すときに、そこ�
 
 | 話題 | 正本 | 今の置き場所・メモ |
 |---|---|---|
+| 2026-11-07 の動画追加と共通処理の見直し | [見直しの記録](history/2026-11-07-authoring-refactor.md) | 実装した範囲・確かめ方・次の候補 |
 | 全体の仕組み（データの流れと置き場所） | [architecture/overview.md](architecture/overview.md) | |
 | プロジェクトの設定 | `chalkfile.config.ts`、[設定を渡す決まり](adr/2026-11-04-project-config.md) | 値を変えたら `npm run gen` |
 | 言葉の意味 | [architecture/glossary.md](architecture/glossary.md) | |

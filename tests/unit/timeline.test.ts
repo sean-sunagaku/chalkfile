@@ -184,6 +184,44 @@ describe('指紋（時刻に効く入力のハッシュ）', () => {
 });
 
 describe('ファイルの形と書き方', () => {
+  test('同じ場面でも場面をまたいでも、台詞の開始時刻が逆順なら止める', () => {
+    const reversed = file({
+      scenes: [
+        {
+          start: 0,
+          duration: 100,
+          lines: [
+            { start: 20, end: 30 },
+            { start: 10, end: 40 },
+          ],
+        },
+      ],
+    });
+    expect(() => parseTimeline(reversed, 'x.json')).toThrow('場面 1 の台詞 2 の開始時刻が前の台詞より早い');
+    const acrossScenes = file({
+      scenes: [
+        { start: 0, duration: 100, lines: [{ start: 120, end: 140 }] },
+        { start: 100, duration: 100, lines: [{ start: 10, end: 40 }] },
+      ],
+    });
+    expect(() => parseTimeline(acrossScenes, 'x.json')).toThrow('場面 2 の台詞 1 の開始時刻が前の台詞より早い');
+  });
+  test('同時に始まる台詞と、終わる前に次が始まる台詞は保つ', () => {
+    const overlap = file({
+      scenes: [
+        {
+          start: 0,
+          duration: 100,
+          lines: [
+            { start: 10, end: 50 },
+            { start: 10, end: 60 },
+            { start: 20, end: 70 },
+          ],
+        },
+      ],
+    });
+    expect(parseTimeline(overlap, 'x.json')).toBe(overlap);
+  });
   test('キーを並べ、2 スペースで字下げし、最後に改行。読み直すと同じ', () => {
     const text = timelineJson(file());
     expect(text.endsWith('}\n')).toBe(true);

@@ -25,6 +25,17 @@ const moduleReading = (module: CourseModule): Reading => {
   return reading;
 };
 
+/** 登録の重複を止めてから索引にする。Map の上書きで、先に登録した講座や動画を隠さない。 */
+const uniqueIndex = <T>(items: readonly T[], keyOf: (item: T) => string, message: string): Map<string, T> => {
+  const index = new Map<string, T>();
+  for (const item of items) {
+    const key = keyOf(item);
+    if (index.has(key)) throw new Error(`${message}: ${key}`);
+    index.set(key, item);
+  }
+  return index;
+};
+
 export const createCatalog = (
   registry: readonly CourseModule[],
   decorate: (course: AuthoredCourse) => AuthoredCourse = (course) => course,
@@ -33,6 +44,7 @@ export const createCatalog = (
   const MODULES: CourseModule[] = [...registry].sort(
     (a, b) => a.course.order - b.course.order || (a.course.id < b.course.id ? -1 : a.course.id > b.course.id ? 1 : 0),
   );
+  const modulesById = uniqueIndex(MODULES, (m) => m.course.id, '講座 ID が重なっている');
 
   /** 台本に書いたままの日本語の講座（at に台詞の id が残っている）。訳を重ねる元と、訳のひな形に使う */
   const AUTHORED_COURSES: AuthoredCourse[] = MODULES.map((m) => decorate(m.course));
@@ -52,17 +64,19 @@ export const createCatalog = (
   const COURSES: Course[] = AUTHORED_COURSES.map(resolveCourse);
 
   /** 動画を作るときは、全講座のレクチャーをまとめて扱う（ID は講座をまたいで重ならないようにする） */
-  const LECTURES: Lecture[] = COURSES.flatMap((c) => c.lectures);
+  const lecturesById = uniqueIndex(
+    COURSES.flatMap((course) => course.lectures.map((lecture) => ({ course, lecture }))),
+    ({ lecture }) => lecture.id,
+    'レクチャー ID が講座をまたいで重なっている',
+  );
+  const LECTURES: Lecture[] = [...lecturesById.values()].map(({ lecture }) => lecture);
 
   const courseOf = (lectureId: string): Course => {
-    const c = COURSES.find((x) => x.lectures.some((l) => l.id === lectureId));
+    const c = lecturesById.get(lectureId)?.course;
     if (!c) throw new Error(`どの講座にも無いレクチャー: ${lectureId}`);
     return c;
   };
 
-  const ids = LECTURES.map((l) => l.id);
-  const dup = ids.find((id, i) => ids.indexOf(id) !== i);
-  if (dup) throw new Error(`レクチャー ID が講座をまたいで重なっている: ${dup}`);
   // 訳の講座の URL と保存の ID は <言語>/<講座>（en/pstack-comedy）。言語のフォルダは言語の一覧（content/langs.ts）から読む。
   // 言語の名前と、これから足す言語の名前（2 文字の英小文字）は、講座 ID に使わない
   if (COURSES.some((c) => (LANGS as string[]).includes(c.id) || /^[a-z]{2}$/.test(c.id)))
@@ -86,7 +100,7 @@ export const createCatalog = (
     if (!list) {
       const tr = TRANSLATIONS[lang];
       for (const id of Object.keys(tr))
-        if (!COURSES.some((c) => c.id === id)) throw new Error(`訳の講座が日本語の講座に無い: ${lang}/${id}`);
+        if (!modulesById.has(id)) throw new Error(`訳の講座が日本語の講座に無い: ${lang}/${id}`);
       // filter で訳がある講座だけを選んでいる。
       list = AUTHORED_COURSES.filter((c) => tr[c.id]).map((c) => localizeCourse(c, tr[c.id]!, lang));
       localized.set(lang, list);
@@ -100,9 +114,10 @@ export const createCatalog = (
       course.lectures.map((lecture) => ({ key: videoKey(lecture.id, lang), lang, lecture, course })),
     ),
   );
+  const videosByKey = uniqueIndex(VIDEOS, (video) => video.key, '動画の名前が重なっている');
 
   const videoOf = (key: string): Video => {
-    const v = VIDEOS.find((x) => x.key === key);
+    const v = videosByKey.get(key);
     if (!v) {
       const { id, lang } = parseVideoKey(key);
       throw new Error(
