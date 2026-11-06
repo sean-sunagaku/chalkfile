@@ -34,6 +34,7 @@ const TS = [
   'materials',
   'media',
   'pipeline',
+  'scaffold',
   'setup_cloudflare_ci',
   'snapshots',
   'stills-compare',

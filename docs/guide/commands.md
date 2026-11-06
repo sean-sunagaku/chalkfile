@@ -20,6 +20,7 @@
 
 | コマンド（`npm run chalk -- …`） | すること | 前の呼び方（そのまま使える） |
 |---|---|---|
+| `new video <講座 ID> --title <題名> [--prefix <頭文字>] [--theme <テーマ>] [--dry-run]` | 1 本の解説動画の台本・講座・読みの辞書を作り、講座の一覧に登録する。--dry-run は変更予定だけを出す | （新しい） |
 | `content migrate [--write]` | 教材を分け、出典と共通の書き方をまとめる（既定は差分の一覧だけ） | `npm run codemod:content` |
 | `doctor [--json]` | 道具の版・VOICEVOX・gh の認証の有無・空き容量・ポート・声のキャッシュを確かめる | （新しい） |
 | `validate [--warnings] [--json]` | 台本の検証と、台本・Git に入れるファイルの点検（訳し残しも）。--json は台本の検証だけを JSON で | `bun scripts/validate.ts`・`bun scripts/check_content.ts` |

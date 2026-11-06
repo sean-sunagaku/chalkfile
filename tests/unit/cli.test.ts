@@ -18,6 +18,7 @@ describe('コマンドの一覧', () => {
     const names = COMMANDS.map((c) => c.name);
     expect(new Set(names).size).toBe(names.length);
     for (const name of [
+      'new video',
       'doctor',
       'validate',
       'status',
@@ -94,7 +95,55 @@ describe('対象の選び方（--course・--video・--lang）', () => {
   });
 });
 
+describe('省略できる点検対象', () => {
+  for (const [name, file, target] of [
+    ['site check', 'scripts/check_delivery.ts', 'site/確認用の出力'],
+    ['publish verify', 'scripts/verify_public.ts', 'https://example.com'],
+  ] as const) {
+    test(`${name} は省略と 1 つの対象をそのまま道具に渡す`, () => {
+      const command = COMMANDS.find((item) => item.name === name);
+      expect(command?.steps({ values: {}, positionals: [] })[0]?.argv.slice(1)).toEqual([file]);
+      expect(command?.steps({ values: {}, positionals: [target] })[0]?.argv.slice(1)).toEqual([file, target]);
+      expect(() => command?.steps({ values: {}, positionals: [target, 'extra'] })).toThrow('1 つだけ');
+    });
+    test(`${name} は余分な対象を渡すと道具を起動する前に終了コード 2 で止める`, () => {
+      const result = chalk(...name.split(' '), 'not-a-target', 'extra');
+      expect(result.code).toBe(2);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain(`${name}:`);
+      expect(result.stderr).toContain('1 つだけ');
+    });
+  }
+});
+
 describe('流すコマンド（--dry-run は出すだけ）', () => {
+  test('new video は空白を含む題名を保ち、変更予定だけを出す', () => {
+    const registry = path.join(ROOT, 'content/courses.ts');
+    const before = readFileSync(registry, 'utf8');
+    const result = chalk('new', 'video', 'sample-topic', '--title', 'サンプルアプリの 使い方', '--dry-run');
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('sample-topic');
+    expect(readFileSync(registry, 'utf8')).toBe(before);
+    expect(existsSync(path.join(ROOT, 'content/sample-topic'))).toBe(false);
+    expect(
+      COMMANDS.find((c) => c.name === 'new video')
+        ?.steps({
+          values: { title: 'サンプルアプリの 使い方', 'dry-run': true },
+          positionals: ['sample-topic'],
+        })[0]
+        ?.argv.slice(-3),
+    ).toEqual(['--title', 'サンプルアプリの 使い方', '--dry-run']);
+  });
+  test('new video は題名の省略・余分な引数・不正な ID を作成前に止める', () => {
+    for (const args of [
+      ['sample-topic'],
+      ['sample-topic', 'extra', '--title', '見本'],
+      ['../sample-topic', '--title', '見本'],
+      ['ja', '--title', '見本'],
+    ]) {
+      expect(chalk('new', 'video', ...args, '--dry-run').code).toBe(2);
+    }
+  });
   test('i18n scaffold と restamp は共通の入口を使い、dry-run はファイルを書かない', () => {
     const scaffold = chalk('i18n', 'scaffold', 'P01.en', '--stdout', '--dry-run');
     expect(scaffold.code).toBe(0);

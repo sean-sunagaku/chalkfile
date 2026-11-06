@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { Lang } from '../engine/core/i18n';
 import type { Course, Lecture, Scene } from '../engine/core/schema';
+import { lastStartedIndex } from './active-timing';
 import { VIDEO_TEXT, type VideoText } from './i18n';
 import { LEAD } from './video.config';
 
@@ -53,9 +54,7 @@ export const useAppear = (at: number, delay = 0, durationInFrames = 20): number 
 export const useActiveLine = (): number => {
   const frame = useCurrentFrame();
   const { lines } = useScene();
-  let active = 0;
-  for (let i = 0; i < lines.length; i++) if (frame >= lines[i]!.start - LEAD.appear) active = i;
-  return active;
+  return Math.max(0, lastStartedIndex(lines, frame, LEAD.appear));
 };
 
 /** 項目のうち、台詞の番号（at）が今の台詞まで来た、いちばん後ろの項目の番号（まだ無ければ -1）。今の項目を光らせるのに使う */
