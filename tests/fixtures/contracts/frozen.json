@@ -1,5 +1,6 @@
 {
   "courses": [
+    "agent-memory-comedy",
     "deepseek-creator",
     "ga4-comedy",
     "indie-marketing",
@@ -342,6 +343,16 @@
     "uiux-engineers/uiux-08-ex"
   ],
   "sources": [
+    "agent-memory-comedy/anthropic-agent-memory",
+    "agent-memory-comedy/cl-bench",
+    "agent-memory-comedy/claude-code-memory",
+    "agent-memory-comedy/cookbook-dreaming",
+    "agent-memory-comedy/harvey-labs",
+    "agent-memory-comedy/karpathy-llm-wiki",
+    "agent-memory-comedy/knowledge-wiki-quickstart",
+    "agent-memory-comedy/managed-agents-dreams",
+    "agent-memory-comedy/managed-agents-memory",
+    "agent-memory-comedy/sleep-time-compute",
     "ga4-comedy/ga-terms",
     "ga4-comedy/ga4-auto-events",
     "ga4-comedy/ga4-basics",
@@ -1000,6 +1011,10 @@
     "uiux-engineers/uiux-08-summary"
   ],
   "videos": {
+    "A01": "A01",
+    "A02": "A02",
+    "A03": "A03",
+    "A04": "A04",
     "D01": "D01",
     "D02": "D02",
     "D03": "D03",
