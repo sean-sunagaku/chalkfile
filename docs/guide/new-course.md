@@ -31,8 +31,9 @@
 | `S` | `superagent-comedy` | 80 |
 | `G` | `ga4-comedy` | 90 |
 | `H` | `deepseek-creator` | 100 |
+| `A` | `agent-memory-comedy` | 110 |
 
-- 空いている文字: A B C E F I J K O Q T U V Y Z（X はテストの見本が使う）
+- 空いている文字: B C E F I J K O Q T U V Y Z（X はテストの見本が使う）
 
 <!-- prefixes:end -->
 
