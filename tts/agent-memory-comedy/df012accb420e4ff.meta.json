@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "df012accb420e4ff",
+ "text": "……記録は、うそをつかないのだ。直すのだ。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 76,
+  "speed": 1,
+  "intonation": 1.1,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

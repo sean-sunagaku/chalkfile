@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "14b6929ebae2d349",
+ "text": "地図は、大きくしすぎない。領土と同じ大きさの地図は、ほとんど何もまとめていません。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "93d2d8888ba1ad98",
+ "text": "答えは、バツ。コンパクションは、古いやりとりを要約に置き換えて、同じ作業を続ける仕組み。記憶とは、分けて考えます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

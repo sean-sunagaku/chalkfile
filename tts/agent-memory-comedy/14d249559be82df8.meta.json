@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "14d249559be82df8",
+ "text": "二つ目は、会話の中の学び。一つの会話の中だけで、身につくことです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

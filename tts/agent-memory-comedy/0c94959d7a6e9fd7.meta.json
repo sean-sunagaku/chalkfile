@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "0c94959d7a6e9fd7",
+ "text": "エージェントは、夢のたびに、ページを足したり、直したり、まとめたりします。これを、百二十八セッション重ねました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

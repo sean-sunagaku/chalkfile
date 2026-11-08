@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "de84b8f5bfc87cb1",
+ "text": "遊ぶ前に、記憶のファイルを入れるフォルダを渡して、遊びながら、読み書きさせました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

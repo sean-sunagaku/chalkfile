@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "bd1cd5e924db99be",
+ "text": "間違ったメモは、あとのセッションで信じられ、同じ失敗を、くり返させることがあります。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

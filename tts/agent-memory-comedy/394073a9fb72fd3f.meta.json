@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "394073a9fb72fd3f",
+ "text": "ゴールも、記憶のフォルダに書くのだ！　八百八十九個目なのだ！",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

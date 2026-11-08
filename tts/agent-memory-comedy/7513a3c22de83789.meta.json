@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "7513a3c22de83789",
+ "text": "ソネット、さんてんななは、バッジ一個。中身は、出来事の記録でした。戦いも、拾った道具も、会った人も、一つずつ別のファイルです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

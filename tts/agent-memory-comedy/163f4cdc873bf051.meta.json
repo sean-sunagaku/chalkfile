@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "163f4cdc873bf051",
+ "text": "地図を作ったのだ！　ずんだ餅のウィキなのだ！　ずんだ餅一個ごとに、ページが三枚あるのだ！",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

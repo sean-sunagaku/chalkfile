@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "becb30d105b7d7b5",
+ "text": "夢で直したメモの実行は、山の入口を探して、入り直す、と言い、まっすぐ洞くつに戻りました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

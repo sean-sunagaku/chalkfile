@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "a3925e59ff49dbd1",
+ "text": "空き時間に記録を読み返して、間違いを直し、メモを整える。この作業は、よく、夢、ドリーミングと呼ばれます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "21972ace57e8eb85",
+ "text": "では、どんな仕事に、ウィキは効くのでしょう。記事は、法律の仕事のベンチマーク、ハーヴィー・ラボと、ある合併の文書の集まりで比べました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "e685a2f591d47745",
+ "text": "記憶の仕組みは、クロードの力とともに変わっていく。まだ学ぶことの多い分野だ、と記事は結んでいます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

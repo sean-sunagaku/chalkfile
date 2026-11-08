@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "77a6b65c92aef44a",
+ "text": "このしょうわ、夢、ドリーミングで、間違ったメモを直す話と、大事なメモを、一番上の階に上げる話です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "c02ef4108db93c10",
+ "text": "その夢は、何も直しません。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.14,
+  "intonation": 1.3,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

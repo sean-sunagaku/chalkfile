@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "0ccdb071e48ebd3c",
+ "text": "今日も、全部、覚えるのだ！　先生のまばたきの回数も、記録したのだ！",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

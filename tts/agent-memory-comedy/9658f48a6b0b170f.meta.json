@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "9658f48a6b0b170f",
+ "text": "二つのフォルダは、まるで違いました。バッジは、ゲームの進み具合の目安です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

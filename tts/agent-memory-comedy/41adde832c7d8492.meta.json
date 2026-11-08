@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "41adde832c7d8492",
+ "text": "強いモデルには、決まった規則より、何が目立つかを自分で決める自由のほうが、効きました。規則は、かえって弱めることがあります。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

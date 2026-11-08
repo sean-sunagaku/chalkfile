@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "447a0a1041e7d85f",
+ "text": "最後のクイズです。記事によると、ウィキは、どんな仕事でも、検索だけより、はっきり良い結果になった。マルか、バツか。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

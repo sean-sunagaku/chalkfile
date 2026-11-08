@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "63c450420a551f92",
+ "text": "使ったのは、データベースを調べて質問に答える課題。クロード・マネージド・エージェンツで、まいもんまっさらなセッションから始め、前の問いから持ち越せるのは、記憶のフォルダだけです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

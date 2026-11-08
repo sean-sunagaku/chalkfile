@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "4415c374bd9fd08d",
+ "text": "初めてループを閉じたのは、オーパス、ごー。規則と、その規則が正しいと言える理由、前の問いの答え、引っかかったわなの注意書きまで、残しました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

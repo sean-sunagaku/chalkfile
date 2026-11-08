@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "204b47b791ba45f6",
+ "text": "エージェントが、セッションをまたいで、何を覚え、どう直すのか、という話です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "c7f3a31324641a71",
+ "text": "ウィキのような地図は、検索と組むと役立つこともありますが、保つにも計算が要り、間違いや作り話が混ざらないよう、手入れが要ります。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

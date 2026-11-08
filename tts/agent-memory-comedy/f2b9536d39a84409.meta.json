@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "f2b9536d39a84409",
+ "text": "三つ目、何を土台にするか。記録を検索するだけ、という単純な形も考えられます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

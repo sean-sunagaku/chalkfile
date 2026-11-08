@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "a00f76429cbb9b84",
+ "text": "メモを一つ書くたびに、これはまた要る、と賭けている。規則なら、同じ形がまた来るほうに。確かめた事実なら、次は確かめ直さずに使えるほうに、賭けるわけです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

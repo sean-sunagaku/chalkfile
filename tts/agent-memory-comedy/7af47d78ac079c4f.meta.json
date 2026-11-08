@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "7af47d78ac079c4f",
+ "text": "そこで、メモを書き直す。何が本当に起きたかは、記録が知っていた、というわけです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

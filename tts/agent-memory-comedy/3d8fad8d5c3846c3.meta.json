@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "3d8fad8d5c3846c3",
+ "text": "ニビシティで回復して、買い物して……完璧な作戦なのだ！",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

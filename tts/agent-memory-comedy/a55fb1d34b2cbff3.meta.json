@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "a55fb1d34b2cbff3",
+ "text": "ずんだもん、二敗。記憶の中では、二連勝である。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 11,
+  "speed": 1.02,
+  "intonation": 1.1,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

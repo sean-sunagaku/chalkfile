@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "790c361d0b01d735",
+ "text": "オーパス、ごーてんごーとソネット、ごーてんごーも、ループを閉じて、確かめた規則を、記憶に残しました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

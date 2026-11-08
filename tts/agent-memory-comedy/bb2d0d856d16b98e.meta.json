@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "bb2d0d856d16b98e",
+ "text": "三つ目。読み込んでも、従うとは限りません。クロード・コードのドキュメントも、長い指示のファイルは、守られにくくなる、と注意しています。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

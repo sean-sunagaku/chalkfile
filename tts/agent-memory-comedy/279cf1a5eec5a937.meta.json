@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "279cf1a5eec5a937",
+ "text": "そこで、答える前に記憶を読み、仮説をはっきり確かめるよう促すと、レイテンロクヨンイチ。記憶なしの、ほぼ倍です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

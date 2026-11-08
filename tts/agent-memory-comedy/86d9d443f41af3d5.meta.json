@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "86d9d443f41af3d5",
+ "text": "たとえば、ウィキを作る途中で、まだ無いページへのリンクが、できることがあります。六つのページから、エスクロー・アグリーメントという、無いページへ、九本のリンク。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

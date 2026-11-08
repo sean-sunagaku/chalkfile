@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "a0a35d9d84e1a8d2",
+ "text": "しかも、いちもんあたり、やくにまんトークンを節約しました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

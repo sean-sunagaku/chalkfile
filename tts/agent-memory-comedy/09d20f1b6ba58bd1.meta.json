@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "09d20f1b6ba58bd1",
+ "text": "三回目のあと、ループを続けるより、止める、と書いて、あきらめかけました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

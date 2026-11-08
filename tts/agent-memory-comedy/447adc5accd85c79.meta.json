@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "447adc5accd85c79",
+ "text": "四階は、毎回読む文脈。セッションの始めに、前もって読み込ませる、小さな層です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

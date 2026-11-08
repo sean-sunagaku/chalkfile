@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "2667559f3b97baf4",
+ "text": "だから、記憶は、前を向いて書き、夢で、後ろを振り返って直す。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

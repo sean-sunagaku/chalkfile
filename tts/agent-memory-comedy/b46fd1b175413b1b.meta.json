@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "b46fd1b175413b1b",
+ "text": "頼むときは、何のための記憶かを伝えて、どう使うかは任せる。古いモデルには、読む、確かめるの手引きが効きます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

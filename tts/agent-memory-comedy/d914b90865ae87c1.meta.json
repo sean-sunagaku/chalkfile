@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "d914b90865ae87c1",
+ "text": "えっ、ずっと、記録されてたのだ！？",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

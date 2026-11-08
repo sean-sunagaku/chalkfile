@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "e41989db16ba220f",
+ "text": "わからないから、全部、書くのだ！　八百九十個目なのだ！",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

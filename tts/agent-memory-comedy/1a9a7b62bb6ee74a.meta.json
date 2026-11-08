@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "1a9a7b62bb6ee74a",
+ "text": "わかったのは、この課題の主役は、契約の条件だということ。作り方の指示も、そこに合わせて書き直しました。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

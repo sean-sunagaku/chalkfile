@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "9afc4c02bfe58e59",
+ "text": "夢には、もう一つの仕事があります。大事なメモを、記憶の建物の、一番上の階に上げることです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

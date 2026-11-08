@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "91c8e2cac4da4a9f",
+ "text": "ずんだもんの記憶は、フォルダ三つにまとまった。一つは、ずんだ餅である。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 11,
+  "speed": 1.02,
+  "intonation": 1.1,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

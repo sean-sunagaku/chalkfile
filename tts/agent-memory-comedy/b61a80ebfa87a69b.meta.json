@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "b61a80ebfa87a69b",
+ "text": "いちばんうえのグローバル・エムディーは、ダッシュボードの役目。今の目標と、ジムをどう攻めるか、それに、記憶をどう使うかの、自分なりの決まりが並びます。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

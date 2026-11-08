@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "f17c3cd09193f533",
+ "text": "本当の解き方は、こうです。間違ったメモの入ったフォルダに、夢をかける。夢が見比べるのは、セッションの記録です。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

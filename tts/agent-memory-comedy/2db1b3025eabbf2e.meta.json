@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "2db1b3025eabbf2e",
+ "text": "記事は、エージェントの記憶を、四つの層で描きます。四階建ての建物だと思ってください。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

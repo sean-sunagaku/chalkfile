@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "c180e97b7baf2345",
+ "text": "最後に、記事が挙げる、まだ答えの出ていない問いです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

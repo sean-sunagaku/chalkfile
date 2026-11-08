@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "a5ce418bfe2e6323",
+ "text": "要注意なのが、入口のそばの段差。降りるのは一瞬、上るのは難しい。降りると、来た道に逆戻りです。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

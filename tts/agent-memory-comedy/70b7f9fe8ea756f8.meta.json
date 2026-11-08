@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "70b7f9fe8ea756f8",
+ "text": "そういう問いに限ると、ウィキありは八十七パーセント、検索だけは七十三パーセントでした。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

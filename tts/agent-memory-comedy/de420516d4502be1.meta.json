@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "de420516d4502be1",
+ "text": "会議室は、先月、五階に移った。先生は、けさ、三階に、三回行った。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 11,
+  "speed": 1.02,
+  "intonation": 1.1,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

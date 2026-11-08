@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "aae8a806834771ab",
+ "text": "長く残るのは、その一部。脳が休んでいるあいだに、海馬が最近の出来事をもう一度流して、まとめる、という説があります。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

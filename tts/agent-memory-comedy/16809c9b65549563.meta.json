@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "16809c9b65549563",
+ "text": "そして、夢。一階の記録を読み返して、上の階を直したり、育てたりします。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

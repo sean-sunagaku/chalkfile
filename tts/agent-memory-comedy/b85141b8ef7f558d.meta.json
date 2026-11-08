@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "b85141b8ef7f558d",
+ "text": "規則の、第二版を使うのだ。自信の量じゃなくて、先生の説明を、思い出してから答える。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 3,
+  "speed": 1.08,
+  "intonation": 1.2,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

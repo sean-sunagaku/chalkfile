@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "9b5d60d3c1c17c55",
+ "text": "一つ目、いつ書くか。仕事の最中に書けば、すぐ次に生きる。でも、本題の手が止まる。夢に任せれば手は止まりませんが、結果が届くのは、あとになることもあります。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 29,
+  "speed": 1.06,
+  "intonation": 1.12,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}

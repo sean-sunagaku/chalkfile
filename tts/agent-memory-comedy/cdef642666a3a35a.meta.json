@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "key": "cdef642666a3a35a",
+ "text": "次回、最終章。ずんだもん、地図を作る。……領土より、大きく。",
+ "recipe": {
+  "v": 2,
+  "engine": "voicevox",
+  "speaker": 11,
+  "speed": 1.02,
+  "intonation": 1.1,
+  "pitch": 0,
+  "volumeScale": 1,
+  "pre": 0.08,
+  "post": 0.12,
+  "sampleRate": 48000,
+  "channels": 1
+ },
+ "engineVersion": "0.25.1"
+}
