@@ -91,7 +91,7 @@ describe('講座の登録（頭文字・並び・講座 ID）', () => {
   });
   test('今の講座は、頭文字と並びが重ならず、レクチャー ID が頭文字と 2 桁の番号', () => {
     expect(validateCourses(COURSES)).toEqual([]);
-    expect(COURSES.map((c) => c.prefix)).toEqual(['L', 'N', 'D', 'M', 'W', 'R', 'P', 'S', 'G', 'H']);
+    expect(COURSES.map((c) => c.prefix)).toEqual(['L', 'N', 'D', 'M', 'W', 'R', 'P', 'S', 'G', 'H', 'A']);
     expect(COURSES.map((c) => c.order)).toEqual([...COURSES.map((c) => c.order)].sort((a, b) => a - b));
     for (const c of COURSES) for (const l of c.lectures) expect(l.id).toMatch(new RegExp(`^${c.prefix}\\d{2}$`));
   });

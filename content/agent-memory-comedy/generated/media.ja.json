@@ -1,0 +1,117 @@
+{
+  "schema": 2,
+  "entries": [
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A01",
+      "kind": "standard",
+      "bytes": 18077115,
+      "sha256": "cdefb88f1d78e8f34b2c3102da79e6dbdcb4ffa594483b1e2156c0047e7cef92",
+      "filename": "A01.cdefb88f1d78e8f34b2c3102da79e6dbdcb4ffa594483b1e2156c0047e7cef92.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "8362dcced6aa5996",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A01",
+      "kind": "captioned",
+      "bytes": 19182036,
+      "sha256": "aa79acfb58853bacab6aa21a1d1e4b2bfe33e2cb5583983650e15cdbb5d187cb",
+      "filename": "A01.cc.aa79acfb58853bacab6aa21a1d1e4b2bfe33e2cb5583983650e15cdbb5d187cb.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "8362dcced6aa5996",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A02",
+      "kind": "standard",
+      "bytes": 17411579,
+      "sha256": "efd455bd88ce3391d0b110464055f4c28e74fb72e46a565c30008ec9ccd7661a",
+      "filename": "A02.efd455bd88ce3391d0b110464055f4c28e74fb72e46a565c30008ec9ccd7661a.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "447d6ea1007e81e2",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A02",
+      "kind": "captioned",
+      "bytes": 18426978,
+      "sha256": "3cf0764a8f2aae9c6ca96b4755e1a55594aaefe7aafa5356f9bfe354bbb0d33a",
+      "filename": "A02.cc.3cf0764a8f2aae9c6ca96b4755e1a55594aaefe7aafa5356f9bfe354bbb0d33a.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "447d6ea1007e81e2",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A03",
+      "kind": "standard",
+      "bytes": 16389279,
+      "sha256": "c13938d4038303ebbd36fb9f712d48995dc247c3736599e7d5fddb3790a91084",
+      "filename": "A03.c13938d4038303ebbd36fb9f712d48995dc247c3736599e7d5fddb3790a91084.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "1eba40661aed9145",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A03",
+      "kind": "captioned",
+      "bytes": 17311160,
+      "sha256": "71ab2af33a192dbe0b837c64019e69a09c4a149ff953ad5f1ca0eff4630a2f30",
+      "filename": "A03.cc.71ab2af33a192dbe0b837c64019e69a09c4a149ff953ad5f1ca0eff4630a2f30.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "1eba40661aed9145",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A04",
+      "kind": "standard",
+      "bytes": 16702182,
+      "sha256": "7c1237a16d61296c5ec3d4bb74328621e7566d050701eb1d28ea1a90156c117e",
+      "filename": "A04.7c1237a16d61296c5ec3d4bb74328621e7566d050701eb1d28ea1a90156c117e.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "7d06956190e78481",
+        "src": "790d66b5e1aa5e27"
+      }
+    },
+    {
+      "lang": "ja",
+      "course": "agent-memory-comedy",
+      "lecture": "A04",
+      "kind": "captioned",
+      "bytes": 17866320,
+      "sha256": "dab269d4c8e1da6a267e5a323745e52a20bf4f02545e6c41c98e80c13b66e876",
+      "filename": "A04.cc.dab269d4c8e1da6a267e5a323745e52a20bf4f02545e6c41c98e80c13b66e876.mp4",
+      "tag": "media-ja-agent-memory-comedy",
+      "inputs": {
+        "script": "7d06956190e78481",
+        "src": "790d66b5e1aa5e27"
+      }
+    }
+  ]
+}
